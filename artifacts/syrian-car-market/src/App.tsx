@@ -39,6 +39,7 @@ function Router() {
         <Route path="/register" component={Register} />
         <Route path="/profile" component={Profile} />
         <Route path="/chat" component={Chat} />
+        <Route path="/admin" component={Admin} />
         <Route path="/favorites" component={Favorites} />
         <Route component={NotFound} />
       </Switch>
