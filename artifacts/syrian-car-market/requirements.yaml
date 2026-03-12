@@ -1,0 +1,23 @@
+packages:
+  "framer-motion": "For elegant page transitions and staggered list animations"
+  "date-fns": "For formatting dates in chat and listings"
+  "embla-carousel-react": "For touch-friendly mobile carousels in home and details"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to merge tailwind classes"
+  "lucide-react": "For beautiful consistent iconography"
+  "react-hook-form": "For robust form handling"
+  "@hookform/resolvers": "For zod validation integration"
+  "zod": "For form schema definition and validation"
+
+images:
+  - path: "artifacts/syrian-car-market/public/images/hero-bg.png"
+    description: "Warm, premium abstract background featuring subtle modern car silhouettes and Syrian architectural motifs, deep emerald green and soft gold gradient tones"
+    aspect_ratio: "16:9"
+  - path: "artifacts/syrian-car-market/public/images/logo.png"
+    description: "Elegant minimal logo of a car silhouette combined with flowing Arabic calligraphy elements, gold on a transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - Global fetch interceptor added to inject JWT bearer token from localStorage for all API calls
+  - Entire application wrapped in RTL direction
+  - Using Google Fonts 'Cairo' for beautiful Arabic typography

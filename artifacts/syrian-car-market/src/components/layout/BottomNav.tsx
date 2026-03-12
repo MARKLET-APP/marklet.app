@@ -1,0 +1,51 @@
+import { Link, useRoute } from "wouter";
+import { Home, Search, PlusCircle, Heart, User, MessageCircle } from "lucide-react";
+import { useAuthStore } from "@/lib/auth";
+
+export function BottomNav() {
+  const { user } = useAuthStore();
+  const [isHome] = useRoute("/");
+  const [isSearch] = useRoute("/search");
+  const [isAdd] = useRoute("/add-listing");
+  const [isFavorites] = useRoute("/favorites");
+  const [isProfile] = useRoute("/profile");
+  const [isChat] = useRoute("/chat");
+
+  const isSeller = user?.role === "seller";
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t pb-safe sm:hidden">
+      <div className="flex items-center justify-around h-16 px-2">
+        <NavItem href="/" icon={<Home className="w-6 h-6" />} label="الرئيسية" isActive={isHome} />
+        <NavItem href="/search" icon={<Search className="w-6 h-6" />} label="البحث" isActive={isSearch} />
+        
+        {isSeller && (
+          <div className="relative -top-5">
+            <Link href="/add-listing" className="flex items-center justify-center w-14 h-14 bg-primary text-white rounded-full shadow-lg hover:scale-105 transition-transform active:scale-95">
+              <PlusCircle className="w-8 h-8" />
+            </Link>
+          </div>
+        )}
+
+        {!isSeller && (
+          <NavItem href="/favorites" icon={<Heart className="w-6 h-6" />} label="المفضلة" isActive={isFavorites} />
+        )}
+        
+        {user ? (
+          <NavItem href="/chat" icon={<MessageCircle className="w-6 h-6" />} label="المحادثات" isActive={isChat} />
+        ) : null}
+
+        <NavItem href="/profile" icon={<User className="w-6 h-6" />} label="حسابي" isActive={isProfile} />
+      </div>
+    </div>
+  );
+}
+
+function NavItem({ href, icon, label, isActive }: { href: string; icon: React.ReactNode; label: string; isActive: boolean }) {
+  return (
+    <Link href={href} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+      {icon}
+      <span className="text-[10px] font-medium">{label}</span>
+    </Link>
+  );
+}

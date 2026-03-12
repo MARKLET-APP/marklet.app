@@ -1,8 +1,8 @@
-# Workspace
+# سوق السيارات السوري - Syrian Car Market
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+A full-stack mobile-first Arabic RTL marketplace for buying and selling cars in Syria.
 
 ## Stack
 
@@ -10,87 +10,82 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
+- **Frontend**: React + Vite (artifacts/syrian-car-market) - Arabic RTL
+- **API framework**: Express 5 (artifacts/api-server)
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **Auth**: JWT (jsonwebtoken + bcryptjs)
+- **State**: Zustand
+- **Real-time**: Socket.io (planned)
+- **AI**: OpenAI API (GPT-4o-mini) for descriptions, price estimation, vehicle summaries
 
 ## Structure
 
 ```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+artifacts/
+├── api-server/         # Express API server
+│   ├── src/routes/     # auth, cars, users, chats, reviews, vehicleReports, ai, admin, upload
+│   └── src/lib/        # auth helpers, OpenAI integration
+├── syrian-car-market/  # React frontend (Arabic RTL)
+│   └── src/pages/      # home, search, car-detail, add-listing, vehicle-info, login, register, profile, chat, admin, favorites
+lib/
+├── api-spec/openapi.yaml  # OpenAPI spec (source of truth)
+├── api-client-react/      # Generated React Query hooks
+├── api-zod/               # Generated Zod schemas
+└── db/src/schema/         # users, cars, images, conversations, messages, reviews, favorites, vehicleReports, settings
 ```
 
-## TypeScript & Composite Projects
+## Demo Credentials
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+- **Admin**: email: admin@carmarket.sy / password: Admin@123
+- **Seller**: email: seller@carmarket.sy / password: Seller@123
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+## Features
 
-## Root Scripts
+### Core
+- Arabic RTL interface throughout
+- JWT authentication via email OR phone number
+- Car listings with images, specs, location
+- Advanced search and filtering (brand, model, year, price, mileage, province, city, fuel type, transmission, category, sale type)
+- Favorites system
+- Real-time-style chat between buyers and sellers
+- User profiles with ratings
+- Vehicle information lookup (VIN/plate/chassis) with AI summary
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### AI Features
+- Auto-generate Arabic car descriptions (OpenAI)
+- Price estimation based on market data
+- Vehicle report AI summary
 
-## Packages
+### Admin
+- User management (ban/verify)
+- Listing management
+- Platform settings (colors, logo, etc)
 
-### `artifacts/api-server` (`@workspace/api-server`)
+## Environment Variables
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+- `DATABASE_URL` - PostgreSQL connection string (auto-provided by Replit)
+- `JWT_SECRET` - JWT signing key (defaults to built-in key, set for production)
+- `OPENAI_API_KEY` - For AI features (optional, fallback responses if not set)
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+## Routes (Backend - /api)
 
-### `lib/db` (`@workspace/db`)
-
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
-
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+- `POST /api/auth/register` - Register (buyer/seller)
+- `POST /api/auth/login` - Login via email or phone
+- `GET /api/auth/me` - Get current user
+- `GET/PATCH /api/users/:id` - User profiles
+- `GET /api/cars` - List with filters
+- `POST /api/cars` - Create listing
+- `GET/PATCH/DELETE /api/cars/:id` - Car management
+- `GET/POST /api/favorites` - Favorites
+- `GET /api/chats` - Conversations
+- `POST /api/chats/start` - Start conversation
+- `GET/POST /api/chats/:id/messages` - Messages
+- `POST /api/reviews` - Create review
+- `POST /api/vehicle-reports/lookup` - Vehicle lookup
+- `POST /api/ai/generate-description` - AI description
+- `POST /api/ai/estimate-price` - AI price estimate
+- `GET /api/ai/recommendations` - AI recommendations
+- `GET /api/settings` - Platform settings
+- `GET/PATCH /api/admin/*` - Admin endpoints

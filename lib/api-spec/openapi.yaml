@@ -1,22 +1,40 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Syrian Car Market API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User management
+  - name: cars
+    description: Car listing operations
+  - name: search
+    description: Search and filter operations
+  - name: chat
+    description: Chat and messaging
+  - name: favorites
+    description: Favorites management
+  - name: reviews
+    description: Ratings and reviews
+  - name: vehicle-reports
+    description: Vehicle information and history
+  - name: ai
+    description: AI assistant features
+  - name: admin
+    description: Admin operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +42,766 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email or phone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: User not found
+
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /cars:
+    get:
+      operationId: listCars
+      tags: [cars]
+      summary: List all cars with optional filters
+      parameters:
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: model
+          in: query
+          schema:
+            type: string
+        - name: minYear
+          in: query
+          schema:
+            type: integer
+        - name: maxYear
+          in: query
+          schema:
+            type: integer
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: minMileage
+          in: query
+          schema:
+            type: integer
+        - name: maxMileage
+          in: query
+          schema:
+            type: integer
+        - name: province
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: fuelType
+          in: query
+          schema:
+            type: string
+        - name: transmission
+          in: query
+          schema:
+            type: string
+        - name: saleType
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: featured
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of cars
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarListResponse"
+
+    post:
+      operationId: createCar
+      tags: [cars]
+      summary: Create a new car listing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCarBody"
+      responses:
+        "201":
+          description: Car created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Car"
+
+  /cars/featured:
+    get:
+      operationId: getFeaturedCars
+      tags: [cars]
+      summary: Get featured car listings
+      responses:
+        "200":
+          description: Featured cars
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Car"
+
+  /cars/{id}:
+    get:
+      operationId: getCar
+      tags: [cars]
+      summary: Get car listing by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Car details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarDetail"
+        "404":
+          description: Car not found
+
+    patch:
+      operationId: updateCar
+      tags: [cars]
+      summary: Update car listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCarBody"
+      responses:
+        "200":
+          description: Updated car
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Car"
+
+    delete:
+      operationId: deleteCar
+      tags: [cars]
+      summary: Delete car listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Car deleted
+
+  /cars/{id}/images:
+    post:
+      operationId: addCarImage
+      tags: [cars]
+      summary: Add image to car listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddImageBody"
+      responses:
+        "201":
+          description: Image added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarImage"
+
+  /cars/{id}/promote:
+    post:
+      operationId: promoteCar
+      tags: [cars]
+      summary: Promote/feature a car listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Car promoted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Car"
+
+  /favorites:
+    get:
+      operationId: getFavorites
+      tags: [favorites]
+      summary: Get user favorites
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of favorites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Car"
+
+    post:
+      operationId: addFavorite
+      tags: [favorites]
+      summary: Add car to favorites
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddFavoriteBody"
+      responses:
+        "201":
+          description: Added to favorites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Favorite"
+
+  /favorites/{carId}:
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      summary: Remove car from favorites
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed from favorites
+
+  /chats:
+    get:
+      operationId: getConversations
+      tags: [chat]
+      summary: Get user conversations
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+
+  /chats/{conversationId}/messages:
+    get:
+      operationId: getMessages
+      tags: [chat]
+      summary: Get messages in a conversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+
+    post:
+      operationId: sendMessage
+      tags: [chat]
+      summary: Send a message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageBody"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /chats/start:
+    post:
+      operationId: startConversation
+      tags: [chat]
+      summary: Start a conversation with a seller about a car
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartConversationBody"
+      responses:
+        "201":
+          description: Conversation created or existing returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /reviews:
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Create a review for a user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReviewBody"
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+
+  /reviews/user/{userId}:
+    get:
+      operationId: getUserReviews
+      tags: [reviews]
+      summary: Get reviews for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+  /vehicle-reports/lookup:
+    post:
+      operationId: lookupVehicle
+      tags: [vehicle-reports]
+      summary: Look up vehicle information by VIN, plate, or chassis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleLookupBody"
+      responses:
+        "200":
+          description: Vehicle report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VehicleReport"
+        "404":
+          description: Vehicle not found
+
+  /ai/generate-description:
+    post:
+      operationId: generateCarDescription
+      tags: [ai]
+      summary: Generate car listing description using AI
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateDescriptionBody"
+      responses:
+        "200":
+          description: Generated description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedDescription"
+
+  /ai/estimate-price:
+    post:
+      operationId: estimatePrice
+      tags: [ai]
+      summary: Estimate car price using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EstimatePriceBody"
+      responses:
+        "200":
+          description: Price estimate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceEstimate"
+
+  /ai/recommendations:
+    get:
+      operationId: getRecommendations
+      tags: [ai]
+      summary: Get personalized car recommendations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: province
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Recommended cars
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Car"
+
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: List all users (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /admin/users/{id}:
+    patch:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update user (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+    delete:
+      operationId: adminDeleteUser
+      tags: [admin]
+      summary: Delete user (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: User deleted
+
+  /admin/cars:
+    get:
+      operationId: adminListCars
+      tags: [admin]
+      summary: List all cars (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All cars
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarListResponse"
+
+  /admin/cars/{id}:
+    delete:
+      operationId: adminDeleteCar
+      tags: [admin]
+      summary: Delete a car listing (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Car deleted
+
+  /admin/settings:
+    get:
+      operationId: getSettings
+      tags: [admin]
+      summary: Get platform settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformSettings"
+
+    patch:
+      operationId: updateSettings
+      tags: [admin]
+      summary: Update platform settings (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsBody"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformSettings"
+
+  /upload/image:
+    post:
+      operationId: uploadImage
+      tags: [cars]
+      summary: Upload an image (base64)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadImageBody"
+      responses:
+        "200":
+          description: Uploaded image URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadImageResponse"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +811,822 @@ components:
       required:
         - status
 
+    RegisterBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        password:
+          type: string
+        role:
+          type: string
+          enum: [buyer, seller]
+      required:
+        - name
+        - password
+
+    LoginBody:
+      type: object
+      properties:
+        identifier:
+          type: string
+        password:
+          type: string
+      required:
+        - identifier
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        role:
+          type: string
+        profilePhoto:
+          type: ["string", "null"]
+        province:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        isVerified:
+          type: boolean
+        isPremium:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - role
+        - isVerified
+        - isPremium
+        - createdAt
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        role:
+          type: string
+        profilePhoto:
+          type: ["string", "null"]
+        province:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        isVerified:
+          type: boolean
+        isPremium:
+          type: boolean
+        listingCount:
+          type: integer
+        averageRating:
+          type: ["number", "null"]
+        reviewCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - role
+        - isVerified
+        - isPremium
+        - listingCount
+        - reviewCount
+        - createdAt
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        profilePhoto:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        phone:
+          type: string
+
+    AdminUpdateUserBody:
+      type: object
+      properties:
+        role:
+          type: string
+        isVerified:
+          type: boolean
+        isPremium:
+          type: boolean
+        isBanned:
+          type: boolean
+
+    Car:
+      type: object
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: integer
+        sellerName:
+          type: string
+        sellerPhoto:
+          type: ["string", "null"]
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        price:
+          type: number
+        mileage:
+          type: integer
+        fuelType:
+          type: string
+        transmission:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        saleType:
+          type: string
+        category:
+          type: string
+        description:
+          type: ["string", "null"]
+        isFeatured:
+          type: boolean
+        isHighlighted:
+          type: boolean
+        isActive:
+          type: boolean
+        primaryImage:
+          type: ["string", "null"]
+        viewCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sellerId
+        - sellerName
+        - brand
+        - model
+        - year
+        - price
+        - mileage
+        - fuelType
+        - transmission
+        - province
+        - city
+        - saleType
+        - category
+        - isFeatured
+        - isHighlighted
+        - isActive
+        - viewCount
+        - createdAt
+
+    CarDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: integer
+        sellerName:
+          type: string
+        sellerPhoto:
+          type: ["string", "null"]
+        sellerPhone:
+          type: ["string", "null"]
+        sellerRating:
+          type: ["number", "null"]
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        price:
+          type: number
+        mileage:
+          type: integer
+        fuelType:
+          type: string
+        transmission:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        saleType:
+          type: string
+        category:
+          type: string
+        description:
+          type: ["string", "null"]
+        isFeatured:
+          type: boolean
+        isHighlighted:
+          type: boolean
+        isActive:
+          type: boolean
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/CarImage"
+        viewCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sellerId
+        - sellerName
+        - brand
+        - model
+        - year
+        - price
+        - mileage
+        - fuelType
+        - transmission
+        - province
+        - city
+        - saleType
+        - category
+        - isFeatured
+        - isHighlighted
+        - isActive
+        - images
+        - viewCount
+        - createdAt
+
+    CarImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        carId:
+          type: integer
+        imageUrl:
+          type: string
+        isPrimary:
+          type: boolean
+      required:
+        - id
+        - carId
+        - imageUrl
+        - isPrimary
+
+    CarListResponse:
+      type: object
+      properties:
+        cars:
+          type: array
+          items:
+            $ref: "#/components/schemas/Car"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - cars
+        - total
+        - page
+        - limit
+
+    CreateCarBody:
+      type: object
+      properties:
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        price:
+          type: number
+        mileage:
+          type: integer
+        fuelType:
+          type: string
+        transmission:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        saleType:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+      required:
+        - brand
+        - model
+        - year
+        - price
+        - mileage
+        - fuelType
+        - transmission
+        - province
+        - city
+        - saleType
+        - category
+
+    UpdateCarBody:
+      type: object
+      properties:
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        price:
+          type: number
+        mileage:
+          type: integer
+        fuelType:
+          type: string
+        transmission:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        saleType:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        isActive:
+          type: boolean
+
+    AddImageBody:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        isPrimary:
+          type: boolean
+      required:
+        - imageUrl
+
+    Favorite:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        carId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - carId
+        - createdAt
+
+    AddFavoriteBody:
+      type: object
+      properties:
+        carId:
+          type: integer
+      required:
+        - carId
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        carId:
+          type: integer
+        carBrand:
+          type: string
+        carModel:
+          type: string
+        carYear:
+          type: integer
+        carImage:
+          type: ["string", "null"]
+        otherUserId:
+          type: integer
+        otherUserName:
+          type: string
+        otherUserPhoto:
+          type: ["string", "null"]
+        lastMessage:
+          type: ["string", "null"]
+        lastMessageAt:
+          type: ["string", "null"]
+          format: date-time
+        unreadCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - carId
+        - carBrand
+        - carModel
+        - carYear
+        - otherUserId
+        - otherUserName
+        - unreadCount
+        - createdAt
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        senderId:
+          type: integer
+        senderName:
+          type: string
+        content:
+          type: string
+        messageType:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - senderId
+        - senderName
+        - content
+        - messageType
+        - isRead
+        - createdAt
+
+    SendMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+        messageType:
+          type: string
+      required:
+        - content
+
+    StartConversationBody:
+      type: object
+      properties:
+        sellerId:
+          type: integer
+        carId:
+          type: integer
+      required:
+        - sellerId
+        - carId
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+        reviewerId:
+          type: integer
+        reviewerName:
+          type: string
+        reviewerPhoto:
+          type: ["string", "null"]
+        reviewedUserId:
+          type: integer
+        rating:
+          type: number
+        comment:
+          type: ["string", "null"]
+        responseSpeed:
+          type: ["integer", "null"]
+        trustLevel:
+          type: ["integer", "null"]
+        listingAccuracy:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - reviewerId
+        - reviewerName
+        - reviewedUserId
+        - rating
+        - createdAt
+
+    CreateReviewBody:
+      type: object
+      properties:
+        reviewedUserId:
+          type: integer
+        rating:
+          type: number
+        comment:
+          type: string
+        responseSpeed:
+          type: integer
+        trustLevel:
+          type: integer
+        listingAccuracy:
+          type: integer
+      required:
+        - reviewedUserId
+        - rating
+
+    VehicleLookupBody:
+      type: object
+      properties:
+        vin:
+          type: string
+        plateNumber:
+          type: string
+        chassisNumber:
+          type: string
+
+    VehicleReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        vin:
+          type: ["string", "null"]
+        plateNumber:
+          type: ["string", "null"]
+        chassisNumber:
+          type: ["string", "null"]
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        countryOfOrigin:
+          type: ["string", "null"]
+        engineSize:
+          type: ["string", "null"]
+        fuelType:
+          type: string
+        transmission:
+          type: string
+        engineCapacity:
+          type: ["string", "null"]
+        horsepower:
+          type: ["integer", "null"]
+        fuelConsumption:
+          type: ["string", "null"]
+        driveType:
+          type: ["string", "null"]
+        accidentCount:
+          type: integer
+        hasMajorRepairs:
+          type: boolean
+        hasStructuralDamage:
+          type: boolean
+        airbagDeployed:
+          type: boolean
+        mileageHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/MileageRecord"
+        ownershipCount:
+          type: integer
+        registrationRegion:
+          type: ["string", "null"]
+        damageStatus:
+          type: string
+          enum: [clean, minor, serious]
+        aiSummary:
+          type: ["string", "null"]
+      required:
+        - id
+        - brand
+        - model
+        - year
+        - fuelType
+        - transmission
+        - accidentCount
+        - hasMajorRepairs
+        - hasStructuralDamage
+        - airbagDeployed
+        - mileageHistory
+        - ownershipCount
+        - damageStatus
+
+    MileageRecord:
+      type: object
+      properties:
+        year:
+          type: integer
+        mileage:
+          type: integer
+      required:
+        - year
+        - mileage
+
+    GenerateDescriptionBody:
+      type: object
+      properties:
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        mileage:
+          type: integer
+        fuelType:
+          type: string
+        transmission:
+          type: string
+        condition:
+          type: string
+        additionalNotes:
+          type: string
+      required:
+        - brand
+        - model
+        - year
+
+    GeneratedDescription:
+      type: object
+      properties:
+        description:
+          type: string
+      required:
+        - description
+
+    EstimatePriceBody:
+      type: object
+      properties:
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        mileage:
+          type: integer
+        condition:
+          type: string
+        fuelType:
+          type: string
+        transmission:
+          type: string
+      required:
+        - brand
+        - model
+        - year
+
+    PriceEstimate:
+      type: object
+      properties:
+        minPrice:
+          type: number
+        maxPrice:
+          type: number
+        suggestedPrice:
+          type: number
+        currency:
+          type: string
+        reasoning:
+          type: string
+      required:
+        - minPrice
+        - maxPrice
+        - suggestedPrice
+        - currency
+        - reasoning
+
+    PlatformSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        primaryColor:
+          type: string
+        secondaryColor:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        heroImageUrl:
+          type: ["string", "null"]
+        backgroundImageUrl:
+          type: ["string", "null"]
+        siteName:
+          type: string
+        allowRegistrations:
+          type: boolean
+        maxListingsPerUser:
+          type: integer
+        featuredListingPrice:
+          type: number
+        premiumSubscriptionPrice:
+          type: number
+      required:
+        - id
+        - primaryColor
+        - secondaryColor
+        - siteName
+        - allowRegistrations
+        - maxListingsPerUser
+        - featuredListingPrice
+        - premiumSubscriptionPrice
+
+    UpdateSettingsBody:
+      type: object
+      properties:
+        primaryColor:
+          type: string
+        secondaryColor:
+          type: string
+        logoUrl:
+          type: string
+        heroImageUrl:
+          type: string
+        backgroundImageUrl:
+          type: string
+        siteName:
+          type: string
+        allowRegistrations:
+          type: boolean
+        maxListingsPerUser:
+          type: integer
+        featuredListingPrice:
+          type: number
+        premiumSubscriptionPrice:
+          type: number
+
+    UploadImageBody:
+      type: object
+      properties:
+        data:
+          type: string
+        filename:
+          type: string
+      required:
+        - data
+
+    UploadImageResponse:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
