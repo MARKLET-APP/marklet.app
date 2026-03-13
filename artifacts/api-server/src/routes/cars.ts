@@ -304,6 +304,76 @@ router.delete("/cars/:id", authMiddleware, async (req: AuthRequest, res): Promis
   res.sendStatus(204);
 });
 
+// POST /api/cars/create alias
+router.post("/cars/create", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const parsed = CreateCarBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { images, ...carData } = parsed.data;
+
+  const [car] = await db.insert(carsTable).values({
+    ...carData,
+    sellerId: req.userId!,
+    price: String(carData.price),
+  }).returning();
+
+  if (images && images.length > 0) {
+    await db.insert(imagesTable).values(
+      images.map((url, idx) => ({
+        carId: car.id,
+        imageUrl: url,
+        isPrimary: idx === 0,
+      }))
+    );
+  }
+
+  const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+
+  res.status(201).json({
+    ...car,
+    price: Number(car.price),
+    sellerName: seller?.name ?? "Unknown",
+    sellerPhoto: seller?.profilePhoto ?? null,
+    primaryImage: images?.[0] ?? null,
+  });
+});
+
+// PUT /api/cars/:id alias
+router.put("/cars/:id", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid car ID" });
+    return;
+  }
+
+  const [car] = await db.select().from(carsTable).where(eq(carsTable.id, id)).limit(1);
+  if (!car) {
+    res.status(404).json({ error: "Car not found" });
+    return;
+  }
+
+  if (car.sellerId !== req.userId && req.userRole !== "admin") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const parsed = UpdateCarBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const updateData: Record<string, unknown> = { ...parsed.data };
+  if (updateData.price !== undefined) updateData.price = String(updateData.price);
+
+  const [updated] = await db.update(carsTable).set(updateData).where(eq(carsTable.id, id)).returning();
+
+  res.json({ ...updated, price: Number(updated.price) });
+});
+
 router.post("/cars/:id/images", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {
