@@ -74,6 +74,7 @@ export default function Register() {
             <select {...formRegister("role")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none">
               <option value="buyer">مشتري (للبحث وشراء السيارات)</option>
               <option value="seller">بائع / معرض (لنشر الإعلانات)</option>
+              <option value="inspector">فاحص سيارات (لإدارة مراكز الفحص)</option>
             </select>
           </div>
 

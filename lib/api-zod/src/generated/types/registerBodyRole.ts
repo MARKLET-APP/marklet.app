@@ -12,4 +12,5 @@ export type RegisterBodyRole =
 export const RegisterBodyRole = {
   buyer: "buyer",
   seller: "seller",
+  inspector: "inspector",
 } as const;

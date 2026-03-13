@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, inspectionCentersTable, inspectionsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { authMiddleware, inspectorMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
@@ -10,8 +10,7 @@ router.get("/inspection-centers", async (_req, res): Promise<void> => {
   res.json(centers.map(c => ({ ...c, rating: Number(c.rating) })));
 });
 
-router.post("/inspection-centers", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
-  if (req.user!.role !== "admin") { res.status(403).json({ error: "Forbidden" }); return; }
+router.post("/inspection-centers", authMiddleware, inspectorMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const { name, city, contact, rating } = req.body;
   const [created] = await db.insert(inspectionCentersTable).values({
     name, city,

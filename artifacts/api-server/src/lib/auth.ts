@@ -53,3 +53,11 @@ export function adminMiddleware(req: AuthRequest, res: Response, next: NextFunct
   }
   next();
 }
+
+export function inspectorMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
+  if (req.userRole !== "inspector" && req.userRole !== "admin") {
+    res.status(403).json({ error: "Forbidden: inspector or admin only" });
+    return;
+  }
+  next();
+}
