@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, carsTable, usersTable, imagesTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, between, sql } from "drizzle-orm";
 import { GenerateCarDescriptionBody, EstimatePriceBody, GetRecommendationsQueryParams } from "@workspace/api-zod";
 import { generateCarDescription, estimateCarPrice } from "../lib/openai.js";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -70,6 +70,46 @@ router.get("/ai/recommendations", authMiddleware, async (req: AuthRequest, res):
   }));
 
   res.json(enriched);
+});
+
+async function evaluatePrice(car: { brand: string; model: string; year: number; price: number }) {
+  const similar = await db
+    .select({ price: sql<number>`${carsTable.price}::numeric` })
+    .from(carsTable)
+    .where(
+      and(
+        eq(carsTable.brand, car.brand),
+        eq(carsTable.model, car.model),
+        between(carsTable.year, car.year - 2, car.year + 2)
+      )
+    );
+
+  const avg = similar.reduce((a, b) => a + Number(b.price), 0) / similar.length;
+
+  let status: string;
+  if (car.price < avg * 0.9) status = "good_deal";
+  else if (car.price <= avg * 1.1) status = "fair_price";
+  else status = "overpriced";
+
+  return { average: avg, status };
+}
+
+router.post("/evaluate-price", async (req, res): Promise<void> => {
+  const { brand, model, year, price } = req.body;
+
+  if (!brand || !model || !year || price === undefined) {
+    res.status(400).json({ error: "brand, model, year, and price are required" });
+    return;
+  }
+
+  const result = await evaluatePrice({ brand, model, year: Number(year), price: Number(price) });
+
+  if (isNaN(result.average)) {
+    res.json({ average: null, status: "no_data", message: "No similar cars found in database" });
+    return;
+  }
+
+  res.json(result);
 });
 
 export default router;
