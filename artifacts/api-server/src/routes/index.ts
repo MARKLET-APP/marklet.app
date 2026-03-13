@@ -11,6 +11,7 @@ import aiRouter from "./ai";
 import adminRouter from "./admin";
 import uploadRouter from "./upload";
 import settingsRouter from "./settings";
+import promotionsRouter from "./promotions";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(aiRouter);
 router.use(adminRouter);
 router.use(uploadRouter);
 router.use(settingsRouter);
+router.use(promotionsRouter);
 
 export default router;

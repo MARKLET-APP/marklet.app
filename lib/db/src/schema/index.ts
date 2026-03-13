@@ -7,3 +7,4 @@ export * from "./reviews";
 export * from "./favorites";
 export * from "./vehicleReports";
 export * from "./settings";
+export * from "./promotions";
