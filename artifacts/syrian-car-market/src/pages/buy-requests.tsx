@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,80 +35,72 @@ const PAYMENT_LABELS: Record<string, string> = {
   installment: "تقسيط",
 };
 
+const QUERY_KEY = ["buy-requests"];
+
 export default function BuyRequests() {
   const { user, token } = useAuthStore();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [requests, setRequests] = useState<BuyRequest[]>([]);
-  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
   const [form, setForm] = useState({
-    brand: "",
-    model: "",
-    minYear: "",
-    maxYear: "",
-    maxPrice: "",
-    city: "",
-    paymentType: "",
-    description: "",
+    brand: "", model: "", minYear: "", maxYear: "",
+    maxPrice: "", city: "", paymentType: "", description: "",
   });
 
-  const fetchRequests = () => {
-    setLoading(true);
-    fetch("/api/buy-requests")
-      .then((r) => r.json())
-      .then((data) => setRequests(Array.isArray(data) ? data : []))
-      .finally(() => setLoading(false));
-  };
+  const { data: requests = [], isLoading } = useQuery<BuyRequest[]>({
+    queryKey: QUERY_KEY,
+    queryFn: () =>
+      fetch("/api/buy-requests").then((res) => res.json()),
+  });
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: async (body: object) => {
+      const res = await fetch("/api/buy-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "error");
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: data.message ?? "تم نشر طلبك بنجاح" });
+      setOpen(false);
+      setForm({ brand: "", model: "", minYear: "", maxYear: "", maxPrice: "", city: "", paymentType: "", description: "" });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+    onError: () => {
+      toast({ title: "حدث خطأ أثناء النشر", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await fetch(`/api/buy-requests/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "تم حذف الطلب" });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.maxPrice) {
-      toast({ title: "يرجى إدخال الحد الأقصى للسعر", variant: "destructive" });
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/buy-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          ...form,
-          minYear: form.minYear ? Number(form.minYear) : undefined,
-          maxYear: form.maxYear ? Number(form.maxYear) : undefined,
-          maxPrice: form.maxPrice ? Number(form.maxPrice) : undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "error");
-      toast({ title: data.message ?? "تم نشر طلبك بنجاح" });
-      setOpen(false);
-      setForm({ brand: "", model: "", minYear: "", maxYear: "", maxPrice: "", city: "", paymentType: "", description: "" });
-      fetchRequests();
-    } catch {
-      toast({ title: "حدث خطأ أثناء النشر", variant: "destructive" });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    await fetch(`/api/buy-requests/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+    createMutation.mutate({
+      ...form,
+      minYear: form.minYear ? Number(form.minYear) : undefined,
+      maxYear: form.maxYear ? Number(form.maxYear) : undefined,
+      maxPrice: form.maxPrice ? Number(form.maxPrice) : undefined,
     });
-    toast({ title: "تم حذف الطلب" });
-    fetchRequests();
   };
 
   return (
@@ -181,8 +174,8 @@ export default function BuyRequests() {
                     className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none"
                   />
                 </div>
-                <Button type="submit" disabled={submitting} className="w-full rounded-xl font-bold">
-                  {submitting ? "جارٍ النشر..." : "نشر الطلب"}
+                <Button type="submit" disabled={createMutation.isPending} className="w-full rounded-xl font-bold">
+                  {createMutation.isPending ? "جارٍ النشر..." : "نشر الطلب"}
                 </Button>
               </form>
             </DialogContent>
@@ -260,7 +253,7 @@ export default function BuyRequests() {
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDelete(r.id)}
+                      onClick={() => deleteMutation.mutate(r.id)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
