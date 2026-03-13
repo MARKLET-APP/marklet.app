@@ -22,7 +22,7 @@ router.get("/admin/dashboard", ...guard, async (_req, res): Promise<void> => {
 });
 
 router.get("/admin/users", ...guard, async (_req, res): Promise<void> => {
-  const users = await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
+  const users = await db.select().from(usersTable).orderBy(desc(usersTable.createdAt)).limit(50);
   res.json(users.map(u => ({
     id: u.id,
     name: u.name,
