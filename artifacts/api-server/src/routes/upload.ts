@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { detectCar } from "../lib/openai.js";
+import { checkImageSafety, detectCar } from "../lib/openai.js";
 
 const router: IRouter = Router();
 
@@ -14,17 +14,25 @@ router.post("/upload", upload.single("image"), async (req, res): Promise<void> =
     return;
   }
 
-  const isCar = await detectCar(req.file.path);
+  const filePath = req.file.path;
 
+  const safe = await checkImageSafety(filePath);
+  if (!safe) {
+    fs.unlinkSync(filePath);
+    res.status(400).json({ error: "الصورة غير مناسبة" });
+    return;
+  }
+
+  const isCar = await detectCar(filePath);
   if (!isCar) {
-    fs.unlinkSync(req.file.path);
-    res.status(400).json({ error: "الصورة لا تحتوي على سيارة. يرجى رفع صورة سيارة فقط." });
+    fs.unlinkSync(filePath);
+    res.status(400).json({ error: "الصور يجب أن تكون لسيارة" });
     return;
   }
 
   const ext = path.extname(req.file.originalname) || ".jpg";
-  const newPath = req.file.path + ext;
-  fs.renameSync(req.file.path, newPath);
+  const newPath = filePath + ext;
+  fs.renameSync(filePath, newPath);
 
   res.json({ url: `/api/uploads/${path.basename(newPath)}` });
 });
