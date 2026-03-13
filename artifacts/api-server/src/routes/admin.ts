@@ -167,6 +167,16 @@ router.patch("/admin/cars/:id/status", ...guard, async (req: AuthRequest, res): 
   res.json(updated);
 });
 
+router.post("/admin/approve/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [updated] = await db.update(carsTable).set({ status: "approved" }).where(eq(carsTable.id, id)).returning({ id: carsTable.id, status: carsTable.status });
+  if (!updated) { res.status(404).json({ error: "Car not found" }); return; }
+
+  res.send("approved");
+});
+
 router.delete("/admin/cars/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {
