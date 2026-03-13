@@ -1,5 +1,5 @@
 import { Link, useRoute } from "wouter";
-import { Home, Search, PlusCircle, Heart, User, MessageCircle } from "lucide-react";
+import { Home, Search, PlusCircle, Heart, User, MessageCircle, ShoppingBag } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 
 export function BottomNav() {
@@ -10,6 +10,7 @@ export function BottomNav() {
   const [isFavorites] = useRoute("/favorites");
   const [isProfile] = useRoute("/profile");
   const [isChat] = useRoute("/chat");
+  const [isBuyRequests] = useRoute("/buy-requests");
 
   const isSeller = user?.role === "seller";
 
@@ -29,6 +30,9 @@ export function BottomNav() {
 
         {!isSeller && (
           <NavItem href="/favorites" icon={<Heart className="w-6 h-6" />} label="المفضلة" isActive={isFavorites} />
+        )}
+        {!isSeller && (
+          <NavItem href="/buy-requests" icon={<ShoppingBag className="w-6 h-6" />} label="أريد أشتري" isActive={isBuyRequests} />
         )}
         
         {user ? (

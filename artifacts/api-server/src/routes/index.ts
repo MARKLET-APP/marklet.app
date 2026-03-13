@@ -14,6 +14,7 @@ import settingsRouter from "./settings";
 import promotionsRouter from "./promotions";
 import adViewsRouter from "./adViews";
 import offersRouter from "./offers";
+import buyRequestsRouter from "./buyRequests";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(settingsRouter);
 router.use(promotionsRouter);
 router.use(adViewsRouter);
 router.use(offersRouter);
+router.use(buyRequestsRouter);
 
 export default router;

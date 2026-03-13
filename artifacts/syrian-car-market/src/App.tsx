@@ -15,6 +15,7 @@ import Profile from "@/pages/profile";
 import Chat from "@/pages/chat";
 import Admin from "@/pages/admin";
 import Favorites from "@/pages/favorites";
+import BuyRequests from "@/pages/buy-requests";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -41,6 +42,7 @@ function Router() {
         <Route path="/chat" component={Chat} />
         <Route path="/admin" component={Admin} />
         <Route path="/favorites" component={Favorites} />
+        <Route path="/buy-requests" component={BuyRequests} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
