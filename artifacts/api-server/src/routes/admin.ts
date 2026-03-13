@@ -115,7 +115,8 @@ router.get("/admin/cars", ...guard, async (_req, res): Promise<void> => {
   })
     .from(carsTable)
     .leftJoin(usersTable, eq(carsTable.sellerId, usersTable.id))
-    .orderBy(desc(carsTable.createdAt));
+    .orderBy(desc(carsTable.createdAt))
+    .limit(50);
 
   const [totalResult] = await db.select({ count: count() }).from(carsTable);
 
