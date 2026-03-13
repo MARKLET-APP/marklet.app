@@ -5,6 +5,8 @@ import {
   useAdminListCars, useAdminDeleteCar,
   useGetSettings, useUpdateSettings
 } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@workspace/api-client-react";
 import { Redirect } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -21,6 +23,11 @@ export default function AdminDashboard() {
   const { data: users, isLoading: loadingUsers, refetch: refetchUsers } = useAdminListUsers({ query: { enabled: user?.role === 'admin' } });
   const { data: carsData, isLoading: loadingCars, refetch: refetchCars } = useAdminListCars({ query: { enabled: user?.role === 'admin' } });
   const { data: settings, isLoading: loadingSettings } = useGetSettings({ query: { enabled: user?.role === 'admin' } });
+  const { data: dashboard } = useQuery<{ usersCount: number; listingsCount: number; missingCarsCount: number }>({
+    queryKey: ["/admin/dashboard"],
+    queryFn: () => apiRequest("GET", "/api/admin/dashboard"),
+    enabled: user?.role === 'admin',
+  });
 
   const updateUserMutation = useAdminUpdateUser();
   const deleteUserMutation = useAdminDeleteUser();
@@ -101,6 +108,27 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold text-foreground">لوحة الإدارة</h1>
           <p className="text-muted-foreground mt-1">إدارة المستخدمين، الإعلانات، وإعدادات المنصة</p>
         </div>
+      </div>
+
+      {/* Dashboard stats */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        {[
+          { label: "عدد المستخدمين", value: dashboard?.usersCount, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "عدد الإعلانات", value: dashboard?.listingsCount, icon: Car, color: "text-green-600", bg: "bg-green-50" },
+          { label: "السيارات المفقودة", value: dashboard?.missingCarsCount, icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50" },
+        ].map(({ label, value, icon: Icon, color, bg }) => (
+          <div key={label} className="bg-card border rounded-2xl p-5 shadow-sm flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${bg}`}>
+              <Icon className={`w-6 h-6 ${color}`} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">{label}</p>
+              <p className="text-3xl font-bold text-foreground">
+                {value !== undefined ? value.toLocaleString("ar-EG") : <Loader2 className="w-5 h-5 animate-spin inline text-muted-foreground" />}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
       <Tabs defaultValue="users" className="w-full" dir="rtl">

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, settingsTable } from "@workspace/db";
+import { db, usersTable, carsTable, settingsTable, missingCarsTable } from "@workspace/db";
 import { eq, desc, count } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -7,6 +7,19 @@ import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.j
 const router: IRouter = Router();
 
 const guard = [authMiddleware, adminMiddleware];
+
+router.get("/admin/dashboard", ...guard, async (_req, res): Promise<void> => {
+  const [[usersCount], [listingsCount], [missingCarsCount]] = await Promise.all([
+    db.select({ count: count() }).from(usersTable),
+    db.select({ count: count() }).from(carsTable),
+    db.select({ count: count() }).from(missingCarsTable),
+  ]);
+  res.json({
+    usersCount: Number(usersCount.count),
+    listingsCount: Number(listingsCount.count),
+    missingCarsCount: Number(missingCarsCount.count),
+  });
+});
 
 router.get("/admin/users", ...guard, async (_req, res): Promise<void> => {
   const users = await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
