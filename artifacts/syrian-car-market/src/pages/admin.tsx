@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -84,6 +85,16 @@ export default function AdminDashboard() {
       toast({ title: "تم حذف الإعلان" });
       refetchCars();
     } catch (error) {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+  };
+
+  const handleCarStatus = async (id: number, status: "approved" | "rejected") => {
+    try {
+      await api.admin.updateCarStatus(id, status);
+      toast({ title: status === "approved" ? "تمت الموافقة على الإعلان" : "تم رفض الإعلان" });
+      refetchCars();
+    } catch {
       toast({ title: "حدث خطأ", variant: "destructive" });
     }
   };
@@ -228,25 +239,43 @@ export default function AdminDashboard() {
                   <TableHead className="text-right">السنة</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">البائع</TableHead>
+                  <TableHead className="text-center">الحالة</TableHead>
                   <TableHead className="text-center">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingCars ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
                 ) : !carsData?.cars?.length ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">لا يوجد إعلانات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">لا يوجد إعلانات</TableCell></TableRow>
                 ) : (
                   carsData.cars.map((car) => (
                     <TableRow key={car.id}>
                       <TableCell className="font-medium">{car.brand} {car.model}</TableCell>
                       <TableCell>{car.year}</TableCell>
                       <TableCell>{car.price.toLocaleString('ar-SY')} ل.س</TableCell>
-                      <TableCell>{car.seller?.name || 'مجهول'}</TableCell>
+                      <TableCell>{(car as any).sellerName || 'مجهول'}</TableCell>
                       <TableCell className="text-center">
-                        <Button size="sm" variant="outline" className="h-8 border-red-500 text-red-600 hover:bg-red-50" onClick={() => handleDeleteCar(car.id)}>
-                          <Trash2 className="w-4 h-4 ml-1" /> حذف
-                        </Button>
+                        {(car as any).status === 'approved' && <Badge className="bg-green-500 hover:bg-green-600">مقبول</Badge>}
+                        {(car as any).status === 'pending'  && <Badge variant="secondary" className="bg-amber-100 text-amber-700">معلق</Badge>}
+                        {(car as any).status === 'rejected' && <Badge variant="destructive">مرفوض</Badge>}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {(car as any).status !== 'approved' && (
+                            <Button size="sm" variant="outline" className="h-8 border-green-500 text-green-600 hover:bg-green-50" onClick={() => handleCarStatus(car.id, 'approved')}>
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {(car as any).status !== 'rejected' && (
+                            <Button size="sm" variant="outline" className="h-8 border-orange-500 text-orange-600 hover:bg-orange-50" onClick={() => handleCarStatus(car.id, 'rejected')}>
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="outline" className="h-8 border-red-500 text-red-600 hover:bg-red-50" onClick={() => handleDeleteCar(car.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

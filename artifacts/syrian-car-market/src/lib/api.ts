@@ -89,5 +89,7 @@ export const api = {
       apiRequest<{ usersCount: number; listingsCount: number; missingCarsCount: number }>(
         "/api/admin/dashboard"
       ),
+    updateCarStatus: (id: number, status: "pending" | "approved" | "rejected") =>
+      apiRequest(`/api/admin/cars/${id}/status`, "PATCH", { status }),
   },
 };

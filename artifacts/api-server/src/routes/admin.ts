@@ -128,6 +128,22 @@ router.get("/admin/cars", ...guard, async (_req, res): Promise<void> => {
   });
 });
 
+router.patch("/admin/cars/:id/status", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const { status } = req.body;
+  if (!["pending", "approved", "rejected"].includes(status)) {
+    res.status(400).json({ error: "status must be pending | approved | rejected" });
+    return;
+  }
+
+  const [updated] = await db.update(carsTable).set({ status }).where(eq(carsTable.id, id)).returning({ id: carsTable.id, status: carsTable.status });
+  if (!updated) { res.status(404).json({ error: "Car not found" }); return; }
+
+  res.json(updated);
+});
+
 router.delete("/admin/cars/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {

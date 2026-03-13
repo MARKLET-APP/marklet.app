@@ -16,7 +16,7 @@ router.get("/cars", async (req, res): Promise<void> => {
     page = 1, limit = 20, search, sortBy
   } = query.success ? query.data : {};
 
-  const conditions = [eq(carsTable.isActive, true)];
+  const conditions = [eq(carsTable.isActive, true), eq(carsTable.status, "approved")];
   
   if (brand) conditions.push(ilike(carsTable.brand, `%${brand}%`));
   if (model) conditions.push(ilike(carsTable.model, `%${model}%`));
