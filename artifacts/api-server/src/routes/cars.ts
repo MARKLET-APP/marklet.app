@@ -272,6 +272,12 @@ router.get("/cars/:id", async (req, res): Promise<void> => {
   });
 });
 
+function validateImages(images: string[] | undefined): void {
+  if (!images || images.length < 5) {
+    throw new Error("يجب إضافة 5 صور على الأقل");
+  }
+}
+
 router.post("/cars", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const parsed = CreateCarBody.safeParse(req.body);
   if (!parsed.success) {
@@ -280,6 +286,13 @@ router.post("/cars", authMiddleware, async (req: AuthRequest, res): Promise<void
   }
 
   const { images, ...carData } = parsed.data;
+
+  try {
+    validateImages(images);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
 
   const [car] = await db.insert(carsTable).values({
     ...carData,

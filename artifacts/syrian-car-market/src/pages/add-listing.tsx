@@ -7,6 +7,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ImagePlus, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
   brand: z.string().min(2, "الماركة مطلوبة"),
@@ -28,6 +29,7 @@ type FormValues = z.infer<typeof schema>;
 export default function AddListing() {
   const [, navigate] = useLocation();
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
   
   const createMutation = useCreateCar();
@@ -40,6 +42,10 @@ export default function AddListing() {
   });
 
   const onSubmit = (data: FormValues) => {
+    if (images.length < 5) {
+      toast({ title: "يجب إضافة 5 صور على الأقل", variant: "destructive" });
+      return;
+    }
     createMutation.mutate({ data: { ...data, images } }, {
       onSuccess: (res) => {
         navigate(`/cars/${res.id}`);
