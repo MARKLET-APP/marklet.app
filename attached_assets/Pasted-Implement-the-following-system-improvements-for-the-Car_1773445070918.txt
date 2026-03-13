@@ -1,0 +1,170 @@
+Implement the following system improvements for the CarNet project.
+
+=====================================
+1 FIX BUY REQUEST BUTTON
+=====================================
+
+Create API route:
+
+POST /api/buy-request
+
+Fields:
+
+brand
+model
+year
+maxPrice
+city
+paymentType
+
+Return:
+
+{
+ success: true,
+ message: "تم إرسال طلب الشراء بنجاح"
+}
+
+Frontend button "أريد أن أشتري" must call this API.
+
+=====================================
+2 CREATE BUY REQUEST SCHEMA
+=====================================
+
+Create file:
+
+server/models/BuyRequest.js
+
+Code:
+
+const mongoose = require("mongoose");
+
+const buyRequestSchema = new mongoose.Schema({
+
+brand:String,
+model:String,
+year:Number,
+maxPrice:Number,
+city:String,
+paymentType:String,
+
+createdAt:{
+type:Date,
+default:Date.now
+}
+
+});
+
+module.exports = mongoose.model("BuyRequest",buyRequestSchema);
+
+=====================================
+3 UPDATE CAR LISTING SCHEMA
+=====================================
+
+Update CarListing schema.
+
+Add moderation field:
+
+status:{
+type:String,
+enum:["pending","approved","rejected"],
+default:"pending"
+}
+
+Listings must not appear publicly unless:
+
+status === "approved"
+
+=====================================
+4 REQUIRE 5 IMAGES
+=====================================
+
+Add validation when creating listing:
+
+function validateImages(images){
+
+if(!images || images.length < 5){
+
+throw new Error("يجب إضافة 5 صور على الأقل للسيارة");
+
+}
+
+}
+
+=====================================
+5 LISTING CREATION FLOW
+=====================================
+
+Update route:
+
+POST /api/listings
+
+Logic:
+
+1 validate images count
+2 reject listing if less than 5 images
+3 save listing as pending
+
+Code logic:
+
+validateImages(images);
+
+const listing = new CarListing({
+
+...req.body,
+status:"pending"
+
+});
+
+await listing.save();
+
+return res.json({
+
+message:"تم إرسال الإعلان للمراجعة"
+
+});
+
+=====================================
+6 ADMIN MODERATION ROUTES
+=====================================
+
+Create admin endpoints:
+
+GET /admin/pending-listings
+
+Return all listings:
+
+status="pending"
+
+POST /admin/approve/:id
+
+Update listing:
+
+status="approved"
+
+POST /admin/reject/:id
+
+Update listing:
+
+status="rejected"
+
+=====================================
+7 PUBLIC LISTINGS FILTER
+=====================================
+
+All public queries must use:
+
+CarListing.find({
+status:"approved"
+})
+
+=====================================
+8 RETURN ARABIC ERRORS
+=====================================
+
+Ensure validation messages are Arabic.
+
+=====================================
+9 RESTART SERVER
+=====================================
+
+Restart development server after implementation.

@@ -30,21 +30,21 @@ router.get("/buy-requests", async (req, res): Promise<void> => {
 });
 
 async function createBuyRequest(req: AuthRequest, res: any): Promise<void> {
-  const { brand, model, minYear, maxYear, maxPrice, city, paymentType, description } = req.body;
+  const { brand, model, year, minYear, maxYear, maxPrice, city, paymentType, description } = req.body;
 
   await db.insert(buyRequestsTable).values({
     userId: req.user!.id,
     brand: brand ?? null,
     model: model ?? null,
-    minYear: minYear ? Number(minYear) : null,
-    maxYear: maxYear ? Number(maxYear) : null,
+    minYear: minYear ? Number(minYear) : (year ? Number(year) : null),
+    maxYear: maxYear ? Number(maxYear) : (year ? Number(year) : null),
     maxPrice: maxPrice ? Number(maxPrice) : null,
     city: city ?? null,
     paymentType: paymentType ?? null,
     description: description ?? null,
   });
 
-  res.status(201).json({ success: true, message: "تم نشر طلب الشراء" });
+  res.status(201).json({ success: true, message: "تم إرسال طلب الشراء بنجاح" });
 }
 
 router.post("/buy-requests", authMiddleware, createBuyRequest);
