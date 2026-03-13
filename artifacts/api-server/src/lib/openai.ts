@@ -1,3 +1,5 @@
+import fs from "fs";
+
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 interface ChatMessage {
@@ -132,6 +134,46 @@ function estimatePriceFallback(brand: string, model: string, year: number, milea
   }
 
   return Math.max(2000, Math.round(basePrice));
+}
+
+export async function detectCar(imagePath: string): Promise<boolean> {
+  if (!OPENAI_API_KEY) return true;
+
+  let imagePayload: { type: "image_url"; image_url: { url: string } };
+
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    imagePayload = { type: "image_url", image_url: { url: imagePath } };
+  } else {
+    const buffer = fs.readFileSync(imagePath);
+    const base64 = buffer.toString("base64");
+    imagePayload = { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}` } };
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      max_tokens: 10,
+      messages: [
+        {
+          role: "user",
+          content: [
+            imagePayload,
+            { type: "text", text: 'Does this image show a car or vehicle? Reply with only "yes" or "no".' },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) return true;
+  const data = (await response.json()) as { choices: Array<{ message: { content: string } }> };
+  const answer = data.choices[0]?.message?.content?.toLowerCase().trim() ?? "";
+  return answer.includes("yes");
 }
 
 export async function generateVehicleAISummary(report: {

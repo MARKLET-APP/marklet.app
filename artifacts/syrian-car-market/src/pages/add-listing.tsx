@@ -1,13 +1,27 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCreateCar, useGenerateCarDescription, useEstimatePrice } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ImagePlus, Loader2, CheckCircle2 } from "lucide-react";
+import { Sparkles, ImagePlus, Loader2, CheckCircle2, X, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+
+async function uploadImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("image", file);
+  const token = localStorage.getItem("scm_token");
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  const data = await res.json() as { url?: string; error?: string };
+  if (!res.ok) throw new Error(data.error ?? "فشل رفع الصورة");
+  return data.url!;
+}
 
 const schema = z.object({
   brand: z.string().min(2, "الماركة مطلوبة"),
@@ -31,7 +45,33 @@ export default function AddListing() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
-  
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    if (images.length + files.length > 10) {
+      toast({ title: "الحد الأقصى 10 صور", variant: "destructive" });
+      return;
+    }
+    setIsUploading(true);
+    for (const file of files) {
+      try {
+        const url = await uploadImage(file);
+        setImages(prev => [...prev, url]);
+      } catch (err: any) {
+        toast({ title: err.message ?? "فشل رفع الصورة", variant: "destructive" });
+      }
+    }
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const createMutation = useCreateCar();
   const generateDescMutation = useGenerateCarDescription();
   const estimatePriceMutation = useEstimatePrice();
@@ -96,17 +136,66 @@ export default function AddListing() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        {/* Images Upload Section (Mocked logic for UI) */}
+        {/* Images Upload Section */}
         <div className="bg-card p-6 rounded-3xl border shadow-sm space-y-4">
           <h3 className="font-bold text-lg flex items-center gap-2">
             <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">1</span>
             صور السيارة
+            <span className="text-sm text-muted-foreground font-normal mr-auto">{images.length}/10 صور (5 على الأقل)</span>
           </h3>
-          <div className="border-2 border-dashed border-border rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-secondary/20 transition-colors">
-            <ImagePlus className="w-12 h-12 text-muted-foreground mb-3" />
-            <p className="font-medium text-foreground mb-1">اضغط هنا لرفع الصور</p>
-            <p className="text-sm text-muted-foreground">أو قم بسحب وإفلات الصور هنا (أقصى حد 10 صور)</p>
-          </div>
+
+          {images.length > 0 && (
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+              {images.map((url, idx) => (
+                <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-border">
+                  <img src={url} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
+                  {idx === 0 && (
+                    <span className="absolute bottom-1 right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-md">رئيسية</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute top-1 left-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              {images.length < 10 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center hover:bg-secondary/20 transition-colors disabled:opacity-50"
+                >
+                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /> : <ImagePlus className="w-6 h-6 text-muted-foreground" />}
+                </button>
+              )}
+            </div>
+          )}
+
+          {images.length === 0 && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="w-full border-2 border-dashed border-border rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:bg-secondary/20 transition-colors disabled:opacity-50"
+            >
+              {isUploading
+                ? <><Loader2 className="w-10 h-10 animate-spin text-primary mb-3" /><p className="text-sm text-muted-foreground">جارٍ التحقق من الصورة...</p></>
+                : <><ImagePlus className="w-12 h-12 text-muted-foreground mb-3" /><p className="font-medium text-foreground mb-1">اضغط هنا لرفع الصور</p><p className="text-sm text-muted-foreground">يُقبل صور السيارات فقط · أقصى حد 10 صور</p></>
+              }
+            </button>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
 
         {/* Basic Details */}
