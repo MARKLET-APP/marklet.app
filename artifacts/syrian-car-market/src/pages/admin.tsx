@@ -29,6 +29,13 @@ export default function AdminDashboard() {
     enabled: user?.role === 'admin',
   });
 
+  type PendingCar = { id: number; brand: string; model: string; year: number; price: number; city: string; province: string; status: string; createdAt: string; sellerName: string; sellerPhone: string | null };
+  const { data: pendingCars, isLoading: loadingPending, refetch: refetchPending } = useQuery<PendingCar[]>({
+    queryKey: ["/admin/pending-cars"],
+    queryFn: () => api.admin.pendingCars(),
+    enabled: user?.role === 'admin',
+  });
+
   const updateUserMutation = useAdminUpdateUser();
   const deleteUserMutation = useAdminDeleteUser();
   const deleteCarMutation = useAdminDeleteCar();
@@ -88,11 +95,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleCarStatus = async (id: number, status: "approved" | "rejected") => {
+  const handleCarStatus = async (id: number, status: "approved" | "rejected", fromPending = false) => {
     try {
       await api.admin.updateCarStatus(id, status);
       toast({ title: status === "approved" ? "تمت الموافقة على الإعلان" : "تم رفض الإعلان" });
       refetchCars();
+      refetchPending();
     } catch {
       toast({ title: "حدث خطأ", variant: "destructive" });
     }
@@ -142,9 +150,17 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="users" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-3 mb-8 h-14 bg-muted/50 rounded-xl p-1">
+        <TabsList className="grid w-full grid-cols-4 mb-8 h-14 bg-muted/50 rounded-xl p-1">
           <TabsTrigger value="users" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Users className="w-4 h-4 ml-2" /> المستخدمين
+          </TabsTrigger>
+          <TabsTrigger value="review" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
+            <AlertTriangle className="w-4 h-4 ml-2 text-amber-500" /> مراجعة
+            {(pendingCars?.length ?? 0) > 0 && (
+              <span className="absolute -top-1 -left-1 bg-amber-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {pendingCars!.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="listings" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Car className="w-4 h-4 ml-2" /> الإعلانات
@@ -214,6 +230,80 @@ export default function AdminDashboard() {
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Review Tab — pending cars only */}
+        <TabsContent value="review" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b flex justify-between items-center bg-amber-50 dark:bg-amber-950/20">
+            <div>
+              <h2 className="text-xl font-bold">إعلانات بانتظار المراجعة</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {loadingPending ? "جارٍ التحميل..." : `${pendingCars?.length ?? 0} إعلان معلق`}
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetchPending()}>
+              <RefreshCw className="w-4 h-4 ml-2" /> تحديث
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="text-right">المركبة</TableHead>
+                  <TableHead className="text-right">السنة</TableHead>
+                  <TableHead className="text-right">السعر</TableHead>
+                  <TableHead className="text-right">البائع</TableHead>
+                  <TableHead className="text-right">الهاتف</TableHead>
+                  <TableHead className="text-right">التاريخ</TableHead>
+                  <TableHead className="text-center">إجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingPending ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : !pendingCars?.length ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-16">
+                      <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                      <p className="text-muted-foreground font-medium">لا يوجد إعلانات معلقة — كل شيء تمت مراجعته</p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  pendingCars.map((car) => (
+                    <TableRow key={car.id} className="hover:bg-amber-50/50 dark:hover:bg-amber-950/10">
+                      <TableCell className="font-bold">{car.brand} {car.model}</TableCell>
+                      <TableCell>{car.year}</TableCell>
+                      <TableCell dir="ltr" className="text-right">{car.price.toLocaleString('ar-SY')} ل.س</TableCell>
+                      <TableCell>{car.sellerName}</TableCell>
+                      <TableCell dir="ltr" className="text-right text-sm text-muted-foreground">{car.sellerPhone ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(car.createdAt).toLocaleDateString('ar-SY')}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            size="sm"
+                            className="h-9 bg-green-500 hover:bg-green-600 text-white gap-1.5"
+                            onClick={() => handleCarStatus(car.id, 'approved')}
+                          >
+                            <CheckCircle className="w-4 h-4" /> قبول
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 border-red-400 text-red-600 hover:bg-red-50 gap-1.5"
+                            onClick={() => handleCarStatus(car.id, 'rejected')}
+                          >
+                            <XCircle className="w-4 h-4" /> رفض
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

@@ -89,6 +89,29 @@ router.delete("/admin/users/:id", ...guard, async (req: AuthRequest, res): Promi
   res.sendStatus(204);
 });
 
+router.get("/admin/pending-cars", ...guard, async (_req, res): Promise<void> => {
+  const cars = await db.select({
+    id: carsTable.id,
+    sellerId: carsTable.sellerId,
+    brand: carsTable.brand,
+    model: carsTable.model,
+    year: carsTable.year,
+    price: carsTable.price,
+    city: carsTable.city,
+    province: carsTable.province,
+    status: carsTable.status,
+    createdAt: carsTable.createdAt,
+    sellerName: usersTable.name,
+    sellerPhone: usersTable.phone,
+  })
+    .from(carsTable)
+    .leftJoin(usersTable, eq(carsTable.sellerId, usersTable.id))
+    .where(eq(carsTable.status, "pending"))
+    .orderBy(desc(carsTable.createdAt));
+
+  res.json(cars.map(c => ({ ...c, price: Number(c.price), sellerName: c.sellerName ?? "مجهول" })));
+});
+
 router.get("/admin/cars", ...guard, async (_req, res): Promise<void> => {
   const cars = await db.select({
     id: carsTable.id,

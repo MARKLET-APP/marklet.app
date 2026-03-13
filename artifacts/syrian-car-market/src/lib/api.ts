@@ -89,6 +89,10 @@ export const api = {
       apiRequest<{ usersCount: number; listingsCount: number; missingCarsCount: number }>(
         "/api/admin/dashboard"
       ),
+    pendingCars: () =>
+      apiRequest<Array<{ id: number; brand: string; model: string; year: number; price: number; city: string; province: string; status: string; createdAt: string; sellerName: string; sellerPhone: string | null }>>(
+        "/api/admin/pending-cars"
+      ),
     updateCarStatus: (id: number, status: "pending" | "approved" | "rejected") =>
       apiRequest(`/api/admin/cars/${id}/status`, "PATCH", { status }),
   },
