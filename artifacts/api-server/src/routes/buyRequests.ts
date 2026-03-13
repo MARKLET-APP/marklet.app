@@ -29,31 +29,26 @@ router.get("/buy-requests", async (req, res): Promise<void> => {
   res.json(requests);
 });
 
-router.post("/buy-requests", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+async function createBuyRequest(req: AuthRequest, res: any): Promise<void> {
   const { brand, model, minYear, maxYear, maxPrice, city, paymentType, description } = req.body;
 
-  if (!maxPrice) {
-    res.status(400).json({ error: "maxPrice is required" });
-    return;
-  }
+  await db.insert(buyRequestsTable).values({
+    userId: req.user!.id,
+    brand: brand ?? null,
+    model: model ?? null,
+    minYear: minYear ? Number(minYear) : null,
+    maxYear: maxYear ? Number(maxYear) : null,
+    maxPrice: maxPrice ? Number(maxPrice) : null,
+    city: city ?? null,
+    paymentType: paymentType ?? null,
+    description: description ?? null,
+  });
 
-  const [created] = await db
-    .insert(buyRequestsTable)
-    .values({
-      userId: req.user!.id,
-      brand: brand ?? null,
-      model: model ?? null,
-      minYear: minYear ? Number(minYear) : null,
-      maxYear: maxYear ? Number(maxYear) : null,
-      maxPrice: Number(maxPrice),
-      city: city ?? null,
-      paymentType: paymentType ?? null,
-      description: description ?? null,
-    })
-    .returning();
+  res.status(201).json({ success: true, message: "تم نشر طلب الشراء" });
+}
 
-  res.status(201).json(created);
-});
+router.post("/buy-requests", authMiddleware, createBuyRequest);
+router.post("/buy-request", authMiddleware, createBuyRequest);
 
 router.get("/buy-requests/mine", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const requests = await db

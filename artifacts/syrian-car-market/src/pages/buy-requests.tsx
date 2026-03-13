@@ -78,18 +78,19 @@ export default function BuyRequests() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/buy-requests", {
+      const res = await fetch("/api/buy-request", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           ...form,
           minYear: form.minYear ? Number(form.minYear) : undefined,
           maxYear: form.maxYear ? Number(form.maxYear) : undefined,
-          maxPrice: Number(form.maxPrice),
+          maxPrice: form.maxPrice ? Number(form.maxPrice) : undefined,
         }),
       });
-      if (!res.ok) throw new Error();
-      toast({ title: "تم نشر طلبك بنجاح" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "error");
+      toast({ title: data.message ?? "تم نشر طلبك بنجاح" });
       setOpen(false);
       setForm({ brand: "", model: "", minYear: "", maxYear: "", maxPrice: "", city: "", paymentType: "", description: "" });
       fetchRequests();
