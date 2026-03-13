@@ -16,6 +16,11 @@ import Chat from "@/pages/chat";
 import Admin from "@/pages/admin";
 import Favorites from "@/pages/favorites";
 import BuyRequests from "@/pages/buy-requests";
+import CarPartsPage from "@/pages/car-parts";
+import JunkCarsPage from "@/pages/junk-cars";
+import MissingCarsPage from "@/pages/missing-cars";
+import InspectionsPage from "@/pages/inspections";
+import SupportPage from "@/pages/support";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -43,6 +48,11 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/favorites" component={Favorites} />
         <Route path="/buy-requests" component={BuyRequests} />
+        <Route path="/car-parts" component={CarPartsPage} />
+        <Route path="/junk-cars" component={JunkCarsPage} />
+        <Route path="/missing-cars" component={MissingCarsPage} />
+        <Route path="/inspections" component={InspectionsPage} />
+        <Route path="/support" component={SupportPage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

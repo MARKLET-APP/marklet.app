@@ -29,6 +29,7 @@ export function Header() {
           <Link href="/search" className="text-sm font-semibold hover:text-primary transition-colors">البحث</Link>
           <Link href="/vehicle-info" className="text-sm font-semibold hover:text-primary transition-colors">تقرير مركبة</Link>
           <Link href="/buy-requests" className="text-sm font-semibold hover:text-primary transition-colors">طلبات الشراء</Link>
+          <Link href="/support" className="text-sm font-semibold hover:text-primary transition-colors">تواصل معنا</Link>
           {user?.role === 'admin' && (
             <Link href="/admin" className="text-sm font-semibold text-accent hover:text-accent/80 transition-colors">لوحة التحكم</Link>
           )}

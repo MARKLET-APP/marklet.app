@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, carsTable, usersTable, imagesTable, favoritesTable } from "@workspace/db";
+import { db, carsTable, usersTable, imagesTable, favoritesTable, buyRequestsTable } from "@workspace/db";
 import { eq, and, gte, lte, ilike, desc, asc, sql, count, or } from "drizzle-orm";
 import { CreateCarBody, UpdateCarBody, AddCarImageBody, ListCarsQueryParams } from "@workspace/api-zod";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -298,7 +298,9 @@ router.post("/cars", authMiddleware, async (req: AuthRequest, res): Promise<void
   }
 
   const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
-  
+
+  matchListing(car).catch(() => {});
+
   res.status(201).json({
     ...car,
     price: Number(car.price),
@@ -307,6 +309,19 @@ router.post("/cars", authMiddleware, async (req: AuthRequest, res): Promise<void
     primaryImage: images?.[0] ?? null,
   });
 });
+
+async function matchListing(listing: { brand: string; model: string; year: number; city: string; id: number }) {
+  const matches = await db.select().from(buyRequestsTable).where(
+    and(
+      eq(buyRequestsTable.brand, listing.brand),
+      eq(buyRequestsTable.model, listing.model),
+      eq(buyRequestsTable.city, listing.city),
+    )
+  );
+  if (matches.length > 0) {
+    console.log(`[matchListing] Car #${listing.id} (${listing.brand} ${listing.model}) matched ${matches.length} buy request(s)`);
+  }
+}
 
 router.patch("/cars/:id", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);

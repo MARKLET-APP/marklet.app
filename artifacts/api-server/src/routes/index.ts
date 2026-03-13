@@ -15,6 +15,11 @@ import promotionsRouter from "./promotions";
 import adViewsRouter from "./adViews";
 import offersRouter from "./offers";
 import buyRequestsRouter from "./buyRequests";
+import carPartsRouter from "./carParts";
+import junkCarsRouter from "./junkCars";
+import inspectionsRouter from "./inspections";
+import supportMessagesRouter from "./supportMessages";
+import missingCarsRouter from "./missingCars";
 
 const router: IRouter = Router();
 
@@ -34,5 +39,10 @@ router.use(promotionsRouter);
 router.use(adViewsRouter);
 router.use(offersRouter);
 router.use(buyRequestsRouter);
+router.use(carPartsRouter);
+router.use(junkCarsRouter);
+router.use(inspectionsRouter);
+router.use(supportMessagesRouter);
+router.use(missingCarsRouter);
 
 export default router;

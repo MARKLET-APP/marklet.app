@@ -10,11 +10,16 @@ export default function Home() {
   const { data: latestCars, isLoading: loadingLatest } = useListCars({ limit: 6, sortBy: 'createdAt:desc' });
 
   const categories = [
-    { id: 'sedan', name: 'سيدان', icon: '🚗' },
-    { id: 'suv', name: 'دفع رباعي', icon: '🚙' },
-    { id: 'pickup', name: 'بيك أب', icon: '🛻' },
-    { id: 'luxury', name: 'فاخرة', icon: '✨' },
-    { id: 'electric', name: 'كهربائية', icon: '⚡' },
+    { id: 'new', name: 'سيارات جديدة', icon: '🚗', href: '/search?saleType=new' },
+    { id: 'used', name: 'سيارات مستعملة', icon: '🚙', href: '/search?saleType=used' },
+    { id: 'rent', name: 'سيارات للإيجار', icon: '🔑', href: '/search?saleType=rent' },
+    { id: 'motorcycles', name: 'دراجات نارية', icon: '🏍️', href: '/search?category=motorcycle' },
+    { id: 'plates', name: 'أرقام اللوحات', icon: '🔢', href: '/search?category=plates' },
+    { id: 'parts', name: 'قطع سيارات', icon: '🔧', href: '/car-parts' },
+    { id: 'junk', name: 'سيارات خردة', icon: '🔩', href: '/junk-cars' },
+    { id: 'inspect', name: 'افحص سيارتك', icon: '🛡️', href: '/inspections' },
+    { id: 'missing', name: 'سيارة مفقودة', icon: '🔍', href: '/missing-cars' },
+    { id: 'buy-request', name: 'طلب شراء', icon: '🛒', href: '/buy-requests' },
   ];
 
   return (
@@ -67,7 +72,7 @@ export default function Home() {
       </section>
 
       {/* Trust Badges */}
-      <section className="py-8 bg-secondary/30 border-b border-border/50">
+      <section className="py-8 bg-secondary/20 border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-8 md:gap-16">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
@@ -104,7 +109,7 @@ export default function Home() {
         <div className="flex justify-between items-end mb-8">
           <div>
             <h2 className="text-2xl font-bold text-foreground">تصفح حسب الفئة</h2>
-            <p className="text-muted-foreground mt-1">اختر الشكل الذي يناسب احتياجاتك</p>
+            <p className="text-muted-foreground mt-1">كل ما تحتاجه في عالم السيارات في مكان واحد</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -116,7 +121,7 @@ export default function Home() {
               key={cat.id}
             >
               <Link 
-                href={`/search?category=${cat.id}`}
+                href={cat.href}
                 className="flex flex-col items-center justify-center p-6 bg-card border rounded-2xl hover-elevate group"
               >
                 <span className="text-4xl mb-3 group-hover:scale-110 transition-transform">{cat.icon}</span>

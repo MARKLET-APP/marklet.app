@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
+import { TopBanner } from "@/components/TopBanner";
 import { useAuthStore } from "@/lib/auth";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -31,6 +32,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-16 sm:pb-0">
+      <TopBanner />
       <Header />
       <main className="flex-1 w-full max-w-7xl mx-auto">
         {children}
