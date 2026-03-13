@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 const QUERY_KEY = ["buy-requests"];
 
 export default function BuyRequests() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -50,21 +51,11 @@ export default function BuyRequests() {
 
   const { data: requests = [], isLoading } = useQuery<BuyRequest[]>({
     queryKey: QUERY_KEY,
-    queryFn: () =>
-      fetch("/api/buy-requests").then((res) => res.json()),
+    queryFn: () => api.buyRequests.list(),
   });
 
   const createMutation = useMutation({
-    mutationFn: async (body: object) => {
-      const res = await fetch("/api/buy-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "error");
-      return data;
-    },
+    mutationFn: (body: object) => api.buyRequests.create(body),
     onSuccess: (data) => {
       toast({ title: data.message ?? "تم نشر طلبك بنجاح" });
       setOpen(false);
@@ -77,12 +68,7 @@ export default function BuyRequests() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await fetch(`/api/buy-requests/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    },
+    mutationFn: (id: number) => api.buyRequests.delete(id),
     onSuccess: () => {
       toast({ title: "تم حذف الطلب" });
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });

@@ -3,31 +3,16 @@ import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
 import { TopBanner } from "@/components/TopBanner";
 import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { token, setAuth } = useAuthStore();
 
   useEffect(() => {
     if (!token) return;
-    // Validate token by fetching current user
-    fetch("/api/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) {
-          useAuthStore.getState().logout();
-          return;
-        }
-        return res.json();
-      })
-      .then((user) => {
-        if (user) {
-          setAuth(user, token);
-        }
-      })
-      .catch(() => {
-        // silently fail
-      });
+    api.auth.me()
+      .then((user) => { if (user) setAuth(user, token); })
+      .catch(() => { useAuthStore.getState().logout(); });
   }, [token, setAuth]);
 
   return (

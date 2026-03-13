@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,7 +20,7 @@ type InspectionCenter = {
 const QUERY_KEY = ["inspection-centers"];
 
 export default function InspectionsPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -29,20 +30,11 @@ export default function InspectionsPage() {
 
   const { data: centers = [], isLoading } = useQuery<InspectionCenter[]>({
     queryKey: QUERY_KEY,
-    queryFn: () => fetch("/api/inspection-centers").then(r => r.json()),
+    queryFn: () => api.inspections.listCenters(),
   });
 
   const bookMutation = useMutation({
-    mutationFn: async (body: object) => {
-      const res = await fetch("/api/inspections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "error");
-      return data;
-    },
+    mutationFn: (body: object) => api.inspections.book(body),
     onSuccess: (data) => {
       toast({ title: data.message ?? "تم حجز الموعد" });
       setBookingCenter(null);

@@ -6,7 +6,7 @@ import {
   useGetSettings, useUpdateSettings
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Redirect } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export default function AdminDashboard() {
   const { data: settings, isLoading: loadingSettings } = useGetSettings({ query: { enabled: user?.role === 'admin' } });
   const { data: dashboard } = useQuery<{ usersCount: number; listingsCount: number; missingCarsCount: number }>({
     queryKey: ["/admin/dashboard"],
-    queryFn: () => apiRequest("GET", "/api/admin/dashboard"),
+    queryFn: () => api.admin.dashboard(),
     enabled: user?.role === 'admin',
   });
 

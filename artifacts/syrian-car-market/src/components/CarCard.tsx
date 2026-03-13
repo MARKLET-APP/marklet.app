@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { MapPin, Settings, Calendar, Gauge, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
 import type { Car } from "@workspace/api-client-react";
 
 export function CarCard({ car }: { car: Car }) {
@@ -12,19 +13,12 @@ export function CarCard({ car }: { car: Car }) {
 
   useEffect(() => {
     // تسجيل المشاهدة عند تحميل الإعلان
-    fetch("/api/ad/view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ car_id: car.id, user_id: user?.id ?? null }),
-    });
+    api.ads.recordView(car.id, user?.id ?? null).catch(() => {});
 
     // جلب عدد المشاهدات والوسم
-    fetch(`/api/ad/${car.id}/views`)
-      .then((res) => res.json())
-      .then((data) => {
-        setViews(data.views);
-        setTag(data.tag);
-      });
+    api.ads.getViews(car.id)
+      .then((data) => { setViews(data.views); setTag(data.tag); })
+      .catch(() => {});
   }, [car.id]);
 
   const formattedPrice = new Intl.NumberFormat("ar-SY", {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,7 @@ type MissingCar = {
 const QUERY_KEY = ["missing-cars"];
 
 export default function MissingCarsPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -35,20 +36,11 @@ export default function MissingCarsPage() {
 
   const { data: cars = [], isLoading } = useQuery<MissingCar[]>({
     queryKey: QUERY_KEY,
-    queryFn: () => fetch("/api/missing-cars").then(r => r.json()),
+    queryFn: () => api.missingCars.list(),
   });
 
   const createMutation = useMutation({
-    mutationFn: async (body: object) => {
-      const res = await fetch("/api/missing-cars", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error();
-      return data;
-    },
+    mutationFn: (body: object) => api.missingCars.create(body),
     onSuccess: (data) => {
       toast({ title: data.message ?? "تم نشر البلاغ" });
       setOpen(false);
@@ -59,16 +51,12 @@ export default function MissingCarsPage() {
   });
 
   const foundMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await fetch(`/api/missing-cars/${id}/found`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` } });
-    },
+    mutationFn: (id: number) => api.missingCars.markFound(id),
     onSuccess: () => { toast({ title: "تم تحديث الحالة: تم العثور على السيارة" }); queryClient.invalidateQueries({ queryKey: QUERY_KEY }); },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await fetch(`/api/missing-cars/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-    },
+    mutationFn: (id: number) => api.missingCars.delete(id),
     onSuccess: () => { toast({ title: "تم الحذف" }); queryClient.invalidateQueries({ queryKey: QUERY_KEY }); },
   });
 

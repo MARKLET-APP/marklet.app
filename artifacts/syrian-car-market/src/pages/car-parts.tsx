@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,7 @@ type CarPart = {
 const QUERY_KEY = (q: string) => ["car-parts", q];
 
 export default function CarPartsPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -38,19 +39,11 @@ export default function CarPartsPage() {
 
   const { data: parts = [], isLoading } = useQuery<CarPart[]>({
     queryKey: QUERY_KEY(q),
-    queryFn: () => fetch(`/api/car-parts${q ? `?q=${encodeURIComponent(q)}` : ""}`).then(r => r.json()),
+    queryFn: () => api.carParts.list(q),
   });
 
   const createMutation = useMutation({
-    mutationFn: async (body: object) => {
-      const res = await fetch("/api/car-parts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error();
-      return res.json();
-    },
+    mutationFn: (body: object) => api.carParts.create(body),
     onSuccess: () => {
       toast({ title: "تم نشر القطعة بنجاح" });
       setOpen(false);
@@ -61,9 +54,7 @@ export default function CarPartsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await fetch(`/api/car-parts/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-    },
+    mutationFn: (id: number) => api.carParts.delete(id),
     onSuccess: () => {
       toast({ title: "تم الحذف" });
       queryClient.invalidateQueries({ queryKey: QUERY_KEY(q) });

@@ -1,5 +1,6 @@
 import { useRoute } from "wouter";
 import { useGetCar } from "@workspace/api-client-react";
+import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { MapPin, Settings, Calendar, Gauge, Fuel, Phone, Heart, Share2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,9 +20,9 @@ export default function CarDetail() {
 
   useEffect(() => {
     if (!carId) return;
-    fetch(`/api/cars/${carId}/similar`)
-      .then((res) => res.json())
-      .then((data) => setSimilarCars(Array.isArray(data) ? data : []));
+    api.cars.similar(carId)
+      .then((data) => setSimilarCars(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, [carId]);
 
   const shareCar = (carId: number) => {

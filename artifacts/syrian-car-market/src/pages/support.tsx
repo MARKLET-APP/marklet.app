@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { HeadphonesIcon, MessageSquare, Lightbulb, AlertCircle, CheckCircle } from "lucide-react";
@@ -12,7 +13,7 @@ const TYPES = [
 ];
 
 export default function SupportPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
 
   const [type, setType] = useState("دعم فني");
@@ -21,16 +22,7 @@ export default function SupportPage() {
   const [done, setDone] = useState(false);
 
   const supportMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/support", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type, message, userId: user?.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error();
-      return data;
-    },
+    mutationFn: () => api.support.send({ type, message, userId: user?.id }),
     onSuccess: (data) => {
       toast({ title: data.message ?? "تم الإرسال" });
       setMessage("");
@@ -40,16 +32,7 @@ export default function SupportPage() {
   });
 
   const feedbackMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ feedback, userId: user?.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error();
-      return data;
-    },
+    mutationFn: () => api.support.feedback({ feedback, userId: user?.id }),
     onSuccess: (data) => {
       toast({ title: data.message ?? "شكراً على ملاحظتك" });
       setFeedback("");
