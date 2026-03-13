@@ -4,8 +4,8 @@ import { Request, Response, NextFunction } from "express";
 
 const JWT_SECRET = process.env.JWT_SECRET || "syrian-car-market-secret-key-2024";
 
-export function hashPassword(password: string): string {
-  return bcrypt.hashSync(password, 10);
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
 }
 
 export function comparePasswords(password: string, hash: string): boolean {

@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
-import { hashPassword, comparePasswords, generateToken, authMiddleware, type AuthRequest } from "../lib/auth.js";
+import bcrypt from "bcryptjs";
+import { comparePasswords, generateToken, authMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
@@ -30,12 +31,12 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
-  const hashedPassword = hashPassword(password);
+  const hash = await bcrypt.hash(password, 10);
   const [user] = await db.insert(usersTable).values({
     name,
     email: email ?? null,
     phone: phone ?? null,
-    password: hashedPassword,
+    password: hash,
     role: role ?? "buyer",
   }).returning();
 
@@ -153,12 +154,12 @@ router.post("/register", async (req, res): Promise<void> => {
     return;
   }
 
-  const hashedPassword = hashPassword(password);
+  const hash = await bcrypt.hash(password, 10);
   const [user] = await db.insert(usersTable).values({
     name,
     email: email ?? null,
     phone: phone ?? null,
-    password: hashedPassword,
+    password: hash,
     role: role ?? "buyer",
   }).returning();
 
