@@ -1,14 +1,14 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, imagesTable, settingsTable } from "@workspace/db";
+import { db, usersTable, carsTable, settingsTable } from "@workspace/db";
 import { eq, desc, count } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
-router.use(authMiddleware, adminMiddleware);
+const guard = [authMiddleware, adminMiddleware];
 
-router.get("/admin/users", async (_req, res): Promise<void> => {
+router.get("/admin/users", ...guard, async (_req, res): Promise<void> => {
   const users = await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
   res.json(users.map(u => ({
     id: u.id,
@@ -25,7 +25,7 @@ router.get("/admin/users", async (_req, res): Promise<void> => {
   })));
 });
 
-router.patch("/admin/users/:id", async (req: AuthRequest, res): Promise<void> => {
+router.patch("/admin/users/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
@@ -65,7 +65,7 @@ router.patch("/admin/users/:id", async (req: AuthRequest, res): Promise<void> =>
   });
 });
 
-router.delete("/admin/users/:id", async (req: AuthRequest, res): Promise<void> => {
+router.delete("/admin/users/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
@@ -76,7 +76,7 @@ router.delete("/admin/users/:id", async (req: AuthRequest, res): Promise<void> =
   res.sendStatus(204);
 });
 
-router.get("/admin/cars", async (_req, res): Promise<void> => {
+router.get("/admin/cars", ...guard, async (_req, res): Promise<void> => {
   const cars = await db.select({
     id: carsTable.id,
     sellerId: carsTable.sellerId,
@@ -114,7 +114,7 @@ router.get("/admin/cars", async (_req, res): Promise<void> => {
   });
 });
 
-router.delete("/admin/cars/:id", async (req: AuthRequest, res): Promise<void> => {
+router.delete("/admin/cars/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
@@ -125,7 +125,7 @@ router.delete("/admin/cars/:id", async (req: AuthRequest, res): Promise<void> =>
   res.sendStatus(204);
 });
 
-router.get("/admin/settings", async (_req, res): Promise<void> => {
+router.get("/admin/settings", ...guard, async (_req, res): Promise<void> => {
   let [settings] = await db.select().from(settingsTable).limit(1);
   if (!settings) {
     [settings] = await db.insert(settingsTable).values({}).returning();
@@ -137,7 +137,7 @@ router.get("/admin/settings", async (_req, res): Promise<void> => {
   });
 });
 
-router.patch("/admin/settings", async (req: AuthRequest, res): Promise<void> => {
+router.patch("/admin/settings", ...guard, async (req: AuthRequest, res): Promise<void> => {
   const parsed = UpdateSettingsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -145,7 +145,7 @@ router.patch("/admin/settings", async (req: AuthRequest, res): Promise<void> => 
   }
 
   let [existing] = await db.select().from(settingsTable).limit(1);
-  
+
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (updateData.featuredListingPrice !== undefined) updateData.featuredListingPrice = String(updateData.featuredListingPrice);
   if (updateData.premiumSubscriptionPrice !== undefined) updateData.premiumSubscriptionPrice = String(updateData.premiumSubscriptionPrice);
