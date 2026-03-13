@@ -1,10 +1,12 @@
 import { useRoute } from "wouter";
 import { useGetCar } from "@workspace/api-client-react";
+import { useEffect, useState } from "react";
 import { MapPin, Settings, Calendar, Gauge, Fuel, Phone, Heart, Share2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
+import { CarCard } from "@/components/CarCard";
 
 export default function CarDetail() {
   const [, params] = useRoute("/cars/:id");
@@ -12,6 +14,15 @@ export default function CarDetail() {
   const { data: car, isLoading, isError } = useGetCar(carId);
   const { user } = useAuthStore();
   const { toast } = useToast();
+
+  const [similarCars, setSimilarCars] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!carId) return;
+    fetch(`/api/cars/${carId}/similar`)
+      .then((res) => res.json())
+      .then((data) => setSimilarCars(Array.isArray(data) ? data : []));
+  }, [carId]);
 
   const shareCar = (carId: number) => {
     const url = `${window.location.origin}/cars/${carId}`;
@@ -25,6 +36,7 @@ export default function CarDetail() {
   const formattedPrice = new Intl.NumberFormat('ar-SY', { style: 'currency', currency: 'SYP', maximumFractionDigits: 0 }).format(car.price);
 
   return (
+    <>
     <div className="py-8 px-4 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
       {/* Left Column: Images & Main Info */}
       <div className="flex-1 space-y-6">
@@ -131,6 +143,18 @@ export default function CarDetail() {
         </div>
       </div>
     </div>
+
+    {similarCars.length > 0 && (
+      <div className="px-4 max-w-6xl mx-auto pb-12">
+        <h2 className="text-2xl font-bold mb-6 text-foreground">سيارات مشابهة</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {similarCars.map((c) => (
+            <CarCard key={c.id} car={c} />
+          ))}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

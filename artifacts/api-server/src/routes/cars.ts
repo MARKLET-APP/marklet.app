@@ -162,6 +162,63 @@ router.get("/cars/featured", async (_req, res): Promise<void> => {
   res.json(enriched);
 });
 
+router.get("/cars/:id/similar", async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid car ID" });
+    return;
+  }
+
+  const [car] = await db.select().from(carsTable).where(eq(carsTable.id, id)).limit(1);
+  if (!car) {
+    res.status(404).json({ error: "Car not found" });
+    return;
+  }
+
+  const similarCars = await db.select({
+    id: carsTable.id,
+    sellerId: carsTable.sellerId,
+    brand: carsTable.brand,
+    model: carsTable.model,
+    year: carsTable.year,
+    price: carsTable.price,
+    mileage: carsTable.mileage,
+    fuelType: carsTable.fuelType,
+    transmission: carsTable.transmission,
+    province: carsTable.province,
+    city: carsTable.city,
+    saleType: carsTable.saleType,
+    category: carsTable.category,
+    description: carsTable.description,
+    isFeatured: carsTable.isFeatured,
+    isHighlighted: carsTable.isHighlighted,
+    isActive: carsTable.isActive,
+    viewCount: carsTable.viewCount,
+    createdAt: carsTable.createdAt,
+    sellerName: usersTable.name,
+    sellerPhoto: usersTable.profilePhoto,
+  })
+    .from(carsTable)
+    .leftJoin(usersTable, eq(carsTable.sellerId, usersTable.id))
+    .where(
+      and(
+        eq(carsTable.brand, car.brand),
+        gte(sql`${carsTable.price}::numeric`, Number(car.price) - 2000),
+        lte(sql`${carsTable.price}::numeric`, Number(car.price) + 2000),
+        eq(carsTable.isActive, true),
+        sql`${carsTable.id} != ${id}`
+      )
+    )
+    .limit(6);
+
+  const enriched = await Promise.all(similarCars.map(async (c) => {
+    const [img] = await db.select().from(imagesTable).where(eq(imagesTable.carId, c.id)).limit(1);
+    return { ...c, price: Number(c.price), sellerName: c.sellerName ?? "Unknown", primaryImage: img?.imageUrl ?? null };
+  }));
+
+  res.json(enriched);
+});
+
 router.get("/cars/:id", async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {
