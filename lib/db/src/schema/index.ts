@@ -9,3 +9,4 @@ export * from "./vehicleReports";
 export * from "./settings";
 export * from "./promotions";
 export * from "./adViews";
+export * from "./offers";
