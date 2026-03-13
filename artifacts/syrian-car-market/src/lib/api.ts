@@ -2,7 +2,7 @@ function getToken(): string | null {
   return localStorage.getItem("scm_token");
 }
 
-export async function apiRequest<T = unknown>(method: string, url: string, body?: unknown): Promise<T> {
+export async function apiRequest<T = unknown>(url: string, method = "GET", body?: unknown): Promise<T> {
   const token = getToken();
 
   const res = await fetch(url, {
@@ -32,63 +32,61 @@ export const api = {
   auth: {
     me: () =>
       apiRequest<{ id: number; name: string; email: string; role: string; profilePhoto?: string }>(
-        "GET",
         "/api/auth/me"
       ),
   },
 
   ads: {
     recordView: (carId: number, userId: number | null) =>
-      apiRequest("POST", "/api/ad/view", { car_id: carId, user_id: userId }),
+      apiRequest("/api/ad/view", "POST", { car_id: carId, user_id: userId }),
     getViews: (carId: number) =>
-      apiRequest<{ views: number; tag: string }>("GET", `/api/ad/${carId}/views`),
+      apiRequest<{ views: number; tag: string }>(`/api/ad/${carId}/views`),
   },
 
   cars: {
     similar: (carId: number) =>
-      apiRequest<unknown[]>("GET", `/api/cars/${carId}/similar`),
+      apiRequest<unknown[]>(`/api/cars/${carId}/similar`),
   },
 
   buyRequests: {
-    list: () => apiRequest<unknown[]>("GET", "/api/buy-requests"),
-    create: (data: object) => apiRequest("POST", "/api/buy-request", data),
-    delete: (id: number) => apiRequest("DELETE", `/api/buy-requests/${id}`),
+    list: () => apiRequest<unknown[]>("/api/buy-requests"),
+    create: (data: object) => apiRequest("/api/buy-request", "POST", data),
+    delete: (id: number) => apiRequest(`/api/buy-requests/${id}`, "DELETE"),
   },
 
   carParts: {
     list: (q?: string) =>
-      apiRequest<unknown[]>("GET", `/api/car-parts${q ? `?q=${encodeURIComponent(q)}` : ""}`),
-    create: (data: object) => apiRequest("POST", "/api/car-parts", data),
-    delete: (id: number) => apiRequest("DELETE", `/api/car-parts/${id}`),
+      apiRequest<unknown[]>(`/api/car-parts${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+    create: (data: object) => apiRequest("/api/car-parts", "POST", data),
+    delete: (id: number) => apiRequest(`/api/car-parts/${id}`, "DELETE"),
   },
 
   junkCars: {
-    list: () => apiRequest<unknown[]>("GET", "/api/junk-cars"),
-    create: (data: object) => apiRequest("POST", "/api/junk-cars", data),
-    delete: (id: number) => apiRequest("DELETE", `/api/junk-cars/${id}`),
+    list: () => apiRequest<unknown[]>("/api/junk-cars"),
+    create: (data: object) => apiRequest("/api/junk-cars", "POST", data),
+    delete: (id: number) => apiRequest(`/api/junk-cars/${id}`, "DELETE"),
   },
 
   missingCars: {
-    list: () => apiRequest<unknown[]>("GET", "/api/missing-cars"),
-    create: (data: object) => apiRequest("POST", "/api/missing-cars", data),
-    markFound: (id: number) => apiRequest("PATCH", `/api/missing-cars/${id}/found`),
-    delete: (id: number) => apiRequest("DELETE", `/api/missing-cars/${id}`),
+    list: () => apiRequest<unknown[]>("/api/missing-cars"),
+    create: (data: object) => apiRequest("/api/missing-cars", "POST", data),
+    markFound: (id: number) => apiRequest(`/api/missing-cars/${id}/found`, "PATCH"),
+    delete: (id: number) => apiRequest(`/api/missing-cars/${id}`, "DELETE"),
   },
 
   support: {
-    send: (data: object) => apiRequest("POST", "/api/support", data),
-    feedback: (data: object) => apiRequest("POST", "/api/feedback", data),
+    send: (data: object) => apiRequest("/api/support", "POST", data),
+    feedback: (data: object) => apiRequest("/api/feedback", "POST", data),
   },
 
   inspections: {
-    listCenters: () => apiRequest<unknown[]>("GET", "/api/inspection-centers"),
-    book: (data: object) => apiRequest("POST", "/api/inspections", data),
+    listCenters: () => apiRequest<unknown[]>("/api/inspection-centers"),
+    book: (data: object) => apiRequest("/api/inspections", "POST", data),
   },
 
   admin: {
     dashboard: () =>
       apiRequest<{ usersCount: number; listingsCount: number; missingCarsCount: number }>(
-        "GET",
         "/api/admin/dashboard"
       ),
   },
