@@ -22,8 +22,9 @@ router.get("/cars", async (req, res): Promise<void> => {
   if (model) conditions.push(ilike(carsTable.model, `%${model}%`));
   if (minYear) conditions.push(gte(carsTable.year, minYear));
   if (maxYear) conditions.push(lte(carsTable.year, maxYear));
-  if (minPrice) conditions.push(gte(sql`${carsTable.price}::numeric`, minPrice));
-  if (maxPrice) conditions.push(lte(sql`${carsTable.price}::numeric`, maxPrice));
+  if (minPrice && maxPrice) conditions.push(sql`${carsTable.price}::numeric BETWEEN ${minPrice} AND ${maxPrice}`);
+  else if (minPrice) conditions.push(gte(sql`${carsTable.price}::numeric`, minPrice));
+  else if (maxPrice) conditions.push(lte(sql`${carsTable.price}::numeric`, maxPrice));
   if (minMileage) conditions.push(gte(carsTable.mileage, minMileage));
   if (maxMileage) conditions.push(lte(carsTable.mileage, maxMileage));
   if (province) conditions.push(eq(carsTable.province, province));
@@ -53,7 +54,7 @@ router.get("/cars", async (req, res): Promise<void> => {
   else if (sortBy === "year_desc") orderBy = desc(carsTable.year);
   else if (sortBy === "mileage_asc") orderBy = asc(carsTable.mileage);
   else if (sortBy === "views") orderBy = desc(carsTable.viewCount);
-  else orderBy = desc(carsTable.isFeatured);
+  else orderBy = desc(carsTable.createdAt);
 
   const [totalResult] = await db.select({ count: count() })
     .from(carsTable)
