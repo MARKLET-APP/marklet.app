@@ -3,6 +3,7 @@ import { useGetCar } from "@workspace/api-client-react";
 import { MapPin, Settings, Calendar, Gauge, Fuel, Phone, Heart, Share2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
 
 export default function CarDetail() {
@@ -10,6 +11,13 @@ export default function CarDetail() {
   const carId = Number(params?.id);
   const { data: car, isLoading, isError } = useGetCar(carId);
   const { user } = useAuthStore();
+  const { toast } = useToast();
+
+  const shareCar = (carId: number) => {
+    const url = `${window.location.origin}/cars/${carId}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "تم نسخ رابط السيارة", description: url });
+  };
 
   if (isLoading) return <div className="flex justify-center py-32"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   if (isError || !car) return <div className="text-center py-32 font-bold text-xl text-destructive">عذراً، لم نتمكن من العثور على هذه السيارة.</div>;
@@ -31,7 +39,7 @@ export default function CarDetail() {
               <Button size="icon" variant="secondary" className="rounded-full shadow-lg hover-elevate bg-white/80 backdrop-blur-sm text-foreground hover:text-red-500">
                 <Heart className="w-5 h-5" />
               </Button>
-              <Button size="icon" variant="secondary" className="rounded-full shadow-lg hover-elevate bg-white/80 backdrop-blur-sm text-foreground">
+              <Button size="icon" variant="secondary" onClick={() => shareCar(car.id)} className="rounded-full shadow-lg hover-elevate bg-white/80 backdrop-blur-sm text-foreground">
                 <Share2 className="w-5 h-5" />
               </Button>
             </div>
