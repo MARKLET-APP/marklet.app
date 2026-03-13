@@ -6,7 +6,7 @@ import {
   useGetSettings, useUpdateSettings
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@workspace/api-client-react";
+import { apiRequest } from "@/lib/api";
 import { Redirect } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
