@@ -464,7 +464,7 @@ export const SendMessageBody = zod.object({
  */
 export const StartConversationBody = zod.object({
   sellerId: zod.number(),
-  carId: zod.number(),
+  carId: zod.number().nullable().optional(),
 });
 
 /**

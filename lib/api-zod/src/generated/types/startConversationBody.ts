@@ -8,5 +8,5 @@
 
 export interface StartConversationBody {
   sellerId: number;
-  carId: number;
+  carId?: number | null;
 }

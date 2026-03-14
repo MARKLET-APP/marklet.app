@@ -6,7 +6,7 @@ export const conversationsTable = pgTable("conversations", {
   id: serial("id").primaryKey(),
   buyerId: integer("buyer_id").notNull(),
   sellerId: integer("seller_id").notNull(),
-  carId: integer("car_id").notNull(),
+  carId: integer("car_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

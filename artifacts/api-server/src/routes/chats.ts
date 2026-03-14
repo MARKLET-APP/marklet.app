@@ -3,7 +3,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { db, conversationsTable, messagesTable, usersTable, carsTable, imagesTable, notificationsTable, blockedUsersTable } from "@workspace/db";
-import { eq, and, or, desc, count } from "drizzle-orm";
+import { eq, and, or, desc, count, isNull } from "drizzle-orm";
 import { SendMessageBody, StartConversationBody } from "@workspace/api-zod";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
 import { getSocketServer } from "../lib/socket.js";
@@ -61,14 +61,14 @@ const audioUpload = multer({
   },
 });
 
-type ConvRow = { id: number; carId: number; buyerId: number; sellerId: number; createdAt: Date; updatedAt: Date };
+type ConvRow = { id: number; carId: number | null; buyerId: number; sellerId: number; createdAt: Date; updatedAt: Date };
 
 async function buildConvResponse(conv: ConvRow, userId: number) {
   const isBuyer = conv.buyerId === userId;
   const otherUserId = isBuyer ? conv.sellerId : conv.buyerId;
   const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserId)).limit(1);
-  const [car] = await db.select().from(carsTable).where(eq(carsTable.id, conv.carId)).limit(1);
-  const [carImg] = await db.select().from(imagesTable).where(eq(imagesTable.carId, conv.carId)).limit(1);
+  const [car] = conv.carId != null ? await db.select().from(carsTable).where(eq(carsTable.id, conv.carId)).limit(1) : [];
+  const [carImg] = conv.carId != null ? await db.select().from(imagesTable).where(eq(imagesTable.carId, conv.carId)).limit(1) : [];
   const [lastMsg] = await db.select().from(messagesTable)
     .where(eq(messagesTable.conversationId, conv.id))
     .orderBy(desc(messagesTable.createdAt)).limit(1);
@@ -106,16 +106,19 @@ router.get("/chats", authMiddleware, async (req: AuthRequest, res): Promise<void
 router.post("/chats/start", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const parsed = StartConversationBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const { sellerId, carId } = parsed.data;
+  const { sellerId, carId = null } = parsed.data;
   const buyerId = req.userId!;
   if (buyerId === sellerId) { res.status(400).json({ error: "Cannot start conversation with yourself" }); return; }
+  const carIdCondition = carId != null
+    ? eq(conversationsTable.carId, carId)
+    : isNull(conversationsTable.carId);
   const [existing] = await db.select().from(conversationsTable).where(and(
     eq(conversationsTable.buyerId, buyerId),
     eq(conversationsTable.sellerId, sellerId),
-    eq(conversationsTable.carId, carId),
+    carIdCondition,
   )).limit(1);
   if (existing) { res.status(201).json(await buildConvResponse(existing, buyerId)); return; }
-  const [conv] = await db.insert(conversationsTable).values({ buyerId, sellerId, carId }).returning();
+  const [conv] = await db.insert(conversationsTable).values({ buyerId, sellerId, carId: carId ?? null }).returning();
   res.status(201).json(await buildConvResponse(conv, buyerId));
 });
 
