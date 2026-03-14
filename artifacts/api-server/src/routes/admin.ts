@@ -117,19 +117,31 @@ router.get("/admin/pending-cars", ...guard, async (_req, res): Promise<void> => 
     .where(eq(carsTable.status, "pending"))
     .orderBy(desc(carsTable.createdAt));
 
-  // Fetch primary images for all pending cars
-  const carIds = cars.map(c => c.id);
-  const images = carIds.length > 0
-    ? await db.select().from(imagesTable).where(eq(imagesTable.isPrimary, true))
+  // Fetch ALL images for all pending cars (primary first)
+  const allImages = cars.length > 0
+    ? await db.select({
+        carId: imagesTable.carId,
+        imageUrl: imagesTable.imageUrl,
+        isPrimary: imagesTable.isPrimary,
+      }).from(imagesTable).orderBy(desc(imagesTable.isPrimary))
     : [];
-  const imageMap = new Map(images.map(img => [img.carId, img.imageUrl]));
+  // Group images by carId
+  const imagesByCarId = new Map<number, string[]>();
+  for (const img of allImages) {
+    if (!imagesByCarId.has(img.carId)) imagesByCarId.set(img.carId, []);
+    imagesByCarId.get(img.carId)!.push(img.imageUrl);
+  }
 
-  res.json(cars.map(c => ({
-    ...c,
-    price: Number(c.price),
-    sellerName: c.sellerName ?? "مجهول",
-    primaryImage: imageMap.get(c.id) ?? null,
-  })));
+  res.json(cars.map(c => {
+    const imgs = imagesByCarId.get(c.id) ?? [];
+    return {
+      ...c,
+      price: Number(c.price),
+      sellerName: c.sellerName ?? "مجهول",
+      primaryImage: imgs[0] ?? null,
+      images: imgs,
+    };
+  }));
 });
 
 router.get("/admin/cars", ...guard, async (_req, res): Promise<void> => {

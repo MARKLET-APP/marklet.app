@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -35,9 +36,11 @@ export default function AdminDashboard() {
     condition: string | null; color: string | null; description: string | null;
     city: string; province: string; saleType: string | null; category: string | null;
     status: string; createdAt: string; sellerName: string; sellerPhone: string | null;
-    primaryImage: string | null;
+    primaryImage: string | null; images: string[];
   };
   const [expandedCarId, setExpandedCarId] = useState<number | null>(null);
+  const [previewCar, setPreviewCar] = useState<PendingCar | null>(null);
+  const [previewImgIdx, setPreviewImgIdx] = useState(0);
 
   const { data: pendingCars, isLoading: loadingPending, refetch: refetchPending } = useQuery<PendingCar[]>({
     queryKey: ["/admin/pending-cars"],
@@ -330,8 +333,16 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Quick action buttons + expand toggle */}
+                      {/* Quick action buttons + preview + expand toggle */}
                       <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9 gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
+                          onClick={() => { setPreviewCar(car); setPreviewImgIdx(0); }}
+                        >
+                          <Eye className="w-4 h-4" /> معاينة
+                        </Button>
                         <Button
                           size="sm"
                           className="h-9 bg-green-500 hover:bg-green-600 text-white gap-1.5"
@@ -558,6 +569,158 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* ===== Full Car Preview Dialog ===== */}
+      {previewCar && (
+      <Dialog open={!!previewCar} onOpenChange={(open) => { if (!open) setPreviewCar(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0" dir="rtl">
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle className="text-xl font-bold">
+              معاينة الإعلان — {previewCar.brand} {previewCar.model} {previewCar.year}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Image gallery */}
+          <div className="relative bg-black/90 overflow-hidden" style={{ minHeight: 280 }}>
+            {previewCar.images.length > 0 ? (
+              <>
+                <img
+                  src={previewCar.images[previewImgIdx]}
+                  alt=""
+                  className="w-full object-contain"
+                  style={{ maxHeight: 360 }}
+                />
+                {/* Navigation arrows */}
+                {previewCar.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setPreviewImgIdx(i => (i + 1) % previewCar.images.length)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setPreviewImgIdx(i => (i - 1 + previewCar.images.length) % previewCar.images.length)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    {/* Dots */}
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                      {previewCar.images.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setPreviewImgIdx(i)}
+                          className={`w-2 h-2 rounded-full transition-all ${i === previewImgIdx ? 'bg-white scale-125' : 'bg-white/50'}`}
+                        />
+                      ))}
+                    </div>
+                    {/* Counter */}
+                    <span className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full font-mono">
+                      {previewImgIdx + 1} / {previewCar.images.length}
+                    </span>
+                  </>
+                )}
+                {/* Thumbnail strip */}
+                {previewCar.images.length > 1 && (
+                  <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-black/70">
+                    {previewCar.images.map((img, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setPreviewImgIdx(i)}
+                        className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${i === previewImgIdx ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-white/60 gap-3">
+                <ImageOff className="w-12 h-12" />
+                <p className="text-sm">لم يرفع البائع أي صور</p>
+              </div>
+            )}
+          </div>
+
+          <div className="px-6 py-5 space-y-5">
+            {/* Price + location */}
+            <div className="flex items-center justify-between">
+              <span dir="ltr" className="text-2xl font-bold text-primary">${previewCar.price.toLocaleString()}</span>
+              <span className="flex items-center gap-1.5 text-muted-foreground text-sm">
+                <MapPin className="w-4 h-4" /> {previewCar.city}، {previewCar.province}
+              </span>
+            </div>
+
+            {/* Specs grid */}
+            {(() => {
+              const fuelMap: Record<string, string> = { petrol: "بنزين", diesel: "ديزل", electric: "كهربائي", hybrid: "هجين", gas: "غاز" };
+              const transMap: Record<string, string> = { automatic: "أوتوماتيك", manual: "عادي" };
+              const conditionMap: Record<string, string> = { excellent: "ممتازة", good: "جيدة", fair: "مقبولة", poor: "ضعيفة" };
+              const saleMap: Record<string, string> = { cash: "نقدي", installment: "تقسيط", exchange: "مقايضة" };
+              const specs = [
+                { label: "المسافة", value: previewCar.mileage ? `${previewCar.mileage.toLocaleString()} كم` : null },
+                { label: "الوقود", value: previewCar.fuelType ? fuelMap[previewCar.fuelType] ?? previewCar.fuelType : null },
+                { label: "ناقل الحركة", value: previewCar.transmission ? transMap[previewCar.transmission] ?? previewCar.transmission : null },
+                { label: "الحالة", value: previewCar.condition ? conditionMap[previewCar.condition] ?? previewCar.condition : null },
+                { label: "اللون", value: previewCar.color },
+                { label: "طريقة البيع", value: previewCar.saleType ? saleMap[previewCar.saleType] ?? previewCar.saleType : null },
+              ].filter(s => s.value);
+              return specs.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {specs.map(({ label, value }) => (
+                    <div key={label} className="bg-muted/50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <p className="font-bold text-sm mt-0.5">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null;
+            })()}
+
+            {/* Description */}
+            {previewCar.description && (
+              <div className="border rounded-xl p-4 bg-muted/20">
+                <p className="text-xs font-medium text-muted-foreground mb-2">وصف البائع</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{previewCar.description}</p>
+              </div>
+            )}
+
+            {/* Seller */}
+            <div className="border rounded-xl p-4 flex items-center justify-between bg-muted/10">
+              <div>
+                <p className="text-xs text-muted-foreground">البائع</p>
+                <p className="font-bold">{previewCar.sellerName}</p>
+              </div>
+              {previewCar.sellerPhone && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Phone className="w-4 h-4" />
+                  <span dir="ltr" className="font-mono">{previewCar.sellerPhone}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3 pb-2">
+              <Button
+                className="flex-1 h-11 bg-green-500 hover:bg-green-600 text-white gap-2 font-bold"
+                onClick={() => { handleCarStatus(previewCar.id, 'approved'); setPreviewCar(null); }}
+              >
+                <CheckCircle className="w-5 h-5" /> الموافقة ونشر الإعلان
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 h-11 border-2 border-red-400 text-red-600 hover:bg-red-50 gap-2 font-bold"
+                onClick={() => { handleCarStatus(previewCar.id, 'rejected'); setPreviewCar(null); }}
+              >
+                <XCircle className="w-5 h-5" /> رفض الإعلان
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      )}
     </div>
   );
 }
