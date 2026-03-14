@@ -111,7 +111,7 @@ export default function Profile() {
                     <Button variant="outline" onClick={() => setIsEditing(true)} className="rounded-xl w-full">
                       <Edit3 className="w-4 h-4 ml-2" /> تعديل
                     </Button>
-                    <Button variant="destructive" variant="outline" onClick={logout} className="rounded-xl w-full text-destructive hover:text-destructive">
+                    <Button variant="outline" onClick={logout} className="rounded-xl w-full text-destructive hover:text-destructive">
                       <LogOut className="w-4 h-4 ml-2" /> تسجيل خروج
                     </Button>
                   </div>
