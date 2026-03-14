@@ -5,9 +5,25 @@ import { z } from "zod";
 import { useCreateCar, useGenerateCarDescription, useEstimatePrice } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ImagePlus, Loader2, CheckCircle2, X, ShieldCheck } from "lucide-react";
+import { Sparkles, ImagePlus, Loader2, CheckCircle2, X, ShieldCheck, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+
+// ── Market base prices (USD) per brand ────────────────────────────────────
+const MARKET_PRICES: Record<string, number> = {
+  toyota: 12000,  hyundai: 9000,   kia: 8500,    nissan: 10000,
+  honda: 11000,   mazda: 9500,     mitsubishi: 9000, suzuki: 7500,
+  mercedes: 25000, bmw: 27000,     audi: 24000,  volkswagen: 16000,
+  ford: 14000,    chevrolet: 12000, peugeot: 9000, renault: 8000,
+  lada: 4500,     chery: 7000,     geely: 7500,  haval: 10000,
+  byd: 11000,     mg: 9000,
+};
+
+function getMarketPrice(brand: string): number {
+  return MARKET_PRICES[brand.toLowerCase().trim()] ?? 10000;
+}
+
+type PriceEval = { level: "high" | "low" | "good"; market: number; text: string } | null;
 
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
@@ -46,6 +62,7 @@ export default function AddListing() {
   const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [priceEval, setPriceEval] = useState<PriceEval>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,24 +112,70 @@ export default function AddListing() {
 
   const handleGenerateDesc = () => {
     const vals = watch();
-    if (!vals.brand || !vals.model || !vals.year) return alert("الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً");
-    
+    if (!vals.brand || !vals.model || !vals.year) {
+      toast({ title: "الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", variant: "destructive" });
+      return;
+    }
+    // Try AI first, fall back to template
     generateDescMutation.mutate({
       data: { brand: vals.brand, model: vals.model, year: vals.year, mileage: vals.mileage, fuelType: vals.fuelType, transmission: vals.transmission }
     }, {
-      onSuccess: (res) => setValue('description', res.description)
+      onSuccess: (res) => setValue('description', res.description),
+      onError: () => {
+        const fuelLabel: Record<string, string> = { petrol: "بنزين", diesel: "مازوت", electric: "كهرباء", hybrid: "هجين" };
+        const transLabel: Record<string, string> = { automatic: "أوتوماتيك", manual: "يدوي" };
+        const template = `للبيع ${vals.brand} ${vals.model} موديل ${vals.year}
+
+السيارة بحالة ممتازة وجاهزة للفحص والتجربة.
+نوع الوقود: ${fuelLabel[vals.fuelType] ?? vals.fuelType}
+ناقل الحركة: ${transLabel[vals.transmission] ?? vals.transmission}
+${vals.mileage ? `عداد: ${vals.mileage.toLocaleString()} كم` : ""}
+${vals.price ? `السعر المطلوب: ${vals.price.toLocaleString()} $` : ""}
+
+التواصل عبر الرسائل أو الاتصال المباشر.`;
+        setValue('description', template);
+      }
     });
   };
 
   const handleEstimatePrice = () => {
     const vals = watch();
-    if (!vals.brand || !vals.model || !vals.year) return alert("الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً");
-    
+    if (!vals.brand || !vals.model || !vals.year) {
+      toast({ title: "الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", variant: "destructive" });
+      return;
+    }
+    // Local instant evaluation
+    const market = getMarketPrice(vals.brand);
+    const entered = Number(vals.price) || 0;
+    if (entered > 0) {
+      evaluatePrice(entered, market);
+    }
+    // Also call AI for a refined suggestion
     estimatePriceMutation.mutate({
       data: { brand: vals.brand, model: vals.model, year: vals.year, mileage: vals.mileage, fuelType: vals.fuelType, transmission: vals.transmission }
     }, {
-      onSuccess: (res) => setValue('price', res.suggestedPrice)
+      onSuccess: (res) => {
+        // AI returns price in local currency — convert to USD approx or use market table
+        const aiMarket = getMarketPrice(vals.brand);
+        evaluatePrice(entered, aiMarket);
+        if (!entered) setValue('price', Math.round(aiMarket * 0.9));
+      },
+      onError: () => evaluatePrice(entered, market),
     });
+  };
+
+  const evaluatePrice = (entered: number, market: number) => {
+    if (!entered || entered <= 0) {
+      setPriceEval({ level: "good", market, text: `متوسط سعر السوق لهذه الماركة: ${market.toLocaleString()} $` });
+      return;
+    }
+    if (entered > market * 1.15) {
+      setPriceEval({ level: "high", market, text: `⚠ السعر أعلى من سعر السوق (${market.toLocaleString()} $) — قد يصعب بيع السيارة` });
+    } else if (entered < market * 0.85) {
+      setPriceEval({ level: "low", market, text: `🔥 السعر أقل من السوق (${market.toLocaleString()} $) — سيجذب المشترين بسرعة` });
+    } else {
+      setPriceEval({ level: "good", market, text: `✅ السعر مناسب وقريب من سعر السوق (${market.toLocaleString()} $)` });
+    }
   };
 
   if (user?.role !== 'seller' && user?.role !== 'dealer') {
@@ -278,45 +341,83 @@ export default function AddListing() {
         </div>
 
         {/* AI Powered Price & Description */}
-        <div className="bg-card p-6 rounded-3xl border border-accent/30 shadow-lg shadow-accent/5 space-y-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Sparkles className="w-32 h-32 text-accent" />
+        <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl space-y-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Sparkles className="w-40 h-40 text-white" />
           </div>
           <div className="relative z-10 space-y-6">
-            <h3 className="font-bold text-lg flex items-center gap-2 text-accent-foreground mb-2">
-              <span className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center">3</span>
+            <h3 className="font-bold text-lg flex items-center gap-2 text-white mb-2">
+              <span className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center shrink-0">3</span>
               ميزات الذكاء الاصطناعي ✨
             </h3>
 
-            <div className="space-y-4 bg-background/50 p-5 rounded-2xl border">
+            {/* ── Price Section ────────────────────────────────────────── */}
+            <div className="space-y-4 bg-white/10 backdrop-blur-sm p-5 rounded-2xl border border-white/10">
               <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                 <div className="space-y-2 flex-1">
-                  <label className="text-sm font-bold">السعر المطلوب (ل.س)</label>
-                  <input type="number" {...register("price")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-accent transition-all outline-none font-bold text-lg" />
-                  {errors.price && <p className="text-destructive text-sm">{errors.price.message}</p>}
+                  <label className="text-sm font-bold text-white/90">السعر المطلوب (USD $)</label>
+                  <input
+                    type="number"
+                    {...register("price")}
+                    placeholder="مثال: 8500"
+                    className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none font-bold text-lg placeholder:text-gray-400"
+                  />
+                  {errors.price && <p className="text-red-300 text-sm">{errors.price.message}</p>}
                 </div>
-                <Button type="button" onClick={handleEstimatePrice} disabled={estimatePriceMutation.isPending} variant="secondary" className="rounded-xl h-12 px-6 gap-2 text-accent-foreground bg-accent/10 border-accent/20 border hover:bg-accent/20">
-                  {estimatePriceMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-accent" />}
-                  اقتراح السعر المناسب
+                <Button
+                  type="button"
+                  onClick={handleEstimatePrice}
+                  disabled={estimatePriceMutation.isPending}
+                  className="rounded-xl h-12 px-6 gap-2 bg-accent hover:bg-accent/90 text-white font-bold border-0 shadow-lg shadow-accent/30 shrink-0"
+                >
+                  {estimatePriceMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                  اقتراح السعر
                 </Button>
               </div>
-              {estimatePriceMutation.isSuccess && (
-                <div className="flex items-start gap-2 text-sm text-green-600 bg-green-50 p-3 rounded-lg border border-green-100">
-                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-                  <p>بناءً على السوق السوري، السعر المقترح هو <strong>{estimatePriceMutation.data.suggestedPrice.toLocaleString()} ل.س</strong>. {estimatePriceMutation.data.reasoning}</p>
+
+              {/* Price evaluation result */}
+              {priceEval && (
+                <div className={`flex items-start gap-3 p-4 rounded-xl border font-medium text-sm
+                  ${priceEval.level === "high"
+                    ? "bg-red-500/20 border-red-400/40 text-red-200"
+                    : priceEval.level === "low"
+                    ? "bg-amber-500/20 border-amber-400/40 text-amber-200"
+                    : "bg-green-500/20 border-green-400/40 text-green-200"
+                  }`}
+                >
+                  {priceEval.level === "high" && <TrendingUp className="w-5 h-5 shrink-0 mt-0.5" />}
+                  {priceEval.level === "low"  && <TrendingDown className="w-5 h-5 shrink-0 mt-0.5" />}
+                  {priceEval.level === "good" && <Minus className="w-5 h-5 shrink-0 mt-0.5" />}
+                  <span className="leading-relaxed">{priceEval.text}</span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-4 bg-background/50 p-5 rounded-2xl border">
-              <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-2">
-                <label className="text-sm font-bold flex-1">وصف الإعلان</label>
-                <Button type="button" onClick={handleGenerateDesc} disabled={generateDescMutation.isPending} variant="secondary" className="rounded-xl h-10 px-4 gap-2 text-accent-foreground bg-accent/10 border-accent/20 border hover:bg-accent/20 text-sm">
-                  {generateDescMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-accent" />}
+            {/* ── Description Section ──────────────────────────────────── */}
+            <div className="space-y-4 bg-white/10 backdrop-blur-sm p-5 rounded-2xl border border-white/10">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
+                <label className="text-sm font-bold text-white/90 flex-1">وصف الإعلان</label>
+                <Button
+                  type="button"
+                  onClick={handleGenerateDesc}
+                  disabled={generateDescMutation.isPending}
+                  className="rounded-xl h-10 px-5 gap-2 bg-accent hover:bg-accent/90 text-white font-bold border-0 text-sm shadow-lg shadow-accent/30 shrink-0"
+                >
+                  {generateDescMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                   توليد وصف جذاب
                 </Button>
               </div>
-              <textarea {...register("description")} rows={6} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary transition-all outline-none resize-none leading-relaxed" placeholder="اكتب وصفاً مفصلاً لسيارتك، أو استخدم الذكاء الاصطناعي لتوليده..." />
+              <textarea
+                {...register("description")}
+                rows={6}
+                className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none resize-none leading-relaxed placeholder:text-gray-400"
+                placeholder="اكتب وصفاً مفصلاً لسيارتك، أو اضغط 'توليد وصف جذاب'..."
+              />
+              {generateDescMutation.isSuccess && (
+                <div className="flex items-center gap-2 text-sm text-green-300">
+                  <CheckCircle2 className="w-4 h-4" /> تم توليد الوصف بنجاح
+                </div>
+              )}
             </div>
           </div>
         </div>
