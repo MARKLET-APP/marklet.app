@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { useLookupVehicle } from "@workspace/api-client-react";
 import { FileSearch, ShieldAlert, AlertTriangle, CheckCircle, Activity, History, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default function VehicleInfo() {
   const { register, handleSubmit } = useForm({ defaultValues: { vin: "" } });
