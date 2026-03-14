@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable } from "@workspace/db";
+import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable } from "@workspace/db";
 import { eq, desc, count, sql } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -278,6 +278,55 @@ router.patch("/admin/settings", ...guard, async (req: AuthRequest, res): Promise
     featuredListingPrice: Number(updated.featuredListingPrice),
     premiumSubscriptionPrice: Number(updated.premiumSubscriptionPrice),
   });
+});
+
+router.get("/admin/conversations", ...guard, async (_req, res): Promise<void> => {
+  const convs = await db.select().from(conversationsTable).orderBy(desc(conversationsTable.updatedAt)).limit(200);
+  if (!convs.length) { res.json([]); return; }
+
+  const userIds = [...new Set(convs.flatMap((c) => [c.buyerId, c.sellerId]))];
+  const carIds = [...new Set(convs.map((c) => c.carId))];
+
+  const [users, cars, lastMsgs] = await Promise.all([
+    db.select({ id: usersTable.id, name: usersTable.name, profilePhoto: usersTable.profilePhoto })
+      .from(usersTable).where(sql`${usersTable.id} = ANY(ARRAY[${sql.join(userIds.map(id => sql`${id}`), sql`, `)}]::int[])`),
+    db.select({ id: carsTable.id, brand: carsTable.brand, model: carsTable.model, year: carsTable.year })
+      .from(carsTable).where(sql`${carsTable.id} = ANY(ARRAY[${sql.join(carIds.map(id => sql`${id}`), sql`, `)}]::int[])`),
+    Promise.all(convs.map((c) =>
+      db.select().from(messagesTable)
+        .where(eq(messagesTable.conversationId, c.id))
+        .orderBy(desc(messagesTable.createdAt)).limit(1)
+    )),
+  ]);
+
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+  const carMap = Object.fromEntries(cars.map((c) => [c.id, c]));
+
+  const result = convs.map((conv, i) => {
+    const buyer = userMap[conv.buyerId];
+    const seller = userMap[conv.sellerId];
+    const car = carMap[conv.carId];
+    const last = lastMsgs[i]?.[0];
+    return {
+      id: conv.id,
+      carId: conv.carId,
+      carBrand: car?.brand ?? "—",
+      carModel: car?.model ?? "—",
+      carYear: car?.year ?? 0,
+      buyerId: conv.buyerId,
+      buyerName: buyer?.name ?? "مجهول",
+      buyerPhoto: buyer?.profilePhoto ?? null,
+      sellerId: conv.sellerId,
+      sellerName: seller?.name ?? "مجهول",
+      sellerPhoto: seller?.profilePhoto ?? null,
+      lastMessage: last?.isDeleted ? "تم حذف الرسالة" : (last?.content ?? null),
+      lastMessageAt: last?.createdAt ?? null,
+      createdAt: conv.createdAt,
+      updatedAt: conv.updatedAt,
+    };
+  });
+
+  res.json(result);
 });
 
 export default router;

@@ -47,6 +47,20 @@ const upload = multer({
   },
 });
 
+const audioUpload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowedExt = /webm|ogg|mp3|wav|mp4|m4a/;
+    const allowedMime = /audio\//;
+    if (allowedExt.test(path.extname(file.originalname).toLowerCase()) || allowedMime.test(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only audio files allowed"));
+    }
+  },
+});
+
 type ConvRow = { id: number; carId: number; buyerId: number; sellerId: number; createdAt: Date; updatedAt: Date };
 
 async function buildConvResponse(conv: ConvRow, userId: number) {
@@ -239,6 +253,39 @@ router.post("/chats/:conversationId/messages/image", authMiddleware, upload.sing
   const fullMsg = { ...msg, senderName: sender?.name ?? "Unknown", senderPhoto: sender?.profilePhoto ?? null, reactions: {} };
   const io = getSocketServer();
   if (io) io.to(`conv:${convId}`).emit("new_message", { convId, message: fullMsg });
+  res.status(201).json(fullMsg);
+});
+
+router.post("/chats/:conversationId/messages/audio", authMiddleware, audioUpload.single("audio"), async (req: AuthRequest, res): Promise<void> => {
+  const convId = parseInt(Array.isArray(req.params.conversationId) ? req.params.conversationId[0] : req.params.conversationId, 10);
+  if (isNaN(convId)) { res.status(400).json({ error: "Invalid conversation ID" }); return; }
+  const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, convId)).limit(1);
+  if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
+  if (!req.file) { res.status(400).json({ error: "No audio provided" }); return; }
+
+  const audioUrl = `/api/uploads/chat/${req.file.filename}`;
+  const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+  const [msg] = await db.insert(messagesTable).values({
+    conversationId: convId,
+    senderId: req.userId!,
+    content: "رسالة صوتية",
+    messageType: "audio",
+    imageUrl: audioUrl,
+    status: "delivered",
+  }).returning();
+  await db.update(conversationsTable).set({ updatedAt: new Date() }).where(eq(conversationsTable.id, convId));
+
+  const otherUserId = conv.buyerId === req.userId ? conv.sellerId : conv.buyerId;
+  const fullMsg = { ...msg, senderName: sender?.name ?? "Unknown", senderPhoto: sender?.profilePhoto ?? null, reactions: {} };
+  const io = getSocketServer();
+  if (io) {
+    io.to(`conv:${convId}`).emit("new_message", { convId, message: fullMsg });
+    io.to(`user:${otherUserId}`).emit("notification", {
+      type: "message",
+      message: `رسالة صوتية من ${sender?.name ?? "شخص ما"}`,
+      link: `/messages?conversationId=${convId}`,
+    });
+  }
   res.status(201).json(fullMsg);
 });
 
