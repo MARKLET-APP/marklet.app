@@ -45,6 +45,7 @@ export default function AdminDashboard() {
   const [expandedCarId, setExpandedCarId] = useState<number | null>(null);
   const [previewCar, setPreviewCar] = useState<PendingCar | null>(null);
   const [previewImgIdx, setPreviewImgIdx] = useState(0);
+  const [previewBuyRequest, setPreviewBuyRequest] = useState<any | null>(null);
 
   const { data: pendingCars, isLoading: loadingPending, refetch: refetchPending } = useQuery<PendingCar[]>({
     queryKey: ["/admin/pending-cars"],
@@ -71,7 +72,8 @@ export default function AdminDashboard() {
     enabled: user?.role === 'admin',
   });
 
-  const totalInboxUnread = pendingBuyRequests.length + (supportMessages as any[]).length;
+  const totalInboxUnread = (supportMessages as any[]).length;
+  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length;
 
   const handleBuyRequestStatus = async (id: number, status: "approved" | "rejected") => {
     try {
@@ -223,9 +225,9 @@ export default function AdminDashboard() {
           </TabsTrigger>
           <TabsTrigger value="review" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
             <AlertTriangle className="w-4 h-4 ml-1 text-red-500" /> مراجعة
-            {(pendingCars?.length ?? 0) > 0 && (
+            {totalReviewPending > 0 && (
               <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
-                {pendingCars!.length}
+                {totalReviewPending}
               </span>
             )}
           </TabsTrigger>
@@ -486,6 +488,61 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
 
+        {/* ===== Buy Requests section moved to review tab ===== */}
+        <TabsContent value="review" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-5 border-b flex justify-between items-center bg-blue-50/50">
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <CartIcon className="w-5 h-5 text-primary" /> طلبات الشراء
+                {pendingBuyRequests.length > 0 && (
+                  <Badge className="bg-amber-500 hover:bg-amber-600">{pendingBuyRequests.length} معلق</Badge>
+                )}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">{(adminBuyRequests as any[]).length} طلب إجمالاً</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetchBuyRequests()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+          </div>
+          <div className="p-4 space-y-3">
+            {(adminBuyRequests as any[]).length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">لا توجد طلبات شراء</div>
+            ) : (adminBuyRequests as any[]).map((r: any) => (
+              <div key={r.id} className="border rounded-xl p-4 bg-background flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <p className="font-bold text-foreground">{r.brand || "أي ماركة"} {r.model || ""}</p>
+                    <Badge variant={r.status === "approved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"} className="text-xs">
+                      {r.status === "approved" ? "موافق عليه" : r.status === "rejected" ? "مرفوض" : "معلق"}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                    {r.maxPrice && <span className="text-primary font-bold">حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}</span>}
+                    {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
+                    {r.userName && <span>المستخدم: {r.userName}</span>}
+                    {r.userPhone && <span dir="ltr">{r.userPhone}</span>}
+                  </div>
+                  {r.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{r.description}</p>}
+                  <p className="text-xs text-muted-foreground/60 mt-1">{new Date(r.createdAt).toLocaleDateString("ar-EG")}</p>
+                </div>
+                <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                  <Button size="sm" variant="outline" className="h-8 gap-1 border-primary/40 text-primary hover:bg-primary/5" onClick={() => setPreviewBuyRequest(r)}>
+                    <Eye className="w-3.5 h-3.5" /> معاينة
+                  </Button>
+                  {r.status === "pending" && (
+                    <>
+                      <Button size="sm" className="h-8 bg-green-500 hover:bg-green-600 text-white" onClick={() => handleBuyRequestStatus(r.id, "approved")}>
+                        <CheckCircle className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => handleBuyRequestStatus(r.id, "rejected")}>
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
         {/* Listings Tab */}
         <TabsContent value="listings" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
           <div className="p-6 border-b flex justify-between items-center bg-muted/20">
@@ -556,56 +613,6 @@ export default function AdminDashboard() {
 
         {/* Inbox Tab */}
         <TabsContent value="inbox" className="space-y-6">
-          {/* Buy Requests Review */}
-          <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-5 border-b flex justify-between items-center bg-blue-50/50">
-              <div>
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <CartIcon className="w-5 h-5 text-primary" /> طلبات الشراء
-                  {pendingBuyRequests.length > 0 && (
-                    <Badge className="bg-amber-500 hover:bg-amber-600">{pendingBuyRequests.length} معلق</Badge>
-                  )}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-0.5">{(adminBuyRequests as any[]).length} طلب إجمالاً</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => refetchBuyRequests()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
-            </div>
-            <div className="p-4 space-y-3">
-              {(adminBuyRequests as any[]).length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">لا توجد طلبات شراء</div>
-              ) : (adminBuyRequests as any[]).map((r: any) => (
-                <div key={r.id} className="border rounded-xl p-4 bg-background flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <p className="font-bold text-foreground">{r.brand || "أي ماركة"} {r.model || ""}</p>
-                      <Badge variant={r.status === "approved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"} className="text-xs">
-                        {r.status === "approved" ? "موافق عليه" : r.status === "rejected" ? "مرفوض" : "معلق"}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                      {r.maxPrice && <span className="text-primary font-bold">حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}</span>}
-                      {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
-                      {r.userName && <span>المستخدم: {r.userName}</span>}
-                      {r.userPhone && <span dir="ltr">{r.userPhone}</span>}
-                    </div>
-                    {r.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{r.description}</p>}
-                    <p className="text-xs text-muted-foreground/60 mt-1">{new Date(r.createdAt).toLocaleDateString("ar-EG")}</p>
-                  </div>
-                  {r.status === "pending" && (
-                    <div className="flex gap-2 shrink-0">
-                      <Button size="sm" className="h-8 bg-green-500 hover:bg-green-600 text-white" onClick={() => handleBuyRequestStatus(r.id, "approved")}>
-                        <CheckCircle className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => handleBuyRequestStatus(r.id, "rejected")}>
-                        <XCircle className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Support Messages */}
           <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
             <div className="p-5 border-b flex justify-between items-center bg-muted/20">
@@ -873,6 +880,83 @@ export default function AdminDashboard() {
                 <XCircle className="w-5 h-5" /> رفض الإعلان
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      )}
+
+      {/* ===== Buy Request Full Preview Dialog ===== */}
+      {previewBuyRequest && (
+      <Dialog open={!!previewBuyRequest} onOpenChange={(open) => { if (!open) setPreviewBuyRequest(null); }}>
+        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir="rtl">
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <CartIcon className="w-5 h-5 text-primary" />
+              تفاصيل طلب الشراء #{previewBuyRequest.id}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-6 space-y-5">
+            {/* Status badge */}
+            <div className="flex items-center gap-2">
+              <Badge variant={previewBuyRequest.status === "approved" ? "default" : previewBuyRequest.status === "rejected" ? "destructive" : "secondary"} className="text-sm px-3 py-1">
+                {previewBuyRequest.status === "approved" ? "✓ موافق عليه" : previewBuyRequest.status === "rejected" ? "✗ مرفوض" : "⏳ معلق"}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{new Date(previewBuyRequest.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })}</span>
+            </div>
+
+            {/* Car info */}
+            <div className="bg-muted/30 rounded-xl p-4 space-y-2">
+              <h3 className="font-bold text-base mb-2 flex items-center gap-2"><Car className="w-4 h-4" /> المركبة المطلوبة</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-muted-foreground">الماركة: </span><span className="font-medium">{previewBuyRequest.brand || "أي ماركة"}</span></div>
+                <div><span className="text-muted-foreground">الموديل: </span><span className="font-medium">{previewBuyRequest.model || "أي موديل"}</span></div>
+                {previewBuyRequest.maxPrice && (
+                  <div className="col-span-2"><span className="text-muted-foreground">الحد الأقصى للسعر: </span>
+                    <span className="font-bold text-primary">{Number(previewBuyRequest.maxPrice).toLocaleString()} {previewBuyRequest.currency ?? "USD"}</span>
+                  </div>
+                )}
+                {previewBuyRequest.city && (
+                  <div className="col-span-2 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="font-medium">{previewBuyRequest.city}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            {previewBuyRequest.description && (
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-muted-foreground flex items-center gap-1"><FileText className="w-4 h-4" /> تفاصيل إضافية</p>
+                <p className="text-sm leading-relaxed bg-muted/20 rounded-xl p-3 whitespace-pre-wrap">{previewBuyRequest.description}</p>
+              </div>
+            )}
+
+            {/* Buyer info */}
+            <div className="bg-muted/30 rounded-xl p-4 space-y-1">
+              <h3 className="font-bold text-sm mb-2 text-muted-foreground flex items-center gap-1"><Users className="w-4 h-4" /> معلومات المشتري</h3>
+              {previewBuyRequest.userName && <p className="font-bold">{previewBuyRequest.userName}</p>}
+              {previewBuyRequest.userPhone && (
+                <p className="flex items-center gap-2 text-sm">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  <span dir="ltr" className="font-mono">{previewBuyRequest.userPhone}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            {previewBuyRequest.status === "pending" && (
+              <div className="flex gap-3 pt-1">
+                <Button className="flex-1 bg-green-500 hover:bg-green-600 text-white gap-2 h-11 rounded-xl"
+                  onClick={() => { handleBuyRequestStatus(previewBuyRequest.id, "approved"); setPreviewBuyRequest(null); }}>
+                  <CheckCircle className="w-5 h-5" /> قبول الطلب
+                </Button>
+                <Button variant="outline" className="flex-1 border-red-400 text-red-600 hover:bg-red-50 gap-2 h-11 rounded-xl"
+                  onClick={() => { handleBuyRequestStatus(previewBuyRequest.id, "rejected"); setPreviewBuyRequest(null); }}>
+                  <XCircle className="w-5 h-5" /> رفض الطلب
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
