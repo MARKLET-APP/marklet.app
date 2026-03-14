@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, settingsTable, missingCarsTable } from "@workspace/db";
+import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable } from "@workspace/db";
 import { eq, desc, count } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -97,8 +97,16 @@ router.get("/admin/pending-cars", ...guard, async (_req, res): Promise<void> => 
     model: carsTable.model,
     year: carsTable.year,
     price: carsTable.price,
+    mileage: carsTable.mileage,
+    fuelType: carsTable.fuelType,
+    transmission: carsTable.transmission,
+    condition: carsTable.condition,
+    color: carsTable.color,
+    description: carsTable.description,
     city: carsTable.city,
     province: carsTable.province,
+    saleType: carsTable.saleType,
+    category: carsTable.category,
     status: carsTable.status,
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,
@@ -109,7 +117,19 @@ router.get("/admin/pending-cars", ...guard, async (_req, res): Promise<void> => 
     .where(eq(carsTable.status, "pending"))
     .orderBy(desc(carsTable.createdAt));
 
-  res.json(cars.map(c => ({ ...c, price: Number(c.price), sellerName: c.sellerName ?? "مجهول" })));
+  // Fetch primary images for all pending cars
+  const carIds = cars.map(c => c.id);
+  const images = carIds.length > 0
+    ? await db.select().from(imagesTable).where(eq(imagesTable.isPrimary, true))
+    : [];
+  const imageMap = new Map(images.map(img => [img.carId, img.imageUrl]));
+
+  res.json(cars.map(c => ({
+    ...c,
+    price: Number(c.price),
+    sellerName: c.sellerName ?? "مجهول",
+    primaryImage: imageMap.get(c.id) ?? null,
+  })));
 });
 
 router.get("/admin/cars", ...guard, async (_req, res): Promise<void> => {

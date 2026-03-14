@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -29,7 +29,16 @@ export default function AdminDashboard() {
     enabled: user?.role === 'admin',
   });
 
-  type PendingCar = { id: number; brand: string; model: string; year: number; price: number; city: string; province: string; status: string; createdAt: string; sellerName: string; sellerPhone: string | null };
+  type PendingCar = {
+    id: number; brand: string; model: string; year: number; price: number;
+    mileage: number | null; fuelType: string | null; transmission: string | null;
+    condition: string | null; color: string | null; description: string | null;
+    city: string; province: string; saleType: string | null; category: string | null;
+    status: string; createdAt: string; sellerName: string; sellerPhone: string | null;
+    primaryImage: string | null;
+  };
+  const [expandedCarId, setExpandedCarId] = useState<number | null>(null);
+
   const { data: pendingCars, isLoading: loadingPending, refetch: refetchPending } = useQuery<PendingCar[]>({
     queryKey: ["/admin/pending-cars"],
     queryFn: () => api.admin.pendingCars(),
@@ -260,7 +269,7 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
 
-        {/* Review Tab — pending cars only */}
+        {/* Review Tab — pending cars full preview cards */}
         <TabsContent value="review" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
           <div className="p-6 border-b flex justify-between items-center bg-amber-50 dark:bg-amber-950/20">
             <div>
@@ -273,64 +282,153 @@ export default function AdminDashboard() {
               <RefreshCw className="w-4 h-4 ml-2" /> تحديث
             </Button>
           </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead className="text-right">المركبة</TableHead>
-                  <TableHead className="text-right">السنة</TableHead>
-                  <TableHead className="text-right">السعر</TableHead>
-                  <TableHead className="text-right">البائع</TableHead>
-                  <TableHead className="text-right">الهاتف</TableHead>
-                  <TableHead className="text-right">التاريخ</TableHead>
-                  <TableHead className="text-center">إجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingPending ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
-                ) : !pendingCars?.length ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-16">
-                      <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
-                      <p className="text-muted-foreground font-medium">لا يوجد إعلانات معلقة — كل شيء تمت مراجعته</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  pendingCars.map((car) => (
-                    <TableRow key={car.id} className="hover:bg-amber-50/50 dark:hover:bg-amber-950/10">
-                      <TableCell className="font-bold">{car.brand} {car.model}</TableCell>
-                      <TableCell>{car.year}</TableCell>
-                      <TableCell dir="ltr" className="text-right">{car.price.toLocaleString('ar-SY')} ل.س</TableCell>
-                      <TableCell>{car.sellerName}</TableCell>
-                      <TableCell dir="ltr" className="text-right text-sm text-muted-foreground">{car.sellerPhone ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(car.createdAt).toLocaleDateString('ar-SY')}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            size="sm"
-                            className="h-9 bg-green-500 hover:bg-green-600 text-white gap-1.5"
-                            onClick={() => handleCarStatus(car.id, 'approved')}
-                          >
-                            <CheckCircle className="w-4 h-4" /> قبول
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-9 border-red-400 text-red-600 hover:bg-red-50 gap-1.5"
-                            onClick={() => handleCarStatus(car.id, 'rejected')}
-                          >
-                            <XCircle className="w-4 h-4" /> رفض
-                          </Button>
+
+          <div className="p-4 space-y-4">
+            {loadingPending ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : !pendingCars?.length ? (
+              <div className="text-center py-16">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <p className="font-bold text-lg">لا توجد إعلانات معلقة</p>
+                <p className="text-muted-foreground text-sm mt-1">كل الإعلانات تمت مراجعتها</p>
+              </div>
+            ) : (
+              pendingCars.map((car) => {
+                const isExpanded = expandedCarId === car.id;
+                const fuelMap: Record<string, string> = { petrol: "بنزين", diesel: "ديزل", electric: "كهربائي", hybrid: "هجين", gas: "غاز" };
+                const transMap: Record<string, string> = { automatic: "أوتوماتيك", manual: "عادي" };
+                const conditionMap: Record<string, string> = { excellent: "ممتازة", good: "جيدة", fair: "مقبولة", poor: "ضعيفة" };
+                const saleMap: Record<string, string> = { cash: "نقدي", installment: "تقسيط", exchange: "مقايضة" };
+                return (
+                  <div key={car.id} className="border-2 border-amber-200 rounded-2xl overflow-hidden bg-background shadow-sm hover:shadow-md transition-shadow">
+
+                    {/* Card Header — always visible */}
+                    <div
+                      className="flex items-center gap-4 p-4 cursor-pointer hover:bg-amber-50/50 transition-colors"
+                      onClick={() => setExpandedCarId(isExpanded ? null : car.id)}
+                    >
+                      {/* Thumbnail */}
+                      <div className="w-20 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                        {car.primaryImage
+                          ? <img src={car.primaryImage} alt="" className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center"><Car className="w-8 h-8 text-muted-foreground/40" /></div>
+                        }
+                      </div>
+
+                      {/* Basic info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-lg">{car.brand} {car.model} {car.year}</h3>
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">معلق</Badge>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground flex-wrap">
+                          <span dir="ltr" className="font-bold text-primary text-base">${car.price.toLocaleString()}</span>
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{car.city}، {car.province}</span>
+                          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(car.createdAt).toLocaleDateString('ar-SY')}</span>
+                        </div>
+                      </div>
+
+                      {/* Quick action buttons + expand toggle */}
+                      <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          className="h-9 bg-green-500 hover:bg-green-600 text-white gap-1.5"
+                          onClick={() => handleCarStatus(car.id, 'approved')}
+                        >
+                          <CheckCircle className="w-4 h-4" /> قبول
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9 border-red-400 text-red-600 hover:bg-red-50 gap-1.5"
+                          onClick={() => handleCarStatus(car.id, 'rejected')}
+                        >
+                          <XCircle className="w-4 h-4" /> رفض
+                        </Button>
+                        <button className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors" onClick={() => setExpandedCarId(isExpanded ? null : car.id)}>
+                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="border-t border-amber-100 bg-amber-50/30">
+                        {/* Full-width image */}
+                        {car.primaryImage && (
+                          <div className="w-full h-56 overflow-hidden">
+                            <img src={car.primaryImage} alt={`${car.brand} ${car.model}`} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+
+                        <div className="p-5 space-y-5">
+                          {/* Specs grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {[
+                              { icon: Gauge, label: "المسافة", value: car.mileage ? `${car.mileage.toLocaleString()} كم` : null },
+                              { icon: Fuel, label: "الوقود", value: car.fuelType ? fuelMap[car.fuelType] ?? car.fuelType : null },
+                              { icon: Settings, label: "ناقل الحركة", value: car.transmission ? transMap[car.transmission] ?? car.transmission : null },
+                              { icon: Car, label: "الحالة", value: car.condition ? conditionMap[car.condition] ?? car.condition : null },
+                              { icon: Palette, label: "اللون", value: car.color ?? null },
+                              { icon: FileText, label: "طريقة البيع", value: car.saleType ? saleMap[car.saleType] ?? car.saleType : null },
+                            ].filter(s => s.value).map(({ icon: Icon, label, value }) => (
+                              <div key={label} className="bg-background rounded-xl p-3 border flex items-center gap-2">
+                                <Icon className="w-4 h-4 text-primary flex-shrink-0" />
+                                <div>
+                                  <p className="text-xs text-muted-foreground">{label}</p>
+                                  <p className="font-semibold text-sm">{value}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Description */}
+                          {car.description && (
+                            <div className="bg-background rounded-xl border p-4">
+                              <p className="text-xs text-muted-foreground mb-1.5 font-medium">وصف الإعلان</p>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{car.description}</p>
+                            </div>
+                          )}
+
+                          {/* Seller info */}
+                          <div className="bg-background rounded-xl border p-4 flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-0.5">البائع</p>
+                              <p className="font-bold">{car.sellerName}</p>
+                            </div>
+                            {car.sellerPhone && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Phone className="w-4 h-4" />
+                                <span dir="ltr" className="font-mono">{car.sellerPhone}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action buttons full-width */}
+                          <div className="flex gap-3">
+                            <Button
+                              className="flex-1 h-11 bg-green-500 hover:bg-green-600 text-white gap-2 text-base font-bold"
+                              onClick={() => handleCarStatus(car.id, 'approved')}
+                            >
+                              <CheckCircle className="w-5 h-5" /> الموافقة على الإعلان ونشره
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="flex-1 h-11 border-2 border-red-400 text-red-600 hover:bg-red-50 gap-2 text-base font-bold"
+                              onClick={() => handleCarStatus(car.id, 'rejected')}
+                            >
+                              <XCircle className="w-5 h-5" /> رفض الإعلان
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </TabsContent>
 
