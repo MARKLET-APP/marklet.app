@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -149,15 +149,35 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <Tabs defaultValue="users" className="w-full" dir="rtl">
+      {/* Pending items alert banner */}
+      {(pendingCars?.length ?? 0) > 0 && (
+        <div className="mb-6 flex items-center gap-4 bg-amber-50 border-2 border-amber-300 rounded-2xl px-5 py-4 shadow-sm">
+          <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Bell className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-amber-800 text-base">
+              يوجد {pendingCars!.length} {pendingCars!.length === 1 ? "إعلان" : "إعلانات"} بانتظار مراجعتك
+            </p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              انتقل إلى تبويب <strong>«مراجعة»</strong> للموافقة على الإعلانات أو رفضها
+            </p>
+          </div>
+          <span className="bg-amber-400 text-white text-2xl font-bold rounded-xl px-4 py-1">
+            {pendingCars!.length}
+          </span>
+        </div>
+      )}
+
+      <Tabs defaultValue="review" className="w-full" dir="rtl">
         <TabsList className="grid w-full grid-cols-4 mb-8 h-14 bg-muted/50 rounded-xl p-1">
           <TabsTrigger value="users" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Users className="w-4 h-4 ml-2" /> المستخدمين
           </TabsTrigger>
           <TabsTrigger value="review" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
-            <AlertTriangle className="w-4 h-4 ml-2 text-amber-500" /> مراجعة
+            <AlertTriangle className="w-4 h-4 ml-2 text-red-500" /> مراجعة
             {(pendingCars?.length ?? 0) > 0 && (
-              <span className="absolute -top-1 -left-1 bg-amber-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
                 {pendingCars!.length}
               </span>
             )}
