@@ -81,7 +81,7 @@ export function Header() {
                 variant="ghost"
                 size="icon"
                 className="relative text-muted-foreground hover:text-foreground"
-                onClick={() => navigate("/chat")}
+                onClick={() => navigate("/messages")}
                 title="الرسائل والإشعارات"
               >
                 {totalUnread > 0 ? (

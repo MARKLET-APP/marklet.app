@@ -67,6 +67,11 @@ export default defineConfig({
         target: `http://localhost:${process.env.API_PORT || 8080}`,
         changeOrigin: true,
       },
+      "/socket.io": {
+        target: `http://localhost:${process.env.API_PORT || 8080}`,
+        changeOrigin: true,
+        ws: true,
+      },
     },
     fs: {
       strict: true,

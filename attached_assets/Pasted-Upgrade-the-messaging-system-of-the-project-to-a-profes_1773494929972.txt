@@ -1,0 +1,138 @@
+Upgrade the messaging system of the project to a professional marketplace chat system between buyers and sellers.
+
+Main goal:
+Create a modern real-time messaging experience similar to Facebook Marketplace or Dubizzle.
+
+FEATURES TO IMPLEMENT:
+
+1. Dedicated Messaging Page
+   Create a new page:
+   Route: /messages
+
+Layout:
+Left panel:
+
+* List of conversations
+* Show car image
+* Car title
+* Last message preview
+* Unread message badge
+
+Right panel:
+
+* Full chat window
+* Header showing car information
+* Seller or buyer name
+* Car thumbnail
+
+2. Real-time Messaging
+   Use WebSockets (Socket.io) so messages appear instantly without page refresh.
+
+3. Message Status Indicators
+   Under each message show status:
+   ✓ Sent
+   ✓✓ Delivered
+   ✓✓ Seen (turn blue)
+
+4. Push Notifications
+   Implement Web Push Notifications.
+
+When a user receives a message:
+Title: New message
+Body: Someone replied to your car conversation.
+
+Notifications should work even if the user is not currently inside the chat page.
+
+5. Auto Response System
+   When a buyer sends the first message automatically send a system message:
+
+"Your message has been sent to the seller. Please wait a moment for their reply."
+
+If the seller replies later, send a push notification to the buyer.
+
+6. Emoji Support
+   Add an emoji button beside the message input.
+
+Use an emoji picker library.
+
+7. Image Sending
+   Allow sending images inside chat.
+
+Limit image size to 5MB.
+
+Display images directly inside chat bubbles.
+
+8. Offensive Language Filter
+   Create a word filter system.
+
+Example blocked words list:
+["insult1","insult2","badword"]
+
+If detected:
+Replace with ****
+Log the message in moderation logs.
+
+9. User Protection Tools
+   Add:
+
+* Block user button
+* Report conversation button
+
+Blocked users cannot send new messages.
+
+10. Message Reactions
+    Allow reacting to messages with emojis (👍 ❤️ 😂).
+
+11. Message Editing and Deleting
+    Allow users to:
+
+* Edit messages within 5 minutes
+* Delete messages
+
+12. Database Structure
+
+conversations table:
+id
+car_id
+buyer_id
+seller_id
+created_at
+
+messages table:
+id
+conversation_id
+sender_id
+message_text
+message_type (text,image)
+status (sent,delivered,seen)
+created_at
+
+notifications table:
+id
+user_id
+type
+message
+link
+is_read
+created_at
+
+blocked_users table:
+id
+user_id
+blocked_user_id
+
+13. UI Improvements
+
+* Chat bubbles like Messenger
+* Smooth animations
+* Auto scroll to latest message
+* Typing indicator ("User is typing...")
+
+14. Security
+
+* Prevent messaging yourself
+* Sanitize input to prevent XSS
+* Rate limit messages
+* Validate uploaded images
+
+Do not break the current website design. Integrate the messaging system cleanly into the existing project.

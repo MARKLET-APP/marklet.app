@@ -3,6 +3,8 @@ export * from "./cars";
 export * from "./images";
 export * from "./conversations";
 export * from "./messages";
+export * from "./notifications";
+export * from "./blockedUsers";
 export * from "./reviews";
 export * from "./favorites";
 export * from "./vehicleReports";

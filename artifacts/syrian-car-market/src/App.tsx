@@ -13,6 +13,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Profile from "@/pages/profile";
 import Chat from "@/pages/chat";
+import Messages from "@/pages/messages";
 import Admin from "@/pages/admin";
 import Favorites from "@/pages/favorites";
 import BuyRequests from "@/pages/buy-requests";
@@ -44,7 +45,8 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/profile" component={Profile} />
-        <Route path="/chat" component={Chat} />
+        <Route path="/chat" component={Messages} />
+        <Route path="/messages" component={Messages} />
         <Route path="/admin" component={Admin} />
         <Route path="/favorites" component={Favorites} />
         <Route path="/buy-requests" component={BuyRequests} />

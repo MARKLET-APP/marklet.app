@@ -17,7 +17,8 @@ A full-stack mobile-first Arabic RTL marketplace for buying and selling cars in 
 - **API codegen**: Orval (from OpenAPI spec)
 - **Auth**: JWT (jsonwebtoken + bcryptjs)
 - **State**: Zustand
-- **Real-time**: Socket.io (planned)
+- **Real-time**: Socket.io v4 (implemented) — rooms per conversation, typing indicators, message seen events
+- **Emoji**: @emoji-mart/react for emoji picker in chat
 - **AI**: OpenAI API (GPT-4o-mini) for descriptions, price estimation, vehicle summaries
 
 ## Structure
@@ -49,7 +50,7 @@ lib/
 - Car listings with images, specs, location
 - Advanced search and filtering (brand, model, year, price, mileage, province, city, fuel type, transmission, category, sale type)
 - Favorites system
-- Real-time-style chat between buyers and sellers
+- Professional real-time chat (Socket.io): typing indicator, message seen/delivered/sent status, emoji picker, image sending, message reactions, edit/delete, block user, auto-response, word filter
 - User profiles with ratings
 - Vehicle information lookup (VIN/plate/chassis) with AI summary
 
@@ -81,7 +82,16 @@ lib/
 - `GET/POST /api/favorites` - Favorites
 - `GET /api/chats` - Conversations
 - `POST /api/chats/start` - Start conversation
-- `GET/POST /api/chats/:id/messages` - Messages
+- `GET/POST /api/chats/:id/messages` - Messages (with word filter, auto-response)
+- `POST /api/chats/:id/messages/image` - Send image (max 5MB)
+- `PATCH /api/chats/:id/messages/:msgId` - Edit message (within 5 minutes)
+- `DELETE /api/chats/:id/messages/:msgId` - Delete message
+- `POST /api/chats/:id/messages/:msgId/react` - React with emoji (toggle)
+- `POST /api/chats/:id/block` - Block/unblock user
+- `GET /api/chats/:id/block-status` - Check block status
+- `GET /api/notifications` - User notifications
+- `PATCH /api/notifications/:id/read` - Mark notification read
+- `POST /api/notifications/read-all` - Mark all read
 - `POST /api/reviews` - Create review
 - `POST /api/vehicle-reports/lookup` - Vehicle lookup
 - `POST /api/ai/generate-description` - AI description

@@ -20,6 +20,7 @@ import junkCarsRouter from "./junkCars";
 import inspectionsRouter from "./inspections";
 import supportMessagesRouter from "./supportMessages";
 import missingCarsRouter from "./missingCars";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(junkCarsRouter);
 router.use(inspectionsRouter);
 router.use(supportMessagesRouter);
 router.use(missingCarsRouter);
+router.use(notificationsRouter);
 
 export default router;

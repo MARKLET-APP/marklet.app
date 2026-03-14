@@ -1,142 +1,115 @@
 import { Router, type IRouter } from "express";
-import { db, conversationsTable, messagesTable, usersTable, carsTable, imagesTable } from "@workspace/db";
-import { eq, and, or, desc } from "drizzle-orm";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { db, conversationsTable, messagesTable, usersTable, carsTable, imagesTable, notificationsTable, blockedUsersTable } from "@workspace/db";
+import { eq, and, or, desc, count } from "drizzle-orm";
 import { SendMessageBody, StartConversationBody } from "@workspace/api-zod";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { getSocketServer } from "../lib/socket.js";
 
 const router: IRouter = Router();
 
-router.get("/chats", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
-  const userId = req.userId!;
+const OFFENSIVE_WORDS = [
+  "كلب", "حمار", "خنزير", "عاهرة", "شرموطة", "ابن زانية",
+  "منيوك", "كس", "زب", "شرموط", "عرص", "قحبة",
+];
 
-  const conversations = await db.select()
-    .from(conversationsTable)
-    .where(or(eq(conversationsTable.buyerId, userId), eq(conversationsTable.sellerId, userId)))
-    .orderBy(desc(conversationsTable.updatedAt));
+function filterContent(text: string): string {
+  let filtered = text;
+  OFFENSIVE_WORDS.forEach((word) => {
+    filtered = filtered.replace(new RegExp(word, "g"), "****");
+  });
+  return filtered;
+}
 
-  const enriched = await Promise.all(conversations.map(async (conv) => {
-    const isbuyer = conv.buyerId === userId;
-    const otherUserId = isbuyer ? conv.sellerId : conv.buyerId;
+const uploadsDir = path.join(process.cwd(), "uploads", "chat");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-    const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserId)).limit(1);
-    const [car] = await db.select().from(carsTable).where(eq(carsTable.id, conv.carId)).limit(1);
-    const [carImg] = await db.select().from(imagesTable).where(eq(imagesTable.carId, conv.carId)).limit(1);
-    
-    const [lastMsg] = await db.select().from(messagesTable)
-      .where(eq(messagesTable.conversationId, conv.id))
-      .orderBy(desc(messagesTable.createdAt))
-      .limit(1);
-
-    const unreadMessages = await db.select().from(messagesTable)
-      .where(and(
-        eq(messagesTable.conversationId, conv.id),
-        eq(messagesTable.isRead, false),
-        eq(messagesTable.senderId, otherUserId)
-      ));
-
-    return {
-      id: conv.id,
-      carId: conv.carId,
-      carBrand: car?.brand ?? "",
-      carModel: car?.model ?? "",
-      carYear: car?.year ?? 0,
-      carImage: carImg?.imageUrl ?? null,
-      otherUserId,
-      otherUserName: otherUser?.name ?? "Unknown",
-      otherUserPhoto: otherUser?.profilePhoto ?? null,
-      lastMessage: lastMsg?.content ?? null,
-      lastMessageAt: lastMsg?.createdAt?.toISOString() ?? null,
-      unreadCount: unreadMessages.length,
-      createdAt: conv.createdAt,
-    };
-  }));
-
-  res.json(enriched);
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${unique}${path.extname(file.originalname)}`);
+  },
 });
 
-router.post("/chats/start", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
-  const parsed = StartConversationBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp/;
+    if (allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files allowed"));
+    }
+  },
+});
 
-  const { sellerId, carId } = parsed.data;
-  const buyerId = req.userId!;
+type ConvRow = { id: number; carId: number; buyerId: number; sellerId: number; createdAt: Date; updatedAt: Date };
 
-  if (buyerId === sellerId) {
-    res.status(400).json({ error: "Cannot start conversation with yourself" });
-    return;
-  }
-
-  const [existing] = await db.select().from(conversationsTable)
-    .where(and(
-      eq(conversationsTable.buyerId, buyerId),
-      eq(conversationsTable.sellerId, sellerId),
-      eq(conversationsTable.carId, carId)
-    )).limit(1);
-
-  if (existing) {
-    const [car] = await db.select().from(carsTable).where(eq(carsTable.id, carId)).limit(1);
-    const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, sellerId)).limit(1);
-    const [carImg] = await db.select().from(imagesTable).where(eq(imagesTable.carId, carId)).limit(1);
-    const [lastMsg] = await db.select().from(messagesTable)
-      .where(eq(messagesTable.conversationId, existing.id))
-      .orderBy(desc(messagesTable.createdAt)).limit(1);
-
-    res.status(201).json({
-      id: existing.id,
-      carId,
-      carBrand: car?.brand ?? "",
-      carModel: car?.model ?? "",
-      carYear: car?.year ?? 0,
-      carImage: carImg?.imageUrl ?? null,
-      otherUserId: sellerId,
-      otherUserName: seller?.name ?? "Unknown",
-      otherUserPhoto: seller?.profilePhoto ?? null,
-      lastMessage: lastMsg?.content ?? null,
-      lastMessageAt: lastMsg?.createdAt?.toISOString() ?? null,
-      unreadCount: 0,
-      createdAt: existing.createdAt,
-    });
-    return;
-  }
-
-  const [conv] = await db.insert(conversationsTable).values({ buyerId, sellerId, carId }).returning();
-  
-  const [car] = await db.select().from(carsTable).where(eq(carsTable.id, carId)).limit(1);
-  const [seller] = await db.select().from(usersTable).where(eq(usersTable.id, sellerId)).limit(1);
-  const [carImg] = await db.select().from(imagesTable).where(eq(imagesTable.carId, carId)).limit(1);
-
-  res.status(201).json({
+async function buildConvResponse(conv: ConvRow, userId: number) {
+  const isBuyer = conv.buyerId === userId;
+  const otherUserId = isBuyer ? conv.sellerId : conv.buyerId;
+  const [otherUser] = await db.select().from(usersTable).where(eq(usersTable.id, otherUserId)).limit(1);
+  const [car] = await db.select().from(carsTable).where(eq(carsTable.id, conv.carId)).limit(1);
+  const [carImg] = await db.select().from(imagesTable).where(eq(imagesTable.carId, conv.carId)).limit(1);
+  const [lastMsg] = await db.select().from(messagesTable)
+    .where(eq(messagesTable.conversationId, conv.id))
+    .orderBy(desc(messagesTable.createdAt)).limit(1);
+  const [unreadRow] = await db.select({ c: count() }).from(messagesTable).where(and(
+    eq(messagesTable.conversationId, conv.id),
+    eq(messagesTable.isRead, false),
+    eq(messagesTable.senderId, otherUserId),
+  ));
+  return {
     id: conv.id,
-    carId,
+    carId: conv.carId,
     carBrand: car?.brand ?? "",
     carModel: car?.model ?? "",
     carYear: car?.year ?? 0,
     carImage: carImg?.imageUrl ?? null,
-    otherUserId: sellerId,
-    otherUserName: seller?.name ?? "Unknown",
-    otherUserPhoto: seller?.profilePhoto ?? null,
-    lastMessage: null,
-    lastMessageAt: null,
-    unreadCount: 0,
+    otherUserId,
+    otherUserName: otherUser?.name ?? "Unknown",
+    otherUserPhone: otherUser?.phone ?? null,
+    otherUserPhoto: otherUser?.profilePhoto ?? null,
+    lastMessage: lastMsg?.isDeleted ? "تم حذف الرسالة" : (lastMsg?.content ?? null),
+    lastMessageAt: lastMsg?.createdAt?.toISOString() ?? null,
+    unreadCount: unreadRow?.c ?? 0,
     createdAt: conv.createdAt,
-  });
+  };
+}
+
+router.get("/chats", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const userId = req.userId!;
+  const conversations = await db.select().from(conversationsTable)
+    .where(or(eq(conversationsTable.buyerId, userId), eq(conversationsTable.sellerId, userId)))
+    .orderBy(desc(conversationsTable.updatedAt));
+  res.json(await Promise.all(conversations.map((c) => buildConvResponse(c, userId))));
+});
+
+router.post("/chats/start", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const parsed = StartConversationBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const { sellerId, carId } = parsed.data;
+  const buyerId = req.userId!;
+  if (buyerId === sellerId) { res.status(400).json({ error: "Cannot start conversation with yourself" }); return; }
+  const [existing] = await db.select().from(conversationsTable).where(and(
+    eq(conversationsTable.buyerId, buyerId),
+    eq(conversationsTable.sellerId, sellerId),
+    eq(conversationsTable.carId, carId),
+  )).limit(1);
+  if (existing) { res.status(201).json(await buildConvResponse(existing, buyerId)); return; }
+  const [conv] = await db.insert(conversationsTable).values({ buyerId, sellerId, carId }).returning();
+  res.status(201).json(await buildConvResponse(conv, buyerId));
 });
 
 router.get("/chats/:conversationId/messages", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const convId = parseInt(Array.isArray(req.params.conversationId) ? req.params.conversationId[0] : req.params.conversationId, 10);
-  if (isNaN(convId)) {
-    res.status(400).json({ error: "Invalid conversation ID" });
-    return;
-  }
-
+  if (isNaN(convId)) { res.status(400).json({ error: "Invalid conversation ID" }); return; }
   const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, convId)).limit(1);
-  if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+  if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const msgs = await db.select({
     id: messagesTable.id,
@@ -144,56 +117,219 @@ router.get("/chats/:conversationId/messages", authMiddleware, async (req: AuthRe
     senderId: messagesTable.senderId,
     content: messagesTable.content,
     messageType: messagesTable.messageType,
+    status: messagesTable.status,
+    imageUrl: messagesTable.imageUrl,
     isRead: messagesTable.isRead,
+    isDeleted: messagesTable.isDeleted,
+    reactions: messagesTable.reactions,
+    editedAt: messagesTable.editedAt,
     createdAt: messagesTable.createdAt,
+    updatedAt: messagesTable.updatedAt,
     senderName: usersTable.name,
-  })
-    .from(messagesTable)
+    senderPhoto: usersTable.profilePhoto,
+  }).from(messagesTable)
     .leftJoin(usersTable, eq(messagesTable.senderId, usersTable.id))
     .where(eq(messagesTable.conversationId, convId))
     .orderBy(messagesTable.createdAt);
 
   await db.update(messagesTable)
-    .set({ isRead: true })
+    .set({ status: "seen", isRead: true })
     .where(and(eq(messagesTable.conversationId, convId), eq(messagesTable.isRead, false)));
 
-  res.json(msgs.map(m => ({ ...m, senderName: m.senderName ?? "Unknown" })));
+  const io = getSocketServer();
+  if (io) io.to(`conv:${convId}`).emit("messages_seen", { convId, seenBy: req.userId });
+
+  res.json(msgs.map((m) => ({
+    ...m,
+    senderName: m.senderName ?? "Unknown",
+    senderPhoto: m.senderPhoto ?? null,
+    reactions: (() => { try { return JSON.parse(m.reactions ?? "{}"); } catch { return {}; } })(),
+  })));
 });
 
 router.post("/chats/:conversationId/messages", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const convId = parseInt(Array.isArray(req.params.conversationId) ? req.params.conversationId[0] : req.params.conversationId, 10);
-  if (isNaN(convId)) {
-    res.status(400).json({ error: "Invalid conversation ID" });
-    return;
-  }
-
+  if (isNaN(convId)) { res.status(400).json({ error: "Invalid conversation ID" }); return; }
   const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, convId)).limit(1);
-  if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+  if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const otherUserId = conv.buyerId === req.userId ? conv.sellerId : conv.buyerId;
+
+  const blocked = await db.select().from(blockedUsersTable).where(or(
+    and(eq(blockedUsersTable.userId, req.userId!), eq(blockedUsersTable.blockedUserId, otherUserId)),
+    and(eq(blockedUsersTable.userId, otherUserId), eq(blockedUsersTable.blockedUserId, req.userId!)),
+  )).limit(1);
+  if (blocked.length > 0) { res.status(403).json({ error: "Blocked" }); return; }
 
   const parsed = SendMessageBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
+  const filteredContent = filterContent(parsed.data.content);
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+  const [msgCountRow] = await db.select({ c: count() }).from(messagesTable).where(eq(messagesTable.conversationId, convId));
+  const isFirstMessage = (msgCountRow?.c ?? 0) === 0;
 
   const [msg] = await db.insert(messagesTable).values({
     conversationId: convId,
     senderId: req.userId!,
-    content: parsed.data.content,
+    content: filteredContent,
     messageType: parsed.data.messageType ?? "text",
+    status: "delivered",
   }).returning();
 
   await db.update(conversationsTable).set({ updatedAt: new Date() }).where(eq(conversationsTable.id, convId));
 
-  res.status(201).json({
-    ...msg,
-    senderName: sender?.name ?? "Unknown",
+  const fullMsg = { ...msg, senderName: sender?.name ?? "Unknown", senderPhoto: sender?.profilePhoto ?? null, reactions: {} };
+
+  const io = getSocketServer();
+  if (io) {
+    io.to(`conv:${convId}`).emit("new_message", { convId, message: fullMsg });
+    io.to(`user:${otherUserId}`).emit("notification", {
+      type: "message",
+      message: `رسالة جديدة من ${sender?.name ?? "شخص ما"}`,
+      link: `/messages?conversationId=${convId}`,
+    });
+  }
+
+  await db.insert(notificationsTable).values({
+    userId: otherUserId,
+    type: "message",
+    message: `رسالة جديدة من ${sender?.name ?? "شخص ما"}`,
+    link: `/messages?conversationId=${convId}`,
   });
+
+  if (isFirstMessage) {
+    const [autoMsg] = await db.insert(messagesTable).values({
+      conversationId: convId,
+      senderId: 0,
+      content: "تم إرسال رسالتك إلى البائع بنجاح. يرجى الانتظار قليلاً حتى يرد عليك.",
+      messageType: "system",
+      status: "sent",
+    }).returning();
+    if (io) {
+      io.to(`conv:${convId}`).emit("new_message", {
+        convId,
+        message: { ...autoMsg, senderName: "النظام", senderPhoto: null, reactions: {} },
+      });
+    }
+  }
+
+  res.status(201).json(fullMsg);
+});
+
+router.post("/chats/:conversationId/messages/image", authMiddleware, upload.single("image"), async (req: AuthRequest, res): Promise<void> => {
+  const convId = parseInt(Array.isArray(req.params.conversationId) ? req.params.conversationId[0] : req.params.conversationId, 10);
+  if (isNaN(convId)) { res.status(400).json({ error: "Invalid conversation ID" }); return; }
+  const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, convId)).limit(1);
+  if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
+  if (!req.file) { res.status(400).json({ error: "No image provided" }); return; }
+
+  const imageUrl = `/api/uploads/chat/${req.file.filename}`;
+  const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+  const [msg] = await db.insert(messagesTable).values({
+    conversationId: convId,
+    senderId: req.userId!,
+    content: "صورة",
+    messageType: "image",
+    imageUrl,
+    status: "delivered",
+  }).returning();
+  await db.update(conversationsTable).set({ updatedAt: new Date() }).where(eq(conversationsTable.id, convId));
+
+  const fullMsg = { ...msg, senderName: sender?.name ?? "Unknown", senderPhoto: sender?.profilePhoto ?? null, reactions: {} };
+  const io = getSocketServer();
+  if (io) io.to(`conv:${convId}`).emit("new_message", { convId, message: fullMsg });
+  res.status(201).json(fullMsg);
+});
+
+router.patch("/chats/:conversationId/messages/:messageId", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const msgId = parseInt(Array.isArray(req.params.messageId) ? req.params.messageId[0] : req.params.messageId, 10);
+  const [msg] = await db.select().from(messagesTable).where(eq(messagesTable.id, msgId)).limit(1);
+  if (!msg || msg.senderId !== req.userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  if (Date.now() - new Date(msg.createdAt).getTime() > 5 * 60 * 1000) {
+    res.status(400).json({ error: "يمكن تعديل الرسالة خلال 5 دقائق فقط من إرسالها" }); return;
+  }
+  const { content } = req.body as { content?: string };
+  if (!content?.trim()) { res.status(400).json({ error: "Content required" }); return; }
+  const [updated] = await db.update(messagesTable)
+    .set({ content: filterContent(content.trim()), editedAt: new Date(), updatedAt: new Date() })
+    .where(eq(messagesTable.id, msgId)).returning();
+  const io = getSocketServer();
+  if (io) io.to(`conv:${msg.conversationId}`).emit("message_updated", { convId: msg.conversationId, message: { ...updated, reactions: {} } });
+  res.json(updated);
+});
+
+router.delete("/chats/:conversationId/messages/:messageId", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const msgId = parseInt(Array.isArray(req.params.messageId) ? req.params.messageId[0] : req.params.messageId, 10);
+  const [msg] = await db.select().from(messagesTable).where(eq(messagesTable.id, msgId)).limit(1);
+  if (!msg || msg.senderId !== req.userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const [updated] = await db.update(messagesTable)
+    .set({ isDeleted: true, content: "تم حذف هذه الرسالة", updatedAt: new Date() })
+    .where(eq(messagesTable.id, msgId)).returning();
+  const io = getSocketServer();
+  if (io) io.to(`conv:${msg.conversationId}`).emit("message_deleted", { convId: msg.conversationId, messageId: msgId });
+  res.json(updated);
+});
+
+router.post("/chats/:conversationId/messages/:messageId/react", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const msgId = parseInt(Array.isArray(req.params.messageId) ? req.params.messageId[0] : req.params.messageId, 10);
+  const [msg] = await db.select().from(messagesTable).where(eq(messagesTable.id, msgId)).limit(1);
+  if (!msg) { res.status(404).json({ error: "Message not found" }); return; }
+  const { emoji } = req.body as { emoji?: string };
+  if (!emoji) { res.status(400).json({ error: "Emoji required" }); return; }
+  let reactions: Record<string, number[]> = {};
+  try { reactions = JSON.parse(msg.reactions ?? "{}"); } catch { reactions = {}; }
+  const userId = req.userId!;
+  const users = reactions[emoji] ?? [];
+  if (users.includes(userId)) {
+    reactions[emoji] = users.filter((u) => u !== userId);
+    if (!reactions[emoji].length) delete reactions[emoji];
+  } else {
+    reactions[emoji] = [...users, userId];
+  }
+  const [updated] = await db.update(messagesTable)
+    .set({ reactions: JSON.stringify(reactions), updatedAt: new Date() })
+    .where(eq(messagesTable.id, msgId)).returning();
+  const io = getSocketServer();
+  if (io) io.to(`conv:${msg.conversationId}`).emit("reaction_updated", { convId: msg.conversationId, messageId: msgId, reactions });
+  res.json({ ...updated, reactions });
+});
+
+router.post("/chats/:conversationId/block", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const convId = parseInt(Array.isArray(req.params.conversationId) ? req.params.conversationId[0] : req.params.conversationId, 10);
+  const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, convId)).limit(1);
+  if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const otherUserId = conv.buyerId === req.userId ? conv.sellerId : conv.buyerId;
+  const [existing] = await db.select().from(blockedUsersTable).where(and(
+    eq(blockedUsersTable.userId, req.userId!),
+    eq(blockedUsersTable.blockedUserId, otherUserId),
+  )).limit(1);
+  if (existing) {
+    await db.delete(blockedUsersTable).where(and(
+      eq(blockedUsersTable.userId, req.userId!),
+      eq(blockedUsersTable.blockedUserId, otherUserId),
+    ));
+    res.json({ blocked: false });
+  } else {
+    await db.insert(blockedUsersTable).values({ userId: req.userId!, blockedUserId: otherUserId });
+    res.json({ blocked: true });
+  }
+});
+
+router.get("/chats/:conversationId/block-status", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const convId = parseInt(Array.isArray(req.params.conversationId) ? req.params.conversationId[0] : req.params.conversationId, 10);
+  const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, convId)).limit(1);
+  if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const otherUserId = conv.buyerId === req.userId ? conv.sellerId : conv.buyerId;
+  const [byMe] = await db.select({ c: count() }).from(blockedUsersTable).where(and(
+    eq(blockedUsersTable.userId, req.userId!),
+    eq(blockedUsersTable.blockedUserId, otherUserId),
+  ));
+  const [byOther] = await db.select({ c: count() }).from(blockedUsersTable).where(and(
+    eq(blockedUsersTable.userId, otherUserId),
+    eq(blockedUsersTable.blockedUserId, req.userId!),
+  ));
+  res.json({ blockedByMe: (byMe?.c ?? 0) > 0, blockedByOther: (byOther?.c ?? 0) > 0 });
 });
 
 export default router;

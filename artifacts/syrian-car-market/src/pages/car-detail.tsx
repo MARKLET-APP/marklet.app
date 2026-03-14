@@ -89,7 +89,7 @@ export default function CarDetail() {
         throw new Error(err.error ?? "فشل بدء المحادثة");
       }
       const conversation = await res.json() as { id: number };
-      navigate(`/chat?conversationId=${conversation.id}`);
+      navigate(`/messages?conversationId=${conversation.id}`);
     } catch (err: any) {
       toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
     } finally {
