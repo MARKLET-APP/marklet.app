@@ -12,7 +12,7 @@ export function BottomNav() {
   const [isChat] = useRoute("/chat");
   const [isBuyRequests] = useRoute("/buy-requests");
 
-  const isSeller = user?.role === "seller";
+  const isSeller = user?.role === "seller" || user?.role === "dealer";
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t pb-safe sm:hidden">

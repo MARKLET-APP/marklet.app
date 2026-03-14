@@ -22,7 +22,7 @@ export const RegisterBody = zod.object({
   email: zod.string().nullish(),
   phone: zod.string().nullish(),
   password: zod.string(),
-  role: zod.enum(["buyer", "seller", "inspector"]).optional(),
+  role: zod.enum(["buyer", "seller", "dealer", "inspector"]).optional(),
 });
 
 /**

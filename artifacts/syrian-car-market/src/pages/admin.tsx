@@ -198,8 +198,8 @@ export default function AdminDashboard() {
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell dir="ltr" className="text-right">{u.phone}</TableCell>
                       <TableCell>
-                        <Badge variant={u.role === 'admin' ? 'default' : u.role === 'dealer' ? 'secondary' : 'outline'}>
-                          {u.role === 'admin' ? 'مدير' : u.role === 'dealer' ? 'معرض' : 'مستخدم'}
+                        <Badge variant={u.role === 'admin' ? 'default' : (u.role === 'dealer' || u.role === 'seller') ? 'secondary' : 'outline'}>
+                          {u.role === 'admin' ? 'مدير' : u.role === 'dealer' ? 'تاجر' : u.role === 'seller' ? 'بائع' : u.role === 'inspector' ? 'فاحص' : 'مشتري'}
                         </Badge>
                       </TableCell>
                       <TableCell>

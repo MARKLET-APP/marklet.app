@@ -115,7 +115,7 @@ export default function AddListing() {
     });
   };
 
-  if (user?.role !== 'seller') {
+  if (user?.role !== 'seller' && user?.role !== 'dealer') {
     return (
       <div className="py-20 text-center px-4">
         <div className="max-w-md mx-auto bg-card p-8 rounded-3xl border shadow-lg">

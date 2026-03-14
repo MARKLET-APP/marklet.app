@@ -88,7 +88,9 @@ export default function Profile() {
                 {currentProfile.name}
                 {currentProfile.isVerified && <ShieldCheck className="w-5 h-5 text-primary" />}
               </h2>
-              <p className="text-muted-foreground mb-4">{currentProfile.role === 'dealer' ? 'معرض سيارات' : 'مستخدم عادي'}</p>
+              <p className="text-muted-foreground mb-4">
+                {currentProfile.role === 'admin' ? 'مدير المنصة' : currentProfile.role === 'dealer' ? 'تاجر شراء وبيع' : currentProfile.role === 'seller' ? 'بائع سيارات' : currentProfile.role === 'inspector' ? 'فاحص سيارات' : 'مشتري'}
+              </p>
               
               <div className="flex items-center justify-center gap-1 text-accent font-bold mb-6">
                 <Star className="w-5 h-5 fill-accent" />
