@@ -10,7 +10,8 @@ A full-stack mobile-first Arabic RTL marketplace for buying and selling cars in 
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **Frontend**: React + Vite (artifacts/syrian-car-market) - Arabic RTL
+- **Frontend**: React + Vite (artifacts/syrian-car-market) - Arabic RTL / English LTR (bilingual)
+- **i18n**: Custom React context (`src/lib/i18n.tsx`) + translations (`src/lib/translations.ts`), persisted to localStorage as `marklet_lang`
 - **API framework**: Express 5 (artifacts/api-server)
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`

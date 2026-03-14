@@ -3,18 +3,19 @@ import { useRegister } from "@workspace/api-client-react";
 import { useAuthStore } from "@/lib/auth";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Register() {
   const [, navigate] = useLocation();
   const { setAuth } = useAuthStore();
   const registerMutation = useRegister();
-  
+  const { t } = useLanguage();
+
   const { register: formRegister, handleSubmit, formState: { errors } } = useForm({
     defaultValues: { name: "", identifier: "", password: "", role: "buyer" }
   });
 
   const onSubmit = (data: any) => {
-    // Determine if identifier is email or phone basic check
     const isEmail = data.identifier.includes('@');
     const payload = {
       name: data.name,
@@ -30,7 +31,7 @@ export default function Register() {
         navigate("/");
       },
       onError: () => {
-        alert("فشل إنشاء الحساب.");
+        alert(t("common.error"));
       }
     });
   };
@@ -39,53 +40,57 @@ export default function Register() {
     <div className="min-h-[80vh] flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-card rounded-3xl border shadow-xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-foreground mb-2">إنشاء حساب</h1>
-          <p className="text-muted-foreground">انضم لأكبر تجمع للسيارات في سوريا</p>
+          <h1 className="text-3xl font-extrabold text-foreground mb-2">{t("auth.register.title")}</h1>
+          <p className="text-muted-foreground">{t("auth.register.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-bold">الاسم الكامل</label>
-            <input 
-              {...formRegister("name", { required: "الاسم مطلوب" })} 
-              className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none" 
+            <label className="text-sm font-bold">{t("auth.register.name")}</label>
+            <input
+              {...formRegister("name", { required: t("common.requiredField") })}
+              className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none"
             />
+            {errors.name && <p className="text-destructive text-xs">{errors.name.message as string}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold">البريد الإلكتروني أو رقم الهاتف</label>
-            <input 
-              {...formRegister("identifier", { required: "مطلوب" })} 
-              className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr" 
+            <label className="text-sm font-bold">{t("auth.register.email")}</label>
+            <input
+              {...formRegister("identifier", { required: t("common.requiredField") })}
+              className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr"
             />
+            {errors.identifier && <p className="text-destructive text-xs">{errors.identifier.message as string}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold">كلمة المرور</label>
-            <input 
+            <label className="text-sm font-bold">{t("auth.register.password")}</label>
+            <input
               type="password"
-              {...formRegister("password", { required: "مطلوبة" })} 
-              className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr" 
+              {...formRegister("password", { required: t("common.requiredField") })}
+              className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr"
             />
+            {errors.password && <p className="text-destructive text-xs">{errors.password.message as string}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold">نوع الحساب</label>
+            <label className="text-sm font-bold">{t("auth.register.role")}</label>
             <select {...formRegister("role")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none">
-              <option value="buyer">مشتري (للبحث وشراء السيارات)</option>
-              <option value="seller">بائع (لنشر إعلانات السيارات)</option>
-              <option value="dealer">تاجر شراء وبيع (شراء وبيع السيارات)</option>
-              <option value="inspector">فاحص سيارات (لإدارة مراكز الفحص)</option>
+              <option value="buyer">{t("auth.register.role.buyer")}</option>
+              <option value="seller">{t("auth.register.role.seller")}</option>
+              <option value="dealer">{t("auth.register.role.dealer")}</option>
+              <option value="inspector">{t("auth.register.role.inspector")}</option>
             </select>
           </div>
 
           <Button type="submit" disabled={registerMutation.isPending} className="w-full h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/20">
-            {registerMutation.isPending ? "جاري الإنشاء..." : "تسجيل حساب جديد"}
+            {registerMutation.isPending ? t("auth.register.creating") : t("auth.register.submit")}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          لديك حساب مسبقاً؟ <Link href="/login" className="text-primary font-bold hover:underline">تسجيل الدخول</Link>
+          {t("auth.register.hasAccount")}{" "}
+          <Link href="/login" className="text-primary font-bold hover:underline">{t("auth.register.login")}</Link>
         </p>
       </div>
     </div>

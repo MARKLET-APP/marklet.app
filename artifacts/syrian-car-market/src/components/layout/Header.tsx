@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight } from "lucide-react";
+import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useGetConversations } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 export function Header() {
   const { user, logout } = useAuthStore();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t, lang, setLang, isRTL } = useLanguage();
   const isHome = location === "/" || location === "";
 
   const isPremium = !!(user as any)?.isPremium || !!(user as any)?.isVerified;
@@ -28,18 +30,20 @@ export function Header() {
 
   const handleSubscribeClick = () => {
     toast({
-      title: "الاشتراك قريباً",
-      description: "ميزة الاشتراك المدفوع ستكون متاحة قريباً — ابقَ بانتظارنا!",
+      title: t("nav.subscribeSoon"),
+      description: t("nav.subscribeSoonDesc"),
     });
   };
 
+  const toggleLang = () => setLang(lang === "ar" ? "en" : "ar");
+
   const navLinks = [
-    { href: "/", label: "الرئيسية" },
-    { href: "/search", label: "البحث" },
-    { href: "/vehicle-info", label: "تقرير مركبة" },
-    { href: "/buy-requests", label: "طلبات الشراء" },
-    { href: "/support", label: "تواصل معنا" },
-    ...(user?.role === "admin" ? [{ href: "/admin", label: "لوحة التحكم", accent: true }] : []),
+    { href: "/", label: t("nav.home") },
+    { href: "/search", label: t("nav.search") },
+    { href: "/vehicle-info", label: t("nav.vehicleReport") },
+    { href: "/buy-requests", label: t("nav.buyRequests") },
+    { href: "/support", label: t("nav.contact") },
+    ...(user?.role === "admin" ? [{ href: "/admin", label: t("nav.adminPanel"), accent: true }] : []),
   ];
 
   return (
@@ -54,10 +58,10 @@ export function Header() {
                 size="icon"
                 className="rounded-xl shrink-0"
                 onClick={() => window.history.back()}
-                title="رجوع"
-                aria-label="رجوع"
+                title={t("nav.back")}
+                aria-label={t("nav.back")}
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className={cn("w-5 h-5", !isRTL && "rotate-180")} />
               </Button>
             )}
             <Button
@@ -65,7 +69,7 @@ export function Header() {
               size="icon"
               className="sm:hidden"
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label="القائمة"
+              aria-label={t("nav.menu")}
             >
               {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </Button>
@@ -100,6 +104,18 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
+            {/* Language toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleLang}
+              className="hidden sm:flex items-center gap-1.5 rounded-full border border-border/60 px-3 h-8 text-xs font-bold hover:bg-primary/10 hover:text-primary transition-colors"
+              title={t("lang.switch")}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {t("lang.switch")}
+            </Button>
+
             {user ? (
               <>
                 {!isPremium && (
@@ -108,7 +124,7 @@ export function Header() {
                     size="sm"
                     className="hidden sm:flex gap-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-full text-xs font-bold px-3 h-8 shadow-sm shadow-amber-400/30"
                   >
-                    <Crown className="w-3.5 h-3.5" /> اشترك الآن
+                    <Crown className="w-3.5 h-3.5" /> {t("nav.subscribeNow")}
                   </Button>
                 )}
 
@@ -117,7 +133,7 @@ export function Header() {
                   size="icon"
                   className="relative text-muted-foreground hover:text-foreground"
                   onClick={() => navigate("/messages")}
-                  title="الرسائل والإشعارات"
+                  title={t("nav.messages")}
                 >
                   {totalUnread > 0 ? (
                     <MessageSquare className="w-5 h-5 text-primary" />
@@ -146,13 +162,13 @@ export function Header() {
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors px-3 py-2">
-                  تسجيل الدخول
+                  {t("nav.login")}
                 </Link>
                 <Link
                   href="/register"
                   className="hidden sm:inline-flex bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-bold shadow-md shadow-primary/20 hover:-translate-y-0.5 transition-all"
                 >
-                  إنشاء حساب
+                  {t("nav.register")}
                 </Link>
               </div>
             )}
@@ -197,29 +213,40 @@ export function Header() {
             {user ? (
               <>
                 <Link href="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground">
-                  <User className="w-4 h-4" /> حسابي
+                  <User className="w-4 h-4" /> {t("nav.myAccount")}
                 </Link>
                 <Link href="/messages" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground">
-                  <Bell className="w-4 h-4" /> الرسائل
+                  <Bell className="w-4 h-4" /> {t("nav.messages")}
                   {totalUnread > 0 && <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full px-1.5 py-0.5">{totalUnread}</span>}
                 </Link>
                 <button
                   onClick={() => { logout(); setMenuOpen(false); }}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-destructive/10 transition-colors font-semibold text-destructive w-full text-right"
                 >
-                  <LogOut className="w-4 h-4" /> تسجيل الخروج
+                  <LogOut className="w-4 h-4" /> {t("nav.logout")}
                 </button>
               </>
             ) : (
               <>
                 <Link href="/login" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground">
-                  تسجيل الدخول
+                  {t("nav.login")}
                 </Link>
                 <Link href="/register" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-xl font-bold">
-                  إنشاء حساب
+                  {t("nav.register")}
                 </Link>
               </>
             )}
+
+            {/* Language toggle in mobile menu */}
+            <div className="mt-auto pt-4 border-t">
+              <button
+                onClick={() => { toggleLang(); setMenuOpen(false); }}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground w-full"
+              >
+                <Globe className="w-4 h-4 text-primary" />
+                {t("lang.switch")}
+              </button>
+            </div>
           </div>
         </div>
       )}

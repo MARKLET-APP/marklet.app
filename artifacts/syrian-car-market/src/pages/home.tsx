@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
-  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, Phone, FileText, Calendar
+  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Home() {
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
@@ -22,6 +23,8 @@ export default function Home() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { t, isRTL } = useLanguage();
+
   const [heroSearch, setHeroSearch] = useState("");
   const [missingInfoOpen, setMissingInfoOpen] = useState(false);
   const [missingInfoCarId, setMissingInfoCarId] = useState<number | null>(null);
@@ -45,12 +48,12 @@ export default function Home() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         if (err.error === "Cannot start conversation with yourself") { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-        throw new Error("فشل بدء المحادثة");
+        throw new Error("failed");
       }
       const conv = await res.json();
       navigate(`/messages?conversationId=${conv.id}`);
     } catch {
-      toast({ title: "تعذّر بدء المحادثة", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     } finally {
       setStartingChat(null);
     }
@@ -80,11 +83,11 @@ export default function Home() {
         message: `معلومات عن سيارة مفقودة #${missingInfoCarId}: ${infoMsg}`,
         userId: user?.id ?? null,
       });
-      toast({ title: "تم إرسال المعلومات إلى الإدارة", description: "شكراً لمساعدتك" });
+      toast({ title: t("home.missingInfo.success"), description: t("home.missingInfo.successDesc") });
       setMissingInfoOpen(false);
       setInfoMsg("");
     } catch {
-      toast({ title: "حدث خطأ", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     } finally {
       setSendingInfo(false);
     }
@@ -105,16 +108,16 @@ export default function Home() {
   };
 
   const categories = [
-    { id: 'new', name: 'سيارات جديدة', icon: 'car-new', href: '/search?saleType=new' },
-    { id: 'used', name: 'سيارات مستعملة', icon: 'car-used', href: '/search?saleType=used' },
-    { id: 'rent', name: 'سيارات للإيجار', icon: 'key', href: '/search?saleType=rent' },
-    { id: 'motorcycles', name: 'دراجات نارية', icon: 'bike', href: '/search?category=motorcycle' },
-    { id: 'plates', name: 'أرقام اللوحات', icon: 'plates', href: '/search?category=plates' },
-    { id: 'parts', name: 'قطع سيارات', icon: 'wrench', href: '/car-parts' },
-    { id: 'junk', name: 'سيارات خردة', icon: 'package', href: '/junk-cars' },
-    { id: 'inspect', name: 'افحص سيارتك', icon: 'shield', href: '/inspections' },
-    { id: 'missing', name: 'سيارة مفقودة', icon: 'search', href: '/missing-cars' },
-    { id: 'buy-request', name: 'طلب شراء', icon: 'cart', href: '/buy-requests' },
+    { id: 'new', name: isRTL ? 'سيارات جديدة' : 'New Cars', icon: 'car-new', href: '/search?saleType=new' },
+    { id: 'used', name: isRTL ? 'سيارات مستعملة' : 'Used Cars', icon: 'car-used', href: '/search?saleType=used' },
+    { id: 'rent', name: isRTL ? 'سيارات للإيجار' : 'Cars for Rent', icon: 'key', href: '/search?saleType=rent' },
+    { id: 'motorcycles', name: isRTL ? 'دراجات نارية' : 'Motorcycles', icon: 'bike', href: '/search?category=motorcycle' },
+    { id: 'plates', name: isRTL ? 'أرقام اللوحات' : 'License Plates', icon: 'plates', href: '/search?category=plates' },
+    { id: 'parts', name: t("home.browse.parts"), icon: 'wrench', href: '/car-parts' },
+    { id: 'junk', name: t("home.browse.junk"), icon: 'package', href: '/junk-cars' },
+    { id: 'inspect', name: t("home.browse.inspections"), icon: 'shield', href: '/inspections' },
+    { id: 'missing', name: t("home.browse.missing"), icon: 'search', href: '/missing-cars' },
+    { id: 'buy-request', name: t("nav.buyRequests"), icon: 'cart', href: '/buy-requests' },
   ];
 
   return (
@@ -122,7 +125,6 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
 
-        {/* Ken Burns background */}
         <motion.img
           src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
           alt="Hero Background"
@@ -131,10 +133,8 @@ export default function Home() {
           transition={{ duration: 20, ease: "easeInOut", repeat: Infinity }}
         />
 
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/45 z-10" />
 
-        {/* Floating light blobs */}
         <motion.div
           className="absolute z-10 w-72 h-72 rounded-full bg-primary/20 blur-3xl pointer-events-none"
           style={{ top: "-10%", right: "10%" }}
@@ -153,24 +153,24 @@ export default function Home() {
           animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.45, 0.2] }}
           transition={{ duration: 7, ease: "easeInOut", repeat: Infinity, delay: 1.5 }}
         />
-        
+
         <div className="relative z-20 max-w-3xl w-full px-6 text-center space-y-6">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-6xl font-extrabold text-white drop-shadow-xl leading-tight"
           >
-            السوق الأول <span className="text-accent">لتجارة السيارات</span> في سورية
+            {t("home.hero.title1")} <span className="text-accent">{t("home.hero.title2")}</span>
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="text-lg md:text-xl text-white/90 drop-shadow-md"
           >
-            آلاف السيارات المعروضة يومياً بأسعار تناسب الجميع، مع ميزات الذكاء الاصطناعي لتسهيل اختيارك.
+            {t("home.hero.subtitle")}
           </motion.p>
-          
+
           <motion.form
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -184,52 +184,47 @@ export default function Home() {
                 type="text"
                 value={heroSearch}
                 onChange={(e) => setHeroSearch(e.target.value)}
-                placeholder="ابحث عن ماركة، موديل، أو مدينة..."
+                placeholder={t("home.hero.search")}
                 className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <Button type="submit" size="lg" className="rounded-xl px-8 font-bold text-base h-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-all">
-              بحث
+              {t("home.hero.searchBtn")}
             </Button>
           </motion.form>
 
-          {/* Role-based action buttons */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
             className="flex flex-wrap justify-center gap-3 pt-2"
           >
-            {/* Seller / Dealer — publish listing */}
             {(canSell || !user) && (
               <button
                 onClick={handleCreateAd}
                 className="flex items-center gap-2 bg-primary hover:bg-primary/90 active:scale-95 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-primary/30 transition-all duration-200"
               >
                 <PlusCircle className="w-5 h-5" />
-                نشر إعلان سيارة
+                {t("home.hero.postCar")}
               </button>
             )}
 
-            {/* Buyer / Dealer — buy request */}
             {(canBuy || !user) && (
               <button
                 onClick={handleBuyRequest}
                 className="flex items-center gap-2 bg-accent hover:bg-accent/90 active:scale-95 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-accent/30 transition-all duration-200"
               >
                 <ShoppingCart className="w-5 h-5" />
-                طلب شراء سيارة
+                {t("home.hero.requestCar")}
               </button>
             )}
 
-            {/* Inspector — no action buttons, just a soft label */}
             {role === "inspector" && (
               <span className="text-white/70 text-sm bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm">
-                مرحباً بك يا مفتش 👋
+                {isRTL ? "مرحباً بك يا مفتش 👋" : "Welcome, Inspector 👋"}
               </span>
             )}
           </motion.div>
-
         </div>
       </section>
 
@@ -241,8 +236,8 @@ export default function Home() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <p className="font-bold text-foreground">موثوقية عالية</p>
-              <p className="text-sm text-muted-foreground">بائعون موثقون</p>
+              <p className="font-bold text-foreground">{t("home.trust.verified")}</p>
+              <p className="text-sm text-muted-foreground">{t("home.trust.verifiedSub")}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -250,8 +245,8 @@ export default function Home() {
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <p className="font-bold text-foreground">ذكاء اصطناعي</p>
-              <p className="text-sm text-muted-foreground">تسعير ووصف دقيق</p>
+              <p className="font-bold text-foreground">{t("home.trust.ai")}</p>
+              <p className="text-sm text-muted-foreground">{t("home.trust.aiSub")}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -259,8 +254,8 @@ export default function Home() {
               <Zap className="w-6 h-6" />
             </div>
             <div>
-              <p className="font-bold text-foreground">سرعة بالتواصل</p>
-              <p className="text-sm text-muted-foreground">محادثات فورية</p>
+              <p className="font-bold text-foreground">{t("home.trust.speed")}</p>
+              <p className="text-sm text-muted-foreground">{t("home.trust.speedSub")}</p>
             </div>
           </div>
         </div>
@@ -270,8 +265,8 @@ export default function Home() {
       <section className="py-12 max-w-7xl mx-auto px-4 w-full">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">تصفح حسب الفئة</h2>
-            <p className="text-muted-foreground mt-1">كل ما تحتاجه في عالم السيارات في مكان واحد</p>
+            <h2 className="text-2xl font-bold text-foreground">{t("home.browse.title")}</h2>
+            <p className="text-muted-foreground mt-1">{isRTL ? "كل ما تحتاجه في عالم السيارات في مكان واحد" : "Everything you need for cars in one place"}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -317,11 +312,11 @@ export default function Home() {
             <div>
               <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                 <span className="w-3 h-8 bg-accent rounded-full inline-block"></span>
-                إعلانات مميزة
+                {t("home.featured.title")}
               </h2>
             </div>
             <Link href="/search?featured=true" className="text-primary font-semibold flex items-center gap-1 hover:underline">
-              عرض الكل <ChevronLeft className="w-4 h-4" />
+              {t("common.all")} <ChevronLeft className="w-4 h-4" />
             </Link>
           </div>
 
@@ -341,11 +336,11 @@ export default function Home() {
       <section className="py-12 max-w-7xl mx-auto px-4 w-full">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">أحدث الإعلانات</h2>
-            <p className="text-muted-foreground mt-1">سيارات أضيفت مؤخراً للسوق</p>
+            <h2 className="text-2xl font-bold text-foreground">{t("home.recentCars.title")}</h2>
+            <p className="text-muted-foreground mt-1">{isRTL ? "سيارات أضيفت مؤخراً للسوق" : "Cars recently added to the market"}</p>
           </div>
           <Link href="/search" className="text-primary font-semibold flex items-center gap-1 hover:underline">
-            تصفح السوق <ChevronLeft className="w-4 h-4" />
+            {isRTL ? "تصفح السوق" : "Browse Market"} <ChevronLeft className="w-4 h-4" />
           </Link>
         </div>
 
@@ -368,12 +363,12 @@ export default function Home() {
               <div>
                 <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                   <span className="w-3 h-8 bg-primary rounded-full inline-block"></span>
-                  طلبات شراء السيارات
+                  {t("home.buyReqs.title")}
                 </h2>
-                <p className="text-muted-foreground mt-1 text-sm">مشترون يبحثون عن سيارات — هل تملك ما يريدون؟</p>
+                <p className="text-muted-foreground mt-1 text-sm">{t("home.buyReqs.subtitle")}</p>
               </div>
               <Link href="/buy-requests" className="text-primary font-semibold flex items-center gap-1 hover:underline text-sm">
-                عرض الكل <ChevronLeft className="w-4 h-4" />
+                {t("home.buyReqs.viewAll")} <ChevronLeft className="w-4 h-4" />
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -381,13 +376,13 @@ export default function Home() {
                 <div key={r.id} className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold text-foreground text-lg">{r.brand || "أي ماركة"} {r.model || ""}</h3>
+                      <h3 className="font-bold text-foreground text-lg">{r.brand || t("home.buyReqs.anyBrand")} {r.model || ""}</h3>
                       {(r.minYear || r.maxYear) && (
                         <p className="text-xs text-muted-foreground">{r.minYear ?? "—"} – {r.maxYear ?? "—"}</p>
                       )}
                     </div>
                     <Badge className="bg-primary/10 text-primary border-0">
-                      <ShoppingCart className="w-3 h-3 ml-1" /> طلب شراء
+                      <ShoppingCart className="w-3 h-3 ml-1" /> {t("nav.buyRequests")}
                     </Badge>
                   </div>
 
@@ -395,7 +390,7 @@ export default function Home() {
                     {r.maxPrice && (
                       <span className="flex items-center gap-1 text-primary font-bold">
                         <DollarSign className="w-4 h-4" />
-                        حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}
+                        {isRTL ? "حتى" : "Up to"} {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}
                       </span>
                     )}
                     {r.city && (
@@ -420,7 +415,7 @@ export default function Home() {
                         ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
                         : <MessageCircle className="w-3.5 h-3.5" />
                       }
-                      مراسلة
+                      {t("home.buyReqs.contact")}
                     </Button>
                     <Button
                       size="sm"
@@ -428,7 +423,7 @@ export default function Home() {
                       className="flex-1 rounded-xl gap-1 text-xs"
                       onClick={() => setDetailRequest(r)}
                     >
-                      <Eye className="w-3.5 h-3.5" /> التفاصيل
+                      <Eye className="w-3.5 h-3.5" /> {t("home.buyReqs.details")}
                     </Button>
                   </div>
                 </div>
@@ -445,19 +440,19 @@ export default function Home() {
             <div>
               <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                 <span className="w-3 h-8 bg-amber-500 rounded-full inline-block"></span>
-                سيارات مفقودة
+                {isRTL ? "سيارات مفقودة" : "Missing Cars"}
               </h2>
-              <p className="text-muted-foreground mt-1 text-sm">إذا رأيت إحدى هذه السيارات، أبلغ الإدارة</p>
+              <p className="text-muted-foreground mt-1 text-sm">{isRTL ? "إذا رأيت إحدى هذه السيارات، أبلغ الإدارة" : "If you see any of these cars, notify the admin"}</p>
             </div>
             <Link href="/missing-cars" className="text-amber-600 font-semibold flex items-center gap-1 hover:underline text-sm">
-              عرض الكل <ChevronLeft className="w-4 h-4" />
+              {isRTL ? "عرض الكل" : "View All"} <ChevronLeft className="w-4 h-4" />
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {(missingCars as any[]).filter((c: any) => c.isFound !== "yes").slice(0, 4).map((c: any) => (
               <div key={c.id} className="bg-card border-2 border-amber-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 {c.image ? (
-                  <img src={c.image} alt={c.brand ?? "سيارة"} className="w-full h-36 object-cover" />
+                  <img src={c.image} alt={c.brand ?? (isRTL ? "سيارة" : "Car")} className="w-full h-36 object-cover" />
                 ) : (
                   <div className="w-full h-36 bg-amber-50 flex items-center justify-center">
                     <AlertTriangle className="w-12 h-12 text-amber-300" />
@@ -465,18 +460,18 @@ export default function Home() {
                 )}
                 <div className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-foreground text-sm">{[c.brand, c.model].filter(Boolean).join(" ") || "سيارة مجهولة"}</h4>
-                    <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">مفقودة</Badge>
+                    <h4 className="font-bold text-foreground text-sm">{[c.brand, c.model].filter(Boolean).join(" ") || (isRTL ? "سيارة مجهولة" : "Unknown Car")}</h4>
+                    <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">{isRTL ? "مفقودة" : "Missing"}</Badge>
                   </div>
-                  {c.color && <p className="text-xs text-muted-foreground">اللون: {c.color}</p>}
-                  {c.plateNumber && <p className="text-xs font-bold text-foreground">لوحة: {c.plateNumber}</p>}
+                  {c.color && <p className="text-xs text-muted-foreground">{isRTL ? `اللون: ${c.color}` : `Color: ${c.color}`}</p>}
+                  {c.plateNumber && <p className="text-xs font-bold text-foreground">{isRTL ? `لوحة: ${c.plateNumber}` : `Plate: ${c.plateNumber}`}</p>}
                   {c.city && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</p>}
                   <Button
                     size="sm"
                     className="w-full mt-2 rounded-xl text-xs bg-amber-500 hover:bg-amber-600 text-white gap-1"
                     onClick={() => { setMissingInfoCarId(c.id); setMissingInfoOpen(true); }}
                   >
-                    <Send className="w-3 h-3" /> إرسال معلومات إلى الإدارة
+                    <Send className="w-3 h-3" /> {isRTL ? "إرسال معلومات إلى الإدارة" : "Send Info to Admin"}
                   </Button>
                 </div>
               </div>
@@ -487,18 +482,20 @@ export default function Home() {
 
       {/* Send Missing Car Info Dialog */}
       <Dialog open={missingInfoOpen} onOpenChange={setMissingInfoOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={isRTL ? "rtl" : "ltr"}>
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">إرسال معلومات للإدارة</DialogTitle>
+            <DialogTitle className="text-xl font-bold">{t("home.missingInfo.title")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground mb-3">
-            إذا رأيت هذه السيارة أو لديك معلومات عنها، أخبر الإدارة وسيتم التواصل معك.
+            {isRTL
+              ? "إذا رأيت هذه السيارة أو لديك معلومات عنها، أخبر الإدارة وسيتم التواصل معك."
+              : "If you've seen this car or have information about it, tell the admin and they will contact you."}
           </p>
           <textarea
             value={infoMsg}
             onChange={(e) => setInfoMsg(e.target.value)}
             rows={4}
-            placeholder="اكتب هنا ما تعرفه عن مكان السيارة أو أي معلومات مفيدة..."
+            placeholder={t("home.missingInfo.placeholder")}
             className="w-full border rounded-xl px-3 py-2 text-sm bg-background resize-none focus:border-amber-500 outline-none"
           />
           <div className="flex gap-3 mt-2">
@@ -507,10 +504,10 @@ export default function Home() {
               disabled={!infoMsg.trim() || sendingInfo}
               className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold"
             >
-              {sendingInfo ? "جارٍ الإرسال..." : "إرسال إلى الإدارة"}
+              {sendingInfo ? t("home.missingInfo.sending") : t("home.missingInfo.send")}
             </Button>
             <Button variant="outline" onClick={() => setMissingInfoOpen(false)} className="rounded-xl">
-              إلغاء
+              {t("home.missingInfo.cancel")}
             </Button>
           </div>
         </DialogContent>
@@ -521,13 +518,13 @@ export default function Home() {
         <div className="max-w-5xl mx-auto bg-gradient-to-br from-primary to-primary/80 rounded-3xl p-8 md:p-12 text-center shadow-2xl shadow-primary/20 relative overflow-hidden">
           <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">قبل أن تشتري، تأكد من تاريخ المركبة</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">{t("home.ctaReport.title")}</h2>
             <p className="text-primary-foreground/80 text-lg mb-8 max-w-2xl mx-auto">
-              استخدم خدمة تقرير المركبة للحصول على سجل الحوادث، العداد، والحالة الفنية المدعومة بالذكاء الاصطناعي عبر إدخال رقم الشاسيه.
+              {t("home.ctaReport.subtitle")}
             </p>
             <Link href="/vehicle-info">
               <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-bold text-lg px-8 rounded-xl shadow-xl hover:-translate-y-1 transition-transform">
-                استعلم عن مركبة الآن
+                {t("home.ctaReport.btn")}
               </Button>
             </Link>
           </div>
@@ -537,19 +534,19 @@ export default function Home() {
       {/* Buy Request Details Dialog */}
       {detailRequest && (
         <Dialog open={!!detailRequest} onOpenChange={(open) => { if (!open) setDetailRequest(null); }}>
-          <DialogContent className="max-w-md w-full rounded-2xl p-0 overflow-hidden" dir="rtl">
+          <DialogContent className="max-w-md w-full rounded-2xl p-0 overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
             <DialogHeader className="px-6 pt-6 pb-0">
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <CartIcon className="w-5 h-5 text-primary" />
-                تفاصيل طلب الشراء
+                {t("home.buyReqs.detailDialog.title")}
               </DialogTitle>
             </DialogHeader>
             <div className="p-6 space-y-4">
               <div className="bg-muted/30 rounded-xl p-4 space-y-2">
-                <h3 className="font-bold text-base flex items-center gap-2 mb-3"><Car className="w-4 h-4" /> المركبة المطلوبة</h3>
+                <h3 className="font-bold text-base flex items-center gap-2 mb-3"><Car className="w-4 h-4" /> {t("home.buyReqs.detailDialog.vehicle")}</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-muted-foreground">الماركة: </span><span className="font-medium">{detailRequest.brand || "أي ماركة"}</span></div>
-                  <div><span className="text-muted-foreground">الموديل: </span><span className="font-medium">{detailRequest.model || "أي موديل"}</span></div>
+                  <div><span className="text-muted-foreground">{t("home.buyReqs.detailDialog.brand")} </span><span className="font-medium">{detailRequest.brand || t("home.buyReqs.anyBrand")}</span></div>
+                  <div><span className="text-muted-foreground">{t("home.buyReqs.detailDialog.model")} </span><span className="font-medium">{detailRequest.model || t("home.buyReqs.anyModel")}</span></div>
                   {(detailRequest.minYear || detailRequest.maxYear) && (
                     <div className="col-span-2 flex items-center gap-1 text-muted-foreground">
                       <Calendar className="w-3.5 h-3.5" />
@@ -558,7 +555,7 @@ export default function Home() {
                   )}
                   {detailRequest.maxPrice && (
                     <div className="col-span-2">
-                      <span className="text-muted-foreground">الحد الأقصى للسعر: </span>
+                      <span className="text-muted-foreground">{t("home.buyReqs.detailDialog.maxPrice")} </span>
                       <span className="font-bold text-primary">{Number(detailRequest.maxPrice).toLocaleString()} {detailRequest.currency ?? "USD"}</span>
                     </div>
                   )}
@@ -573,7 +570,7 @@ export default function Home() {
 
               {detailRequest.description && (
                 <div className="space-y-1">
-                  <p className="text-sm font-bold text-muted-foreground flex items-center gap-1"><FileText className="w-4 h-4" /> تفاصيل إضافية</p>
+                  <p className="text-sm font-bold text-muted-foreground flex items-center gap-1"><FileText className="w-4 h-4" /> {t("home.buyReqs.detailDialog.notes")}</p>
                   <p className="text-sm leading-relaxed bg-muted/20 rounded-xl p-3 whitespace-pre-wrap">{detailRequest.description}</p>
                 </div>
               )}
@@ -588,10 +585,10 @@ export default function Home() {
                     ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
                     : <MessageCircle className="w-4 h-4" />
                   }
-                  مراسلة صاحب الطلب
+                  {t("home.buyReqs.detailDialog.contactBuyer")}
                 </Button>
                 <Button variant="outline" className="h-11 rounded-xl px-4" onClick={() => setDetailRequest(null)}>
-                  إغلاق
+                  {t("home.buyReqs.detailDialog.close")}
                 </Button>
               </div>
             </div>
