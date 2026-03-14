@@ -155,7 +155,7 @@ export default function BuyRequests() {
             </DialogTrigger>
             <DialogContent className="max-w-md" dir="rtl">
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold">طلب شراء سيارة</DialogTitle>
+                <DialogTitle className="text-xl font-bold">نشر طلب شراء</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-2">
                 <div className="grid grid-cols-2 gap-3">

@@ -349,7 +349,7 @@ export default function SearchPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
-              طلب شراء – {pageTitle}
+              نشر طلب شراء – {pageTitle}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleBuySubmit} className="space-y-3 mt-2">

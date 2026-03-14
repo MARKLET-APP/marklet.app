@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, carsTable, usersTable, imagesTable, favoritesTable, buyRequestsTable } from "@workspace/db";
-import { eq, and, gte, lte, ilike, desc, asc, sql, count, or } from "drizzle-orm";
+import { eq, and, gte, lte, ilike, desc, asc, sql, count, or, inArray } from "drizzle-orm";
 import { CreateCarBody, UpdateCarBody, AddCarImageBody, ListCarsQueryParams } from "@workspace/api-zod";
 import { authMiddleware, optionalAuthMiddleware, type AuthRequest } from "../lib/auth.js";
 
@@ -105,21 +105,23 @@ router.get("/cars", async (req, res): Promise<void> => {
 
   const carIds = cars.map(c => c.id);
   let primaryImages: Record<number, string | null> = {};
-  
+  let allImages: Record<number, string[]> = {};
+
   if (carIds.length > 0) {
-    const images = await db.select().from(imagesTable)
-      .where(and(eq(imagesTable.isPrimary, true)));
-    images.forEach(img => {
-      if (carIds.includes(img.carId)) {
+    const allImgs = await db.select().from(imagesTable)
+      .where(inArray(imagesTable.carId, carIds));
+
+    allImgs.forEach(img => {
+      if (!allImages[img.carId]) allImages[img.carId] = [];
+      allImages[img.carId].push(img.imageUrl);
+      if (img.isPrimary && !primaryImages[img.carId]) {
         primaryImages[img.carId] = img.imageUrl;
       }
     });
-    
+
     for (const carId of carIds) {
-      if (!(carId in primaryImages)) {
-        const [firstImg] = await db.select().from(imagesTable)
-          .where(eq(imagesTable.carId, carId)).limit(1);
-        primaryImages[carId] = firstImg?.imageUrl ?? null;
+      if (!primaryImages[carId] && allImages[carId]?.length) {
+        primaryImages[carId] = allImages[carId][0];
       }
     }
   }
@@ -130,6 +132,7 @@ router.get("/cars", async (req, res): Promise<void> => {
       price: Number(c.price),
       sellerName: c.sellerName ?? "Unknown",
       primaryImage: primaryImages[c.id] ?? null,
+      images: allImages[c.id] ?? [],
     })),
     total: Number(totalResult.count),
     page: pageNum,
@@ -168,9 +171,28 @@ router.get("/cars/featured", async (_req, res): Promise<void> => {
     .orderBy(desc(carsTable.createdAt))
     .limit(10);
 
-  const enriched = await Promise.all(cars.map(async (c) => {
-    const [img] = await db.select().from(imagesTable).where(eq(imagesTable.carId, c.id)).limit(1);
-    return { ...c, price: Number(c.price), sellerName: c.sellerName ?? "Unknown", primaryImage: img?.imageUrl ?? null };
+  const featuredIds = cars.map(c => c.id);
+  const featuredAllImages: Record<number, string[]> = {};
+  const featuredPrimary: Record<number, string | null> = {};
+
+  if (featuredIds.length > 0) {
+    const imgs = await db.select().from(imagesTable).where(inArray(imagesTable.carId, featuredIds));
+    imgs.forEach(img => {
+      if (!featuredAllImages[img.carId]) featuredAllImages[img.carId] = [];
+      featuredAllImages[img.carId].push(img.imageUrl);
+      if (img.isPrimary && !featuredPrimary[img.carId]) featuredPrimary[img.carId] = img.imageUrl;
+    });
+    featuredIds.forEach(id => {
+      if (!featuredPrimary[id] && featuredAllImages[id]?.length) featuredPrimary[id] = featuredAllImages[id][0];
+    });
+  }
+
+  const enriched = cars.map(c => ({
+    ...c,
+    price: Number(c.price),
+    sellerName: c.sellerName ?? "Unknown",
+    primaryImage: featuredPrimary[c.id] ?? null,
+    images: featuredAllImages[c.id] ?? [],
   }));
 
   res.json(enriched);

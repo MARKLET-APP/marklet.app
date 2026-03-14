@@ -149,7 +149,7 @@ export default function CarDetail() {
   if (isLoading) return <div className="flex justify-center py-32"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   if (isError || !car) return <div className="text-center py-32 font-bold text-xl text-destructive">عذراً، لم نتمكن من العثور على هذه السيارة.</div>;
 
-  const formattedPrice = new Intl.NumberFormat('ar-SY', { style: 'currency', currency: 'SYP', maximumFractionDigits: 0 }).format(car.price);
+  const formattedPrice = "$" + car.price.toLocaleString("en-US");
   const images = (car as any).images ?? [];
 
   return (
