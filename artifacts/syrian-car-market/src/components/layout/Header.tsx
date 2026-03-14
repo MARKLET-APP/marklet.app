@@ -104,16 +104,17 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {/* Language toggle */}
+            {/* Language toggle – visible on all screens */}
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleLang}
-              className="hidden sm:flex items-center gap-1.5 rounded-full border border-border/60 px-3 h-8 text-xs font-bold hover:bg-primary/10 hover:text-primary transition-colors"
+              className="flex items-center gap-1.5 rounded-full border border-border/60 px-2 sm:px-3 h-8 text-xs font-bold hover:bg-primary/10 hover:text-primary transition-colors"
               title={t("lang.switch")}
             >
               <Globe className="w-3.5 h-3.5" />
-              {t("lang.switch")}
+              <span className="hidden sm:inline">{t("lang.switch")}</span>
+              <span className="sm:hidden text-[10px] font-bold">{lang === "ar" ? "EN" : "ع"}</span>
             </Button>
 
             {user ? (

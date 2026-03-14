@@ -1,9 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { CarCard } from "@/components/CarCard";
-import { Filter, SlidersHorizontal, Search as SearchIcon, X } from "lucide-react";
+import { Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
 
 type Car = any;
 
@@ -30,8 +35,21 @@ function getPageTitle(saleType: string, category: string, condition: string) {
   return "نتائج البحث";
 }
 
+function getResultLabel(category: string, condition: string) {
+  if (category === "motorcycle") return "دراجة";
+  return "سيارة";
+}
+
+function getBuyRequestCategory(category: string, condition: string, saleType: string) {
+  if (category === "motorcycle") return "motorcycle";
+  if (saleType === "rental") return "rental";
+  return "cars";
+}
+
 export default function SearchPage() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+  const { toast } = useToast();
+  const { user } = useAuthStore();
 
   const getInitialFilters = () => {
     const params = new URLSearchParams(window.location.search);
@@ -53,12 +71,14 @@ export default function SearchPage() {
   const [cars, setCars] = useState<Car[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Re-read URL params when location changes (user navigates with new params)
+  const [buyOpen, setBuyOpen] = useState(false);
+  const [buySubmitting, setBuySubmitting] = useState(false);
+  const [buyForm, setBuyForm] = useState({ brand: "", model: "", year: "", maxPrice: "", city: "", description: "" });
+
   useEffect(() => {
     setFilters(getInitialFilters());
   }, [location]);
 
-  // Fetch cars when filters change
   useEffect(() => {
     setIsLoading(true);
     const params = new URLSearchParams();
@@ -70,7 +90,7 @@ export default function SearchPage() {
     if (filters.city) params.set("city", filters.city);
     if (filters.saleType) params.set("saleType", filters.saleType);
     if (filters.category) params.set("category", filters.category);
-    if ((filters as any).condition) params.set("condition", (filters as any).condition);
+    if (filters.condition) params.set("condition", filters.condition);
     params.set("limit", "100");
 
     const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -93,6 +113,32 @@ export default function SearchPage() {
     setFilters({ brand: "", minYear: "", maxYear: "", minPrice: "", maxPrice: "", city: "", saleType: "", category: "", condition: "" });
   };
 
+  const handleBuySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) { navigate("/login"); return; }
+    setBuySubmitting(true);
+    try {
+      const cat = getBuyRequestCategory(filters.category, filters.condition, filters.saleType);
+      await api.post("/api/buy-requests", {
+        brand: buyForm.brand,
+        model: buyForm.model,
+        year: buyForm.year ? Number(buyForm.year) : undefined,
+        maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined,
+        city: buyForm.city,
+        description: buyForm.description,
+        category: cat,
+        condition: filters.condition || undefined,
+      });
+      toast({ title: "تم إرسال طلب الشراء بنجاح" });
+      setBuyOpen(false);
+      setBuyForm({ brand: "", model: "", year: "", maxPrice: "", city: "", description: "" });
+    } catch {
+      toast({ title: "فشل إرسال الطلب", variant: "destructive" });
+    } finally {
+      setBuySubmitting(false);
+    }
+  };
+
   const filteredCars = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     if (!q) return cars;
@@ -104,9 +150,12 @@ export default function SearchPage() {
     );
   }, [cars, searchText]);
 
-  const condition = (filters as any).condition ?? "";
+  const condition = filters.condition ?? "";
   const pageTitle = getPageTitle(filters.saleType, filters.category, condition);
   const hasActiveFilter = filters.saleType || filters.category || condition;
+
+  const showActionButtons = condition === "new" || condition === "used" || filters.category === "motorcycle";
+  const isSeller = user?.role === "seller" || user?.role === "dealer" || user?.role === "admin";
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -135,7 +184,7 @@ export default function SearchPage() {
       </div>
 
       <div className="space-y-3">
-        <label className="text-sm font-bold text-foreground">السعر (ل.س)</label>
+        <label className="text-sm font-bold text-foreground">السعر ($)</label>
         <div className="flex gap-2">
           <input type="number" name="minPrice" placeholder="من" value={filters.minPrice} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
           <input type="number" name="maxPrice" placeholder="إلى" value={filters.maxPrice} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
@@ -157,17 +206,6 @@ export default function SearchPage() {
         </select>
       </div>
 
-      {!filters.saleType && (
-        <div className="space-y-3">
-          <label className="text-sm font-bold text-foreground">نوع البيع</label>
-          <div className="flex gap-2 flex-wrap">
-            <Button type="button" variant={filters.saleType === '' ? 'default' : 'outline'} onClick={() => setFilters(f => ({ ...f, saleType: '' }))} className="flex-1 rounded-xl">الكل</Button>
-            <Button type="button" variant={filters.saleType === 'sale' ? 'default' : 'outline'} onClick={() => setFilters(f => ({ ...f, saleType: 'sale' }))} className="flex-1 rounded-xl">للبيع</Button>
-            <Button type="button" variant={filters.saleType === 'rent' ? 'default' : 'outline'} onClick={() => setFilters(f => ({ ...f, saleType: 'rent' }))} className="flex-1 rounded-xl">للإيجار</Button>
-          </div>
-        </div>
-      )}
-
       <Button variant="outline" onClick={clearAll} className="w-full rounded-xl">
         <X className="w-4 h-4 ml-2" /> مسح الفلاتر
       </Button>
@@ -175,7 +213,7 @@ export default function SearchPage() {
   );
 
   return (
-    <div className="py-8 px-4 flex gap-8 max-w-7xl mx-auto w-full">
+    <div className="py-6 px-4 flex gap-8 max-w-7xl mx-auto w-full">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-72 shrink-0">
         <div className="sticky top-24 bg-card rounded-2xl border shadow-sm p-6">
@@ -189,17 +227,47 @@ export default function SearchPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Page title when coming from a category shortcut */}
+
+        {/* Page title + action buttons */}
         {hasActiveFilter && (
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-extrabold text-foreground">{pageTitle}</h1>
-            <Button variant="ghost" size="sm" onClick={clearAll} className="text-muted-foreground gap-1 rounded-xl">
-              <X className="w-4 h-4" /> مسح
-            </Button>
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-3">
+              <h1 className="text-2xl font-extrabold text-foreground">{pageTitle}</h1>
+              <Button variant="ghost" size="sm" onClick={clearAll} className="text-muted-foreground gap-1 rounded-xl">
+                <X className="w-4 h-4" /> مسح
+              </Button>
+            </div>
+
+            {/* Buy / Sell action buttons */}
+            {showActionButtons && (
+              <div className="flex gap-3">
+                {isSeller && (
+                  <Button
+                    onClick={() => navigate("/add-listing")}
+                    className="flex-1 gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-md"
+                  >
+                    <Plus className="w-4 h-4" />
+                    نشر إعلان بيع
+                  </Button>
+                )}
+                <Button
+                  onClick={() => {
+                    if (!user) { navigate("/login"); return; }
+                    setBuyOpen(true);
+                  }}
+                  variant="outline"
+                  className="flex-1 gap-2 rounded-xl border-2 border-amber-400 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 font-bold"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  طلب شراء
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
-        <div className="flex items-center gap-4 mb-6">
+        {/* Search + filter toggle */}
+        <div className="flex items-center gap-4 mb-5">
           <div className="flex-1 relative">
             <SearchIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
             <input
@@ -224,7 +292,7 @@ export default function SearchPage() {
                 تصفية
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+            <SheetContent side="right" className="w-[300px] sm:w-[400px] overflow-y-auto">
               <SheetHeader className="mb-6">
                 <SheetTitle className="text-right">تصفية النتائج</SheetTitle>
               </SheetHeader>
@@ -233,9 +301,9 @@ export default function SearchPage() {
           </Sheet>
         </div>
 
-        {/* Results Info */}
-        <div className="mb-6 text-muted-foreground font-medium">
-          {isLoading ? "جاري البحث..." : `تم العثور على ${filteredCars.length} ${filters.category === "motorcycle" ? "دراجة" : "سيارة"}`}
+        {/* Results count */}
+        <div className="mb-4 text-muted-foreground font-medium text-sm">
+          {isLoading ? "جاري البحث..." : `تم العثور على ${filteredCars.length} ${getResultLabel(filters.category, condition)}`}
         </div>
 
         {/* Grid */}
@@ -245,10 +313,29 @@ export default function SearchPage() {
           <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-2xl border border-dashed">
             <SearchIcon className="w-16 h-16 text-muted mb-4" />
             <h3 className="text-xl font-bold text-foreground mb-2">لم نجد نتائج مطابقة</h3>
-            <p className="text-muted-foreground">جرب تغيير خيارات البحث أو تقليل الفلاتر المستخدمة</p>
-            <Button variant="outline" onClick={clearAll} className="mt-6 rounded-xl">
-              مسح الفلاتر
-            </Button>
+            <p className="text-muted-foreground mb-6">جرب تغيير خيارات البحث أو تقليل الفلاتر المستخدمة</p>
+            {showActionButtons && (
+              <div className="flex gap-3 flex-wrap justify-center">
+                {isSeller && (
+                  <Button onClick={() => navigate("/add-listing")} className="gap-2 rounded-xl">
+                    <Plus className="w-4 h-4" /> أضف أول إعلان
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (!user) { navigate("/login"); return; }
+                    setBuyOpen(true);
+                  }}
+                  className="gap-2 rounded-xl border-2 border-amber-400 text-amber-600"
+                >
+                  <ShoppingCart className="w-4 h-4" /> اطلب شراء
+                </Button>
+              </div>
+            )}
+            {!showActionButtons && (
+              <Button variant="outline" onClick={clearAll} className="rounded-xl">مسح الفلاتر</Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -258,6 +345,79 @@ export default function SearchPage() {
           </div>
         )}
       </div>
+
+      {/* Buy Request Dialog */}
+      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              طلب شراء – {pageTitle}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleBuySubmit} className="space-y-3 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">الماركة</label>
+                <Input
+                  value={buyForm.brand}
+                  onChange={e => setBuyForm(f => ({ ...f, brand: e.target.value }))}
+                  placeholder="مثال: تويوتا"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">الموديل</label>
+                <Input
+                  value={buyForm.model}
+                  onChange={e => setBuyForm(f => ({ ...f, model: e.target.value }))}
+                  placeholder="مثال: كورولا"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">سنة الصنع</label>
+                <Input
+                  type="number"
+                  value={buyForm.year}
+                  onChange={e => setBuyForm(f => ({ ...f, year: e.target.value }))}
+                  placeholder="مثال: 2020"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">الحد الأقصى للسعر ($)</label>
+                <Input
+                  type="number"
+                  value={buyForm.maxPrice}
+                  onChange={e => setBuyForm(f => ({ ...f, maxPrice: e.target.value }))}
+                  placeholder="مثال: 15000"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">المدينة / المحافظة</label>
+              <Input
+                value={buyForm.city}
+                onChange={e => setBuyForm(f => ({ ...f, city: e.target.value }))}
+                placeholder="مثال: دمشق"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground">تفاصيل إضافية</label>
+              <textarea
+                value={buyForm.description}
+                onChange={e => setBuyForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="أي مواصفات أو متطلبات خاصة..."
+                rows={3}
+                className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm focus:border-primary outline-none resize-none"
+              />
+            </div>
+            <Button type="submit" disabled={buySubmitting} className="w-full rounded-xl gap-2">
+              <ShoppingCart className="w-4 h-4" />
+              {buySubmitting ? "جارٍ الإرسال..." : "إرسال طلب الشراء"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
