@@ -8,7 +8,12 @@ import { useToast } from "@/hooks/use-toast";
 const STORAGE_KEY = "marklet_app_rated";
 const DELAY_MS = 2 * 60 * 1000;
 
-export default function AppRatingPopup() {
+interface Props {
+  forceOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function AppRatingPopup({ forceOpen, onClose }: Props = {}) {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -19,19 +24,20 @@ export default function AppRatingPopup() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (forceOpen) {
+      setOpen(true);
+      return;
+    }
     const already = localStorage.getItem(STORAGE_KEY);
     if (already) return;
-
-    const timer = setTimeout(() => {
-      setOpen(true);
-    }, DELAY_MS);
-
+    const timer = setTimeout(() => { setOpen(true); }, DELAY_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [forceOpen]);
 
   const handleDismiss = () => {
     localStorage.setItem(STORAGE_KEY, "dismissed");
     setOpen(false);
+    onClose?.();
   };
 
   const handleSubmit = async () => {

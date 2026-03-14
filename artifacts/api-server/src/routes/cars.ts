@@ -16,7 +16,16 @@ router.get("/cars", async (req, res): Promise<void> => {
     page = 1, limit = 20, search, sortBy
   } = query.success ? query.data : {};
 
-  const conditions = [eq(carsTable.isActive, true), eq(carsTable.status, "approved")];
+  const conditions = [
+    eq(carsTable.isActive, true),
+    or(
+      eq(carsTable.status, "approved"),
+      and(
+        eq(carsTable.status, "sold"),
+        sql`${carsTable.soldAt} > NOW() - INTERVAL '3 days'`
+      )
+    )!,
+  ];
   
   if (brand) conditions.push(ilike(carsTable.brand, `%${brand}%`));
   if (model) conditions.push(ilike(carsTable.model, `%${model}%`));
@@ -78,6 +87,7 @@ router.get("/cars", async (req, res): Promise<void> => {
     isFeatured: carsTable.isFeatured,
     isHighlighted: carsTable.isHighlighted,
     isActive: carsTable.isActive,
+    soldAt: carsTable.soldAt,
     viewCount: carsTable.viewCount,
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,
@@ -143,6 +153,7 @@ router.get("/cars/featured", async (_req, res): Promise<void> => {
     isFeatured: carsTable.isFeatured,
     isHighlighted: carsTable.isHighlighted,
     isActive: carsTable.isActive,
+    soldAt: carsTable.soldAt,
     viewCount: carsTable.viewCount,
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,
@@ -193,6 +204,7 @@ router.get("/cars/:id/similar", async (req, res): Promise<void> => {
     isFeatured: carsTable.isFeatured,
     isHighlighted: carsTable.isHighlighted,
     isActive: carsTable.isActive,
+    soldAt: carsTable.soldAt,
     viewCount: carsTable.viewCount,
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,
@@ -304,15 +316,15 @@ router.post("/cars/:id/sold", authMiddleware, async (req: AuthRequest, res): Pro
   }
 
   const [updated] = await db.update(carsTable)
-    .set({ status: "sold", isActive: false })
+    .set({ status: "sold", isActive: true, soldAt: new Date() })
     .where(eq(carsTable.id, id)).returning();
 
   res.json({ ...updated, price: Number(updated.price) });
 });
 
 function validateImages(images: string[] | undefined): void {
-  if (!images || images.length < 5) {
-    throw new Error("يجب إضافة 5 صور على الأقل");
+  if (!images || images.length < 1) {
+    throw new Error("يجب إضافة صورة واحدة على الأقل");
   }
 }
 

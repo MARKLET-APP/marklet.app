@@ -1,35 +1,48 @@
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useCreateCar, useGenerateCarDescription, useEstimatePrice } from "@workspace/api-client-react";
+import { useCreateCar, useGenerateCarDescription } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ImagePlus, Loader2, CheckCircle2, X, ShieldCheck, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 
-// ── Market base prices (USD) per brand ────────────────────────────────────
+// ── Market base prices (USD) per brand ─────────────────────────────────────
 const MARKET_PRICES: Record<string, number> = {
-  toyota: 12000,  hyundai: 9000,   kia: 8500,    nissan: 10000,
-  honda: 11000,   mazda: 9500,     mitsubishi: 9000, suzuki: 7500,
-  mercedes: 25000, bmw: 27000,     audi: 24000,  volkswagen: 16000,
-  ford: 14000,    chevrolet: 12000, peugeot: 9000, renault: 8000,
-  lada: 4500,     chery: 7000,     geely: 7500,  haval: 10000,
-  byd: 11000,     mg: 9000,
+  toyota: 13000, hyundai: 9500, kia: 9000, nissan: 11000,
+  honda: 11500, mazda: 10000, mitsubishi: 9500, suzuki: 7500,
+  mercedes: 28000, bmw: 30000, audi: 26000, volkswagen: 17000,
+  ford: 15000, chevrolet: 13000, peugeot: 9500, renault: 8500,
+  lada: 4500, chery: 7000, geely: 7500, haval: 11000,
+  byd: 12000, mg: 9500,
 };
 
-function getMarketPrice(brand: string): number {
-  return MARKET_PRICES[brand.toLowerCase().trim()] ?? 10000;
+function estimateCarPrice(brand: string, year: number, mileage: number, similarPrices: number[]): number {
+  const base = MARKET_PRICES[brand.toLowerCase().trim()] ?? 10000;
+  const currentYear = new Date().getFullYear();
+  const age = currentYear - year;
+  const ageDepreciation = Math.min(age * 0.06, 0.60);
+  const mileageFactor = mileage > 200000 ? 0.75 : mileage > 100000 ? 0.88 : mileage > 50000 ? 0.94 : 1.0;
+  let estimated = Math.round(base * (1 - ageDepreciation) * mileageFactor);
+  if (similarPrices.length > 0) {
+    const avgSimilar = similarPrices.reduce((a, b) => a + b, 0) / similarPrices.length;
+    estimated = Math.round((estimated + avgSimilar) / 2);
+  }
+  return Math.max(estimated, 500);
 }
 
-type PriceEval = { level: "high" | "low" | "good"; market: number; text: string } | null;
+type PriceEval = { level: "high" | "low" | "good"; market: number; range: [number, number]; text: string } | null;
+
+type ListingType = "car" | "motorcycle" | "rental" | "parts";
 
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("image", file);
   const token = localStorage.getItem("scm_token");
-  const res = await fetch("/api/upload", {
+  const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const res = await fetch(`${BASE}/api/upload`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
@@ -39,23 +52,6 @@ async function uploadImage(file: File): Promise<string> {
   return data.url!;
 }
 
-const schema = z.object({
-  brand: z.string().min(2, "الماركة مطلوبة"),
-  model: z.string().min(1, "الموديل مطلوب"),
-  year: z.coerce.number().min(1980).max(2025),
-  price: z.coerce.number().min(1000, "السعر مطلوب"),
-  mileage: z.coerce.number().min(0),
-  fuelType: z.string().min(1, "مطلوب"),
-  transmission: z.string().min(1, "مطلوب"),
-  province: z.string().min(1, "مطلوب"),
-  city: z.string().min(1, "مطلوب"),
-  saleType: z.string().min(1, "مطلوب"),
-  category: z.string().min(1, "مطلوب"),
-  description: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof schema>;
-
 export default function AddListing() {
   const [, navigate] = useLocation();
   const { user } = useAuthStore();
@@ -63,7 +59,22 @@ export default function AddListing() {
   const [images, setImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [priceEval, setPriceEval] = useState<PriceEval>(null);
+  const [estimating, setEstimating] = useState(false);
+  const [listingType, setListingType] = useState<ListingType>("car");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [fields, setFields] = useState({
+    brand: "", model: "", year: "2015", price: "", mileage: "0",
+    fuelType: "petrol", transmission: "automatic", province: "Damascus",
+    city: "", saleType: "cash", category: "sedan", description: "",
+    engineCC: "", bikeType: "", dailyPrice: "", weeklyPrice: "",
+    rentalDuration: "", partType: "", partCarModel: "", partCarYear: "",
+  });
+
+  const handleField = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFields(f => ({ ...f, [e.target.name]: e.target.value }));
+    if (e.target.name === "price") setPriceEval(null);
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -89,93 +100,137 @@ export default function AddListing() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const createMutation = useCreateCar();
-  const generateDescMutation = useGenerateCarDescription();
-  const estimatePriceMutation = useEstimatePrice();
-
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { year: 2015, mileage: 0, fuelType: 'petrol', transmission: 'automatic', saleType: 'cash', category: 'sedan', province: 'Damascus' }
+  const { data: allCarsData } = useQuery<any>({
+    queryKey: ["cars-for-price"],
+    queryFn: () => api.cars.list({ limit: 200 }),
   });
 
-  const onSubmit = (data: FormValues) => {
-    if (images.length < 5) {
-      toast({ title: "يجب إضافة 5 صور على الأقل", variant: "destructive" });
-      return;
-    }
-    createMutation.mutate({ data: { ...data, images } }, {
-      onSuccess: (res) => {
-        navigate(`/cars/${res.id}`);
-      }
-    });
-  };
+  const createMutation = useCreateCar();
+  const generateDescMutation = useGenerateCarDescription();
 
   const handleGenerateDesc = () => {
-    const vals = watch();
-    if (!vals.brand || !vals.model || !vals.year) {
+    if (!fields.brand || !fields.model || !fields.year) {
       toast({ title: "الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", variant: "destructive" });
       return;
     }
-    // Try AI first, fall back to template
     generateDescMutation.mutate({
-      data: { brand: vals.brand, model: vals.model, year: vals.year, mileage: vals.mileage, fuelType: vals.fuelType, transmission: vals.transmission }
+      data: { brand: fields.brand, model: fields.model, year: Number(fields.year), mileage: Number(fields.mileage), fuelType: fields.fuelType, transmission: fields.transmission }
     }, {
-      onSuccess: (res) => setValue('description', res.description),
+      onSuccess: (res) => setFields(f => ({ ...f, description: res.description })),
       onError: () => {
         const fuelLabel: Record<string, string> = { petrol: "بنزين", diesel: "مازوت", electric: "كهرباء", hybrid: "هجين" };
         const transLabel: Record<string, string> = { automatic: "أوتوماتيك", manual: "يدوي" };
-        const template = `للبيع ${vals.brand} ${vals.model} موديل ${vals.year}
+        const template = `للبيع ${fields.brand} ${fields.model} موديل ${fields.year}
 
 السيارة بحالة ممتازة وجاهزة للفحص والتجربة.
-نوع الوقود: ${fuelLabel[vals.fuelType] ?? vals.fuelType}
-ناقل الحركة: ${transLabel[vals.transmission] ?? vals.transmission}
-${vals.mileage ? `عداد: ${vals.mileage.toLocaleString()} كم` : ""}
-${vals.price ? `السعر المطلوب: ${vals.price.toLocaleString()} $` : ""}
+نوع الوقود: ${fuelLabel[fields.fuelType] ?? fields.fuelType}
+ناقل الحركة: ${transLabel[fields.transmission] ?? fields.transmission}
+${fields.mileage ? `عداد: ${Number(fields.mileage).toLocaleString()} كم` : ""}
+${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleString()} $` : ""}
 
 التواصل عبر الرسائل أو الاتصال المباشر.`;
-        setValue('description', template);
+        setFields(f => ({ ...f, description: template }));
       }
     });
   };
 
-  const handleEstimatePrice = () => {
-    const vals = watch();
-    if (!vals.brand || !vals.model || !vals.year) {
-      toast({ title: "الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", variant: "destructive" });
+  const handleEstimatePrice = async () => {
+    if (!fields.brand || !fields.year) {
+      toast({ title: "الرجاء إدخال الماركة وسنة الصنع أولاً", variant: "destructive" });
       return;
     }
-    // Local instant evaluation
-    const market = getMarketPrice(vals.brand);
-    const entered = Number(vals.price) || 0;
-    if (entered > 0) {
-      evaluatePrice(entered, market);
+    setEstimating(true);
+    try {
+      const year = Number(fields.year) || 2015;
+      const mileage = Number(fields.mileage) || 0;
+      const entered = Number(fields.price) || 0;
+
+      const cars = (allCarsData?.cars ?? []) as any[];
+      const similar = cars.filter((c: any) => {
+        const brandMatch = c.brand?.toLowerCase() === fields.brand.toLowerCase();
+        const yearMatch = Math.abs((c.year ?? 0) - year) <= 3;
+        return brandMatch && yearMatch && c.price > 0;
+      });
+      const similarPrices = similar.map((c: any) => Number(c.price)).filter(Boolean);
+
+      const estimated = estimateCarPrice(fields.brand, year, mileage, similarPrices);
+      const low = Math.round(estimated * 0.88);
+      const high = Math.round(estimated * 1.12);
+
+      if (entered > 0) {
+        if (entered > high) {
+          setPriceEval({ level: "high", market: estimated, range: [low, high], text: `السعر أعلى من السوق — يُقترح النطاق: ${low.toLocaleString()} – ${high.toLocaleString()} $` });
+        } else if (entered < low) {
+          setPriceEval({ level: "low", market: estimated, range: [low, high], text: `السعر أقل من السوق — يُقترح النطاق: ${low.toLocaleString()} – ${high.toLocaleString()} $` });
+        } else {
+          setPriceEval({ level: "good", market: estimated, range: [low, high], text: `السعر مناسب للسوق — النطاق المقترح: ${low.toLocaleString()} – ${high.toLocaleString()} $` });
+        }
+      } else {
+        const suggested = Math.round(estimated * 0.95);
+        setPriceEval({ level: "good", market: estimated, range: [low, high], text: `سعر مقترح: ${suggested.toLocaleString()} $ (نطاق: ${low.toLocaleString()} – ${high.toLocaleString()} $)` });
+        setFields(f => ({ ...f, price: String(suggested) }));
+      }
+      if (similar.length > 0) {
+        toast({ title: `تم تحليل ${similar.length} إعلان مشابه`, description: "تم تحديث تقييم السعر" });
+      }
+    } finally {
+      setEstimating(false);
     }
-    // Also call AI for a refined suggestion
-    estimatePriceMutation.mutate({
-      data: { brand: vals.brand, model: vals.model, year: vals.year, mileage: vals.mileage, fuelType: vals.fuelType, transmission: vals.transmission }
-    }, {
-      onSuccess: (res) => {
-        // AI returns price in local currency — convert to USD approx or use market table
-        const aiMarket = getMarketPrice(vals.brand);
-        evaluatePrice(entered, aiMarket);
-        if (!entered) setValue('price', Math.round(aiMarket * 0.9));
-      },
-      onError: () => evaluatePrice(entered, market),
-    });
   };
 
-  const evaluatePrice = (entered: number, market: number) => {
-    if (!entered || entered <= 0) {
-      setPriceEval({ level: "good", market, text: `متوسط سعر السوق لهذه الماركة: ${market.toLocaleString()} $` });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (images.length < 1) {
+      toast({ title: "يجب إضافة صورة واحدة على الأقل", variant: "destructive" });
       return;
     }
-    if (entered > market * 1.15) {
-      setPriceEval({ level: "high", market, text: `⚠ السعر أعلى من سعر السوق (${market.toLocaleString()} $) — قد يصعب بيع السيارة` });
-    } else if (entered < market * 0.85) {
-      setPriceEval({ level: "low", market, text: `🔥 السعر أقل من السوق (${market.toLocaleString()} $) — سيجذب المشترين بسرعة` });
-    } else {
-      setPriceEval({ level: "good", market, text: `✅ السعر مناسب وقريب من سعر السوق (${market.toLocaleString()} $)` });
+
+    const price = Number(fields.price);
+    if (!price || price <= 0) {
+      toast({ title: "الرجاء إدخال سعر صحيح", variant: "destructive" });
+      return;
     }
+
+    let data: Record<string, any>;
+    if (listingType === "car") {
+      data = {
+        brand: fields.brand, model: fields.model, year: Number(fields.year),
+        price, mileage: Number(fields.mileage), fuelType: fields.fuelType,
+        transmission: fields.transmission, province: fields.province,
+        city: fields.city, saleType: fields.saleType, category: fields.category,
+        description: fields.description, images,
+      };
+    } else if (listingType === "motorcycle") {
+      data = {
+        brand: fields.brand, model: fields.model, year: Number(fields.year),
+        price, category: "motorcycle", description: fields.description,
+        province: fields.province, city: fields.city, saleType: fields.saleType,
+        fuelType: "petrol", transmission: "manual", mileage: 0,
+        images,
+      };
+    } else if (listingType === "rental") {
+      data = {
+        brand: fields.brand, model: fields.model, year: Number(fields.year),
+        price: Number(fields.dailyPrice) || price, category: "rental",
+        saleType: "rental", province: fields.province, city: fields.city,
+        description: fields.description, fuelType: "petrol", transmission: "automatic",
+        mileage: 0, images,
+      };
+    } else {
+      data = {
+        brand: fields.partCarModel || fields.brand, model: fields.partType,
+        year: Number(fields.partCarYear) || Number(fields.year),
+        price, category: "parts", saleType: "cash",
+        province: fields.province, city: fields.city,
+        description: fields.description, fuelType: "petrol", transmission: "manual",
+        mileage: 0, images,
+      };
+    }
+
+    createMutation.mutate({ data } as any, {
+      onSuccess: (res) => navigate(`/cars/${(res as any).id}`),
+      onError: (err: any) => toast({ title: err.message ?? "حدث خطأ", variant: "destructive" }),
+    });
   };
 
   if (user?.role !== 'seller' && user?.role !== 'dealer') {
@@ -191,20 +246,53 @@ ${vals.price ? `السعر المطلوب: ${vals.price.toLocaleString()} $` : "
     );
   }
 
+  const inputCls = "w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none";
+  const selectCls = `${inputCls}`;
+
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-foreground">أضف إعلان سيارة</h1>
-        <p className="text-muted-foreground mt-2">املأ التفاصيل بدقة لزيادة فرص البيع</p>
+        <h1 className="text-3xl font-extrabold text-foreground">نشر إعلان بيع</h1>
+        <p className="text-muted-foreground mt-2">اختر نوع الإعلان وأدخل التفاصيل لزيادة فرص البيع</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        {/* Images Upload Section */}
+      <form onSubmit={handleSubmit} className="space-y-8">
+
+        {/* ── Step 0: Listing Type ── */}
+        <div className="bg-card p-6 rounded-3xl border shadow-sm">
+          <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
+            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">1</span>
+            نوع الإعلان
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {([
+              { value: "car",        label: "🚗 سيارة" },
+              { value: "motorcycle", label: "🏍️ دراجة نارية" },
+              { value: "rental",     label: "🔑 تأجير" },
+              { value: "parts",      label: "🔧 قطع غيار" },
+            ] as const).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setListingType(opt.value)}
+                className={`rounded-2xl border-2 py-3 px-4 font-bold text-sm transition-all
+                  ${listingType === opt.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                  }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Step 1: Images ── */}
         <div className="bg-card p-6 rounded-3xl border shadow-sm space-y-4">
           <h3 className="font-bold text-lg flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">1</span>
-            صور السيارة
-            <span className="text-sm text-muted-foreground font-normal mr-auto">{images.length}/10 صور (5 على الأقل)</span>
+            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">2</span>
+            الصور
+            <span className="text-sm text-muted-foreground font-normal mr-auto">{images.length}/10</span>
           </h3>
 
           {images.length > 0 && (
@@ -246,136 +334,227 @@ ${vals.price ? `السعر المطلوب: ${vals.price.toLocaleString()} $` : "
             >
               {isUploading
                 ? <><Loader2 className="w-10 h-10 animate-spin text-primary mb-3" /><p className="text-sm text-muted-foreground">جارٍ التحقق من الصورة...</p></>
-                : <><ImagePlus className="w-12 h-12 text-muted-foreground mb-3" /><p className="font-medium text-foreground mb-1">اضغط هنا لرفع الصور</p><p className="text-sm text-muted-foreground">يُقبل صور السيارات فقط · أقصى حد 10 صور</p></>
+                : <><ImagePlus className="w-12 h-12 text-muted-foreground mb-3" /><p className="font-medium text-foreground mb-1">اضغط هنا لرفع الصور</p><p className="text-sm text-muted-foreground">أقصى حد 10 صور</p></>
               }
             </button>
           )}
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={handleFileChange}
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
         </div>
 
-        {/* Basic Details */}
+        {/* ── Step 2: Dynamic Fields ── */}
         <div className="bg-card p-6 rounded-3xl border shadow-sm space-y-6">
           <h3 className="font-bold text-lg flex items-center gap-2 mb-6">
-            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">2</span>
+            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">3</span>
             المعلومات الأساسية
           </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-bold">الماركة (Brand)</label>
-              <input {...register("brand")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none" placeholder="مثال: تويوتا" />
-              {errors.brand && <p className="text-destructive text-sm">{errors.brand.message}</p>}
+
+          {/* CAR fields */}
+          {listingType === "car" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold">الشركة (Brand)</label>
+                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">الموديل (Model)</label>
+                <input name="model" value={fields.model} onChange={handleField} className={inputCls} placeholder="مثال: كورولا" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">سنة الصنع</label>
+                <input type="number" name="year" value={fields.year} onChange={handleField} className={inputCls} min="1950" max="2025" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">عدد الكيلومترات</label>
+                <input type="number" name="mileage" value={fields.mileage} onChange={handleField} className={inputCls} min="0" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">ناقل الحركة</label>
+                <select name="transmission" value={fields.transmission} onChange={handleField} className={selectCls}>
+                  <option value="automatic">أوتوماتيك</option>
+                  <option value="manual">يدوي</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع الوقود</label>
+                <select name="fuelType" value={fields.fuelType} onChange={handleField} className={selectCls}>
+                  <option value="petrol">بنزين</option>
+                  <option value="diesel">مازوت</option>
+                  <option value="electric">كهرباء</option>
+                  <option value="hybrid">هجين (هايبرد)</option>
+                </select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold">الموديل (Model)</label>
-              <input {...register("model")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary transition-all outline-none" placeholder="مثال: كورولا" />
-              {errors.model && <p className="text-destructive text-sm">{errors.model.message}</p>}
+          )}
+
+          {/* MOTORCYCLE fields */}
+          {listingType === "motorcycle" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold">الشركة</label>
+                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: هوندا" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">سعة المحرك (CC)</label>
+                <input type="number" name="engineCC" value={fields.engineCC} onChange={handleField} className={inputCls} placeholder="مثال: 125" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">سنة الصنع</label>
+                <input type="number" name="year" value={fields.year} onChange={handleField} className={inputCls} min="1950" max="2025" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع الدراجة</label>
+                <select name="bikeType" value={fields.bikeType} onChange={handleField} className={selectCls}>
+                  <option value="">اختر النوع</option>
+                  <option value="sport">رياضية</option>
+                  <option value="cruiser">كروزر</option>
+                  <option value="scooter">سكوتر</option>
+                  <option value="offroad">أوف رود</option>
+                </select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold">سنة الصنع</label>
-              <input type="number" {...register("year")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary transition-all outline-none" />
-              {errors.year && <p className="text-destructive text-sm">{errors.year.message}</p>}
+          )}
+
+          {/* RENTAL fields */}
+          {listingType === "rental" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع السيارة</label>
+                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا كامري" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">الموديل</label>
+                <input name="model" value={fields.model} onChange={handleField} className={inputCls} placeholder="مثال: 2022" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">السعر اليومي (USD)</label>
+                <input type="number" name="dailyPrice" value={fields.dailyPrice} onChange={handleField} className={inputCls} placeholder="مثال: 30" min="1" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">السعر الأسبوعي (USD)</label>
+                <input type="number" name="weeklyPrice" value={fields.weeklyPrice} onChange={handleField} className={inputCls} placeholder="مثال: 180" min="1" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">المدينة</label>
+                <input name="city" value={fields.city} onChange={handleField} className={inputCls} placeholder="دمشق" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">مدة الإيجار</label>
+                <select name="rentalDuration" value={fields.rentalDuration} onChange={handleField} className={selectCls}>
+                  <option value="">غير محدد</option>
+                  <option value="daily">يومي</option>
+                  <option value="weekly">أسبوعي</option>
+                  <option value="monthly">شهري</option>
+                </select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold">المسافة المقطوعة (كم)</label>
-              <input type="number" {...register("mileage")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary transition-all outline-none" />
+          )}
+
+          {/* CAR PARTS fields */}
+          {listingType === "parts" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع القطعة</label>
+                <input name="partType" value={fields.partType} onChange={handleField} className={inputCls} placeholder="مثال: محرك، ناقل حركة، صدام..." required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع السيارة</label>
+                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">موديل السيارة</label>
+                <input name="partCarModel" value={fields.partCarModel} onChange={handleField} className={inputCls} placeholder="مثال: كامري" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">سنة السيارة</label>
+                <input type="number" name="partCarYear" value={fields.partCarYear} onChange={handleField} className={inputCls} placeholder="مثال: 2015" />
+              </div>
             </div>
+          )}
+
+          {/* Shared: Province / City / Sale Type */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
+            {listingType !== "rental" && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold">المحافظة</label>
+                  <select name="province" value={fields.province} onChange={handleField} className={selectCls}>
+                    <option value="Damascus">دمشق</option>
+                    <option value="Aleppo">حلب</option>
+                    <option value="Homs">حمص</option>
+                    <option value="Latakia">اللاذقية</option>
+                    <option value="Tartus">طرطوس</option>
+                    <option value="Hama">حماة</option>
+                    <option value="Idlib">إدلب</option>
+                    <option value="Deir ez-Zor">دير الزور</option>
+                    <option value="Raqqa">الرقة</option>
+                    <option value="Daraa">درعا</option>
+                    <option value="Sweida">السويداء</option>
+                    <option value="Quneitra">القنيطرة</option>
+                    <option value="Hasakah">الحسكة</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold">المدينة/المنطقة</label>
+                  <input name="city" value={fields.city} onChange={handleField} className={inputCls} />
+                </div>
+              </>
+            )}
+            {listingType === "car" && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع البيع</label>
+                <select name="saleType" value={fields.saleType} onChange={handleField} className={selectCls}>
+                  <option value="cash">نقد</option>
+                  <option value="installment">أقساط</option>
+                  <option value="barter">مقايضة</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Specs & Location */}
-        <div className="bg-card p-6 rounded-3xl border shadow-sm space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-bold">المحافظة</label>
-              <select {...register("province")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none">
-                <option value="Damascus">دمشق</option>
-                <option value="Aleppo">حلب</option>
-                <option value="Homs">حمص</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold">المدينة/المنطقة</label>
-              <input {...register("city")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary transition-all outline-none" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold">نوع الوقود</label>
-              <select {...register("fuelType")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none">
-                <option value="petrol">بنزين</option>
-                <option value="diesel">مازوت</option>
-                <option value="electric">كهرباء</option>
-                <option value="hybrid">هجين (هايبرد)</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold">ناقل الحركة</label>
-              <select {...register("transmission")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none">
-                <option value="automatic">أوتوماتيك</option>
-                <option value="manual">يدوي</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold">فئة السيارة</label>
-              <select {...register("category")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none">
-                <option value="sedan">سيدان</option>
-                <option value="suv">دفع رباعي</option>
-                <option value="pickup">بيك أب</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold">نوع البيع</label>
-              <select {...register("saleType")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none">
-                <option value="cash">نقد</option>
-                <option value="installment">أقساط</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Powered Price & Description */}
+        {/* ── Step 3: AI Section ── */}
         <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl space-y-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
             <Sparkles className="w-40 h-40 text-white" />
           </div>
           <div className="relative z-10 space-y-6">
             <h3 className="font-bold text-lg flex items-center gap-2 text-white mb-2">
-              <span className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center shrink-0">3</span>
-              ميزات الذكاء الاصطناعي ✨
+              <span className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center shrink-0">4</span>
+              السعر والوصف ✨
             </h3>
 
-            {/* ── Price Section ────────────────────────────────────────── */}
+            {/* Price */}
             <div className="space-y-4 bg-white/10 backdrop-blur-sm p-5 rounded-2xl border border-white/10">
               <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                 <div className="space-y-2 flex-1">
-                  <label className="text-sm font-bold text-white/90">السعر المطلوب (USD $)</label>
+                  <label className="text-sm font-bold text-white/90">
+                    {listingType === "rental" ? "السعر اليومي (USD $)" : "السعر المطلوب (USD $)"}
+                  </label>
                   <input
                     type="number"
-                    {...register("price")}
+                    name="price"
+                    value={fields.price}
+                    onChange={handleField}
                     placeholder="مثال: 8500"
+                    min="1"
+                    required
                     className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none font-bold text-lg placeholder:text-gray-400"
                   />
-                  {errors.price && <p className="text-red-300 text-sm">{errors.price.message}</p>}
                 </div>
-                <Button
-                  type="button"
-                  onClick={handleEstimatePrice}
-                  disabled={estimatePriceMutation.isPending}
-                  className="rounded-xl h-12 px-6 gap-2 bg-accent hover:bg-accent/90 text-white font-bold border-0 shadow-lg shadow-accent/30 shrink-0"
-                >
-                  {estimatePriceMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                  اقتراح السعر
-                </Button>
+                {listingType === "car" && (
+                  <Button
+                    type="button"
+                    onClick={handleEstimatePrice}
+                    disabled={estimating}
+                    className="rounded-xl h-12 px-6 gap-2 bg-accent hover:bg-accent/90 text-white font-bold border-0 shadow-lg shadow-accent/30 shrink-0"
+                  >
+                    {estimating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                    اقتراح السعر
+                  </Button>
+                )}
               </div>
 
-              {/* Price evaluation result */}
               {priceEval && (
                 <div className={`flex items-start gap-3 p-4 rounded-xl border font-medium text-sm
                   ${priceEval.level === "high"
@@ -388,30 +567,39 @@ ${vals.price ? `السعر المطلوب: ${vals.price.toLocaleString()} $` : "
                   {priceEval.level === "high" && <TrendingUp className="w-5 h-5 shrink-0 mt-0.5" />}
                   {priceEval.level === "low"  && <TrendingDown className="w-5 h-5 shrink-0 mt-0.5" />}
                   {priceEval.level === "good" && <Minus className="w-5 h-5 shrink-0 mt-0.5" />}
-                  <span className="leading-relaxed">{priceEval.text}</span>
+                  <div>
+                    <p className="font-bold mb-0.5">
+                      {priceEval.level === "high" ? "السعر أعلى من السوق" : priceEval.level === "low" ? "السعر أقل من السوق" : "السعر مناسب للسوق"}
+                    </p>
+                    <p className="leading-relaxed">{priceEval.text}</p>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* ── Description Section ──────────────────────────────────── */}
+            {/* Description */}
             <div className="space-y-4 bg-white/10 backdrop-blur-sm p-5 rounded-2xl border border-white/10">
               <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                 <label className="text-sm font-bold text-white/90 flex-1">وصف الإعلان</label>
-                <Button
-                  type="button"
-                  onClick={handleGenerateDesc}
-                  disabled={generateDescMutation.isPending}
-                  className="rounded-xl h-10 px-5 gap-2 bg-accent hover:bg-accent/90 text-white font-bold border-0 text-sm shadow-lg shadow-accent/30 shrink-0"
-                >
-                  {generateDescMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  توليد وصف جذاب
-                </Button>
+                {listingType === "car" && (
+                  <Button
+                    type="button"
+                    onClick={handleGenerateDesc}
+                    disabled={generateDescMutation.isPending}
+                    className="rounded-xl h-10 px-5 gap-2 bg-accent hover:bg-accent/90 text-white font-bold border-0 text-sm shadow-lg shadow-accent/30 shrink-0"
+                  >
+                    {generateDescMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    توليد وصف جذاب
+                  </Button>
+                )}
               </div>
               <textarea
-                {...register("description")}
+                name="description"
+                value={fields.description}
+                onChange={handleField}
                 rows={6}
                 className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none resize-none leading-relaxed placeholder:text-gray-400"
-                placeholder="اكتب وصفاً مفصلاً لسيارتك، أو اضغط 'توليد وصف جذاب'..."
+                placeholder="اكتب وصفاً مفصلاً..."
               />
               {generateDescMutation.isSuccess && (
                 <div className="flex items-center gap-2 text-sm text-green-300">

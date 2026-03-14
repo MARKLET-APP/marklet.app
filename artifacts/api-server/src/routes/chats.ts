@@ -153,8 +153,15 @@ router.get("/chats/:conversationId/messages", authMiddleware, async (req: AuthRe
   const io = getSocketServer();
   if (io) io.to(`conv:${convId}`).emit("messages_seen", { convId, seenBy: req.userId });
 
-  res.json(msgs.map((m) => ({
+  const filteredMsgs = msgs.filter(m => {
+    if (m.senderId !== null && m.senderId < 0) {
+      return Math.abs(m.senderId) === req.userId;
+    }
+    return true;
+  });
+  res.json(filteredMsgs.map((m) => ({
     ...m,
+    senderId: m.senderId !== null && m.senderId < 0 ? 0 : m.senderId,
     senderName: m.senderName ?? "Unknown",
     senderPhoto: m.senderPhoto ?? null,
     reactions: (() => { try { return JSON.parse(m.reactions ?? "{}"); } catch { return {}; } })(),
@@ -215,16 +222,20 @@ router.post("/chats/:conversationId/messages", authMiddleware, async (req: AuthR
   if (isFirstMessage) {
     const [autoMsg] = await db.insert(messagesTable).values({
       conversationId: convId,
-      senderId: 0,
-      content: "تم إرسال رسالتك إلى البائع بنجاح. يرجى الانتظار قليلاً حتى يرد عليك.",
+      senderId: -req.userId!,
+      content: "تم إرسال رسالتك بنجاح. يرجى الانتظار حتى يرد عليك البائع.",
       messageType: "system",
       status: "sent",
     }).returning();
     if (io) {
-      io.to(`conv:${convId}`).emit("new_message", {
-        convId,
-        message: { ...autoMsg, senderName: "النظام", senderPhoto: null, reactions: {} },
-      });
+      const sockets = await io.fetchSockets();
+      const senderSocket = sockets.find(s => s.data.userId === req.userId);
+      if (senderSocket) {
+        senderSocket.emit("new_message", {
+          convId,
+          message: { ...autoMsg, senderName: "النظام", senderPhoto: null, reactions: {} },
+        });
+      }
     }
   }
 

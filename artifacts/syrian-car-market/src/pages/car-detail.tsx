@@ -2,7 +2,8 @@ import { useRoute, useLocation } from "wouter";
 import { useGetCar } from "@workspace/api-client-react";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { MapPin, Settings, Calendar, Gauge, Fuel, Eye, EyeOff, Heart, Share2, Loader2, MessageCircle, CheckCircle, Pencil, Lock, Crown, XCircle } from "lucide-react";
+import { MapPin, Settings, Calendar, Gauge, Fuel, Eye, EyeOff, Heart, Share2, Loader2, MessageCircle, CheckCircle, Pencil, Lock, Crown, XCircle, Clock } from "lucide-react";
+import AppRatingPopup from "@/components/AppRatingPopup";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -26,6 +27,7 @@ export default function CarDetail() {
   const [startingChat, setStartingChat] = useState(false);
   const [markingSold, setMarkingSold] = useState(false);
   const [showSoldConfirm, setShowSoldConfirm] = useState(false);
+  const [showRatingPopup, setShowRatingPopup] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showEditWarning, setShowEditWarning] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -101,9 +103,11 @@ export default function CarDetail() {
     setMarkingSold(true);
     try {
       await api.cars.markSold(carId);
-      toast({ title: "تم تحديد السيارة كمباعة", description: "لن يظهر الإعلان في القائمة بعد الآن." });
+      toast({ title: "🎉 تم تحديد السيارة كمباعة", description: "سيبقى الإعلان ظاهراً مع علامة «تم البيع» لمدة 3 أيام ثم يُخفى تلقائياً." });
       setShowSoldConfirm(false);
       refetch();
+      const alreadyRated = localStorage.getItem("marklet_app_rated");
+      if (!alreadyRated) setTimeout(() => setShowRatingPopup(true), 1500);
     } catch (err: any) {
       toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
     } finally {
@@ -150,13 +154,18 @@ export default function CarDetail() {
 
   return (
     <>
+    {/* App rating popup after marking sold */}
+    {showRatingPopup && (
+      <AppRatingPopup forceOpen onClose={() => setShowRatingPopup(false)} />
+    )}
+
     {/* Sold confirmation dialog */}
     <Dialog open={showSoldConfirm} onOpenChange={setShowSoldConfirm}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>تأكيد: تم البيع</DialogTitle>
           <DialogDescription>
-            هل تريد تحديد هذه السيارة كمباعة؟ سيتوقف الإعلان عن الظهور في القائمة نهائياً.
+            هل تريد تحديد هذه السيارة كمباعة؟ سيبقى الإعلان ظاهراً لمدة 3 أيام مع علامة «تم البيع» ثم يُخفى تلقائياً.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex gap-2 pt-2">
@@ -264,12 +273,27 @@ export default function CarDetail() {
             إعلانك قيد مراجعة الأدمن — لا يظهر للمستخدمين حالياً.
           </div>
         )}
-        {carStatus === "sold" && (
-          <div className="bg-green-50 border border-green-200 text-green-800 rounded-2xl px-5 py-3 flex items-center gap-3 text-sm font-bold">
-            <CheckCircle className="w-5 h-5 shrink-0" />
-            هذه السيارة تم بيعها
-          </div>
-        )}
+        {carStatus === "sold" && (() => {
+          const soldAt = (car as any).soldAt;
+          let daysLeft: number | null = null;
+          if (soldAt) {
+            const ms = new Date(soldAt).getTime() + 3 * 24 * 60 * 60 * 1000 - Date.now();
+            daysLeft = Math.ceil(ms / (1000 * 60 * 60 * 24));
+          }
+          return (
+            <div className="bg-green-50 border border-green-200 text-green-800 rounded-2xl px-5 py-3 flex items-center gap-3 text-sm font-bold">
+              <CheckCircle className="w-5 h-5 shrink-0" />
+              <div>
+                <p>هذه السيارة تم بيعها ✅</p>
+                {daysLeft !== null && daysLeft > 0 && (
+                  <p className="text-xs font-normal text-green-600 flex items-center gap-1 mt-0.5">
+                    <Clock className="w-3 h-3" /> يُخفى الإعلان خلال {daysLeft} {daysLeft === 1 ? "يوم" : "أيام"}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Image Gallery */}
         <div className="bg-card rounded-3xl overflow-hidden border shadow-sm">

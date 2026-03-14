@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Calendar, DollarSign, Plus, Trash2, User, CreditCard, MessageCircle, Eye } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Plus, Trash2, User, CreditCard, MessageCircle, Eye, Loader2, Car } from "lucide-react";
 
 type BuyRequest = {
   id: number;
@@ -49,6 +49,8 @@ export default function BuyRequests() {
   const isSellerOrDealer = user?.role === "seller" || user?.role === "dealer" || user?.role === "admin";
 
   const [open, setOpen] = useState(false);
+  const [detailRequest, setDetailRequest] = useState<BuyRequest | null>(null);
+  const [startingChat, setStartingChat] = useState(false);
   const [form, setForm] = useState({
     brand: "", model: "", minYear: "", maxYear: "",
     maxPrice: "", city: "", paymentType: "", description: "",
@@ -62,7 +64,7 @@ export default function BuyRequests() {
   const createMutation = useMutation({
     mutationFn: (body: object) => api.buyRequests.create(body),
     onSuccess: (data) => {
-      toast({ title: data.message ?? "تم نشر طلبك بنجاح" });
+      toast({ title: (data as any).message ?? "تم نشر طلبك بنجاح، سيُراجَع من قِبَل الإدارة" });
       setOpen(false);
       setForm({ brand: "", model: "", minYear: "", maxYear: "", maxPrice: "", city: "", paymentType: "", description: "" });
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
@@ -94,6 +96,49 @@ export default function BuyRequests() {
     });
   };
 
+  const startChatWithOwner = async (targetUserId: number) => {
+    if (!user) { navigate("/login"); return; }
+    if (user.id === targetUserId) {
+      toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" });
+      return;
+    }
+    setStartingChat(true);
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(`${BASE}/api/chats/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sellerId: targetUserId, carId: null }),
+      });
+      const data = await res.json() as any;
+      if (!res.ok) {
+        if (data.error?.includes("yourself")) {
+          toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" });
+        } else {
+          throw new Error(data.error ?? "فشل بدء المحادثة");
+        }
+        return;
+      }
+      navigate(`/messages?conversationId=${data.id}`);
+    } catch (err: any) {
+      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
+    } finally {
+      setStartingChat(false);
+    }
+  };
+
+  const CAR_BRANDS: Record<string, string> = {
+    toyota: "toyota", hyundai: "hyundai", kia: "kia", bmw: "bmw", mercedes: "mercedes",
+    audi: "audi", nissan: "nissan", honda: "honda", mazda: "mazda", mitsubishi: "mitsubishi",
+  };
+  function getCarImage(brand: string | null) {
+    const b = (brand ?? "").toLowerCase().trim();
+    const knownBrand = CAR_BRANDS[b];
+    if (knownBrand) return `https://img.icons8.com/color/96/${knownBrand}.png`;
+    return null;
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -104,7 +149,7 @@ export default function BuyRequests() {
         {user && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 rounded-xl font-bold bg-primary text-primary-foreground hover-elevate shadow-lg shadow-primary/25">
+              <Button className="gap-2 rounded-xl font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/25">
                 <Plus className="w-4 h-4" /> نشر طلب
               </Button>
             </DialogTrigger>
@@ -122,9 +167,11 @@ export default function BuyRequests() {
                     <label className="text-sm font-medium">الموديل</label>
                     <Input name="model" value={form.model} onChange={handleChange} placeholder="مثال: كامري" />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-sm font-medium">سنة من</label>
-                    <Input type="number" name="minYear" value={form.minYear} onChange={handleChange} placeholder="2015" />
+                    <Input type="number" name="minYear" value={form.minYear} onChange={handleChange} placeholder="2010" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-medium">سنة إلى</label>
@@ -151,7 +198,7 @@ export default function BuyRequests() {
                       onChange={handleChange}
                       className="w-full border rounded-md px-3 py-2 text-sm bg-background"
                     >
-                      <option value="">اختر</option>
+                      <option value="">غير محدد</option>
                       <option value="cash">نقداً</option>
                       <option value="installment">تقسيط</option>
                     </select>
@@ -226,7 +273,7 @@ export default function BuyRequests() {
               </div>
 
               {r.description && (
-                <p className="text-sm text-muted-foreground border-t pt-3 leading-relaxed">{r.description}</p>
+                <p className="text-sm text-muted-foreground border-t pt-3 leading-relaxed line-clamp-2">{r.description}</p>
               )}
 
               {/* Action buttons — Message and Details for sellers/dealers */}
@@ -235,14 +282,17 @@ export default function BuyRequests() {
                   <Button
                     size="sm"
                     className="flex-1 rounded-xl gap-1.5 bg-primary hover:bg-primary/90 font-bold text-xs"
-                    onClick={() => user ? navigate("/messages") : navigate("/login")}
+                    onClick={() => startChatWithOwner(r.userId)}
+                    disabled={startingChat}
                   >
-                    <MessageCircle className="w-3.5 h-3.5" /> مراسلة
+                    {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />}
+                    مراسلة
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     className="flex-1 rounded-xl gap-1.5 text-xs"
+                    onClick={() => setDetailRequest(r)}
                   >
                     <Eye className="w-3.5 h-3.5" /> التفاصيل
                   </Button>
@@ -252,7 +302,7 @@ export default function BuyRequests() {
               <div className="flex items-center justify-between border-t pt-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   {r.userPhoto ? (
-                    <img src={r.userPhoto} className="w-6 h-6 rounded-full object-cover" />
+                    <img src={r.userPhoto} className="w-6 h-6 rounded-full object-cover" alt="" />
                   ) : (
                     <User className="w-4 h-4" />
                   )}
@@ -283,6 +333,103 @@ export default function BuyRequests() {
           ))}
         </div>
       )}
+
+      {/* ── Buy Request Detail Dialog ── */}
+      <Dialog open={!!detailRequest} onOpenChange={(o) => { if (!o) setDetailRequest(null); }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Car className="w-5 h-5 text-primary" />
+              تفاصيل طلب الشراء
+            </DialogTitle>
+          </DialogHeader>
+          {detailRequest && (
+            <div className="space-y-4 mt-2">
+              {/* Car image suggestion */}
+              <div className="flex justify-center">
+                {getCarImage(detailRequest.brand) ? (
+                  <img src={getCarImage(detailRequest.brand)!} alt={detailRequest.brand ?? ""} className="w-32 h-32 object-contain" />
+                ) : (
+                  <div className="w-32 h-32 rounded-2xl bg-muted flex items-center justify-center">
+                    <Car className="w-16 h-16 text-muted-foreground/40" />
+                  </div>
+                )}
+              </div>
+
+              {/* Brand / Model / Year */}
+              <div className="bg-muted/30 rounded-2xl p-4 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">الماركة</p>
+                  <p className="font-bold">{detailRequest.brand || "غير محدد"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">الموديل</p>
+                  <p className="font-bold">{detailRequest.model || "غير محدد"}</p>
+                </div>
+                {(detailRequest.minYear || detailRequest.maxYear) && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">سنة الصنع</p>
+                    <p className="font-bold flex items-center gap-1"><Calendar className="w-4 h-4 text-primary" />{detailRequest.minYear ?? "—"} – {detailRequest.maxYear ?? "—"}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Price */}
+              {detailRequest.maxPrice && (
+                <div className="bg-primary/10 rounded-2xl p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">الحد الأقصى للسعر</p>
+                  <p className="text-2xl font-extrabold text-primary">
+                    {Number(detailRequest.maxPrice).toLocaleString()} {detailRequest.currency ?? "USD"}
+                  </p>
+                </div>
+              )}
+
+              {/* City */}
+              {detailRequest.city && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <span>{detailRequest.city}</span>
+                </div>
+              )}
+
+              {/* Description */}
+              {detailRequest.description && (
+                <div className="bg-muted/20 rounded-xl p-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">تفاصيل إضافية</p>
+                  <p className="text-sm leading-relaxed">{detailRequest.description}</p>
+                </div>
+              )}
+
+              {/* Requestor info */}
+              <div className="flex items-center gap-3 border rounded-xl p-3 bg-background">
+                {detailRequest.userPhoto ? (
+                  <img src={detailRequest.userPhoto} className="w-10 h-10 rounded-full object-cover" alt="" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="w-5 h-5 text-primary" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="font-bold text-sm">{detailRequest.userName ?? "مستخدم"}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(detailRequest.createdAt).toLocaleDateString("ar-EG")}</p>
+                </div>
+              </div>
+
+              {/* Message button */}
+              {isSellerOrDealer && user?.id !== detailRequest.userId && (
+                <Button
+                  className="w-full rounded-xl gap-2 font-bold bg-primary hover:bg-primary/90"
+                  onClick={() => { setDetailRequest(null); startChatWithOwner(detailRequest.userId); }}
+                  disabled={startingChat}
+                >
+                  {startingChat ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+                  مراسلة صاحب الطلب
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
