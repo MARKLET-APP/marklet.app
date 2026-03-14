@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, MapPin, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
+import { Plus, MapPin, Trash2, AlertTriangle, CheckCircle, ImagePlus, X, Loader2 } from "lucide-react";
 
 type MissingCar = {
   id: number;
@@ -30,9 +30,12 @@ export default function MissingCarsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ brand: "", model: "", color: "", plateNumber: "", city: "", description: "", image: "" });
+  const [form, setForm] = useState({ brand: "", model: "", color: "", plateNumber: "", city: "", description: "" });
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const { data: cars = [], isLoading } = useQuery<MissingCar[]>({
     queryKey: QUERY_KEY,
@@ -44,7 +47,8 @@ export default function MissingCarsPage() {
     onSuccess: (data) => {
       toast({ title: data.message ?? "تم نشر البلاغ" });
       setOpen(false);
-      setForm({ brand: "", model: "", color: "", plateNumber: "", city: "", description: "", image: "" });
+      setForm({ brand: "", model: "", color: "", plateNumber: "", city: "", description: "" });
+      setUploadedImages([]);
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -63,9 +67,40 @@ export default function MissingCarsPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const token = localStorage.getItem("scm_token");
+      const uploaded: string[] = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("image", file);
+        const res = await fetch(`${BASE}/api/upload`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        });
+        const data = await res.json() as any;
+        if (data.url) uploaded.push(data.url);
+      }
+      setUploadedImages(prev => [...prev, ...uploaded]);
+    } catch {
+      toast({ title: "فشل رفع الصورة", variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const removeImage = (idx: number) =>
+    setUploadedImages(prev => prev.filter((_, i) => i !== idx));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({ ...form, reporterId: user?.id });
+    createMutation.mutate({ ...form, reporterId: user?.id, image: uploadedImages[0] ?? null });
   };
 
   return (
@@ -75,7 +110,7 @@ export default function MissingCarsPage() {
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-2"><AlertTriangle className="w-8 h-8 text-amber-500" /> السيارات المفقودة</h1>
           <p className="text-muted-foreground mt-1">أبلغ عن سيارة مفقودة أو مسروقة — معاً نساعد بعضنا</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setUploadedImages([]); setForm({ brand: "", model: "", color: "", plateNumber: "", city: "", description: "" }); } }}>
           <DialogTrigger asChild>
             <Button className="gap-2 rounded-xl font-bold bg-amber-500 hover:bg-amber-600 text-white hover-elevate shadow-lg">
               <Plus className="w-4 h-4" /> نشر بلاغ
@@ -91,8 +126,40 @@ export default function MissingCarsPage() {
                 <Input name="plateNumber" value={form.plateNumber} onChange={handleChange} placeholder="رقم اللوحة" />
               </div>
               <Input name="city" value={form.city} onChange={handleChange} placeholder="المدينة أو المنطقة" />
-              <Input name="image" value={form.image} onChange={handleChange} placeholder="رابط صورة السيارة (اختياري)" />
               <textarea name="description" value={form.description} onChange={handleChange} rows={3} placeholder="أي تفاصيل إضافية تساعد في التعرف على السيارة..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+
+              {/* Image upload */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">صور السيارة (اختياري)</p>
+                {uploadedImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {uploadedImages.map((url, i) => (
+                      <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute top-0.5 left-0.5 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full gap-2 rounded-xl border-dashed border-2"
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                  {uploading ? "جارٍ الرفع..." : "إرفاق صور السيارة"}
+                </Button>
+              </div>
+
               <Button type="submit" disabled={createMutation.isPending} className="w-full rounded-xl font-bold bg-amber-500 hover:bg-amber-600 text-white">
                 {createMutation.isPending ? "جارٍ النشر..." : "نشر البلاغ"}
               </Button>

@@ -108,9 +108,9 @@ export default function Home() {
   };
 
   const categories = [
-    { id: 'new', name: isRTL ? 'سيارات جديدة' : 'New Cars', icon: 'car-new', href: '/search?saleType=new' },
-    { id: 'used', name: isRTL ? 'سيارات مستعملة' : 'Used Cars', icon: 'car-used', href: '/search?saleType=used' },
-    { id: 'rent', name: isRTL ? 'سيارات للإيجار' : 'Cars for Rent', icon: 'key', href: '/search?saleType=rent' },
+    { id: 'new', name: isRTL ? 'سيارات جديدة' : 'New Cars', icon: 'car-new', href: '/search?condition=new' },
+    { id: 'used', name: isRTL ? 'سيارات مستعملة' : 'Used Cars', icon: 'car-used', href: '/search?condition=used' },
+    { id: 'rent', name: isRTL ? 'سيارات للإيجار' : 'Cars for Rent', icon: 'key', href: '/search?saleType=rental' },
     { id: 'motorcycles', name: isRTL ? 'دراجات نارية' : 'Motorcycles', icon: 'bike', href: '/search?category=motorcycle' },
     { id: 'plates', name: isRTL ? 'أرقام اللوحات' : 'License Plates', icon: 'plates', href: '/plates' },
     { id: 'parts', name: t("home.browse.parts"), icon: 'wrench', href: '/car-parts' },

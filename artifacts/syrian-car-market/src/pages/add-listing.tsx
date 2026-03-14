@@ -66,7 +66,7 @@ export default function AddListing() {
   const [fields, setFields] = useState({
     brand: "", model: "", year: "2015", price: "", mileage: "0",
     fuelType: "petrol", transmission: "automatic", province: "Damascus",
-    city: "", saleType: "cash", category: "sedan", description: "",
+    city: "", saleType: "cash", condition: "used", category: "sedan", description: "",
     engineCC: "", bikeType: "", dailyPrice: "", weeklyPrice: "",
     rentalDuration: "", partType: "", partCarModel: "", partCarYear: "",
   });
@@ -197,14 +197,15 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         brand: fields.brand, model: fields.model, year: Number(fields.year),
         price, mileage: Number(fields.mileage), fuelType: fields.fuelType,
         transmission: fields.transmission, province: fields.province,
-        city: fields.city, saleType: fields.saleType, category: fields.category,
-        description: fields.description, images,
+        city: fields.city, saleType: fields.saleType, condition: fields.condition,
+        category: fields.category, description: fields.description, images,
       };
     } else if (listingType === "motorcycle") {
       data = {
         brand: fields.brand, model: fields.model, year: Number(fields.year),
         price, category: "motorcycle", description: fields.description,
         province: fields.province, city: fields.city, saleType: fields.saleType,
+        condition: fields.condition,
         fuelType: "petrol", transmission: "manual", mileage: 0,
         images,
       };
@@ -500,9 +501,18 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                 </div>
               </>
             )}
+            {(listingType === "car" || listingType === "motorcycle") && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold">حالة السيارة</label>
+                <select name="condition" value={fields.condition} onChange={handleField} className={selectCls}>
+                  <option value="used">مستعملة</option>
+                  <option value="new">جديدة</option>
+                </select>
+              </div>
+            )}
             {listingType === "car" && (
               <div className="space-y-2">
-                <label className="text-sm font-bold">نوع البيع</label>
+                <label className="text-sm font-bold">طريقة البيع</label>
                 <select name="saleType" value={fields.saleType} onChange={handleField} className={selectCls}>
                   <option value="cash">نقد</option>
                   <option value="installment">أقساط</option>

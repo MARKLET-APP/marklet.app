@@ -276,8 +276,8 @@ export default function BuyRequests() {
                 <p className="text-sm text-muted-foreground border-t pt-3 leading-relaxed line-clamp-2">{r.description}</p>
               )}
 
-              {/* Action buttons — Message and Details for sellers/dealers */}
-              {isSellerOrDealer && (
+              {/* Action buttons — visible to any logged-in user who doesn't own the request */}
+              {user && user.id !== r.userId && (
                 <div className="flex gap-2 pt-2 border-t">
                   <Button
                     size="sm"
@@ -416,7 +416,7 @@ export default function BuyRequests() {
               </div>
 
               {/* Message button */}
-              {isSellerOrDealer && user?.id !== detailRequest.userId && (
+              {user && user.id !== detailRequest.userId && (
                 <Button
                   className="w-full rounded-xl gap-2 font-bold bg-primary hover:bg-primary/90"
                   onClick={() => { setDetailRequest(null); startChatWithOwner(detailRequest.userId); }}

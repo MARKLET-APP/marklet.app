@@ -15,6 +15,7 @@ export const carsTable = pgTable("cars", {
   province: text("province").notNull(),
   city: text("city").notNull(),
   saleType: text("sale_type").notNull(),
+  condition: text("condition"),
   category: text("category").notNull(),
   description: text("description"),
   status: text("status").notNull().default("pending"),

@@ -1,50 +1,112 @@
-import { useState, useMemo } from "react";
-import { useListCars } from "@workspace/api-client-react";
+import { useState, useMemo, useEffect } from "react";
+import { useLocation } from "wouter";
 import { CarCard } from "@/components/CarCard";
 import { Filter, SlidersHorizontal, Search as SearchIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-export default function SearchPage() {
-  const [searchText, setSearchText] = useState("");
-  const [filters, setFilters] = useState({
-    brand: "",
-    minYear: "",
-    maxYear: "",
-    minPrice: "",
-    maxPrice: "",
-    city: "",
-    saleType: "",
-  });
+type Car = any;
 
-  const { data, isLoading } = useListCars({
-    ...filters,
-    minYear: filters.minYear ? Number(filters.minYear) : undefined,
-    maxYear: filters.maxYear ? Number(filters.maxYear) : undefined,
-    minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
-    maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
-  });
+const SALE_TYPE_LABELS: Record<string, string> = {
+  rental: "سيارات للإيجار",
+  sale: "سيارات للبيع",
+};
+
+const CONDITION_LABELS: Record<string, string> = {
+  new: "سيارات جديدة",
+  used: "سيارات مستعملة",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  motorcycle: "دراجات نارية",
+  plates: "أرقام اللوحات",
+  cars: "سيارات",
+};
+
+function getPageTitle(saleType: string, category: string, condition: string) {
+  if (condition && CONDITION_LABELS[condition]) return CONDITION_LABELS[condition];
+  if (category && CATEGORY_LABELS[category]) return CATEGORY_LABELS[category];
+  if (saleType && SALE_TYPE_LABELS[saleType]) return SALE_TYPE_LABELS[saleType];
+  return "نتائج البحث";
+}
+
+export default function SearchPage() {
+  const [location] = useLocation();
+
+  const getInitialFilters = () => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      brand: params.get("brand") ?? "",
+      minYear: params.get("minYear") ?? "",
+      maxYear: params.get("maxYear") ?? "",
+      minPrice: params.get("minPrice") ?? "",
+      maxPrice: params.get("maxPrice") ?? "",
+      city: params.get("city") ?? "",
+      saleType: params.get("saleType") ?? "",
+      category: params.get("category") ?? "",
+      condition: params.get("condition") ?? "",
+    };
+  };
+
+  const [searchText, setSearchText] = useState("");
+  const [filters, setFilters] = useState(getInitialFilters);
+  const [cars, setCars] = useState<Car[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Re-read URL params when location changes (user navigates with new params)
+  useEffect(() => {
+    setFilters(getInitialFilters());
+  }, [location]);
+
+  // Fetch cars when filters change
+  useEffect(() => {
+    setIsLoading(true);
+    const params = new URLSearchParams();
+    if (filters.brand) params.set("brand", filters.brand);
+    if (filters.minYear) params.set("minYear", filters.minYear);
+    if (filters.maxYear) params.set("maxYear", filters.maxYear);
+    if (filters.minPrice) params.set("minPrice", filters.minPrice);
+    if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+    if (filters.city) params.set("city", filters.city);
+    if (filters.saleType) params.set("saleType", filters.saleType);
+    if (filters.category) params.set("category", filters.category);
+    if ((filters as any).condition) params.set("condition", (filters as any).condition);
+    params.set("limit", "100");
+
+    const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+    const token = localStorage.getItem("scm_token");
+    fetch(`${BASE}/api/cars?${params.toString()}`, {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    })
+      .then(r => r.json())
+      .then((data: any) => setCars(data.cars ?? []))
+      .catch(() => setCars([]))
+      .finally(() => setIsLoading(false));
+  }, [filters]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const clearAll = () => {
     setSearchText("");
-    setFilters({ brand: "", minYear: "", maxYear: "", minPrice: "", maxPrice: "", city: "", saleType: "" });
+    setFilters({ brand: "", minYear: "", maxYear: "", minPrice: "", maxPrice: "", city: "", saleType: "", category: "", condition: "" });
   };
 
   const filteredCars = useMemo(() => {
-    if (!data?.cars) return [];
     const q = searchText.trim().toLowerCase();
-    if (!q) return data.cars;
-    return data.cars.filter((car) =>
+    if (!q) return cars;
+    return cars.filter((car: Car) =>
       car.brand?.toLowerCase().includes(q) ||
       car.model?.toLowerCase().includes(q) ||
-      (car as any).title?.toLowerCase().includes(q) ||
-      (car as any).description?.toLowerCase().includes(q)
+      car.title?.toLowerCase().includes(q) ||
+      car.description?.toLowerCase().includes(q)
     );
-  }, [data?.cars, searchText]);
+  }, [cars, searchText]);
+
+  const condition = (filters as any).condition ?? "";
+  const pageTitle = getPageTitle(filters.saleType, filters.category, condition);
+  const hasActiveFilter = filters.saleType || filters.category || condition;
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -95,14 +157,16 @@ export default function SearchPage() {
         </select>
       </div>
 
-      <div className="space-y-3">
-        <label className="text-sm font-bold text-foreground">طريقة البيع</label>
-        <div className="flex gap-2 flex-wrap">
-          <Button type="button" variant={filters.saleType === '' ? 'default' : 'outline'} onClick={() => setFilters({...filters, saleType: ''})} className="flex-1 rounded-xl">الكل</Button>
-          <Button type="button" variant={filters.saleType === 'cash' ? 'default' : 'outline'} onClick={() => setFilters({...filters, saleType: 'cash'})} className="flex-1 rounded-xl">نقد</Button>
-          <Button type="button" variant={filters.saleType === 'installment' ? 'default' : 'outline'} onClick={() => setFilters({...filters, saleType: 'installment'})} className="flex-1 rounded-xl">أقساط</Button>
+      {!filters.saleType && (
+        <div className="space-y-3">
+          <label className="text-sm font-bold text-foreground">نوع البيع</label>
+          <div className="flex gap-2 flex-wrap">
+            <Button type="button" variant={filters.saleType === '' ? 'default' : 'outline'} onClick={() => setFilters(f => ({ ...f, saleType: '' }))} className="flex-1 rounded-xl">الكل</Button>
+            <Button type="button" variant={filters.saleType === 'sale' ? 'default' : 'outline'} onClick={() => setFilters(f => ({ ...f, saleType: 'sale' }))} className="flex-1 rounded-xl">للبيع</Button>
+            <Button type="button" variant={filters.saleType === 'rent' ? 'default' : 'outline'} onClick={() => setFilters(f => ({ ...f, saleType: 'rent' }))} className="flex-1 rounded-xl">للإيجار</Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <Button variant="outline" onClick={clearAll} className="w-full rounded-xl">
         <X className="w-4 h-4 ml-2" /> مسح الفلاتر
@@ -125,6 +189,16 @@ export default function SearchPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Page title when coming from a category shortcut */}
+        {hasActiveFilter && (
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-extrabold text-foreground">{pageTitle}</h1>
+            <Button variant="ghost" size="sm" onClick={clearAll} className="text-muted-foreground gap-1 rounded-xl">
+              <X className="w-4 h-4" /> مسح
+            </Button>
+          </div>
+        )}
+
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1 relative">
             <SearchIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
@@ -161,7 +235,7 @@ export default function SearchPage() {
 
         {/* Results Info */}
         <div className="mb-6 text-muted-foreground font-medium">
-          {isLoading ? "جاري البحث..." : `تم العثور على ${filteredCars.length} سيارة`}
+          {isLoading ? "جاري البحث..." : `تم العثور على ${filteredCars.length} ${filters.category === "motorcycle" ? "دراجة" : "سيارة"}`}
         </div>
 
         {/* Grid */}
@@ -178,7 +252,7 @@ export default function SearchPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredCars.map((car) => (
+            {filteredCars.map((car: Car) => (
               <CarCard key={car.id} car={car} />
             ))}
           </div>

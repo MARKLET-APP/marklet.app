@@ -43,6 +43,8 @@ router.get("/cars", async (req, res): Promise<void> => {
   if (saleType) conditions.push(eq(carsTable.saleType, saleType));
   if (category) conditions.push(eq(carsTable.category, category));
   if (featured) conditions.push(eq(carsTable.isFeatured, featured));
+  const conditionFilter = (req.query as any).condition as string | undefined;
+  if (conditionFilter) conditions.push(eq(carsTable.condition, conditionFilter));
   if (search) {
     conditions.push(
       or(
@@ -82,6 +84,7 @@ router.get("/cars", async (req, res): Promise<void> => {
     province: carsTable.province,
     city: carsTable.city,
     saleType: carsTable.saleType,
+    condition: carsTable.condition,
     category: carsTable.category,
     description: carsTable.description,
     isFeatured: carsTable.isFeatured,
@@ -344,10 +347,13 @@ router.post("/cars", authMiddleware, async (req: AuthRequest, res): Promise<void
     return;
   }
 
+  const condition = (req.body as any).condition as string | undefined;
+
   const [car] = await db.insert(carsTable).values({
     ...carData,
     sellerId: req.userId!,
     price: String(carData.price),
+    ...(condition ? { condition } : {}),
   }).returning();
 
   if (images && images.length > 0) {
