@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
-import { TopBanner } from "@/components/TopBanner";
+import { DhikrBar } from "@/components/DhikrBar";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
 
@@ -17,7 +17,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-16 sm:pb-0">
-      <TopBanner />
+      <DhikrBar />
       <Header />
       <main className="flex-1 w-full max-w-7xl mx-auto">
         {children}
