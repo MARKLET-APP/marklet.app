@@ -6,7 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,34 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, ShoppingCart as CartIcon, Star } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+
+  const handleAdminReply = async (targetUserId: number, itemId: number) => {
+    if (!user) return;
+    setReplyingTo(itemId);
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(`${BASE}/api/chats/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sellerId: targetUserId, carId: null }),
+      });
+      if (!res.ok) throw new Error("فشل بدء المحادثة");
+      const conv = await res.json();
+      navigate(`/messages?conversationId=${conv.id}`);
+    } catch {
+      toast({ title: "تعذّر فتح المحادثة", variant: "destructive" });
+    } finally {
+      setReplyingTo(null);
+    }
+  };
 
   const { data: users, isLoading: loadingUsers, refetch: refetchUsers } = useAdminListUsers({ query: { enabled: user?.role === 'admin' } });
   const { data: carsData, isLoading: loadingCars, refetch: refetchCars } = useQuery({
@@ -636,6 +659,23 @@ export default function AdminDashboard() {
                   </div>
                   <p className="text-sm text-foreground">{m.message}</p>
                   {m.userPhone && <p className="text-xs text-muted-foreground mt-1" dir="ltr">{m.userPhone}</p>}
+                  {m.userId && (
+                    <div className="mt-3 pt-3 border-t flex justify-end">
+                      <Button
+                        size="sm"
+                        className="h-8 gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
+                        variant="ghost"
+                        disabled={replyingTo === m.id}
+                        onClick={() => handleAdminReply(m.userId, m.id)}
+                      >
+                        {replyingTo === m.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <MessageCircle className="w-3.5 h-3.5" />
+                        }
+                        رد على {m.userName || "المستخدم"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -654,12 +694,31 @@ export default function AdminDashboard() {
               {(feedbackList as any[]).length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">لا توجد تقييمات</div>
               ) : (feedbackList as any[]).map((f: any) => (
-                <div key={f.id} className="border rounded-xl p-4 bg-background flex items-start justify-between gap-3">
-                  <div>
-                    {f.userName && <p className="text-sm font-bold mb-0.5">{f.userName}</p>}
-                    <p className="text-sm text-foreground">{f.feedback}</p>
+                <div key={f.id} className="border rounded-xl p-4 bg-background">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div>
+                      {f.userName && <p className="text-sm font-bold mb-0.5">{f.userName}</p>}
+                      <p className="text-sm text-foreground">{f.feedback}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">{new Date(f.createdAt).toLocaleDateString("ar-EG")}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground shrink-0">{new Date(f.createdAt).toLocaleDateString("ar-EG")}</span>
+                  {f.userId && (
+                    <div className="pt-2 border-t flex justify-end">
+                      <Button
+                        size="sm"
+                        className="h-8 gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
+                        variant="ghost"
+                        disabled={replyingTo === f.id}
+                        onClick={() => handleAdminReply(f.userId, f.id)}
+                      >
+                        {replyingTo === f.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <MessageCircle className="w-3.5 h-3.5" />
+                        }
+                        رد على {f.userName || "المستخدم"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
