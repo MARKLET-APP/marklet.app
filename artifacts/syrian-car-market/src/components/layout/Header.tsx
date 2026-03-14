@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car } from "lucide-react";
+import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -10,8 +10,9 @@ import { cn } from "@/lib/utils";
 export function Header() {
   const { user, logout } = useAuthStore();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isHome = location === "/" || location === "";
 
   const isPremium = !!(user as any)?.isPremium || !!(user as any)?.isVerified;
 
@@ -46,7 +47,19 @@ export function Header() {
       <header className="sticky top-0 z-50 w-full glass-panel border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {!isHome && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-xl shrink-0"
+                onClick={() => window.history.back()}
+                title="رجوع"
+                aria-label="رجوع"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

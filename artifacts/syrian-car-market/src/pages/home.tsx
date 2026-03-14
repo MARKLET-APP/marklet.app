@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
-  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send
+  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, Phone, FileText, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ export default function Home() {
   const [infoMsg, setInfoMsg] = useState("");
   const [sendingInfo, setSendingInfo] = useState(false);
   const [startingChat, setStartingChat] = useState<number | null>(null);
+  const [detailRequest, setDetailRequest] = useState<any | null>(null);
 
   const startChatWithBuyer = async (targetUserId: number, requestId: number) => {
     if (!user) { navigate("/login"); return; }
@@ -425,7 +426,7 @@ export default function Home() {
                       size="sm"
                       variant="outline"
                       className="flex-1 rounded-xl gap-1 text-xs"
-                      onClick={() => navigate(`/buy-requests`)}
+                      onClick={() => setDetailRequest(r)}
                     >
                       <Eye className="w-3.5 h-3.5" /> التفاصيل
                     </Button>
@@ -532,6 +533,71 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Buy Request Details Dialog */}
+      {detailRequest && (
+        <Dialog open={!!detailRequest} onOpenChange={(open) => { if (!open) setDetailRequest(null); }}>
+          <DialogContent className="max-w-md w-full rounded-2xl p-0 overflow-hidden" dir="rtl">
+            <DialogHeader className="px-6 pt-6 pb-0">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <CartIcon className="w-5 h-5 text-primary" />
+                تفاصيل طلب الشراء
+              </DialogTitle>
+            </DialogHeader>
+            <div className="p-6 space-y-4">
+              <div className="bg-muted/30 rounded-xl p-4 space-y-2">
+                <h3 className="font-bold text-base flex items-center gap-2 mb-3"><Car className="w-4 h-4" /> المركبة المطلوبة</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><span className="text-muted-foreground">الماركة: </span><span className="font-medium">{detailRequest.brand || "أي ماركة"}</span></div>
+                  <div><span className="text-muted-foreground">الموديل: </span><span className="font-medium">{detailRequest.model || "أي موديل"}</span></div>
+                  {(detailRequest.minYear || detailRequest.maxYear) && (
+                    <div className="col-span-2 flex items-center gap-1 text-muted-foreground">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{detailRequest.minYear ?? "—"} – {detailRequest.maxYear ?? "—"}</span>
+                    </div>
+                  )}
+                  {detailRequest.maxPrice && (
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">الحد الأقصى للسعر: </span>
+                      <span className="font-bold text-primary">{Number(detailRequest.maxPrice).toLocaleString()} {detailRequest.currency ?? "USD"}</span>
+                    </div>
+                  )}
+                  {detailRequest.city && (
+                    <div className="col-span-2 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="font-medium">{detailRequest.city}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {detailRequest.description && (
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-muted-foreground flex items-center gap-1"><FileText className="w-4 h-4" /> تفاصيل إضافية</p>
+                  <p className="text-sm leading-relaxed bg-muted/20 rounded-xl p-3 whitespace-pre-wrap">{detailRequest.description}</p>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  className="flex-1 gap-1.5 h-11 rounded-xl"
+                  disabled={startingChat === detailRequest.id}
+                  onClick={() => { setDetailRequest(null); startChatWithBuyer(detailRequest.userId, detailRequest.id); }}
+                >
+                  {startingChat === detailRequest.id
+                    ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                    : <MessageCircle className="w-4 h-4" />
+                  }
+                  مراسلة صاحب الطلب
+                </Button>
+                <Button variant="outline" className="h-11 rounded-xl px-4" onClick={() => setDetailRequest(null)}>
+                  إغلاق
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -420,15 +420,6 @@ export default function Messages() {
       <div className={cn("w-full sm:w-80 md:w-96 flex-shrink-0 border-l bg-card flex flex-col", activeChatId ? "hidden sm:flex" : "flex")}>
         <div className="p-4 border-b flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-xl"
-              onClick={() => window.history.back()}
-              title="رجوع"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </Button>
             <h2 className="text-xl font-bold">
               {adminViewAll ? "كل المحادثات" : "الرسائل"}
             </h2>
