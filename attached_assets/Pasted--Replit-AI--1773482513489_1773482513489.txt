@@ -1,0 +1,135 @@
+انسخ هذا **الكود وأرسله إلى Replit AI** ليصلح مشكلة أن معلومات السيارة ثابتة وتظهر نفسها لكل السيارات. الهدف هو جعل البيانات **ديناميكية حسب رقم VIN** الذي يتم إدخاله.
+
+```text
+يوجد خلل في صفحة "تقرير تاريخ المركبة".
+
+معلومات السيارة في الأسفل ثابتة وتظهر نفس البيانات لكل السيارات مثل:
+Toyota Corolla 2018
+اليابان
+1.6L
+HP 132
+أوتوماتيك
+
+أريد تعديل الكود ليجعل معلومات السيارة ديناميكية حسب VIN الذي يتم إدخاله.
+
+قم بتنفيذ الخطوات التالية:
+
+================================
+1 إنشاء حالة لتخزين بيانات السيارة
+================================
+
+في أعلى Component أضف:
+
+const [vehicleData, setVehicleData] = useState(null);
+
+================================
+2 تعديل زر استخراج التقرير
+================================
+
+اجعل زر "استخراج التقرير" يستدعي API يعيد بيانات السيارة.
+
+مثال:
+
+const fetchVehicleReport = async () => {
+
+const response = await fetch(`/api/vehicle-report?vin=${vin}`);
+const data = await response.json();
+
+setVehicleData(data);
+
+};
+
+وزر الاستخراج:
+
+<button onClick={fetchVehicleReport}>
+استخراج التقرير
+</button>
+
+================================
+3 عرض بيانات السيارة بشكل ديناميكي
+================================
+
+استبدل الكود الثابت الخاص بمعلومات السيارة بهذا:
+
+{vehicleData && (
+
+<div className="vehicle-info">
+
+<h3>{vehicleData.make} {vehicleData.model} {vehicleData.year}</h3>
+
+<div className="vehicle-specs">
+
+<div>
+<span>بلد المنشأ</span>
+<strong>{vehicleData.country}</strong>
+</div>
+
+<div>
+<span>سعة المحرك</span>
+<strong>{vehicleData.engine}</strong>
+</div>
+
+<div>
+<span>الأحصنة</span>
+<strong>{vehicleData.horsepower}</strong>
+</div>
+
+<div>
+<span>ناقل الحركة</span>
+<strong>{vehicleData.transmission}</strong>
+</div>
+
+</div>
+
+</div>
+
+)}
+
+================================
+4 عرض تسلسل قراءة العدادات ديناميكياً
+================================
+
+استبدل الجدول الثابت بهذا:
+
+{vehicleData?.odometerHistory?.map((item,index)=>(
+
+<div key={index} className="odometer-item">
+
+<span>{item.year}</span>
+
+<span>{item.km} كم</span>
+
+</div>
+
+))}
+
+================================
+5 التأكد من أن API يعيد البيانات بهذا الشكل
+================================
+
+يجب أن يعيد السيرفر JSON مثل:
+
+{
+make:"Toyota",
+model:"Corolla",
+year:2018,
+country:"اليابان",
+engine:"1.6L",
+horsepower:"132 HP",
+transmission:"أوتوماتيك",
+odometerHistory:[
+{year:2018,km:30000},
+{year:2020,km:50000},
+{year:2022,km:85000},
+{year:2024,km:110000}
+]
+}
+
+================================
+
+النتيجة المطلوبة:
+
+• معلومات السيارة تتغير حسب VIN  
+• لا تظهر نفس المعلومات لكل السيارات  
+• تسلسل قراءة العدادات يتم عرضه من البيانات القادمة من السيرفر
+```
