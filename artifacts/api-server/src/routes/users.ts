@@ -79,6 +79,9 @@ router.patch("/users/:id", authMiddleware, async (req: AuthRequest, res): Promis
   if (typeof body.showroomAddress === "string") updateData.showroomAddress = body.showroomAddress;
   if (typeof body.showroomPhone === "string") updateData.showroomPhone = body.showroomPhone;
   if (typeof body.showroomPhoto === "string") updateData.showroomPhoto = body.showroomPhoto;
+  if (typeof body.role === "string" && ["buyer", "seller", "dealer"].includes(body.role)) {
+    updateData.role = body.role;
+  }
 
   if (Object.keys(updateData).length === 0) { res.status(400).json({ error: "No fields to update" }); return; }
 

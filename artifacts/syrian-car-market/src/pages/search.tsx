@@ -155,8 +155,6 @@ export default function SearchPage() {
   const hasActiveFilter = filters.saleType || filters.category || condition;
 
   const showActionButtons = condition === "new" || condition === "used" || filters.category === "motorcycle";
-  const isSeller = user?.role === "seller" || user?.role === "dealer" || user?.role === "admin";
-
   const FilterContent = () => (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -241,7 +239,7 @@ export default function SearchPage() {
             {/* Buy / Sell action buttons */}
             {showActionButtons && (
               <div className="flex gap-3">
-                {isSeller && (
+                {user && (
                   <Button
                     onClick={() => navigate("/add-listing")}
                     className="flex-1 gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-md"
@@ -316,7 +314,7 @@ export default function SearchPage() {
             <p className="text-muted-foreground mb-6">جرب تغيير خيارات البحث أو تقليل الفلاتر المستخدمة</p>
             {showActionButtons && (
               <div className="flex gap-3 flex-wrap justify-center">
-                {isSeller && (
+                {user && (
                   <Button onClick={() => navigate("/add-listing")} className="gap-2 rounded-xl">
                     <Plus className="w-4 h-4" /> أضف أول إعلان
                   </Button>

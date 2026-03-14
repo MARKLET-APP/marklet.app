@@ -234,14 +234,85 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     });
   };
 
-  if (user?.role !== 'seller' && user?.role !== 'dealer') {
+  const [activating, setActivating] = useState(false);
+
+  const activateSellerMode = async (newRole: "seller" | "dealer") => {
+    if (!user) { navigate("/login"); return; }
+    setActivating(true);
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(`${BASE}/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (!res.ok) throw new Error();
+      const updated = await res.json();
+      useAuthStore.getState().setAuth(updated, token!);
+      toast({ title: "تم تفعيل وضع البائع", description: "يمكنك الآن نشر إعلاناتك" });
+    } catch {
+      toast({ title: "حدث خطأ أثناء تغيير الوضع", variant: "destructive" });
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  if (!user) {
     return (
       <div className="py-20 text-center px-4">
         <div className="max-w-md mx-auto bg-card p-8 rounded-3xl border shadow-lg">
           <ShieldCheck className="w-16 h-16 text-primary mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">عذراً، لا يمكنك إضافة إعلان</h2>
-          <p className="text-muted-foreground mb-6">هذه الميزة متاحة فقط لأصحاب حسابات البائعين والمعارض.</p>
-          <Button onClick={() => navigate('/profile')} className="w-full rounded-xl">تغيير نوع الحساب</Button>
+          <h2 className="text-2xl font-bold mb-2">يجب تسجيل الدخول أولاً</h2>
+          <p className="text-muted-foreground mb-6">قم بتسجيل الدخول لتتمكن من نشر إعلانك.</p>
+          <Button onClick={() => navigate('/login')} className="w-full rounded-xl">تسجيل الدخول</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role !== 'seller' && user?.role !== 'dealer') {
+    return (
+      <div className="py-20 text-center px-4">
+        <div className="max-w-md mx-auto bg-card p-8 rounded-3xl border shadow-lg space-y-6">
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <ShieldCheck className="w-10 h-10 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold mb-2">فعّل وضع البائع</h2>
+            <p className="text-muted-foreground text-sm">لنشر إعلانك، اختر وضع الحساب المناسب. يمكنك التبديل بين الأوضاع في أي وقت من إعدادات حسابك.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => activateSellerMode("seller")}
+              disabled={activating}
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+            >
+              <span className="text-2xl">🚗</span>
+              <span className="font-bold text-primary text-sm">بائع سيارات</span>
+              <span className="text-xs text-muted-foreground">أفراد</span>
+            </button>
+            <button
+              onClick={() => activateSellerMode("dealer")}
+              disabled={activating}
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-accent bg-accent/5 hover:bg-accent/10 transition-colors"
+            >
+              <span className="text-2xl">🏢</span>
+              <span className="font-bold text-accent text-sm">تاجر / معرض</span>
+              <span className="text-xs text-muted-foreground">شركات</span>
+            </button>
+          </div>
+          {activating && (
+            <div className="flex justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          )}
+          <button
+            onClick={() => navigate('/buy-requests')}
+            className="w-full text-sm text-muted-foreground hover:text-foreground underline"
+          >
+            أريد الشراء فقط ← اذهب إلى طلبات الشراء
+          </button>
         </div>
       </div>
     );

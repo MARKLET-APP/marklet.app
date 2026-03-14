@@ -59,12 +59,10 @@ export default function Home() {
     }
   };
 
-  const isSellerOrDealer = user?.role === "seller" || user?.role === "dealer" || user?.role === "admin";
-
   const { data: buyRequests = [] } = useQuery({
     queryKey: ["/buy-requests"],
     queryFn: () => api.buyRequests.list(),
-    enabled: isSellerOrDealer,
+    enabled: !!user,
     staleTime: 60_000,
   });
 
@@ -93,12 +91,7 @@ export default function Home() {
     }
   };
 
-  const role = user?.role ?? null;
-  const canSell = role === "seller" || role === "dealer";
-  const canBuy  = role === "buyer"  || role === "dealer";
-
   const handleCreateAd = () => {
-    if (!user) { navigate("/login"); return; }
     navigate("/add-listing");
   };
 
@@ -199,31 +192,21 @@ export default function Home() {
             transition={{ delay: 0.35 }}
             className="flex flex-wrap justify-center gap-3 pt-2"
           >
-            {(canSell || !user) && (
-              <button
-                onClick={handleCreateAd}
-                className="flex items-center gap-2 bg-primary hover:bg-primary/90 active:scale-95 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-primary/30 transition-all duration-200"
-              >
-                <PlusCircle className="w-5 h-5" />
-                {t("home.hero.postCar")}
-              </button>
-            )}
+            <button
+              onClick={handleCreateAd}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 active:scale-95 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-primary/30 transition-all duration-200"
+            >
+              <PlusCircle className="w-5 h-5" />
+              {t("home.hero.postCar")}
+            </button>
 
-            {(canBuy || !user) && (
-              <button
-                onClick={handleBuyRequest}
-                className="flex items-center gap-2 bg-accent hover:bg-accent/90 active:scale-95 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-accent/30 transition-all duration-200"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                {t("home.hero.requestCar")}
-              </button>
-            )}
-
-            {role === "inspector" && (
-              <span className="text-white/70 text-sm bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm">
-                {isRTL ? "مرحباً بك يا مفتش 👋" : "Welcome, Inspector 👋"}
-              </span>
-            )}
+            <button
+              onClick={handleBuyRequest}
+              className="flex items-center gap-2 bg-accent hover:bg-accent/90 active:scale-95 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-accent/30 transition-all duration-200"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {t("home.hero.requestCar")}
+            </button>
           </motion.div>
         </div>
       </section>
@@ -355,8 +338,8 @@ export default function Home() {
         )}
       </section>
 
-      {/* Buy Requests Section — visible to sellers & dealers only */}
-      {isSellerOrDealer && (buyRequests as any[]).length > 0 && (
+      {/* Buy Requests Section — visible to all logged-in users */}
+      {(buyRequests as any[]).length > 0 && (
         <section className="py-12 bg-primary/5 w-full">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex justify-between items-end mb-8">

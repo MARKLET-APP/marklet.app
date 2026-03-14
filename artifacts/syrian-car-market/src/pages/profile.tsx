@@ -265,6 +265,11 @@ export default function Profile() {
                       </Button>
                     </Link>
                   )}
+
+                  {/* ── وضع الحساب (Role Switcher) ── */}
+                  {cp.role !== "admin" && cp.role !== "inspector" && (
+                    <AccountModeSelector currentRole={cp.role} userId={cp.id} onRoleChanged={refetchProfile} />
+                  )}
                 </div>
               ) : (
                 /* ── Edit Form ── */
@@ -483,6 +488,74 @@ export default function Profile() {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AccountModeSelector({ currentRole, userId, onRoleChanged }: {
+  currentRole: string;
+  userId: number;
+  onRoleChanged: () => void;
+}) {
+  const [switching, setSwitching] = useState(false);
+  const { toast } = useToast();
+  const { setAuth } = useAuthStore();
+
+  const modes = [
+    { role: "buyer", label: "مشتري", icon: "🛒", desc: "تصفح وتقديم طلبات شراء" },
+    { role: "seller", label: "بائع", icon: "🚗", desc: "نشر إعلانات بيع" },
+    { role: "dealer", label: "تاجر / معرض", icon: "🏢", desc: "نشر إعلانات متعددة" },
+  ];
+
+  const switchMode = async (newRole: string) => {
+    if (newRole === currentRole) return;
+    setSwitching(true);
+    try {
+      const token = localStorage.getItem("scm_token");
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const res = await fetch(`${BASE}/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (!res.ok) throw new Error();
+      const updated = await res.json();
+      if (token) setAuth(updated, token);
+      onRoleChanged();
+      toast({ title: "تم تغيير وضع الحساب", description: `أنت الآن في وضع ${modes.find(m => m.role === newRole)?.label}` });
+    } catch {
+      toast({ title: "حدث خطأ أثناء تغيير الوضع", variant: "destructive" });
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border/50">
+      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3">وضع الحساب</p>
+      <div className="space-y-2">
+        {modes.map(m => (
+          <button
+            key={m.role}
+            onClick={() => switchMode(m.role)}
+            disabled={switching}
+            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-right ${
+              currentRole === m.role
+                ? "border-primary bg-primary/5 text-primary"
+                : "border-border hover:border-primary/40 hover:bg-secondary/50 text-foreground"
+            }`}
+          >
+            <span className="text-xl shrink-0">{m.icon}</span>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-sm">{m.label}</div>
+              <div className="text-xs text-muted-foreground">{m.desc}</div>
+            </div>
+            {currentRole === m.role && (
+              <span className="text-[10px] bg-primary text-white rounded-full px-2 py-0.5 shrink-0">نشط</span>
+            )}
+          </button>
+        ))}
       </div>
     </div>
   );
