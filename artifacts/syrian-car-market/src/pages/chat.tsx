@@ -15,7 +15,12 @@ import { cn } from "@/lib/utils";
 
 export default function Chat() {
   const { user, isHydrated } = useAuthStore();
-  const [activeChatId, setActiveChatId] = useState<number | null>(null);
+  const [activeChatId, setActiveChatId] = useState<number | null>(() => {
+    // Auto-select conversation from URL query param (e.g. ?conversationId=5)
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("conversationId");
+    return id ? Number(id) : null;
+  });
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -33,6 +38,13 @@ export default function Chat() {
     // Scroll to bottom when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Keep activeChatId in sync if URL changes after mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("conversationId");
+    if (id) setActiveChatId(Number(id));
+  }, [window.location.search]);
 
   if (!isHydrated) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (!user) return <Redirect to="/login" />;

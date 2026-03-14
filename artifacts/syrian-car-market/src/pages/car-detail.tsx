@@ -1,8 +1,8 @@
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useGetCar } from "@workspace/api-client-react";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { MapPin, Settings, Calendar, Gauge, Fuel, Phone, Heart, Share2, ShieldCheck } from "lucide-react";
+import { MapPin, Settings, Calendar, Gauge, Fuel, Phone, Heart, Share2, ShieldCheck, Loader2, MessageCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -15,8 +15,11 @@ export default function CarDetail() {
   const { data: car, isLoading, isError } = useGetCar(carId);
   const { user } = useAuthStore();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const [similarCars, setSimilarCars] = useState<any[]>([]);
+  const [showPhone, setShowPhone] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     if (!carId) return;
@@ -29,6 +32,37 @@ export default function CarDetail() {
     const url = `${window.location.origin}/cars/${carId}`;
     navigator.clipboard.writeText(url);
     toast({ title: "تم نسخ رابط السيارة", description: url });
+  };
+
+  const startChat = async () => {
+    if (!user) { navigate("/login"); return; }
+    if (!car) return;
+    setStartingChat(true);
+    try {
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch("/api/chats/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ sellerId: car.sellerId, carId: car.id }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        if (err.error?.includes("yourself")) {
+          toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" });
+          return;
+        }
+        throw new Error(err.error ?? "فشل بدء المحادثة");
+      }
+      const conversation = await res.json() as { id: number };
+      navigate(`/chat?conversationId=${conversation.id}`);
+    } catch (err: any) {
+      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
+    } finally {
+      setStartingChat(false);
+    }
   };
 
   if (isLoading) return <div className="flex justify-center py-32"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
@@ -124,17 +158,46 @@ export default function CarDetail() {
           </div>
 
           <div className="space-y-3">
-            <Button className="w-full rounded-xl h-12 text-base font-bold gap-2 hover-elevate bg-primary text-primary-foreground shadow-lg shadow-primary/25">
-              <Phone className="w-5 h-5" /> عرض رقم الهاتف
-            </Button>
-            
-            {user ? (
-              <Button variant="outline" className="w-full rounded-xl h-12 text-base font-bold gap-2 border-2 hover:bg-secondary/50">
-                <ShieldCheck className="w-5 h-5 text-primary" /> بدء محادثة آمنة
+
+            {/* Phone reveal button */}
+            {!showPhone ? (
+              <Button
+                onClick={() => {
+                  if (!user) { navigate("/login"); return; }
+                  setShowPhone(true);
+                }}
+                className="w-full rounded-xl h-12 text-base font-bold gap-2 hover-elevate bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+              >
+                <Eye className="w-5 h-5" /> عرض رقم الهاتف
               </Button>
             ) : (
-              <p className="text-xs text-center text-muted-foreground">قم بتسجيل الدخول لبدء المحادثة</p>
+              <div className="w-full rounded-xl border-2 border-primary/30 bg-primary/5 px-4 h-12 flex items-center justify-between">
+                <span dir="ltr" className="font-bold text-lg text-foreground font-mono tracking-wider">
+                  {(car as any).sellerPhone ?? "غير متاح"}
+                </span>
+                <button
+                  onClick={() => setShowPhone(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <EyeOff className="w-4 h-4" />
+                </button>
+              </div>
             )}
+
+            {/* Safe chat button */}
+            <Button
+              onClick={startChat}
+              disabled={startingChat}
+              variant="outline"
+              className="w-full rounded-xl h-12 text-base font-bold gap-2 border-2 border-primary/30 hover:bg-primary/5 hover:border-primary text-primary transition-all"
+            >
+              {startingChat
+                ? <Loader2 className="w-5 h-5 animate-spin" />
+                : <MessageCircle className="w-5 h-5" />
+              }
+              {startingChat ? "جارٍ الفتح..." : "بدء محادثة آمنة"}
+            </Button>
+
           </div>
           
           <div className="mt-6 pt-6 border-t text-sm text-muted-foreground text-center">
