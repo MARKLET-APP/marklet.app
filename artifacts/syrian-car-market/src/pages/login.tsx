@@ -30,7 +30,7 @@ export default function Login() {
       <div className="max-w-md w-full bg-card rounded-3xl border shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-foreground mb-2">تسجيل الدخول</h1>
-          <p className="text-muted-foreground">أهلاً بك مجدداً في CarNet</p>
+          <p className="text-muted-foreground">أهلاً بك مجدداً في MARKLET</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

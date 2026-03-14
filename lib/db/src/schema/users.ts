@@ -15,6 +15,10 @@ export const usersTable = pgTable("users", {
   isVerified: boolean("is_verified").notNull().default(false),
   isPremium: boolean("is_premium").notNull().default(false),
   isBanned: boolean("is_banned").notNull().default(false),
+  showroomName: text("showroom_name"),
+  showroomAddress: text("showroom_address"),
+  showroomPhone: text("showroom_phone"),
+  showroomPhoto: text("showroom_photo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

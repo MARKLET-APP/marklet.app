@@ -29,7 +29,7 @@ app.get("/app-link", (req, res) => {
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8" />
-      <title>CarNet - رابط التطبيق</title>
+      <title>MARKLET - رابط التطبيق</title>
       <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f0fdf4; }
         .card { background: white; border-radius: 16px; padding: 40px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,.08); max-width: 480px; width: 90%; }
@@ -42,7 +42,7 @@ app.get("/app-link", (req, res) => {
     </head>
     <body>
       <div class="card">
-        <h2>🚗 CarNet جاهز للعمل</h2>
+        <h2>🚗 MARKLET جاهز للعمل</h2>
         <p>افتح التطبيق من الرابط التالي:</p>
         <a href="${publicURL}" target="_blank">افتح التطبيق</a>
         <p class="url">${publicURL}</p>

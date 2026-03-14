@@ -1,5 +1,9 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart } from "lucide-react";
+import {
+  Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
+  Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CarCard } from "@/components/CarCard";
 import { useGetFeaturedCars, useListCars } from "@workspace/api-client-react";
@@ -11,6 +15,7 @@ export default function Home() {
   const { data: latestCars, isLoading: loadingLatest } = useListCars({ limit: 6, sortBy: 'createdAt:desc' });
   const { user } = useAuthStore();
   const [, navigate] = useLocation();
+  const [heroSearch, setHeroSearch] = useState("");
 
   const role = user?.role ?? null;
   const canSell = role === "seller" || role === "dealer";
@@ -27,16 +32,16 @@ export default function Home() {
   };
 
   const categories = [
-    { id: 'new', name: 'سيارات جديدة', icon: '🚗', href: '/search?saleType=new' },
-    { id: 'used', name: 'سيارات مستعملة', icon: '🚙', href: '/search?saleType=used' },
-    { id: 'rent', name: 'سيارات للإيجار', icon: '🔑', href: '/search?saleType=rent' },
-    { id: 'motorcycles', name: 'دراجات نارية', icon: '🏍️', href: '/search?category=motorcycle' },
-    { id: 'plates', name: 'أرقام اللوحات', icon: '🔢', href: '/search?category=plates' },
-    { id: 'parts', name: 'قطع سيارات', icon: '🔧', href: '/car-parts' },
-    { id: 'junk', name: 'سيارات خردة', icon: '🔩', href: '/junk-cars' },
-    { id: 'inspect', name: 'افحص سيارتك', icon: '🛡️', href: '/inspections' },
-    { id: 'missing', name: 'سيارة مفقودة', icon: '🔍', href: '/missing-cars' },
-    { id: 'buy-request', name: 'طلب شراء', icon: '🛒', href: '/buy-requests' },
+    { id: 'new', name: 'سيارات جديدة', icon: 'car-new', href: '/search?saleType=new' },
+    { id: 'used', name: 'سيارات مستعملة', icon: 'car-used', href: '/search?saleType=used' },
+    { id: 'rent', name: 'سيارات للإيجار', icon: 'key', href: '/search?saleType=rent' },
+    { id: 'motorcycles', name: 'دراجات نارية', icon: 'bike', href: '/search?category=motorcycle' },
+    { id: 'plates', name: 'أرقام اللوحات', icon: 'plates', href: '/search?category=plates' },
+    { id: 'parts', name: 'قطع سيارات', icon: 'wrench', href: '/car-parts' },
+    { id: 'junk', name: 'سيارات خردة', icon: 'package', href: '/junk-cars' },
+    { id: 'inspect', name: 'افحص سيارتك', icon: 'shield', href: '/inspections' },
+    { id: 'missing', name: 'سيارة مفقودة', icon: 'search', href: '/missing-cars' },
+    { id: 'buy-request', name: 'طلب شراء', icon: 'cart', href: '/buy-requests' },
   ];
 
   return (
@@ -82,7 +87,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-6xl font-extrabold text-white drop-shadow-xl leading-tight"
           >
-            السوق الأول لبيع وشراء <span className="text-accent">السيارات</span> في سوريا
+            السوق الأول <span className="text-accent">لتجارة السيارات</span> في سورية
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -93,24 +98,27 @@ export default function Home() {
             آلاف السيارات المعروضة يومياً بأسعار تناسب الجميع، مع ميزات الذكاء الاصطناعي لتسهيل اختيارك.
           </motion.p>
           
-          <motion.div 
+          <motion.form
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
+            onSubmit={(e) => { e.preventDefault(); navigate(`/search${heroSearch ? `?q=${encodeURIComponent(heroSearch)}` : ""}`); }}
             className="bg-white p-2 rounded-2xl shadow-2xl max-w-2xl mx-auto flex items-center gap-2"
           >
             <div className="flex-1 flex items-center bg-muted/50 rounded-xl px-4 py-3">
               <Search className="w-5 h-5 text-muted-foreground ms-2" />
-              <input 
-                type="text" 
-                placeholder="ابحث عن ماركة، موديل، أو مدينة..." 
+              <input
+                type="text"
+                value={heroSearch}
+                onChange={(e) => setHeroSearch(e.target.value)}
+                placeholder="ابحث عن ماركة، موديل، أو مدينة..."
                 className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            <Button size="lg" className="rounded-xl px-8 font-bold text-base h-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-all">
+            <Button type="submit" size="lg" className="rounded-xl px-8 font-bold text-base h-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-all">
               بحث
             </Button>
-          </motion.div>
+          </motion.form>
 
           {/* Role-based action buttons */}
           <motion.div
@@ -194,22 +202,38 @@ export default function Home() {
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {categories.map((cat, i) => (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              key={cat.id}
-            >
-              <Link 
-                href={cat.href}
-                className="flex flex-col items-center justify-center p-6 bg-card border rounded-2xl hover-elevate group"
+          {categories.map((cat, i) => {
+            const iconMap: Record<string, React.ReactNode> = {
+              'car-new': <Car size={32} />,
+              'car-used': <Car size={32} />,
+              'key': <Key size={32} />,
+              'bike': <Bike size={32} />,
+              'plates': <Hash size={32} />,
+              'wrench': <Wrench size={32} />,
+              'package': <Package size={32} />,
+              'shield': <Shield size={32} />,
+              'search': <SearchIcon size={32} />,
+              'cart': <CartIcon size={32} />,
+            };
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                key={cat.id}
               >
-                <span className="text-4xl mb-3 group-hover:scale-110 transition-transform">{cat.icon}</span>
-                <span className="font-bold text-foreground group-hover:text-primary transition-colors">{cat.name}</span>
-              </Link>
-            </motion.div>
-          ))}
+                <Link
+                  href={cat.href}
+                  className="flex flex-col items-center justify-center p-6 bg-card border rounded-2xl hover-elevate group"
+                >
+                  <span className="mb-3 text-primary group-hover:scale-110 group-hover:text-accent transition-all">
+                    {iconMap[cat.icon]}
+                  </span>
+                  <span className="font-bold text-foreground group-hover:text-primary transition-colors text-center text-sm">{cat.name}</span>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 

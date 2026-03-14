@@ -44,7 +44,7 @@ export default function SupportPage() {
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-10">
       <div className="text-center space-y-2">
         <HeadphonesIcon className="w-14 h-14 text-primary mx-auto" />
-        <h1 className="text-3xl font-bold text-foreground">تواصل مع فريق CarNet</h1>
+        <h1 className="text-3xl font-bold text-foreground">تواصل مع فريق MARKLET</h1>
         <p className="text-muted-foreground">نحن هنا لمساعدتك في أي وقت</p>
       </div>
 

@@ -135,7 +135,7 @@ export default function CarDetail() {
     if (!isPremium && !isSeller && !isAdmin) {
       toast({
         title: "هذه الميزة للمشتركين فقط",
-        description: "اشترك في CarNet للوصول لأرقام هواتف البائعين.",
+        description: "اشترك في MARKLET للوصول لأرقام هواتف البائعين.",
       });
       return;
     }
