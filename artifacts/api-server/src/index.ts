@@ -1,6 +1,7 @@
 import { createServer } from "http";
 import { Server } from "socket.io";
 import app from "./app";
+import { checkFeatures } from "./utils/checkFeatures.js";
 
 const rawPort = process.env["PORT"];
 
@@ -30,4 +31,5 @@ io.on("connection", (socket) => {
 
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);
+  checkFeatures(app);
 });
