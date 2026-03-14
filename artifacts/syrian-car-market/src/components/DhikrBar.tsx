@@ -38,8 +38,8 @@ export function DhikrBar() {
       setTimeout(() => {
         setIndex(i => (i + 1) % adhkar.length);
         setVisible(true);
-      }, 300);
-    }, 1000);
+      }, 400);
+    }, 4000);
 
     return () => clearInterval(interval);
   }, []);
