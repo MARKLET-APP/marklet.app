@@ -1,13 +1,30 @@
-import { Link } from "wouter";
-import { Search, ChevronLeft, ShieldCheck, Zap, Sparkles } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CarCard } from "@/components/CarCard";
 import { useGetFeaturedCars, useListCars } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
+import { useAuthStore } from "@/lib/auth";
 
 export default function Home() {
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
   const { data: latestCars, isLoading: loadingLatest } = useListCars({ limit: 6, sortBy: 'createdAt:desc' });
+  const { user } = useAuthStore();
+  const [, navigate] = useLocation();
+
+  const role = user?.role ?? null;
+  const canSell = role === "seller" || role === "dealer";
+  const canBuy  = role === "buyer"  || role === "dealer";
+
+  const handleCreateAd = () => {
+    if (!user) { navigate("/login"); return; }
+    navigate("/add-listing");
+  };
+
+  const handleBuyRequest = () => {
+    if (!user) { navigate("/login"); return; }
+    navigate("/buy-requests");
+  };
 
   const categories = [
     { id: 'new', name: 'سيارات جديدة', icon: '🚗', href: '/search?saleType=new' },
@@ -94,6 +111,44 @@ export default function Home() {
               بحث
             </Button>
           </motion.div>
+
+          {/* Role-based action buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="flex flex-wrap justify-center gap-3 pt-2"
+          >
+            {/* Seller / Dealer — publish listing */}
+            {(canSell || !user) && (
+              <button
+                onClick={handleCreateAd}
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 active:scale-95 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-primary/30 transition-all duration-200"
+              >
+                <PlusCircle className="w-5 h-5" />
+                نشر إعلان سيارة
+              </button>
+            )}
+
+            {/* Buyer / Dealer — buy request */}
+            {(canBuy || !user) && (
+              <button
+                onClick={handleBuyRequest}
+                className="flex items-center gap-2 bg-accent hover:bg-accent/90 active:scale-95 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-accent/30 transition-all duration-200"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                طلب شراء سيارة
+              </button>
+            )}
+
+            {/* Inspector — no action buttons, just a soft label */}
+            {role === "inspector" && (
+              <span className="text-white/70 text-sm bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm">
+                مرحباً بك يا مفتش 👋
+              </span>
+            )}
+          </motion.div>
+
         </div>
       </section>
 
