@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 
 const adhkar = [
   "سبحان الله",
@@ -29,14 +29,29 @@ const adhkar = [
 ];
 
 export function DhikrBar() {
-  const randomDhikr = useMemo(
-    () => adhkar[Math.floor(Math.random() * adhkar.length)],
-    []
-  );
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * adhkar.length));
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex(i => (i + 1) % adhkar.length);
+        setVisible(true);
+      }, 300);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="w-full bg-[#eaf7ef] border-b border-[#c8e6d4] py-1.5 px-4 text-center">
-      <p className="text-sm font-medium text-[#2f6d4f]">{randomDhikr}</p>
+    <div className="w-full bg-[#eaf7ef] border-b border-[#c8e6d4] py-1.5 px-4 text-center overflow-hidden">
+      <p
+        className="text-sm font-medium text-[#2f6d4f] transition-opacity duration-300"
+        style={{ opacity: visible ? 1 : 0 }}
+      >
+        {adhkar[index]}
+      </p>
     </div>
   );
 }
