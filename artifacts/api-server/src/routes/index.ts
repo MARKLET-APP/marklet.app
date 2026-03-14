@@ -21,6 +21,7 @@ import inspectionsRouter from "./inspections";
 import supportMessagesRouter from "./supportMessages";
 import missingCarsRouter from "./missingCars";
 import notificationsRouter from "./notifications";
+import followupRouter from "./followup";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(inspectionsRouter);
 router.use(supportMessagesRouter);
 router.use(missingCarsRouter);
 router.use(notificationsRouter);
+router.use(followupRouter);
 
 export default router;

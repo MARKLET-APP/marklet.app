@@ -8,11 +8,12 @@ const router: IRouter = Router();
 const guard = [authMiddleware, adminMiddleware];
 
 router.get("/buy-requests", async (req: any, res): Promise<void> => {
-  const roleHeader = (req as AuthRequest).userRole;
-  const isSellerOrDealer = roleHeader === "seller" || roleHeader === "dealer" || roleHeader === "admin";
-  const where = isSellerOrDealer
-    ? eq(buyRequestsTable.status, "approved")
-    : eq(buyRequestsTable.status, "approved");
+  const category = (req.query as any).category as string | undefined;
+  const conditions = [eq(buyRequestsTable.status, "approved")];
+  if (category) {
+    conditions.push(eq(buyRequestsTable.category, category));
+  }
+  const where = conditions.length === 1 ? conditions[0] : and(...conditions);
 
   const requests = await db
     .select({
@@ -28,6 +29,7 @@ router.get("/buy-requests", async (req: any, res): Promise<void> => {
       paymentType: buyRequestsTable.paymentType,
       description: buyRequestsTable.description,
       status: buyRequestsTable.status,
+      category: buyRequestsTable.category,
       createdAt: buyRequestsTable.createdAt,
       userName: usersTable.name,
       userPhoto: usersTable.profilePhoto,
@@ -41,7 +43,7 @@ router.get("/buy-requests", async (req: any, res): Promise<void> => {
 });
 
 async function createBuyRequest(req: AuthRequest, res: any): Promise<void> {
-  const { brand, model, year, minYear, maxYear, maxPrice, currency, city, paymentType, description } = req.body;
+  const { brand, model, year, minYear, maxYear, maxPrice, currency, city, paymentType, description, category } = req.body;
 
   await db.insert(buyRequestsTable).values({
     userId: req.user!.id,
@@ -54,6 +56,7 @@ async function createBuyRequest(req: AuthRequest, res: any): Promise<void> {
     city: city ?? null,
     paymentType: paymentType ?? null,
     description: description ?? null,
+    category: category ?? "cars",
     status: "pending",
   });
 

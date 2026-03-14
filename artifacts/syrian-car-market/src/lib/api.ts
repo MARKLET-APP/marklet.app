@@ -142,4 +142,11 @@ export const api = {
         id: number; userId: number | null; feedback: string; createdAt: string; userName: string | null;
       }>>("/api/feedback"),
   },
+
+  get: (url: string) => fetch(url, {
+    headers: { "Content-Type": "application/json", ...(localStorage.getItem("scm_token") ? { Authorization: `Bearer ${localStorage.getItem("scm_token")}` } : {}) },
+  }),
+
+  post: (url: string, body: unknown) => apiRequest(url, "POST", body),
+  patch: (url: string, body: unknown) => apiRequest(url, "PATCH", body),
 };

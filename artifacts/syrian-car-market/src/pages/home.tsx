@@ -112,7 +112,7 @@ export default function Home() {
     { id: 'used', name: isRTL ? 'سيارات مستعملة' : 'Used Cars', icon: 'car-used', href: '/search?saleType=used' },
     { id: 'rent', name: isRTL ? 'سيارات للإيجار' : 'Cars for Rent', icon: 'key', href: '/search?saleType=rent' },
     { id: 'motorcycles', name: isRTL ? 'دراجات نارية' : 'Motorcycles', icon: 'bike', href: '/search?category=motorcycle' },
-    { id: 'plates', name: isRTL ? 'أرقام اللوحات' : 'License Plates', icon: 'plates', href: '/search?category=plates' },
+    { id: 'plates', name: isRTL ? 'أرقام اللوحات' : 'License Plates', icon: 'plates', href: '/plates' },
     { id: 'parts', name: t("home.browse.parts"), icon: 'wrench', href: '/car-parts' },
     { id: 'junk', name: t("home.browse.junk"), icon: 'package', href: '/junk-cars' },
     { id: 'inspect', name: t("home.browse.inspections"), icon: 'shield', href: '/inspections' },

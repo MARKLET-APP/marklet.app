@@ -3,8 +3,8 @@ import { Server } from "socket.io";
 import app from "./app";
 import { setSocketServer } from "./lib/socket.js";
 import { checkFeatures } from "./utils/checkFeatures.js";
-import { db, messagesTable, conversationsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { db, messagesTable, conversationsTable, junkCarsTable, carPartsTable, buyRequestsTable, notificationsTable } from "@workspace/db";
+import { eq, and, isNull, lt } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 
 const rawPort = process.env["PORT"];
@@ -87,7 +87,61 @@ io.on("connection", (socket) => {
   });
 });
 
+async function runFollowupNotifications() {
+  try {
+    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+
+    // Check junk cars
+    const junkDue = await db.select().from(junkCarsTable)
+      .where(and(isNull(junkCarsTable.followupSentAt), lt(junkCarsTable.createdAt, fiveDaysAgo)));
+    for (const item of junkDue) {
+      await db.update(junkCarsTable).set({ followupSentAt: new Date() }).where(eq(junkCarsTable.id, item.id));
+      await db.insert(notificationsTable).values({
+        userId: item.sellerId,
+        type: "followup_junk",
+        message: `هل تم بيع سيارتك المعطوبة ${[item.type, item.model].filter(Boolean).join(" ") || ""}؟ هل ساعدك MARKLET في إتمام الصفقة؟`,
+        link: `/junk-cars?followup=${item.id}&table=junk`,
+      });
+    }
+
+    // Check car parts
+    const partsDue = await db.select().from(carPartsTable)
+      .where(and(isNull(carPartsTable.followupSentAt), lt(carPartsTable.createdAt, fiveDaysAgo)));
+    for (const item of partsDue) {
+      await db.update(carPartsTable).set({ followupSentAt: new Date() }).where(eq(carPartsTable.id, item.id));
+      await db.insert(notificationsTable).values({
+        userId: item.sellerId,
+        type: "followup_part",
+        message: `هل تم بيع القطعة "${item.name}"؟ هل ساعدك MARKLET في إتمام الصفقة؟`,
+        link: `/car-parts?followup=${item.id}&table=parts`,
+      });
+    }
+
+    // Check buy requests
+    const buyDue = await db.select().from(buyRequestsTable)
+      .where(and(isNull(buyRequestsTable.followupSentAt), eq(buyRequestsTable.status, "approved"), lt(buyRequestsTable.createdAt, fiveDaysAgo)));
+    for (const item of buyDue) {
+      await db.update(buyRequestsTable).set({ followupSentAt: new Date() }).where(eq(buyRequestsTable.id, item.id));
+      await db.insert(notificationsTable).values({
+        userId: item.userId,
+        type: "followup_buyreq",
+        message: `هل تمكنت من شراء ${[item.brand, item.model].filter(Boolean).join(" ") || "السيارة"} التي طلبتها؟ هل ساعدك MARKLET في إتمام الصفقة؟`,
+        link: `/buy-requests?followup=${item.id}&table=buyreq`,
+      });
+    }
+
+    if (junkDue.length + partsDue.length + buyDue.length > 0) {
+      console.log(`[followup] Sent ${junkDue.length + partsDue.length + buyDue.length} follow-up notifications`);
+    }
+  } catch (e) {
+    console.error("[followup] error:", e);
+  }
+}
+
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);
   checkFeatures(app);
+  // Run followup check on startup and every 2 hours
+  setTimeout(runFollowupNotifications, 5000);
+  setInterval(runFollowupNotifications, 2 * 60 * 60 * 1000);
 });

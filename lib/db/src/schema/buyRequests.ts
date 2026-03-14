@@ -13,6 +13,9 @@ export const buyRequestsTable = pgTable("buy_requests", {
   paymentType: varchar("payment_type", { length: 20 }),
   description: text("description"),
   status: varchar("status", { length: 20 }).notNull().default("pending"),
+  category: varchar("category", { length: 50 }).default("cars"),
+  followupSentAt: timestamp("followup_sent_at"),
+  soldConfirmed: varchar("sold_confirmed", { length: 10 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
