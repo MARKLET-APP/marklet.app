@@ -90,10 +90,33 @@ export const api = {
         "/api/admin/dashboard"
       ),
     pendingCars: () =>
-      apiRequest<Array<{ id: number; brand: string; model: string; year: number; price: number; city: string; province: string; status: string; createdAt: string; sellerName: string; sellerPhone: string | null }>>(
+      apiRequest<Array<{
+        id: number; brand: string; model: string; year: number; price: number;
+        mileage: number | null; fuelType: string | null; transmission: string | null;
+        condition: string | null; color: string | null; description: string | null;
+        city: string; province: string; saleType: string | null; category: string | null;
+        status: string; createdAt: string; sellerName: string; sellerPhone: string | null;
+        primaryImage: string | null; images: string[];
+      }>>(
         "/api/admin/pending-cars"
+      ),
+    listCars: () =>
+      apiRequest<{
+        cars: Array<{
+          id: number; brand: string; model: string; year: number; price: number;
+          mileage: number | null; fuelType: string | null; transmission: string | null;
+          condition: string | null; color: string | null; description: string | null;
+          city: string; province: string; saleType: string | null; category: string | null;
+          status: string; createdAt: string; sellerName: string; sellerPhone: string | null;
+          primaryImage: string | null; images: string[];
+        }>;
+        total: number;
+      }>(
+        "/api/admin/cars"
       ),
     updateCarStatus: (id: number, status: "pending" | "approved" | "rejected") =>
       apiRequest(`/api/admin/cars/${id}/status`, "PATCH", { status }),
+    deleteCar: (id: number) =>
+      apiRequest(`/api/admin/cars/${id}`, "DELETE"),
   },
 };

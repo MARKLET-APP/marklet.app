@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuthStore } from "@/lib/auth";
 import { 
   useAdminListUsers, useAdminUpdateUser, useAdminDeleteUser,
-  useAdminListCars, useAdminDeleteCar,
   useGetSettings, useUpdateSettings
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +21,12 @@ export default function AdminDashboard() {
   const { toast } = useToast();
 
   const { data: users, isLoading: loadingUsers, refetch: refetchUsers } = useAdminListUsers({ query: { enabled: user?.role === 'admin' } });
-  const { data: carsData, isLoading: loadingCars, refetch: refetchCars } = useAdminListCars({ query: { enabled: user?.role === 'admin' } });
+  const { data: carsData, isLoading: loadingCars, refetch: refetchCars } = useQuery({
+    queryKey: ["/admin/cars"],
+    queryFn: () => api.admin.listCars(),
+    enabled: user?.role === 'admin',
+    staleTime: 0,
+  });
   const { data: settings, isLoading: loadingSettings } = useGetSettings({ query: { enabled: user?.role === 'admin' } });
   const { data: dashboard } = useQuery<{ usersCount: number; listingsCount: number; missingCarsCount: number }>({
     queryKey: ["/admin/dashboard"],
@@ -50,7 +54,6 @@ export default function AdminDashboard() {
 
   const updateUserMutation = useAdminUpdateUser();
   const deleteUserMutation = useAdminDeleteUser();
-  const deleteCarMutation = useAdminDeleteCar();
   const updateSettingsMutation = useUpdateSettings();
 
   const [settingsForm, setSettingsForm] = useState({
@@ -99,9 +102,10 @@ export default function AdminDashboard() {
   const handleDeleteCar = async (id: number) => {
     if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
     try {
-      await deleteCarMutation.mutateAsync({ id });
+      await api.admin.deleteCar(id);
       toast({ title: "تم حذف الإعلان" });
       refetchCars();
+      refetchPending();
     } catch (error) {
       toast({ title: "حدث خطأ", variant: "destructive" });
     }
