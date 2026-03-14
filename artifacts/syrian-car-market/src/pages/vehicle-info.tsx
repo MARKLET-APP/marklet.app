@@ -1,13 +1,23 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLookupVehicle } from "@workspace/api-client-react";
-import { FileSearch, ShieldAlert, AlertTriangle, CheckCircle, Activity, History, Info } from "lucide-react";
+import { FileSearch, ShieldAlert, AlertTriangle, CheckCircle, Activity, History, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function VehicleInfo() {
   const { register, handleSubmit } = useForm({ defaultValues: { vin: "" } });
   const lookupMutation = useLookupVehicle();
+
+  const [showNotes, setShowNotes] = useState(false);
+  const [notesContent, setNotesContent] = useState("");
+
+  const openNotes = (text: string) => {
+    setNotesContent(text);
+    setShowNotes(true);
+  };
+
+  const closeNotes = () => setShowNotes(false);
 
   const onSubmit = (data: { vin: string }) => {
     if (!data.vin) return;
@@ -67,9 +77,24 @@ export default function VehicleInfo() {
                 </h3>
                 
                 <div className="space-y-4">
-                  <ConditionRow label="حالة الهيكل" isGood={!report.hasStructuralDamage} />
-                  <ConditionRow label="إصلاحات كبرى" isGood={!report.hasMajorRepairs} />
-                  <ConditionRow label="نظام الوسائد الهوائية (Airbags)" isGood={!report.airbagDeployed} />
+                  <ConditionRow
+                    label="حالة الهيكل"
+                    isGood={!report.hasStructuralDamage}
+                    notes="تم رصد ضرر هيكلي في سجلات المركبة. يُنصح بفحص شاصي السيارة لدى متخصص قبل الشراء."
+                    onNotesClick={openNotes}
+                  />
+                  <ConditionRow
+                    label="إصلاحات كبرى"
+                    isGood={!report.hasMajorRepairs}
+                    notes="سُجِّلت إصلاحات كبرى على المركبة. تحقق من طبيعة هذه الإصلاحات ومدى تأثيرها على قيمتها."
+                    onNotesClick={openNotes}
+                  />
+                  <ConditionRow
+                    label="نظام الوسائد الهوائية (Airbags)"
+                    isGood={!report.airbagDeployed}
+                    notes="تم تفعيل الوسائد الهوائية في حادثة سابقة. تأكد من استبدالها بشكل صحيح وإعادة برمجة النظام."
+                    onNotesClick={openNotes}
+                  />
                   
                   <div className="pt-6 mt-6 border-t">
                     <p className="text-sm text-muted-foreground mb-2">تقييم الأضرار العام</p>
@@ -136,11 +161,49 @@ export default function VehicleInfo() {
           </div>
         </div>
       )}
+
+      {/* Notes Modal */}
+      {showNotes && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={closeNotes}
+        >
+          <div
+            className="bg-card rounded-2xl shadow-2xl w-full max-w-md p-6 relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeNotes}
+              className="absolute top-4 left-4 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-100 p-2 rounded-xl">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">تفاصيل الملاحظات</h3>
+            </div>
+            <p className="text-foreground/80 leading-relaxed mb-6">{notesContent}</p>
+            <Button onClick={closeNotes} className="w-full rounded-xl">إغلاق</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function ConditionRow({ label, isGood }: { label: string, isGood: boolean }) {
+function ConditionRow({
+  label,
+  isGood,
+  notes,
+  onNotesClick,
+}: {
+  label: string;
+  isGood: boolean;
+  notes: string;
+  onNotesClick: (text: string) => void;
+}) {
   return (
     <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
       <span className="font-medium text-sm text-foreground">{label}</span>
@@ -149,9 +212,12 @@ function ConditionRow({ label, isGood }: { label: string, isGood: boolean }) {
           <CheckCircle className="w-3 h-3" /> سليم
         </Badge>
       ) : (
-        <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200 gap-1 pr-2">
+        <button
+          onClick={() => onNotesClick(notes)}
+          className="inline-flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-red-100 transition-colors cursor-pointer"
+        >
           <AlertTriangle className="w-3 h-3" /> يوجد ملاحظات
-        </Badge>
+        </button>
       )}
     </div>
   );

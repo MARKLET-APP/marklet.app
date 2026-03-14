@@ -1,0 +1,118 @@
+انسخ هذا **الأمر البرمجي الكامل** وأرسله إلى Replit AI ليقوم بإصلاح مشكلة زر **"يوجد ملاحظات"** بحيث يفتح نافذة تعرض التفاصيل.
+
+```text
+يوجد خلل في صفحة "تقرير تاريخ المركبة".
+
+العنصر الذي يظهر فيه النص:
+"يوجد ملاحظات"
+
+لا يستجيب عند الضغط عليه.
+
+أريد إصلاحه بحيث يفتح نافذة (Modal) تعرض الملاحظات الخاصة بالبند.
+
+قم بتنفيذ الخطوات التالية:
+
+================================
+1 جعل عنصر الملاحظات قابلاً للنقر
+================================
+
+ابحث عن العنصر الذي يعرض:
+
+"يوجد ملاحظات"
+
+واجعله زر أو عنصر قابل للنقر:
+
+<button className="notes-btn" onClick={() => openNotes(notesText)}>
+يوجد ملاحظات
+</button>
+
+================================
+2 إنشاء حالة لفتح النافذة
+================================
+
+في أعلى الـ component أضف:
+
+const [showNotes, setShowNotes] = useState(false);
+const [notesContent, setNotesContent] = useState("");
+
+================================
+3 إنشاء دالة فتح الملاحظات
+================================
+
+const openNotes = (text) => {
+  setNotesContent(text);
+  setShowNotes(true);
+};
+
+const closeNotes = () => {
+  setShowNotes(false);
+};
+
+================================
+4 إنشاء نافذة الملاحظات
+================================
+
+أضف هذا الكود في نهاية الصفحة:
+
+{showNotes && (
+<div className="notes-modal-overlay" onClick={closeNotes}>
+
+<div className="notes-modal" onClick={(e)=>e.stopPropagation()}>
+
+<h3>تفاصيل الملاحظات</h3>
+
+<p>{notesContent}</p>
+
+<button onClick={closeNotes}>إغلاق</button>
+
+</div>
+
+</div>
+)}
+
+================================
+5 إضافة CSS للنافذة
+================================
+
+.notes-modal-overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:2000;
+}
+
+.notes-modal{
+background:white;
+padding:20px;
+border-radius:12px;
+max-width:400px;
+width:90%;
+text-align:center;
+}
+
+.notes-btn{
+background:#ffecec;
+color:#d94a4a;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+font-size:12px;
+}
+
+================================
+النتيجة المطلوبة
+================================
+
+عند الضغط على "يوجد ملاحظات":
+
+• تفتح نافذة منبثقة  
+• يظهر فيها نص الملاحظات الكامل  
+• يمكن إغلاقها بالضغط على زر "إغلاق" أو خارج النافذة
+```
