@@ -355,6 +355,56 @@ function decodeVin(vin: string) {
   };
 }
 
+// ── NHTSA Recalls API (free, no API key) ────────────────────────────────────
+interface RecallItem {
+  campaign: string;
+  component: string;
+  summary: string;
+  consequence: string;
+  remedy: string;
+  date: string;
+}
+
+async function lookupNHTSARecalls(make: string, model: string, year: number): Promise<RecallItem[]> {
+  try {
+    const url = `https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${year}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const json = await res.json() as { Count?: number; results?: Record<string, string>[] };
+    if (!json.results || json.results.length === 0) return [];
+    return json.results.slice(0, 8).map(r => ({
+      campaign:    r.NHTSACampaignNumber ?? "",
+      component:   r.Component ?? "",
+      summary:     r.Summary ?? "",
+      consequence: r.Consequence ?? "",
+      remedy:      r.Remedy ?? "",
+      date:        r.ReportReceivedDate?.slice(0, 10) ?? "",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ── Risk score calculation ───────────────────────────────────────────────────
+function calcRiskScore({
+  recallCount,
+  year,
+  hasAccident,
+  hasStructural,
+}: {
+  recallCount: number;
+  year: number;
+  hasAccident: boolean;
+  hasStructural: boolean;
+}): { score: number; level: "good" | "check" | "serious" } {
+  let score = 0;
+  if (recallCount > 0)                             score += 2;
+  if (new Date().getFullYear() - year > 10)        score += 1;
+  if (hasAccident || hasStructural)                score += 1;
+  const level = score === 0 ? "good" : score <= 2 ? "check" : "serious";
+  return { score, level };
+}
+
 // ── Route ───────────────────────────────────────────────────────────────────
 router.post("/vehicle-reports/lookup", async (req, res): Promise<void> => {
   const parsed = LookupVehicleBody.safeParse(req.body);
@@ -379,14 +429,17 @@ router.post("/vehicle-reports/lookup", async (req, res): Promise<void> => {
     .where(or(...conditions))
     .limit(1);
 
+  let recalls: RecallItem[] = [];
+  let isRealData = false;
+
   if (!report) {
     const key = vin ?? plateNumber ?? chassisNumber ?? "UNKNOWN";
 
-    // ── 1. Try NHTSA real data (VIN only, not plate/chassis) ──────────────
-    const nhtsa = vin ? await lookupVinNHTSA(vin) : null;
-
-    // ── 2. Fall back to WMI estimation ────────────────────────────────────
-    const est = decodeVin(key);
+    // ── 1. Run VIN spec lookup + estimation in parallel ───────────────────
+    const [nhtsa, est] = await Promise.all([
+      vin ? lookupVinNHTSA(vin) : Promise.resolve(null),
+      Promise.resolve(decodeVin(key)),
+    ]);
 
     // Merge: prefer NHTSA for make/model/year/specs, keep est for condition flags
     const brand        = nhtsa?.brand        ?? est.brand;
@@ -398,17 +451,22 @@ router.post("/vehicle-reports/lookup", async (req, res): Promise<void> => {
     const horsepower   = nhtsa?.horsepower   ?? est.horsepower;
     const transmission = nhtsa?.transmission ?? est.transmission;
     const fuelType     = nhtsa?.fuelType     ?? est.fuelType;
-    const isRealData   = nhtsa?.isReal ?? false;
+    isRealData         = nhtsa?.isReal ?? false;
 
-    const aiSummary = await generateVehicleAISummary({
-      brand, model, year,
-      accidentCount:       est.hasAccident ? 1 : 0,
-      hasMajorRepairs:     est.hasAccident,
-      hasStructuralDamage: est.hasStructural,
-      airbagDeployed:      est.hasStructural,
-      ownershipCount:      est.ownershipCount,
-      mileageHistory:      est.mileageHistory,
-    }).catch(() => null);
+    // ── 2. Fetch recalls in parallel with AI summary ──────────────────────
+    const [aiSummary, recallsResult] = await Promise.all([
+      generateVehicleAISummary({
+        brand, model, year,
+        accidentCount:       est.hasAccident ? 1 : 0,
+        hasMajorRepairs:     est.hasAccident,
+        hasStructuralDamage: est.hasStructural,
+        airbagDeployed:      est.hasStructural,
+        ownershipCount:      est.ownershipCount,
+        mileageHistory:      est.mileageHistory,
+      }).catch(() => null),
+      lookupNHTSARecalls(brand, model, year),
+    ]);
+    recalls = recallsResult;
 
     const [inserted] = await db.insert(vehicleReportsTable).values({
       vin:              vin ?? null,
@@ -435,14 +493,25 @@ router.post("/vehicle-reports/lookup", async (req, res): Promise<void> => {
     }).returning();
 
     report = inserted;
-    // Attach real-data flag for this response (not persisted separately)
-    (report as any)._isRealData = isRealData;
+  } else {
+    // For cached reports, still fetch fresh recalls (fast, no DB cost)
+    recalls = await lookupNHTSARecalls(report.brand, report.model, report.year);
+    isRealData = true; // cached = previously verified
   }
 
-  const isRealData = (report as any)._isRealData ?? true; // stored reports treated as confirmed
+  const risk = calcRiskScore({
+    recallCount:   recalls.length,
+    year:          report.year,
+    hasAccident:   !!report.hasMajorRepairs,
+    hasStructural: !!report.hasStructuralDamage,
+  });
+
   res.json({
     ...report,
     isRealData,
+    recalls,
+    riskScore: risk.score,
+    riskLevel: risk.level,
     mileageHistory: Array.isArray(report.mileageHistory) ? report.mileageHistory : [],
   });
 });
