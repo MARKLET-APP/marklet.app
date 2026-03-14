@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable } from "@workspace/db";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, sql } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
 
@@ -122,8 +122,7 @@ router.get("/admin/pending-cars", ...guard, async (_req, res): Promise<void> => 
     ? await db.select({
         carId: imagesTable.carId,
         imageUrl: imagesTable.imageUrl,
-        isPrimary: imagesTable.isPrimary,
-      }).from(imagesTable).orderBy(desc(imagesTable.isPrimary))
+      }).from(imagesTable).orderBy(sql`is_primary DESC`)
     : [];
   // Group images by carId
   const imagesByCarId = new Map<number, string[]>();

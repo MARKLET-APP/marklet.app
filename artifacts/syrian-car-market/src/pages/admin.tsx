@@ -582,32 +582,32 @@ export default function AdminDashboard() {
 
           {/* Image gallery */}
           <div className="relative bg-black/90 overflow-hidden" style={{ minHeight: 280 }}>
-            {previewCar.images.length > 0 ? (
+            {(previewCar.images ?? []).length > 0 ? (
               <>
                 <img
-                  src={previewCar.images[previewImgIdx]}
+                  src={(previewCar.images ?? [])[previewImgIdx]}
                   alt=""
                   className="w-full object-contain"
                   style={{ maxHeight: 360 }}
                 />
                 {/* Navigation arrows */}
-                {previewCar.images.length > 1 && (
+                {(previewCar.images ?? []).length > 1 && (
                   <>
                     <button
-                      onClick={() => setPreviewImgIdx(i => (i + 1) % previewCar.images.length)}
+                      onClick={() => setPreviewImgIdx(i => (i + 1) % (previewCar.images ?? []).length)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => setPreviewImgIdx(i => (i - 1 + previewCar.images.length) % previewCar.images.length)}
+                      onClick={() => setPreviewImgIdx(i => (i - 1 + (previewCar.images ?? []).length) % (previewCar.images ?? []).length)}
                       className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     {/* Dots */}
                     <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-                      {previewCar.images.map((_, i) => (
+                      {(previewCar.images ?? []).map((_, i) => (
                         <button
                           key={i}
                           onClick={() => setPreviewImgIdx(i)}
@@ -617,14 +617,14 @@ export default function AdminDashboard() {
                     </div>
                     {/* Counter */}
                     <span className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full font-mono">
-                      {previewImgIdx + 1} / {previewCar.images.length}
+                      {previewImgIdx + 1} / {(previewCar.images ?? []).length}
                     </span>
                   </>
                 )}
                 {/* Thumbnail strip */}
-                {previewCar.images.length > 1 && (
+                {(previewCar.images ?? []).length > 1 && (
                   <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-black/70">
-                    {previewCar.images.map((img, i) => (
+                    {(previewCar.images ?? []).map((img, i) => (
                       <button
                         key={i}
                         onClick={() => setPreviewImgIdx(i)}
