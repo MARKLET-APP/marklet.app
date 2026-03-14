@@ -8,76 +8,167 @@ const router: IRouter = Router();
 
 // ── WMI (first 3 chars of VIN) → brand + country of origin ────────────────
 const WMI_MAP: Record<string, { brand: string; origin: string }> = {
-  // Toyota
-  JT2: { brand: "Toyota",        origin: "اليابان" },
-  JT3: { brand: "Toyota",        origin: "اليابان" },
-  JT4: { brand: "Toyota",        origin: "اليابان" },
-  JTD: { brand: "Toyota",        origin: "اليابان" },
-  JTE: { brand: "Toyota",        origin: "اليابان" },
-  JTH: { brand: "Toyota",        origin: "اليابان" },
-  JTJ: { brand: "Toyota",        origin: "اليابان" },
-  JTK: { brand: "Toyota",        origin: "اليابان" },
-  JTL: { brand: "Toyota",        origin: "اليابان" },
-  JTM: { brand: "Toyota",        origin: "اليابان" },
-  JTN: { brand: "Toyota",        origin: "اليابان" },
-  // Hyundai
-  KMH: { brand: "Hyundai",       origin: "كوريا الجنوبية" },
-  KMF: { brand: "Hyundai",       origin: "كوريا الجنوبية" },
-  // Kia
-  KNA: { brand: "Kia",           origin: "كوريا الجنوبية" },
-  KNB: { brand: "Kia",           origin: "كوريا الجنوبية" },
-  KND: { brand: "Kia",           origin: "كوريا الجنوبية" },
-  // Nissan
-  JN1: { brand: "Nissan",        origin: "اليابان" },
-  JN3: { brand: "Nissan",        origin: "اليابان" },
-  JN8: { brand: "Nissan",        origin: "اليابان" },
-  // Honda
-  JH4: { brand: "Honda",         origin: "اليابان" },
-  JHM: { brand: "Honda",         origin: "اليابان" },
-  "1HG": { brand: "Honda",       origin: "الولايات المتحدة" },
-  "2HG": { brand: "Honda",       origin: "كندا" },
-  // Mitsubishi
-  JA3: { brand: "Mitsubishi",    origin: "اليابان" },
-  JA4: { brand: "Mitsubishi",    origin: "اليابان" },
-  JMB: { brand: "Mitsubishi",    origin: "اليابان" },
-  // BMW
-  WBA: { brand: "BMW",           origin: "ألمانيا" },
-  WBS: { brand: "BMW",           origin: "ألمانيا" },
-  WBX: { brand: "BMW",           origin: "ألمانيا" },
-  // Mercedes-Benz
+  // ── Toyota ──────────────────────────────────────────────────────────────
+  JT2: { brand: "Toyota", origin: "اليابان" },
+  JT3: { brand: "Toyota", origin: "اليابان" },
+  JT4: { brand: "Toyota", origin: "اليابان" },
+  JT6: { brand: "Toyota", origin: "اليابان" },
+  JT7: { brand: "Toyota", origin: "اليابان" },
+  JT8: { brand: "Toyota", origin: "اليابان" },
+  JTD: { brand: "Toyota", origin: "اليابان" },
+  JTE: { brand: "Toyota", origin: "اليابان" },
+  JTF: { brand: "Toyota", origin: "اليابان" },
+  JTG: { brand: "Toyota", origin: "اليابان" },
+  JTH: { brand: "Toyota", origin: "اليابان" },
+  JTJ: { brand: "Toyota", origin: "اليابان" },
+  JTK: { brand: "Toyota", origin: "اليابان" },
+  JTL: { brand: "Toyota", origin: "اليابان" },
+  JTM: { brand: "Toyota", origin: "اليابان" },
+  JTN: { brand: "Toyota", origin: "اليابان" },
+  MR0: { brand: "Toyota", origin: "تركيا" },
+  MR1: { brand: "Toyota", origin: "تركيا" },
+  "8FD": { brand: "Toyota", origin: "جنوب أفريقيا" },
+  // ── Lexus ────────────────────────────────────────────────────────────────
+  JTH: { brand: "Lexus", origin: "اليابان" },  // overrides Toyota JTH — Lexus shares JTH prefix
+  // ── Nissan ───────────────────────────────────────────────────────────────
+  JN1: { brand: "Nissan", origin: "اليابان" },
+  JN3: { brand: "Nissan", origin: "اليابان" },
+  JN6: { brand: "Nissan", origin: "اليابان" },
+  JN8: { brand: "Nissan", origin: "اليابان" },
+  "5N1": { brand: "Nissan", origin: "الولايات المتحدة" },
+  "3N6": { brand: "Nissan", origin: "المكسيك" },
+  // ── Infiniti ─────────────────────────────────────────────────────────────
+  JNK: { brand: "Infiniti", origin: "اليابان" },
+  // ── Honda ────────────────────────────────────────────────────────────────
+  JHM: { brand: "Honda", origin: "اليابان" },
+  SHH: { brand: "Honda", origin: "المملكة المتحدة" },
+  "1HG": { brand: "Honda", origin: "الولايات المتحدة" },
+  "2HG": { brand: "Honda", origin: "كندا" },
+  "19X": { brand: "Honda", origin: "الولايات المتحدة" },
+  // ── Acura ────────────────────────────────────────────────────────────────
+  JH4: { brand: "Acura", origin: "اليابان" },
+  // ── Hyundai ──────────────────────────────────────────────────────────────
+  KMH: { brand: "Hyundai", origin: "كوريا الجنوبية" },
+  KMF: { brand: "Hyundai", origin: "كوريا الجنوبية" },
+  "5NP": { brand: "Hyundai", origin: "الولايات المتحدة" },
+  Z94: { brand: "Hyundai", origin: "كازاخستان" },
+  // ── Kia ──────────────────────────────────────────────────────────────────
+  KNA: { brand: "Kia", origin: "كوريا الجنوبية" },
+  KNB: { brand: "Kia", origin: "كوريا الجنوبية" },
+  KND: { brand: "Kia", origin: "كوريا الجنوبية" },
+  KNE: { brand: "Kia", origin: "كوريا الجنوبية" },
+  KNJ: { brand: "Kia", origin: "كوريا الجنوبية" },
+  U5Y: { brand: "Kia", origin: "سلوفاكيا" },
+  // ── Mitsubishi ───────────────────────────────────────────────────────────
+  JA3: { brand: "Mitsubishi", origin: "اليابان" },
+  JA4: { brand: "Mitsubishi", origin: "اليابان" },
+  JMB: { brand: "Mitsubishi", origin: "اليابان" },
+  JMY: { brand: "Mitsubishi", origin: "اليابان" },
+  ML3: { brand: "Mitsubishi", origin: "الولايات المتحدة" },
+  // ── Mazda ────────────────────────────────────────────────────────────────
+  JM1: { brand: "Mazda", origin: "اليابان" },
+  JM3: { brand: "Mazda", origin: "اليابان" },
+  JM6: { brand: "Mazda", origin: "اليابان" },
+  // ── Subaru ───────────────────────────────────────────────────────────────
+  JF1: { brand: "Subaru", origin: "اليابان" },
+  JF2: { brand: "Subaru", origin: "اليابان" },
+  // ── Suzuki ───────────────────────────────────────────────────────────────
+  JSA: { brand: "Suzuki", origin: "اليابان" },
+  JS1: { brand: "Suzuki", origin: "اليابان" },
+  JS2: { brand: "Suzuki", origin: "اليابان" },
+  JS3: { brand: "Suzuki", origin: "اليابان" },
+  MA3: { brand: "Suzuki", origin: "الهند" },
+  // ── Daihatsu ─────────────────────────────────────────────────────────────
+  JD1: { brand: "Daihatsu", origin: "اليابان" },
+  JD2: { brand: "Daihatsu", origin: "اليابان" },
+  // ── Isuzu ────────────────────────────────────────────────────────────────
+  JAA: { brand: "Isuzu", origin: "اليابان" },
+  JAB: { brand: "Isuzu", origin: "اليابان" },
+  JAC: { brand: "Isuzu", origin: "اليابان" },
+  // ── BMW ──────────────────────────────────────────────────────────────────
+  WBA: { brand: "BMW", origin: "ألمانيا" },
+  WBS: { brand: "BMW", origin: "ألمانيا" },
+  WBX: { brand: "BMW", origin: "ألمانيا" },
+  WBY: { brand: "BMW", origin: "ألمانيا" },
+  // ── Mercedes-Benz ────────────────────────────────────────────────────────
   WDB: { brand: "Mercedes-Benz", origin: "ألمانيا" },
-  WDD: { brand: "Mercedes-Benz", origin: "ألمانيا" },
   WDC: { brand: "Mercedes-Benz", origin: "ألمانيا" },
-  // Volkswagen
-  WVW: { brand: "Volkswagen",    origin: "ألمانيا" },
-  WV2: { brand: "Volkswagen",    origin: "ألمانيا" },
-  WV3: { brand: "Volkswagen",    origin: "ألمانيا" },
-  // Audi
-  WAU: { brand: "Audi",          origin: "ألمانيا" },
-  TRU: { brand: "Audi",          origin: "هنغاريا" },
-  // Ford
-  "1FA": { brand: "Ford",        origin: "الولايات المتحدة" },
-  "1FM": { brand: "Ford",        origin: "الولايات المتحدة" },
-  "1FT": { brand: "Ford",        origin: "الولايات المتحدة" },
-  // Chevrolet
-  "1G1": { brand: "Chevrolet",   origin: "الولايات المتحدة" },
-  "1GC": { brand: "Chevrolet",   origin: "الولايات المتحدة" },
-  // Peugeot
-  VF3: { brand: "Peugeot",       origin: "فرنسا" },
-  VF7: { brand: "Citroën",       origin: "فرنسا" },
-  // Renault
-  VF1: { brand: "Renault",       origin: "فرنسا" },
-  // Mazda
-  JM1: { brand: "Mazda",         origin: "اليابان" },
-  JM3: { brand: "Mazda",         origin: "اليابان" },
-  // Volvo
-  YV1: { brand: "Volvo",         origin: "السويد" },
-  // Suzuki
-  JSA: { brand: "Suzuki",        origin: "اليابان" },
-  JS1: { brand: "Suzuki",        origin: "اليابان" },
-  // Subaru
-  JF1: { brand: "Subaru",        origin: "اليابان" },
-  JF2: { brand: "Subaru",        origin: "اليابان" },
+  WDD: { brand: "Mercedes-Benz", origin: "ألمانيا" },
+  WDF: { brand: "Mercedes-Benz", origin: "ألمانيا" },
+  // ── Volkswagen ───────────────────────────────────────────────────────────
+  WVW: { brand: "Volkswagen", origin: "ألمانيا" },
+  WV1: { brand: "Volkswagen", origin: "ألمانيا" },
+  WV2: { brand: "Volkswagen", origin: "ألمانيا" },
+  WV3: { brand: "Volkswagen", origin: "ألمانيا" },
+  "9BW": { brand: "Volkswagen", origin: "البرازيل" },
+  // ── Audi ─────────────────────────────────────────────────────────────────
+  WAU: { brand: "Audi", origin: "ألمانيا" },
+  WA1: { brand: "Audi", origin: "ألمانيا" },
+  TRU: { brand: "Audi", origin: "هنغاريا" },
+  // ── Opel / Vauxhall ──────────────────────────────────────────────────────
+  W0L: { brand: "Opel", origin: "ألمانيا" },
+  WOL: { brand: "Opel", origin: "ألمانيا" },
+  W0V: { brand: "Opel", origin: "ألمانيا" },
+  // ── Porsche ──────────────────────────────────────────────────────────────
+  WP0: { brand: "Porsche", origin: "ألمانيا" },
+  // ── SEAT ─────────────────────────────────────────────────────────────────
+  VS6: { brand: "SEAT", origin: "إسبانيا" },
+  VS7: { brand: "SEAT", origin: "إسبانيا" },
+  // ── Skoda ────────────────────────────────────────────────────────────────
+  TMB: { brand: "Skoda", origin: "التشيك" },
+  TMA: { brand: "Skoda", origin: "التشيك" },
+  // ── Peugeot ──────────────────────────────────────────────────────────────
+  VF3: { brand: "Peugeot", origin: "فرنسا" },
+  // ── Citroën ──────────────────────────────────────────────────────────────
+  VF7: { brand: "Citroën", origin: "فرنسا" },
+  VF6: { brand: "Citroën", origin: "فرنسا" },
+  // ── Renault ──────────────────────────────────────────────────────────────
+  VF1: { brand: "Renault", origin: "فرنسا" },
+  VF8: { brand: "Renault", origin: "فرنسا" },
+  // ── Dacia ────────────────────────────────────────────────────────────────
+  UU1: { brand: "Dacia", origin: "رومانيا" },
+  // ── Volvo ────────────────────────────────────────────────────────────────
+  YV1: { brand: "Volvo", origin: "السويد" },
+  YV4: { brand: "Volvo", origin: "السويد" },
+  // ── Ford ─────────────────────────────────────────────────────────────────
+  "1FA": { brand: "Ford", origin: "الولايات المتحدة" },
+  "1FB": { brand: "Ford", origin: "الولايات المتحدة" },
+  "1FC": { brand: "Ford", origin: "الولايات المتحدة" },
+  "1FM": { brand: "Ford", origin: "الولايات المتحدة" },
+  "1FT": { brand: "Ford", origin: "الولايات المتحدة" },
+  "2FM": { brand: "Ford", origin: "كندا" },
+  "2FT": { brand: "Ford", origin: "كندا" },
+  // ── Chevrolet / GMC ──────────────────────────────────────────────────────
+  "1G1": { brand: "Chevrolet", origin: "الولايات المتحدة" },
+  "1G6": { brand: "Cadillac", origin: "الولايات المتحدة" },
+  "1GC": { brand: "Chevrolet", origin: "الولايات المتحدة" },
+  "1GT": { brand: "GMC", origin: "الولايات المتحدة" },
+  KL1: { brand: "Chevrolet", origin: "كوريا الجنوبية" },
+  KL3: { brand: "Chevrolet", origin: "كوريا الجنوبية" },
+  KL4: { brand: "Buick", origin: "كوريا الجنوبية" },
+  KL5: { brand: "Chevrolet", origin: "كوريا الجنوبية" },
+  KL8: { brand: "Chevrolet", origin: "كوريا الجنوبية" },
+  // ── Chrysler / Dodge / Jeep ──────────────────────────────────────────────
+  "2C3": { brand: "Chrysler", origin: "كندا" },
+  "1C4": { brand: "Jeep", origin: "الولايات المتحدة" },
+  "1J4": { brand: "Jeep", origin: "الولايات المتحدة" },
+  "1J8": { brand: "Jeep", origin: "الولايات المتحدة" },
+  "2B3": { brand: "Dodge", origin: "كندا" },
+  // ── AvtoVAZ / Lada ──────────────────────────────────────────────────────
+  XTA: { brand: "Lada", origin: "روسيا" },
+  XTT: { brand: "Lada", origin: "روسيا" },
+  // ── GAZ (Gazelle) ────────────────────────────────────────────────────────
+  X96: { brand: "GAZ", origin: "روسيا" },
+  // ── Great Wall / Haval ───────────────────────────────────────────────────
+  LGW: { brand: "Great Wall", origin: "الصين" },
+  LC6: { brand: "Haval", origin: "الصين" },
+  // ── Chery ────────────────────────────────────────────────────────────────
+  LVV: { brand: "Chery", origin: "الصين" },
+  // ── BYD ──────────────────────────────────────────────────────────────────
+  LFV: { brand: "BYD", origin: "الصين" },
+  // ── Geely ────────────────────────────────────────────────────────────────
+  LSG: { brand: "Geely", origin: "الصين" },
+  LSJ: { brand: "MG", origin: "الصين" },
 };
 
 // ── Models per brand ────────────────────────────────────────────────────────

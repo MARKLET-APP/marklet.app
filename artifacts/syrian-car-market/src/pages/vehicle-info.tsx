@@ -53,7 +53,18 @@ export default function VehicleInfo() {
 
       {report && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          
+
+          {/* Disclaimer Banner */}
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 items-start">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-amber-800 mb-0.5">تنبيه: هذا التقرير تقديري</p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                بيانات الشركة المصنّعة وسنة الصنع مستخرجة من بنية رقم VIN. أما الموديل والمواصفات (المحرك، الأحصنة، ناقل الحركة) فهي <strong>تقديرية</strong> ولا تعتمد على قاعدة بيانات رسمية — قد لا تطابق مواصفات سيارتك الفعلية.
+              </p>
+            </div>
+          </div>
+
           {/* AI Summary Banner */}
           {report.aiSummary && (
             <div className="bg-gradient-to-r from-accent/20 to-accent/5 border border-accent/20 p-6 rounded-2xl flex gap-4 items-start shadow-inner">
