@@ -204,6 +204,68 @@ const YEAR_MAP: Record<string, number> = {
   Y: 2000, X: 1999, W: 1998, V: 1997, T: 1996,
 };
 
+// ── NHTSA vPIC real VIN lookup (free, no API key) ──────────────────────────
+interface NHTSAResult {
+  brand: string; model: string; year: number; engineCapacity: string;
+  horsepower: number | null; transmission: string; fuelType: string;
+  origin: string; isReal: boolean;
+}
+
+async function lookupVinNHTSA(vin: string): Promise<NHTSAResult | null> {
+  try {
+    const res = await fetch(
+      `https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${encodeURIComponent(vin)}?format=json`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (!res.ok) return null;
+    const json = await res.json() as { Results?: { Variable: string; Value: string | null }[] };
+    if (!json.Results) return null;
+
+    const get = (key: string) =>
+      json.Results!.find(r => r.Variable === key)?.Value?.trim() ?? "";
+
+    const make  = get("Make");
+    const model = get("Model");
+    const yearStr = get("Model Year");
+    const dispL   = get("Displacement (L)");
+    const hpStr   = get("Engine Brake (hp) From");
+    const trans   = get("Transmission Style");
+    const fuel    = get("Fuel Type - Primary");
+    const country = get("Plant Country");
+
+    // Reject if the essential fields are empty
+    if (!make || !model || !yearStr) return null;
+    const year = parseInt(yearStr);
+    if (isNaN(year)) return null;
+
+    const horsepower = hpStr ? Math.round(parseFloat(hpStr)) : null;
+    const engineCapacity = dispL ? `${parseFloat(dispL).toFixed(1)}L` : "";
+
+    // Translate common values to Arabic
+    const transAr = trans.toLowerCase().includes("automatic") ? "automatic" : "manual";
+    const fuelAr  = fuel.toLowerCase().includes("diesel") ? "diesel" :
+                    fuel.toLowerCase().includes("electric") ? "electric" : "petrol";
+
+    const COUNTRY_AR: Record<string, string> = {
+      japan: "اليابان", "south korea": "كوريا الجنوبية", korea: "كوريا الجنوبية",
+      germany: "ألمانيا", "united states": "الولايات المتحدة", usa: "الولايات المتحدة",
+      france: "فرنسا", sweden: "السويد", uk: "المملكة المتحدة",
+      "united kingdom": "المملكة المتحدة", russia: "روسيا", china: "الصين",
+      india: "الهند", turkey: "تركيا", slovakia: "سلوفاكيا",
+      hungary: "هنغاريا", mexico: "المكسيك", canada: "كندا",
+      czech: "التشيك", romania: "رومانيا", spain: "إسبانيا",
+      italy: "إيطاليا", brazil: "البرازيل", australia: "أستراليا",
+    };
+    const countryLower = country.toLowerCase();
+    const originAr = Object.entries(COUNTRY_AR).find(([k]) => countryLower.includes(k))?.[1] ?? country;
+
+    return { brand: make, model, year, engineCapacity, horsepower, transmission: transAr,
+             fuelType: fuelAr, origin: originAr || "غير محدد", isReal: true };
+  } catch {
+    return null;
+  }
+}
+
 // ── Deterministic seeded RNG from VIN string ────────────────────────────────
 function makeRng(seed: string) {
   let h = 0;
@@ -318,53 +380,69 @@ router.post("/vehicle-reports/lookup", async (req, res): Promise<void> => {
     .limit(1);
 
   if (!report) {
-    // Decode dynamic vehicle profile from VIN
     const key = vin ?? plateNumber ?? chassisNumber ?? "UNKNOWN";
-    const v = decodeVin(key);
+
+    // ── 1. Try NHTSA real data (VIN only, not plate/chassis) ──────────────
+    const nhtsa = vin ? await lookupVinNHTSA(vin) : null;
+
+    // ── 2. Fall back to WMI estimation ────────────────────────────────────
+    const est = decodeVin(key);
+
+    // Merge: prefer NHTSA for make/model/year/specs, keep est for condition flags
+    const brand        = nhtsa?.brand        ?? est.brand;
+    const model        = nhtsa?.model        ?? est.model;
+    const year         = nhtsa?.year         ?? est.year;
+    const origin       = nhtsa?.origin       ?? est.origin;
+    const engineCapacity = nhtsa?.engineCapacity && nhtsa.engineCapacity !== "0.0L"
+                          ? nhtsa.engineCapacity : est.engineCapacity;
+    const horsepower   = nhtsa?.horsepower   ?? est.horsepower;
+    const transmission = nhtsa?.transmission ?? est.transmission;
+    const fuelType     = nhtsa?.fuelType     ?? est.fuelType;
+    const isRealData   = nhtsa?.isReal ?? false;
 
     const aiSummary = await generateVehicleAISummary({
-      brand:               v.brand,
-      model:               v.model,
-      year:                v.year,
-      accidentCount:       v.hasAccident ? 1 : 0,
-      hasMajorRepairs:     v.hasAccident,
-      hasStructuralDamage: v.hasStructural,
-      airbagDeployed:      v.hasStructural,
-      ownershipCount:      v.ownershipCount,
-      mileageHistory:      v.mileageHistory,
+      brand, model, year,
+      accidentCount:       est.hasAccident ? 1 : 0,
+      hasMajorRepairs:     est.hasAccident,
+      hasStructuralDamage: est.hasStructural,
+      airbagDeployed:      est.hasStructural,
+      ownershipCount:      est.ownershipCount,
+      mileageHistory:      est.mileageHistory,
     }).catch(() => null);
 
     const [inserted] = await db.insert(vehicleReportsTable).values({
       vin:              vin ?? null,
       plateNumber:      plateNumber ?? null,
       chassisNumber:    chassisNumber ?? null,
-      brand:            v.brand,
-      model:            v.model,
-      year:             v.year,
-      countryOfOrigin:  v.origin,
-      engineSize:       `${Math.round(parseFloat(v.engineCapacity) * 1000)}cc`,
-      fuelType:         v.fuelType,
-      transmission:     v.transmission,
-      engineCapacity:   v.engineCapacity,
-      horsepower:       v.horsepower,
-      fuelConsumption:  `${(7 + Math.random() * 4).toFixed(1)}L/100km`,
-      driveType:        "FWD",
-      accidentCount:    v.hasAccident ? 1 : 0,
-      hasMajorRepairs:  v.hasAccident,
-      hasStructuralDamage: v.hasStructural,
-      airbagDeployed:   v.hasStructural,
-      mileageHistory:   v.mileageHistory,
-      ownershipCount:   v.ownershipCount,
+      brand, model, year,
+      countryOfOrigin:  origin,
+      engineSize:       engineCapacity ? `${Math.round(parseFloat(engineCapacity) * 1000)}cc` : null,
+      fuelType,
+      transmission,
+      engineCapacity:   engineCapacity || null,
+      horsepower:       horsepower ?? est.horsepower,
+      fuelConsumption:  null,
+      driveType:        null,
+      accidentCount:    est.hasAccident ? 1 : 0,
+      hasMajorRepairs:  est.hasAccident,
+      hasStructuralDamage: est.hasStructural,
+      airbagDeployed:   est.hasStructural,
+      mileageHistory:   est.mileageHistory,
+      ownershipCount:   est.ownershipCount,
       registrationRegion: "دمشق",
-      damageStatus:     v.damageStatus,
+      damageStatus:     est.damageStatus,
       aiSummary,
     }).returning();
 
     report = inserted;
+    // Attach real-data flag for this response (not persisted separately)
+    (report as any)._isRealData = isRealData;
   }
 
+  const isRealData = (report as any)._isRealData ?? true; // stored reports treated as confirmed
   res.json({
     ...report,
+    isRealData,
     mileageHistory: Array.isArray(report.mileageHistory) ? report.mileageHistory : [],
   });
 });

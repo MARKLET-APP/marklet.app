@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLookupVehicle } from "@workspace/api-client-react";
-import { FileSearch, ShieldAlert, AlertTriangle, CheckCircle, Activity, History, Info, X } from "lucide-react";
+import { FileSearch, ShieldAlert, AlertTriangle, CheckCircle, Activity, History, Info, X, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -54,16 +54,26 @@ export default function VehicleInfo() {
       {report && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
 
-          {/* Disclaimer Banner */}
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 items-start">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-bold text-amber-800 mb-0.5">تنبيه: هذا التقرير تقديري</p>
-              <p className="text-xs text-amber-700 leading-relaxed">
-                بيانات الشركة المصنّعة وسنة الصنع مستخرجة من بنية رقم VIN. أما الموديل والمواصفات (المحرك، الأحصنة، ناقل الحركة) فهي <strong>تقديرية</strong> ولا تعتمد على قاعدة بيانات رسمية — قد لا تطابق مواصفات سيارتك الفعلية.
-              </p>
+          {/* Data source banner */}
+          {report.isRealData ? (
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex gap-3 items-center">
+              <BadgeCheck className="w-5 h-5 text-green-600 shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-green-800 mb-0.5">بيانات موثّقة</p>
+                <p className="text-xs text-green-700">المواصفات مستخرجة من قاعدة بيانات الشركات المصنّعة الرسمية (NHTSA vPIC).</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 items-start">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-amber-800 mb-0.5">تنبيه: مواصفات تقديرية</p>
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  لم يتم العثور على هذا الرقم في قاعدة بيانات الشركات المصنّعة. الموديل والمواصفات مستنتجة من بنية رقم VIN وقد لا تطابق سيارتك الفعلية.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* AI Summary Banner */}
           {report.aiSummary && (
