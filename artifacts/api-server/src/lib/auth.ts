@@ -60,6 +60,20 @@ export function adminMiddleware(req: AuthRequest, res: Response, next: NextFunct
   next();
 }
 
+export function optionalAuthMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const payload = verifyToken(token);
+    if (payload) {
+      req.userId = payload.userId;
+      req.userRole = payload.role;
+      req.user = { id: payload.userId, role: payload.role };
+    }
+  }
+  next();
+}
+
 export function inspectorMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
   if (!req.user) {
     res.status(401).send("Unauthorized");

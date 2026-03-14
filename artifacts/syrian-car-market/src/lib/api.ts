@@ -46,6 +46,10 @@ export const api = {
   cars: {
     similar: (carId: number) =>
       apiRequest<unknown[]>(`/api/cars/${carId}/similar`),
+    markSold: (carId: number) =>
+      apiRequest(`/api/cars/${carId}/sold`, "POST"),
+    update: (carId: number, data: object) =>
+      apiRequest(`/api/cars/${carId}`, "PATCH", data),
   },
 
   buyRequests: {

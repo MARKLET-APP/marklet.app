@@ -1,10 +1,20 @@
 import { Link } from "wouter";
-import { Bell, Menu, User } from "lucide-react";
+import { Bell, Menu, User, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export function Header() {
   const { user } = useAuthStore();
+  const { toast } = useToast();
+  const isPremium = !!(user as any)?.isPremium || !!(user as any)?.isVerified;
+
+  const handleSubscribeClick = () => {
+    toast({
+      title: "الاشتراك قريباً",
+      description: "ميزة الاشتراك المدفوع ستكون متاحة قريباً — ابقَ بانتظارنا!",
+    });
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full glass-panel border-b">
@@ -38,6 +48,15 @@ export function Header() {
         <div className="flex items-center gap-2">
           {user ? (
             <>
+              {!isPremium && (
+                <Button
+                  onClick={handleSubscribeClick}
+                  size="sm"
+                  className="hidden sm:flex gap-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-full text-xs font-bold px-3 h-8 shadow-sm shadow-amber-400/30"
+                >
+                  <Crown className="w-3.5 h-3.5" /> اشترك الآن
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full"></span>

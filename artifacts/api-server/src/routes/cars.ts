@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, carsTable, usersTable, imagesTable, favoritesTable, buyRequestsTable } from "@workspace/db";
 import { eq, and, gte, lte, ilike, desc, asc, sql, count, or } from "drizzle-orm";
 import { CreateCarBody, UpdateCarBody, AddCarImageBody, ListCarsQueryParams } from "@workspace/api-zod";
-import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { authMiddleware, optionalAuthMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
@@ -219,7 +219,7 @@ router.get("/cars/:id/similar", async (req, res): Promise<void> => {
   res.json(enriched);
 });
 
-router.get("/cars/:id", async (req, res): Promise<void> => {
+router.get("/cars/:id", optionalAuthMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid car ID" });
@@ -244,11 +244,14 @@ router.get("/cars/:id", async (req, res): Promise<void> => {
     isFeatured: carsTable.isFeatured,
     isHighlighted: carsTable.isHighlighted,
     isActive: carsTable.isActive,
+    status: carsTable.status,
     viewCount: carsTable.viewCount,
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,
     sellerPhoto: usersTable.profilePhoto,
     sellerPhone: usersTable.phone,
+    sellerIsPremium: usersTable.isPremium,
+    sellerIsVerified: usersTable.isVerified,
   })
     .from(carsTable)
     .leftJoin(usersTable, eq(carsTable.sellerId, usersTable.id))
@@ -259,17 +262,52 @@ router.get("/cars/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  await db.update(carsTable).set({ viewCount: car.viewCount + 1 }).where(eq(carsTable.id, id));
+  if (car.status === "approved" || car.status === "sold") {
+    await db.update(carsTable).set({ viewCount: car.viewCount + 1 }).where(eq(carsTable.id, id));
+  }
 
   const images = await db.select().from(imagesTable).where(eq(imagesTable.carId, id));
+
+  const requesterId = req.userId;
+  const isSeller = requesterId === car.sellerId;
+  const isAdmin = req.userRole === "admin";
+
+  let requesterIsPremium = false;
+  if (requesterId && !isSeller && !isAdmin) {
+    const [requester] = await db.select({ isPremium: usersTable.isPremium, isVerified: usersTable.isVerified })
+      .from(usersTable).where(eq(usersTable.id, requesterId)).limit(1);
+    requesterIsPremium = !!(requester?.isPremium || requester?.isVerified);
+  }
+
+  const canSeePhone = isSeller || isAdmin || requesterIsPremium;
 
   res.json({
     ...car,
     price: Number(car.price),
     sellerName: car.sellerName ?? "Unknown",
     sellerRating: null,
+    sellerPhone: canSeePhone ? car.sellerPhone : null,
+    sellerIsPremium: undefined,
+    sellerIsVerified: undefined,
     images,
   });
+});
+
+router.post("/cars/:id/sold", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid car ID" }); return; }
+
+  const [car] = await db.select().from(carsTable).where(eq(carsTable.id, id)).limit(1);
+  if (!car) { res.status(404).json({ error: "Car not found" }); return; }
+  if (car.sellerId !== req.userId && req.userRole !== "admin") {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const [updated] = await db.update(carsTable)
+    .set({ status: "sold", isActive: false })
+    .where(eq(carsTable.id, id)).returning();
+
+  res.json({ ...updated, price: Number(updated.price) });
 });
 
 function validateImages(images: string[] | undefined): void {
@@ -362,6 +400,11 @@ router.patch("/cars/:id", authMiddleware, async (req: AuthRequest, res): Promise
 
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (updateData.price !== undefined) updateData.price = String(updateData.price);
+
+  if (req.userRole !== "admin") {
+    updateData.status = "pending";
+    updateData.isActive = false;
+  }
 
   const [updated] = await db.update(carsTable).set(updateData).where(eq(carsTable.id, id)).returning();
 
