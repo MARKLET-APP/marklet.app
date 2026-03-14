@@ -26,11 +26,37 @@ export default function Home() {
     <div className="flex flex-col w-full overflow-hidden">
       {/* Hero Section */}
       <section className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-black/40 z-10" />
-        <img 
-          src={`${import.meta.env.BASE_URL}images/hero-bg.png`} 
-          alt="Hero Background" 
-          className="absolute inset-0 w-full h-full object-cover"
+
+        {/* Ken Burns background */}
+        <motion.img
+          src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+          alt="Hero Background"
+          className="absolute inset-0 w-full h-full object-cover origin-center"
+          animate={{ scale: [1, 1.07, 1] }}
+          transition={{ duration: 20, ease: "easeInOut", repeat: Infinity }}
+        />
+
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/45 z-10" />
+
+        {/* Floating light blobs */}
+        <motion.div
+          className="absolute z-10 w-72 h-72 rounded-full bg-primary/20 blur-3xl pointer-events-none"
+          style={{ top: "-10%", right: "10%" }}
+          animate={{ y: [0, 28, 0], x: [0, -16, 0], opacity: [0.5, 0.8, 0.5] }}
+          transition={{ duration: 9, ease: "easeInOut", repeat: Infinity }}
+        />
+        <motion.div
+          className="absolute z-10 w-56 h-56 rounded-full bg-accent/15 blur-3xl pointer-events-none"
+          style={{ bottom: "0%", left: "8%" }}
+          animate={{ y: [0, -24, 0], x: [0, 18, 0], opacity: [0.4, 0.7, 0.4] }}
+          transition={{ duration: 12, ease: "easeInOut", repeat: Infinity, delay: 3 }}
+        />
+        <motion.div
+          className="absolute z-10 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none"
+          style={{ top: "30%", left: "30%" }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.45, 0.2] }}
+          transition={{ duration: 7, ease: "easeInOut", repeat: Infinity, delay: 1.5 }}
         />
         
         <div className="relative z-20 max-w-3xl w-full px-6 text-center space-y-6">
