@@ -154,28 +154,50 @@ router.get("/admin/cars", ...guard, async (_req, res): Promise<void> => {
     mileage: carsTable.mileage,
     fuelType: carsTable.fuelType,
     transmission: carsTable.transmission,
+    condition: carsTable.condition,
+    color: carsTable.color,
     province: carsTable.province,
     city: carsTable.city,
     saleType: carsTable.saleType,
     category: carsTable.category,
     description: carsTable.description,
-    isFeatured: carsTable.isFeatured,
-    isHighlighted: carsTable.isHighlighted,
-    isActive: carsTable.isActive,
-    viewCount: carsTable.viewCount,
+    status: carsTable.status,
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,
-    sellerPhoto: usersTable.profilePhoto,
+    sellerPhone: usersTable.phone,
   })
     .from(carsTable)
     .leftJoin(usersTable, eq(carsTable.sellerId, usersTable.id))
     .orderBy(desc(carsTable.createdAt))
     .limit(50);
 
+  // Fetch images for all cars (primary first)
+  const allImages = cars.length > 0
+    ? await db.select({
+        carId: imagesTable.carId,
+        imageUrl: imagesTable.imageUrl,
+      }).from(imagesTable).orderBy(sql`is_primary DESC`)
+    : [];
+  const imagesByCarId = new Map<number, string[]>();
+  for (const img of allImages) {
+    if (!imagesByCarId.has(img.carId)) imagesByCarId.set(img.carId, []);
+    imagesByCarId.get(img.carId)!.push(img.imageUrl);
+  }
+
   const [totalResult] = await db.select({ count: count() }).from(carsTable);
 
   res.json({
-    cars: cars.map(c => ({ ...c, price: Number(c.price), sellerName: c.sellerName ?? "Unknown", primaryImage: null })),
+    cars: cars.map(c => {
+      const imgs = imagesByCarId.get(c.id) ?? [];
+      return {
+        ...c,
+        price: Number(c.price),
+        sellerName: c.sellerName ?? "مجهول",
+        sellerPhone: c.sellerPhone ?? null,
+        primaryImage: imgs[0] ?? null,
+        images: imgs,
+      };
+    }),
     total: Number(totalResult.count),
     page: 1,
     limit: 1000,

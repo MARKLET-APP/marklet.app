@@ -480,6 +480,14 @@ export default function AdminDashboard() {
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
+                          <Button
+                            size="sm" variant="outline"
+                            className="h-8 border-blue-500 text-blue-600 hover:bg-blue-50"
+                            onClick={() => { setPreviewCar(car as unknown as PendingCar); setPreviewImgIdx(0); }}
+                            title="معاينة الإعلان"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           {(car as any).status !== 'approved' && (
                             <Button size="sm" variant="outline" className="h-8 border-green-500 text-green-600 hover:bg-green-50" onClick={() => handleCarStatus(car.id, 'approved')}>
                               <CheckCircle className="w-4 h-4" />
