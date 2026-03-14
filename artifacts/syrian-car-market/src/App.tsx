@@ -23,6 +23,7 @@ import MissingCarsPage from "@/pages/missing-cars";
 import InspectionsPage from "@/pages/inspections";
 import SupportPage from "@/pages/support";
 import NotFound from "@/pages/not-found";
+import AppRatingPopup from "@/components/AppRatingPopup";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +70,7 @@ function App() {
           <Router />
         </WouterRouter>
         <Toaster />
+        <AppRatingPopup />
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, ShoppingCart as CartIcon, Star } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -51,6 +51,37 @@ export default function AdminDashboard() {
     queryFn: () => api.admin.pendingCars(),
     enabled: user?.role === 'admin',
   });
+
+  const { data: adminBuyRequests = [], refetch: refetchBuyRequests } = useQuery({
+    queryKey: ["/admin/buy-requests"],
+    queryFn: () => api.admin.listBuyRequests(),
+    enabled: user?.role === 'admin',
+  });
+  const pendingBuyRequests = (adminBuyRequests as any[]).filter(r => r.status === "pending");
+
+  const { data: supportMessages = [], refetch: refetchSupport } = useQuery({
+    queryKey: ["/support"],
+    queryFn: () => api.admin.listSupportMessages(),
+    enabled: user?.role === 'admin',
+  });
+
+  const { data: feedbackList = [], refetch: refetchFeedback } = useQuery({
+    queryKey: ["/feedback"],
+    queryFn: () => api.admin.listFeedback(),
+    enabled: user?.role === 'admin',
+  });
+
+  const totalInboxUnread = pendingBuyRequests.length + (supportMessages as any[]).length;
+
+  const handleBuyRequestStatus = async (id: number, status: "approved" | "rejected") => {
+    try {
+      await api.admin.updateBuyRequestStatus(id, status);
+      toast({ title: status === "approved" ? "تمت الموافقة على الطلب" : "تم رفض الطلب" });
+      refetchBuyRequests();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+  };
 
   const updateUserMutation = useAdminUpdateUser();
   const deleteUserMutation = useAdminDeleteUser();
@@ -186,23 +217,31 @@ export default function AdminDashboard() {
       )}
 
       <Tabs defaultValue="review" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-4 mb-8 h-14 bg-muted/50 rounded-xl p-1">
-          <TabsTrigger value="users" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Users className="w-4 h-4 ml-2" /> المستخدمين
+        <TabsList className="grid w-full grid-cols-5 mb-8 h-14 bg-muted/50 rounded-xl p-1">
+          <TabsTrigger value="users" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Users className="w-4 h-4 ml-1" /> المستخدمين
           </TabsTrigger>
-          <TabsTrigger value="review" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
-            <AlertTriangle className="w-4 h-4 ml-2 text-red-500" /> مراجعة
+          <TabsTrigger value="review" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
+            <AlertTriangle className="w-4 h-4 ml-1 text-red-500" /> مراجعة
             {(pendingCars?.length ?? 0) > 0 && (
               <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
                 {pendingCars!.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="listings" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Car className="w-4 h-4 ml-2" /> الإعلانات
+          <TabsTrigger value="listings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Car className="w-4 h-4 ml-1" /> الإعلانات
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-lg font-bold text-base data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Settings className="w-4 h-4 ml-2" /> الإعدادات
+          <TabsTrigger value="inbox" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
+            <Inbox className="w-4 h-4 ml-1 text-blue-500" /> الرسائل
+            {totalInboxUnread > 0 && (
+              <span className="absolute -top-1.5 -left-1.5 bg-blue-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
+                {totalInboxUnread}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Settings className="w-4 h-4 ml-1" /> الإعدادات
           </TabsTrigger>
         </TabsList>
         
@@ -512,6 +551,111 @@ export default function AdminDashboard() {
                 )}
               </TableBody>
             </Table>
+          </div>
+        </TabsContent>
+
+        {/* Inbox Tab */}
+        <TabsContent value="inbox" className="space-y-6">
+          {/* Buy Requests Review */}
+          <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-5 border-b flex justify-between items-center bg-blue-50/50">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <CartIcon className="w-5 h-5 text-primary" /> طلبات الشراء
+                  {pendingBuyRequests.length > 0 && (
+                    <Badge className="bg-amber-500 hover:bg-amber-600">{pendingBuyRequests.length} معلق</Badge>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">{(adminBuyRequests as any[]).length} طلب إجمالاً</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchBuyRequests()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3">
+              {(adminBuyRequests as any[]).length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">لا توجد طلبات شراء</div>
+              ) : (adminBuyRequests as any[]).map((r: any) => (
+                <div key={r.id} className="border rounded-xl p-4 bg-background flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="font-bold text-foreground">{r.brand || "أي ماركة"} {r.model || ""}</p>
+                      <Badge variant={r.status === "approved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"} className="text-xs">
+                        {r.status === "approved" ? "موافق عليه" : r.status === "rejected" ? "مرفوض" : "معلق"}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                      {r.maxPrice && <span className="text-primary font-bold">حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}</span>}
+                      {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
+                      {r.userName && <span>المستخدم: {r.userName}</span>}
+                      {r.userPhone && <span dir="ltr">{r.userPhone}</span>}
+                    </div>
+                    {r.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{r.description}</p>}
+                    <p className="text-xs text-muted-foreground/60 mt-1">{new Date(r.createdAt).toLocaleDateString("ar-EG")}</p>
+                  </div>
+                  {r.status === "pending" && (
+                    <div className="flex gap-2 shrink-0">
+                      <Button size="sm" className="h-8 bg-green-500 hover:bg-green-600 text-white" onClick={() => handleBuyRequestStatus(r.id, "approved")}>
+                        <CheckCircle className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => handleBuyRequestStatus(r.id, "rejected")}>
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Support Messages */}
+          <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-5 border-b flex justify-between items-center bg-muted/20">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-blue-500" /> رسائل الدعم والشكاوي
+                <Badge variant="secondary">{(supportMessages as any[]).length}</Badge>
+              </h2>
+              <Button variant="outline" size="sm" onClick={() => refetchSupport()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
+              {(supportMessages as any[]).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">لا توجد رسائل</div>
+              ) : (supportMessages as any[]).map((m: any) => (
+                <div key={m.id} className="border rounded-xl p-4 bg-background">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs capitalize">{m.type === "complaint" ? "شكوى" : m.type === "suggestion" ? "اقتراح" : m.type === "missing_car" ? "سيارة مفقودة" : m.type}</Badge>
+                      {m.userName && <span className="text-sm font-medium">{m.userName}</span>}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{new Date(m.createdAt).toLocaleDateString("ar-EG")}</span>
+                  </div>
+                  <p className="text-sm text-foreground">{m.message}</p>
+                  {m.userPhone && <p className="text-xs text-muted-foreground mt-1" dir="ltr">{m.userPhone}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Feedback / Ratings */}
+          <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-5 border-b flex justify-between items-center bg-muted/20">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-500" /> تقييمات التطبيق
+                <Badge variant="secondary">{(feedbackList as any[]).length}</Badge>
+              </h2>
+              <Button variant="outline" size="sm" onClick={() => refetchFeedback()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
+              {(feedbackList as any[]).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">لا توجد تقييمات</div>
+              ) : (feedbackList as any[]).map((f: any) => (
+                <div key={f.id} className="border rounded-xl p-4 bg-background flex items-start justify-between gap-3">
+                  <div>
+                    {f.userName && <p className="text-sm font-bold mb-0.5">{f.userName}</p>}
+                    <p className="text-sm text-foreground">{f.feedback}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">{new Date(f.createdAt).toLocaleDateString("ar-EG")}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </TabsContent>
 

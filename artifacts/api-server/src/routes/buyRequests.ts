@@ -1,11 +1,19 @@
 import { Router, type IRouter } from "express";
 import { db, buyRequestsTable, usersTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
-import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { eq, desc, and } from "drizzle-orm";
+import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
-router.get("/buy-requests", async (req, res): Promise<void> => {
+const guard = [authMiddleware, adminMiddleware];
+
+router.get("/buy-requests", async (req: any, res): Promise<void> => {
+  const roleHeader = (req as AuthRequest).userRole;
+  const isSellerOrDealer = roleHeader === "seller" || roleHeader === "dealer" || roleHeader === "admin";
+  const where = isSellerOrDealer
+    ? eq(buyRequestsTable.status, "approved")
+    : eq(buyRequestsTable.status, "approved");
+
   const requests = await db
     .select({
       id: buyRequestsTable.id,
@@ -15,22 +23,25 @@ router.get("/buy-requests", async (req, res): Promise<void> => {
       minYear: buyRequestsTable.minYear,
       maxYear: buyRequestsTable.maxYear,
       maxPrice: buyRequestsTable.maxPrice,
+      currency: buyRequestsTable.currency,
       city: buyRequestsTable.city,
       paymentType: buyRequestsTable.paymentType,
       description: buyRequestsTable.description,
+      status: buyRequestsTable.status,
       createdAt: buyRequestsTable.createdAt,
       userName: usersTable.name,
       userPhoto: usersTable.profilePhoto,
     })
     .from(buyRequestsTable)
     .leftJoin(usersTable, eq(buyRequestsTable.userId, usersTable.id))
+    .where(where)
     .orderBy(desc(buyRequestsTable.createdAt));
 
   res.json(requests);
 });
 
 async function createBuyRequest(req: AuthRequest, res: any): Promise<void> {
-  const { brand, model, year, minYear, maxYear, maxPrice, city, paymentType, description } = req.body;
+  const { brand, model, year, minYear, maxYear, maxPrice, currency, city, paymentType, description } = req.body;
 
   await db.insert(buyRequestsTable).values({
     userId: req.user!.id,
@@ -39,12 +50,14 @@ async function createBuyRequest(req: AuthRequest, res: any): Promise<void> {
     minYear: minYear ? Number(minYear) : (year ? Number(year) : null),
     maxYear: maxYear ? Number(maxYear) : (year ? Number(year) : null),
     maxPrice: maxPrice ? Number(maxPrice) : null,
+    currency: currency ?? "USD",
     city: city ?? null,
     paymentType: paymentType ?? null,
     description: description ?? null,
+    status: "pending",
   });
 
-  res.status(201).json({ success: true, message: "تم إرسال طلب الشراء بنجاح" });
+  res.status(201).json({ success: true, message: "تم إرسال طلب الشراء وهو بانتظار مراجعة الإدارة" });
 }
 
 router.post("/buy-requests", authMiddleware, createBuyRequest);
@@ -75,6 +88,48 @@ router.delete("/buy-requests/:id", authMiddleware, async (req: AuthRequest, res)
 
   await db.delete(buyRequestsTable).where(eq(buyRequestsTable.id, id));
   res.json({ success: true });
+});
+
+router.get("/admin/buy-requests", ...guard, async (_req, res): Promise<void> => {
+  const requests = await db
+    .select({
+      id: buyRequestsTable.id,
+      userId: buyRequestsTable.userId,
+      brand: buyRequestsTable.brand,
+      model: buyRequestsTable.model,
+      minYear: buyRequestsTable.minYear,
+      maxYear: buyRequestsTable.maxYear,
+      maxPrice: buyRequestsTable.maxPrice,
+      currency: buyRequestsTable.currency,
+      city: buyRequestsTable.city,
+      paymentType: buyRequestsTable.paymentType,
+      description: buyRequestsTable.description,
+      status: buyRequestsTable.status,
+      createdAt: buyRequestsTable.createdAt,
+      userName: usersTable.name,
+      userPhone: usersTable.phone,
+    })
+    .from(buyRequestsTable)
+    .leftJoin(usersTable, eq(buyRequestsTable.userId, usersTable.id))
+    .orderBy(desc(buyRequestsTable.createdAt));
+
+  res.json(requests);
+});
+
+router.patch("/admin/buy-requests/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  const { status } = req.body;
+  if (!["pending", "approved", "rejected"].includes(status)) {
+    res.status(400).json({ error: "Invalid status" });
+    return;
+  }
+  const [updated] = await db
+    .update(buyRequestsTable)
+    .set({ status })
+    .where(eq(buyRequestsTable.id, id))
+    .returning({ id: buyRequestsTable.id, status: buyRequestsTable.status });
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(updated);
 });
 
 export default router;

@@ -5,13 +5,16 @@ import {
   useListCars,
   useGetUserReviews
 } from "@workspace/api-client-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { Redirect, Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { CarCard } from "@/components/CarCard";
 import {
   User, MapPin, Phone, ShieldCheck, Star,
   Settings, LogOut, Loader2, Edit3, Mail, Camera,
-  Store, Building2, Upload, Check, X
+  Store, Building2, Upload, Check, X, ShoppingCart, DollarSign, Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,6 +57,31 @@ export default function Profile() {
 
   const { data: reviews, isLoading: loadingReviews } = useGetUserReviews(user?.id || 0, {
     query: { enabled: !!user?.id }
+  });
+
+  const qc = useQueryClient();
+  const { data: myBuyRequests = [], isLoading: loadingBuyRequests } = useQuery<any[]>({
+    queryKey: ["my-buy-requests", user?.id],
+    queryFn: async () => {
+      const token = localStorage.getItem("scm_token");
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const r = await fetch(`${BASE}/api/buy-requests`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) return [];
+      const data = await r.json();
+      return Array.isArray(data) ? data.filter((r: any) => r.userId === user?.id) : [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const deleteBuyRequestMutation = useMutation({
+    mutationFn: (id: number) => api.buyRequests.delete(id),
+    onSuccess: () => {
+      toast({ title: "تم حذف الطلب" });
+      qc.invalidateQueries({ queryKey: ["my-buy-requests", user?.id] });
+    },
+    onError: () => toast({ title: "خطأ في الحذف", variant: "destructive" }),
   });
 
   if (!isHydrated) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -350,6 +378,74 @@ export default function Profile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {userCars.cars.map((car) => (
                   <CarCard key={car.id} car={car} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* My Buy Requests */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5 text-primary" /> طلباتي
+                {myBuyRequests.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">{myBuyRequests.length}</Badge>
+                )}
+              </h3>
+              <Link href="/buy-requests">
+                <Button variant="outline" size="sm" className="rounded-xl">عرض الكل</Button>
+              </Link>
+            </div>
+            {loadingBuyRequests ? (
+              <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : myBuyRequests.length === 0 ? (
+              <div className="bg-card border border-dashed rounded-2xl p-10 text-center text-muted-foreground shadow-sm">
+                <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p className="font-medium">لا يوجد لديك طلبات شراء</p>
+                <Link href="/buy-requests">
+                  <Button className="mt-4 rounded-xl" size="sm">أضف طلب شراء</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {myBuyRequests.map((r: any) => (
+                  <div key={r.id} className="bg-card border rounded-2xl p-4 flex items-start justify-between gap-4 shadow-sm">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="font-bold text-foreground">
+                          {r.brand || "أي ماركة"} {r.model || ""}
+                          {r.minYear || r.maxYear ? ` (${r.minYear || ""}–${r.maxYear || ""})` : ""}
+                        </p>
+                        <Badge
+                          variant={r.status === "approved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"}
+                          className="text-xs"
+                        >
+                          {r.status === "approved" ? "موافق عليه" : r.status === "rejected" ? "مرفوض" : "بانتظار الموافقة"}
+                        </Badge>
+                      </div>
+                      {r.maxPrice && (
+                        <p className="text-sm text-primary font-bold flex items-center gap-1">
+                          <DollarSign className="w-3.5 h-3.5" />
+                          حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}
+                        </p>
+                      )}
+                      {r.city && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3" /> {r.city}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground/50 mt-1">{new Date(r.createdAt).toLocaleDateString("ar-EG")}</p>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
+                      onClick={() => deleteBuyRequestMutation.mutate(r.id)}
+                      disabled={deleteBuyRequestMutation.isPending}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             )}

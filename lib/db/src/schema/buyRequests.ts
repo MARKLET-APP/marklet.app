@@ -8,9 +8,11 @@ export const buyRequestsTable = pgTable("buy_requests", {
   minYear: integer("min_year"),
   maxYear: integer("max_year"),
   maxPrice: integer("max_price"),
+  currency: varchar("currency", { length: 10 }).default("USD"),
   city: varchar("city", { length: 100 }),
   paymentType: varchar("payment_type", { length: 20 }),
   description: text("description"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

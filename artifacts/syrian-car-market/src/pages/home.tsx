@@ -2,20 +2,65 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
-  Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon
+  Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
+  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { CarCard } from "@/components/CarCard";
 import { useGetFeaturedCars, useListCars } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/lib/auth";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Home() {
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
   const { data: latestCars, isLoading: loadingLatest } = useListCars({ limit: 6, sortBy: 'createdAt:desc' });
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const [, navigate] = useLocation();
   const [heroSearch, setHeroSearch] = useState("");
+  const [missingInfoOpen, setMissingInfoOpen] = useState(false);
+  const [missingInfoCarId, setMissingInfoCarId] = useState<number | null>(null);
+  const [infoMsg, setInfoMsg] = useState("");
+  const [sendingInfo, setSendingInfo] = useState(false);
+
+  const isSellerOrDealer = user?.role === "seller" || user?.role === "dealer" || user?.role === "admin";
+
+  const { data: buyRequests = [] } = useQuery({
+    queryKey: ["/buy-requests"],
+    queryFn: () => api.buyRequests.list(),
+    enabled: isSellerOrDealer,
+    staleTime: 60_000,
+  });
+
+  const { data: missingCars = [] } = useQuery({
+    queryKey: ["/missing-cars"],
+    queryFn: () => api.missingCars.list(),
+    staleTime: 60_000,
+  });
+
+  const handleSendMissingInfo = async () => {
+    if (!infoMsg.trim()) return;
+    setSendingInfo(true);
+    try {
+      await api.support.send({
+        type: "missing_car",
+        message: `معلومات عن سيارة مفقودة #${missingInfoCarId}: ${infoMsg}`,
+        userId: user?.id ?? null,
+      });
+      toast({ title: "تم إرسال المعلومات إلى الإدارة", description: "شكراً لمساعدتك" });
+      setMissingInfoOpen(false);
+      setInfoMsg("");
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    } finally {
+      setSendingInfo(false);
+    }
+  };
 
   const role = user?.role ?? null;
   const canSell = role === "seller" || role === "dealer";
@@ -286,6 +331,157 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {/* Buy Requests Section — visible to sellers & dealers only */}
+      {isSellerOrDealer && (buyRequests as any[]).length > 0 && (
+        <section className="py-12 bg-primary/5 w-full">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <span className="w-3 h-8 bg-primary rounded-full inline-block"></span>
+                  طلبات شراء السيارات
+                </h2>
+                <p className="text-muted-foreground mt-1 text-sm">مشترون يبحثون عن سيارات — هل تملك ما يريدون؟</p>
+              </div>
+              <Link href="/buy-requests" className="text-primary font-semibold flex items-center gap-1 hover:underline text-sm">
+                عرض الكل <ChevronLeft className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {(buyRequests as any[]).slice(0, 6).map((r: any) => (
+                <div key={r.id} className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-foreground text-lg">{r.brand || "أي ماركة"} {r.model || ""}</h3>
+                      {(r.minYear || r.maxYear) && (
+                        <p className="text-xs text-muted-foreground">{r.minYear ?? "—"} – {r.maxYear ?? "—"}</p>
+                      )}
+                    </div>
+                    <Badge className="bg-primary/10 text-primary border-0">
+                      <ShoppingCart className="w-3 h-3 ml-1" /> طلب شراء
+                    </Badge>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                    {r.maxPrice && (
+                      <span className="flex items-center gap-1 text-primary font-bold">
+                        <DollarSign className="w-4 h-4" />
+                        حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}
+                      </span>
+                    )}
+                    {r.city && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />{r.city}
+                      </span>
+                    )}
+                  </div>
+
+                  {r.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{r.description}</p>
+                  )}
+
+                  <div className="flex gap-2 pt-2 border-t">
+                    <Button
+                      size="sm"
+                      className="flex-1 rounded-xl gap-1 bg-primary hover:bg-primary/90 text-xs font-bold"
+                      onClick={() => user ? navigate(`/buy-requests`) : navigate("/login")}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" /> مراسلة
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 rounded-xl gap-1 text-xs"
+                      onClick={() => navigate(`/buy-requests`)}
+                    >
+                      <Eye className="w-3.5 h-3.5" /> التفاصيل
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Missing Cars Section */}
+      {(missingCars as any[]).filter((c: any) => c.isFound !== "yes").length > 0 && (
+        <section className="py-12 max-w-7xl mx-auto px-4 w-full">
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <span className="w-3 h-8 bg-amber-500 rounded-full inline-block"></span>
+                سيارات مفقودة
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">إذا رأيت إحدى هذه السيارات، أبلغ الإدارة</p>
+            </div>
+            <Link href="/missing-cars" className="text-amber-600 font-semibold flex items-center gap-1 hover:underline text-sm">
+              عرض الكل <ChevronLeft className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {(missingCars as any[]).filter((c: any) => c.isFound !== "yes").slice(0, 4).map((c: any) => (
+              <div key={c.id} className="bg-card border-2 border-amber-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                {c.image ? (
+                  <img src={c.image} alt={c.brand ?? "سيارة"} className="w-full h-36 object-cover" />
+                ) : (
+                  <div className="w-full h-36 bg-amber-50 flex items-center justify-center">
+                    <AlertTriangle className="w-12 h-12 text-amber-300" />
+                  </div>
+                )}
+                <div className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-foreground text-sm">{[c.brand, c.model].filter(Boolean).join(" ") || "سيارة مجهولة"}</h4>
+                    <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">مفقودة</Badge>
+                  </div>
+                  {c.color && <p className="text-xs text-muted-foreground">اللون: {c.color}</p>}
+                  {c.plateNumber && <p className="text-xs font-bold text-foreground">لوحة: {c.plateNumber}</p>}
+                  {c.city && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</p>}
+                  <Button
+                    size="sm"
+                    className="w-full mt-2 rounded-xl text-xs bg-amber-500 hover:bg-amber-600 text-white gap-1"
+                    onClick={() => { setMissingInfoCarId(c.id); setMissingInfoOpen(true); }}
+                  >
+                    <Send className="w-3 h-3" /> إرسال معلومات إلى الإدارة
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Send Missing Car Info Dialog */}
+      <Dialog open={missingInfoOpen} onOpenChange={setMissingInfoOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">إرسال معلومات للإدارة</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground mb-3">
+            إذا رأيت هذه السيارة أو لديك معلومات عنها، أخبر الإدارة وسيتم التواصل معك.
+          </p>
+          <textarea
+            value={infoMsg}
+            onChange={(e) => setInfoMsg(e.target.value)}
+            rows={4}
+            placeholder="اكتب هنا ما تعرفه عن مكان السيارة أو أي معلومات مفيدة..."
+            className="w-full border rounded-xl px-3 py-2 text-sm bg-background resize-none focus:border-amber-500 outline-none"
+          />
+          <div className="flex gap-3 mt-2">
+            <Button
+              onClick={handleSendMissingInfo}
+              disabled={!infoMsg.trim() || sendingInfo}
+              className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold"
+            >
+              {sendingInfo ? "جارٍ الإرسال..." : "إرسال إلى الإدارة"}
+            </Button>
+            <Button variant="outline" onClick={() => setMissingInfoOpen(false)} className="rounded-xl">
+              إلغاء
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Vehicle Report CTA */}
       <section className="py-16 px-4">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Calendar, DollarSign, Plus, Trash2, User, CreditCard } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Plus, Trash2, User, CreditCard, MessageCircle, Eye } from "lucide-react";
 
 type BuyRequest = {
   id: number;
@@ -23,9 +24,11 @@ type BuyRequest = {
   minYear: number | null;
   maxYear: number | null;
   maxPrice: number | null;
+  currency: string | null;
   city: string | null;
   paymentType: string | null;
   description: string | null;
+  status: string | null;
   createdAt: string;
   userName: string | null;
   userPhoto: string | null;
@@ -42,6 +45,8 @@ export default function BuyRequests() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
+  const isSellerOrDealer = user?.role === "seller" || user?.role === "dealer" || user?.role === "admin";
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -127,8 +132,11 @@ export default function BuyRequests() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">الحد الأقصى للسعر (ل.س) *</label>
-                  <Input type="number" name="maxPrice" value={form.maxPrice} onChange={handleChange} placeholder="5000000" required />
+                  <label className="text-sm font-medium">الحد الأقصى للسعر (USD) *</label>
+                  <div className="relative">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono">$</span>
+                    <Input type="number" name="maxPrice" value={form.maxPrice} onChange={handleChange} placeholder="5000" required className="pr-8" />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -206,7 +214,7 @@ export default function BuyRequests() {
                 {r.maxPrice && (
                   <span className="flex items-center gap-1 text-primary font-bold">
                     <DollarSign className="w-4 h-4" />
-                    حتى {Number(r.maxPrice).toLocaleString("ar-SY")} ل.س
+                    حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}
                   </span>
                 )}
                 {r.city && (
@@ -219,6 +227,26 @@ export default function BuyRequests() {
 
               {r.description && (
                 <p className="text-sm text-muted-foreground border-t pt-3 leading-relaxed">{r.description}</p>
+              )}
+
+              {/* Action buttons — Message and Details for sellers/dealers */}
+              {isSellerOrDealer && (
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    size="sm"
+                    className="flex-1 rounded-xl gap-1.5 bg-primary hover:bg-primary/90 font-bold text-xs"
+                    onClick={() => user ? navigate("/messages") : navigate("/login")}
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" /> مراسلة
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 rounded-xl gap-1.5 text-xs"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> التفاصيل
+                  </Button>
+                </div>
               )}
 
               <div className="flex items-center justify-between border-t pt-3">
@@ -234,6 +262,11 @@ export default function BuyRequests() {
                   <span className="text-xs text-muted-foreground">
                     {new Date(r.createdAt).toLocaleDateString("ar-EG")}
                   </span>
+                  {r.status && r.status !== "approved" && (
+                    <Badge variant={r.status === "pending" ? "secondary" : "destructive"} className="text-xs">
+                      {r.status === "pending" ? "بانتظار الموافقة" : "مرفوض"}
+                    </Badge>
+                  )}
                   {user && (user.id === r.userId || user.role === "admin") && (
                     <Button
                       size="icon"

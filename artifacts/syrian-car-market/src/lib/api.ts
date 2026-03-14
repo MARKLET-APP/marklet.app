@@ -122,5 +122,24 @@ export const api = {
       apiRequest(`/api/admin/cars/${id}/status`, "PATCH", { status }),
     deleteCar: (id: number) =>
       apiRequest(`/api/admin/cars/${id}`, "DELETE"),
+    listBuyRequests: () =>
+      apiRequest<Array<{
+        id: number; userId: number; brand: string | null; model: string | null;
+        minYear: number | null; maxYear: number | null; maxPrice: number | null;
+        currency: string | null; city: string | null; paymentType: string | null;
+        description: string | null; status: string; createdAt: string;
+        userName: string | null; userPhone: string | null;
+      }>>("/api/admin/buy-requests"),
+    updateBuyRequestStatus: (id: number, status: "pending" | "approved" | "rejected") =>
+      apiRequest(`/api/admin/buy-requests/${id}`, "PATCH", { status }),
+    listSupportMessages: () =>
+      apiRequest<Array<{
+        id: number; userId: number | null; type: string; message: string;
+        status: string; createdAt: string; userName: string | null; userPhone: string | null;
+      }>>("/api/support"),
+    listFeedback: () =>
+      apiRequest<Array<{
+        id: number; userId: number | null; feedback: string; createdAt: string; userName: string | null;
+      }>>("/api/feedback"),
   },
 };
