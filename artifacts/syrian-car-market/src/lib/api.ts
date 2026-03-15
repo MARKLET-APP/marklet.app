@@ -71,6 +71,12 @@ export const api = {
     delete: (id: number) => apiRequest(`/api/junk-cars/${id}`, "DELETE"),
   },
 
+  rentalCars: {
+    list: () => apiRequest<unknown[]>("/api/rental-cars"),
+    create: (data: object) => apiRequest("/api/rental-cars", "POST", data),
+    delete: (id: number) => apiRequest(`/api/rental-cars/${id}`, "DELETE"),
+  },
+
   missingCars: {
     list: () => apiRequest<unknown[]>("/api/missing-cars"),
     create: (data: object) => apiRequest("/api/missing-cars", "POST", data),

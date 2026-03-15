@@ -42,6 +42,7 @@ export function Header() {
     { href: "/search", label: t("nav.search") },
     { href: "/vehicle-info", label: t("nav.vehicleReport") },
     { href: "/buy-requests", label: t("nav.buyRequests") },
+    { href: "/rental-cars", label: "سيارات للإيجار" },
     { href: "/support", label: t("nav.contact") },
     ...(user?.role === "admin" ? [{ href: "/admin", label: t("nav.adminPanel"), accent: true }] : []),
   ];
