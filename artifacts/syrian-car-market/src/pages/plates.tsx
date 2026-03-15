@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, MapPin, Trash2, ShoppingCart, CheckCircle2, XCircle, Hash } from "lucide-react";
+import { Plus, MapPin, Trash2, ShoppingCart, CheckCircle2, XCircle, Hash, Upload, X, ImageIcon, MessageCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 type PlateItem = {
   id: number; userId: number; brand: string | null; price: number | null;
   city: string | null; description: string | null; createdAt: string; sellerName?: string | null;
+  primaryImage?: string | null; images?: string[];
 };
 
 type BuyRequest = {
@@ -23,15 +25,38 @@ type BuyRequest = {
 const PLATES_QK = ["plates"];
 const BUY_QK = ["buy-requests-plates"];
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+async function uploadImage(file: File): Promise<string> {
+  const token = localStorage.getItem("scm_token");
+  const fd = new FormData();
+  fd.append("image", file);
+  const res = await fetch(`${BASE}/api/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: fd,
+  });
+  if (!res.ok) throw new Error("فشل رفع الصورة");
+  const data = await res.json() as { url: string };
+  return data.url;
+}
+
 export default function PlatesPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
 
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [sellOpen, setSellOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
   const [followupId, setFollowupId] = useState<number | null>(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [sellImages, setSellImages] = useState<string[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [startingChat, setStartingChat] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [sellForm, setSellForm] = useState({ plateNumber: "", plateType: "خصوصي", price: "", city: "", description: "" });
   const [buyForm, setBuyForm] = useState({ plateDesc: "", plateType: "خصوصي", maxPrice: "", city: "", description: "" });
@@ -60,10 +85,12 @@ export default function PlatesPage() {
     onSuccess: () => {
       toast({ title: "تم نشر اللوحة بنجاح وهي بانتظار مراجعة الإدارة" });
       setSellOpen(false);
-      setSellForm({ plateNumber: "", price: "", city: "", description: "" });
+      setSellForm({ plateNumber: "", plateType: "خصوصي", price: "", city: "", description: "" });
+      setSellImages([]);
+      setImagePreviews([]);
       qc.invalidateQueries({ queryKey: PLATES_QK });
     },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onError: (err: any) => toast({ title: err?.message ?? "حدث خطأ", variant: "destructive" }),
   });
 
   const createBuy = useMutation({
@@ -71,7 +98,7 @@ export default function PlatesPage() {
     onSuccess: () => {
       toast({ title: "تم إرسال طلب الشراء وهو بانتظار مراجعة الإدارة" });
       setBuyOpen(false);
-      setBuyForm({ plateDesc: "", maxPrice: "", city: "", description: "" });
+      setBuyForm({ plateDesc: "", plateType: "خصوصي", maxPrice: "", city: "", description: "" });
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -86,10 +113,78 @@ export default function PlatesPage() {
     },
   });
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploadingImages(true);
+    try {
+      const previews = files.map(f => URL.createObjectURL(f));
+      setImagePreviews(prev => [...prev, ...previews]);
+      const urls = await Promise.all(files.map(uploadImage));
+      setSellImages(prev => [...prev, ...urls]);
+    } catch {
+      toast({ title: "فشل رفع بعض الصور", variant: "destructive" });
+    } finally {
+      setUploadingImages(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeImage = (idx: number) => {
+    setSellImages(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSellChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handleSellSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sellImages.length === 0) {
+      toast({ title: "يجب إضافة صورة واحدة على الأقل", variant: "destructive" });
+      return;
+    }
+    createSell.mutate({
+      brand: `${sellForm.plateType}: ${sellForm.plateNumber}`,
+      model: "plate",
+      year: 2024,
+      mileage: 0,
+      fuelType: "petrol",
+      transmission: "manual",
+      province: "Damascus",
+      price: sellForm.price ? Number(sellForm.price) : 0,
+      city: sellForm.city || "دمشق",
+      description: `رقم اللوحة: ${sellForm.plateNumber} | نوع: ${sellForm.plateType}${sellForm.description ? " | " + sellForm.description : ""}`,
+      category: "plates",
+      saleType: "cash",
+      images: sellImages,
+    });
+  };
+
+  const startChat = async (targetUserId: number) => {
+    if (!user) { navigate("/login"); return; }
+    if (user.id === targetUserId) {
+      toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return;
+    }
+    setStartingChat(true);
+    try {
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(`${BASE}/api/chats/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sellerId: targetUserId, carId: null }),
+      });
+      const data = await res.json() as any;
+      if (!res.ok) throw new Error(data.error ?? "فشل بدء المحادثة");
+      navigate(`/messages?conversationId=${data.id}`);
+    } catch (err: any) {
+      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -131,19 +226,29 @@ export default function PlatesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {plates.map((p: any) => (
               <div key={p.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-full h-36 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 flex flex-col items-center justify-center gap-2 border-b">
-                  <div className="bg-amber-400 text-amber-900 font-black text-2xl tracking-widest px-6 py-2 rounded-lg border-4 border-amber-600 shadow-md">
-                    {p.brand ?? p.plateNumber ?? "لوحة مميزة"}
+                {p.primaryImage ? (
+                  <img src={p.primaryImage} alt="لوحة" className="w-full h-36 object-cover border-b" />
+                ) : (
+                  <div className="w-full h-36 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 flex flex-col items-center justify-center gap-2 border-b">
+                    <div className="bg-amber-400 text-amber-900 font-black text-2xl tracking-widest px-6 py-2 rounded-lg border-4 border-amber-600 shadow-md">
+                      {p.brand?.replace(/^[^:]+:\s*/, "") ?? "لوحة مميزة"}
+                    </div>
+                    <span className="text-xs text-amber-700 font-semibold">لوحة مرور سورية</span>
                   </div>
-                  <span className="text-xs text-amber-700 font-semibold">لوحة مرور سورية</span>
-                </div>
+                )}
                 <div className="p-4 space-y-2">
-                  {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
+                  <p className="font-bold text-sm">{p.brand ?? "لوحة مميزة"}</p>
+                  {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
                   <div className="flex items-center justify-between pt-1">
                     {p.price ? <span className="font-bold text-primary" dir="ltr">${Number(p.price).toLocaleString()}</span> : <span className="text-muted-foreground text-sm">السعر قابل للتفاوض</span>}
                     {p.city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{p.city}</span>}
                   </div>
                   {p.sellerName && <p className="text-xs text-muted-foreground">البائع: {p.sellerName}</p>}
+                  {user && user.id !== p.userId && (
+                    <Button size="sm" className="w-full rounded-xl gap-1.5 mt-1 font-bold text-xs" onClick={() => startChat(p.userId)} disabled={startingChat}>
+                      {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة البائع
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -167,37 +272,29 @@ export default function PlatesPage() {
                   {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
                   {r.userName && <span>الطالب: {r.userName}</span>}
                 </div>
+                {user && user.id !== r.userId && (
+                  <Button size="sm" variant="outline" className="rounded-xl gap-1.5 mt-2 text-xs" onClick={() => startChat(r.userId)} disabled={startingChat}>
+                    {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة الطالب
+                  </Button>
+                )}
               </div>
             ))}
           </div>
         )
       )}
 
-      <Dialog open={sellOpen} onOpenChange={setSellOpen}>
+      {/* Sell Dialog */}
+      <Dialog open={sellOpen} onOpenChange={o => { setSellOpen(o); if (!o) { setSellImages([]); setImagePreviews([]); } }}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">نشر لوحة سيارة للبيع</DialogTitle></DialogHeader>
-          <form onSubmit={e => {
-            e.preventDefault();
-            createSell.mutate({
-              brand: `${sellForm.plateType}: ${sellForm.plateNumber}`,
-              model: "plate",
-              year: 2024,
-              mileage: 0,
-              fuelType: "petrol",
-              transmission: "manual",
-              province: sellForm.city || "Damascus",
-              price: sellForm.price ? Number(sellForm.price) : 0,
-              city: sellForm.city || "دمشق",
-              description: `رقم اللوحة: ${sellForm.plateNumber} | نوع: ${sellForm.plateType}${sellForm.description ? " | " + sellForm.description : ""}`,
-              category: "plates",
-              saleType: "cash",
-            });
-          }} className="space-y-3 mt-2">
+          <form onSubmit={handleSellSubmit} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <Input name="plateNumber" value={sellForm.plateNumber} onChange={handleSellChange} placeholder="رقم اللوحة *" required />
               <select name="plateType" value={sellForm.plateType} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background">
                 <option value="خصوصي">خصوصي</option>
                 <option value="عمومي">عمومي</option>
+                <option value="تجاري">تجاري</option>
+                <option value="حكومي">حكومي</option>
               </select>
             </div>
             <div className="relative">
@@ -206,13 +303,38 @@ export default function PlatesPage() {
             </div>
             <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
             <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
-            <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
+
+            {/* Image upload */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold flex items-center gap-2"><ImageIcon className="w-4 h-4 text-primary" /> صور اللوحة *</label>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+              <Button type="button" variant="outline" className="w-full rounded-xl gap-2 border-dashed border-2" onClick={() => fileInputRef.current?.click()} disabled={uploadingImages}>
+                {uploadingImages ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {uploadingImages ? "جارٍ رفع الصور..." : "رفع صور"}
+              </Button>
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {imagePreviews.map((src, i) => (
+                    <div key={i} className="relative rounded-lg overflow-hidden border aspect-square">
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <button type="button" className="absolute top-1 left-1 bg-black/60 text-white rounded-full p-0.5" onClick={() => removeImage(i)}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {sellImages.length === 0 && <p className="text-xs text-muted-foreground">يجب رفع صورة واحدة على الأقل</p>}
+            </div>
+
+            <Button type="submit" disabled={createSell.isPending || uploadingImages} className="w-full rounded-xl font-bold">
               {createSell.isPending ? "جارٍ النشر..." : "نشر اللوحة"}
             </Button>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* Buy Dialog */}
       <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء لوحة سيارة</DialogTitle></DialogHeader>
@@ -231,6 +353,7 @@ export default function PlatesPage() {
               <select name="plateType" value={buyForm.plateType} onChange={handleBuyChange} className="border rounded-md px-3 py-2 text-sm bg-background">
                 <option value="خصوصي">خصوصي</option>
                 <option value="عمومي">عمومي</option>
+                <option value="تجاري">تجاري</option>
               </select>
             </div>
             <div className="relative">
@@ -246,11 +369,10 @@ export default function PlatesPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Follow-up dialog */}
       <Dialog open={followupId !== null} onOpenChange={open => { if (!open) setFollowupId(null); }}>
         <DialogContent className="max-w-sm text-center" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center">متابعة الطلب</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle className="text-xl font-bold text-center">متابعة الطلب</DialogTitle></DialogHeader>
           <div className="py-4 space-y-4">
             <p className="text-muted-foreground">هل تمكنت من شراء اللوحة التي طلبتها؟ هل ساعدك <span className="font-bold text-primary">MARKLET</span> في إتمام الصفقة؟</p>
             <div className="flex gap-3 justify-center">
