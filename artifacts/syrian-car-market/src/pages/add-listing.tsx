@@ -9,7 +9,7 @@ import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 
-// ── Market base prices (USD) per brand ─────────────────────────────────────
+// ── Market base prices (USD) per car brand ──────────────────────────────────
 const MARKET_PRICES: Record<string, number> = {
   toyota: 13000, hyundai: 9500, kia: 9000, nissan: 11000,
   honda: 11500, mazda: 10000, mitsubishi: 9500, suzuki: 7500,
@@ -18,6 +18,27 @@ const MARKET_PRICES: Record<string, number> = {
   lada: 4500, chery: 7000, geely: 7500, haval: 11000,
   byd: 12000, mg: 9500,
 };
+
+// ── Market base prices (USD) per motorcycle brand ───────────────────────────
+const MOTO_PRICES: Record<string, number> = {
+  yamaha: 2800, honda: 2600, suzuki: 2400, kawasaki: 3000, ktm: 4500,
+  bmw: 9000, ducati: 10000, harley: 8000, triumph: 7000, royal: 5000,
+  tvs: 1500, bajaj: 1200, lifan: 900, zongshen: 1000, loncin: 950,
+  shineray: 1100, dayun: 1000, cfmoto: 3500, benelli: 2800, sym: 1800,
+};
+
+function estimateMotoPrice(brand: string, year: number, similarPrices: number[]): number {
+  const base = MOTO_PRICES[brand.toLowerCase().trim()] ?? 2000;
+  const currentYear = new Date().getFullYear();
+  const age = currentYear - year;
+  const ageDepreciation = Math.min(age * 0.08, 0.65);
+  let estimated = Math.round(base * (1 - ageDepreciation));
+  if (similarPrices.length > 0) {
+    const avg = similarPrices.reduce((a, b) => a + b, 0) / similarPrices.length;
+    estimated = Math.round((estimated + avg) / 2);
+  }
+  return Math.max(estimated, 200);
+}
 
 function estimateCarPrice(brand: string, year: number, mileage: number, similarPrices: number[]): number {
   const base = MARKET_PRICES[brand.toLowerCase().trim()] ?? 10000;
@@ -113,18 +134,31 @@ export default function AddListing() {
       toast({ title: "الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", variant: "destructive" });
       return;
     }
+    const isMoto = listingType === "motorcycle";
     generateDescMutation.mutate({
-      data: { brand: fields.brand, model: fields.model, year: Number(fields.year), mileage: Number(fields.mileage), fuelType: fields.fuelType, transmission: fields.transmission }
+      data: {
+        brand: fields.brand, model: fields.model, year: Number(fields.year),
+        mileage: isMoto ? 0 : Number(fields.mileage),
+        fuelType: isMoto ? "petrol" : fields.fuelType,
+        transmission: isMoto ? "manual" : fields.transmission,
+      }
     }, {
       onSuccess: (res) => setFields(f => ({ ...f, description: res.description })),
       onError: () => {
-        const fuelLabel: Record<string, string> = { petrol: "بنزين", diesel: "مازوت", electric: "كهرباء", hybrid: "هجين" };
-        const transLabel: Record<string, string> = { automatic: "أوتوماتيك", manual: "يدوي" };
-        const template = `للبيع ${fields.brand} ${fields.model} موديل ${fields.year}
+        const template = isMoto
+          ? `للبيع دراجة نارية ${fields.brand} ${fields.model} موديل ${fields.year}
+
+الدراجة بحالة ممتازة وجاهزة للتجربة والفحص.
+${fields.bikeType ? `النوع: ${fields.bikeType}` : ""}
+${fields.engineCC ? `حجم المحرك: ${fields.engineCC} cc` : ""}
+${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleString()} $` : ""}
+
+للتواصل والاستفسار عبر الرسائل أو الاتصال المباشر.`
+          : `للبيع ${fields.brand} ${fields.model} موديل ${fields.year}
 
 السيارة بحالة ممتازة وجاهزة للفحص والتجربة.
-نوع الوقود: ${fuelLabel[fields.fuelType] ?? fields.fuelType}
-ناقل الحركة: ${transLabel[fields.transmission] ?? fields.transmission}
+نوع الوقود: ${{ petrol: "بنزين", diesel: "مازوت", electric: "كهرباء", hybrid: "هجين" }[fields.fuelType] ?? fields.fuelType}
+ناقل الحركة: ${{ automatic: "أوتوماتيك", manual: "يدوي" }[fields.transmission] ?? fields.transmission}
 ${fields.mileage ? `عداد: ${Number(fields.mileage).toLocaleString()} كم` : ""}
 ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleString()} $` : ""}
 
@@ -146,14 +180,20 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
       const entered = Number(fields.price) || 0;
 
       const cars = (allCarsData?.cars ?? []) as any[];
+      const isMoto = listingType === "motorcycle";
+
       const similar = cars.filter((c: any) => {
         const brandMatch = c.brand?.toLowerCase() === fields.brand.toLowerCase();
         const yearMatch = Math.abs((c.year ?? 0) - year) <= 3;
-        return brandMatch && yearMatch && c.price > 0;
+        const catMatch = isMoto ? c.category === "motorcycle" : c.category !== "motorcycle";
+        return brandMatch && yearMatch && catMatch && c.price > 0;
       });
       const similarPrices = similar.map((c: any) => Number(c.price)).filter(Boolean);
 
-      const estimated = estimateCarPrice(fields.brand, year, mileage, similarPrices);
+      const estimated = isMoto
+        ? estimateMotoPrice(fields.brand, year, similarPrices)
+        : estimateCarPrice(fields.brand, year, mileage, similarPrices);
+
       const low = Math.round(estimated * 0.88);
       const high = Math.round(estimated * 1.12);
 
@@ -623,7 +663,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                     className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none font-bold text-lg placeholder:text-gray-400"
                   />
                 </div>
-                {listingType === "car" && (
+                {(listingType === "car" || listingType === "motorcycle") && (
                   <Button
                     type="button"
                     onClick={handleEstimatePrice}
@@ -662,7 +702,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="space-y-4 bg-white/10 backdrop-blur-sm p-5 rounded-2xl border border-white/10">
               <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                 <label className="text-sm font-bold text-white/90 flex-1">وصف الإعلان</label>
-                {listingType === "car" && (
+                {(listingType === "car" || listingType === "motorcycle") && (
                   <Button
                     type="button"
                     onClick={handleGenerateDesc}
@@ -670,7 +710,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                     className="rounded-xl h-10 px-5 gap-2 bg-accent hover:bg-accent/90 text-white font-bold border-0 text-sm shadow-lg shadow-accent/30 shrink-0"
                   >
                     {generateDescMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    توليد وصف جذاب
+                    {listingType === "motorcycle" ? "توليد وصف الدراجة" : "توليد وصف جذاب"}
                   </Button>
                 )}
               </div>
