@@ -143,7 +143,7 @@ export default function AuctionsPage() {
 
   if (activeSite) {
     return (
-      <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      <div className="fixed inset-0 z-[60] flex flex-col bg-background">
         {/* Top bar */}
         <div className="flex items-center gap-3 px-4 py-3 border-b bg-card shrink-0">
           <button onClick={closeSite} className="p-2 rounded-full hover:bg-muted transition-colors">

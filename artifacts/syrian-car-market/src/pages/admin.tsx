@@ -636,28 +636,95 @@ export default function AdminDashboard() {
 
         {/* Inbox Tab */}
         <TabsContent value="inbox" className="space-y-6">
-          {/* Support Messages */}
+
+          {/* Auction Requests — dedicated section */}
+          {(() => {
+            const auctionReqs = (supportMessages as any[]).filter(m => m.type === "auction_request");
+            if (auctionReqs.length === 0) return null;
+            return (
+              <div className="bg-card border-2 border-primary/30 rounded-2xl shadow-sm overflow-hidden">
+                <div className="p-5 border-b flex justify-between items-center bg-primary/5">
+                  <h2 className="text-lg font-bold flex items-center gap-2">
+                    <span className="text-xl">🏁</span> طلبات شراء عبر المزادات
+                    <Badge className="bg-primary text-white">{auctionReqs.length}</Badge>
+                  </h2>
+                  <Button variant="outline" size="sm" onClick={() => refetchSupport()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+                </div>
+                <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+                  {auctionReqs.map((m: any) => (
+                    <div key={m.id} className="border border-primary/20 rounded-xl p-4 bg-primary/5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-primary/20 text-primary border border-primary/30 text-xs">🏁 طلب مزاد</Badge>
+                          <Badge variant={m.status === "open" ? "secondary" : "outline"} className="text-xs">
+                            {m.status === "open" ? "مفتوح" : m.status === "closed" ? "مغلق" : m.status}
+                          </Badge>
+                          {m.userName && <span className="text-sm font-bold text-primary">{m.userName}</span>}
+                          {!m.userName && <span className="text-sm text-muted-foreground">زائر</span>}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{new Date(m.createdAt).toLocaleDateString("ar-EG")}</span>
+                      </div>
+                      {/* Render formatted message lines */}
+                      <div className="bg-background rounded-lg p-3 space-y-1">
+                        {m.message.split("\n").filter(Boolean).map((line: string, i: number) => (
+                          <p key={i} className={`text-sm ${i === 0 ? "font-bold text-primary" : "text-foreground"}`} dir={line.startsWith("http") ? "ltr" : "rtl"}>
+                            {line}
+                          </p>
+                        ))}
+                      </div>
+                      {m.userPhone && <p className="text-xs text-muted-foreground mt-2" dir="ltr">📞 {m.userPhone}</p>}
+                      {m.userId && (
+                        <div className="mt-3 pt-3 border-t flex justify-end">
+                          <Button
+                            size="sm"
+                            className="h-8 gap-1.5 bg-primary text-white hover:bg-primary/90"
+                            disabled={replyingTo === m.id}
+                            onClick={() => handleAdminReply(m.userId, m.id)}
+                          >
+                            {replyingTo === m.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <MessageCircle className="w-3.5 h-3.5" />
+                            }
+                            رد على {m.userName || "المستخدم"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Support Messages (non-auction) */}
           <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
             <div className="p-5 border-b flex justify-between items-center bg-muted/20">
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-blue-500" /> رسائل الدعم والشكاوي
-                <Badge variant="secondary">{(supportMessages as any[]).length}</Badge>
+                <Badge variant="secondary">{(supportMessages as any[]).filter(m => m.type !== "auction_request").length}</Badge>
               </h2>
               <Button variant="outline" size="sm" onClick={() => refetchSupport()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
             </div>
             <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
-              {(supportMessages as any[]).length === 0 ? (
+              {(supportMessages as any[]).filter(m => m.type !== "auction_request").length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">لا توجد رسائل</div>
-              ) : (supportMessages as any[]).map((m: any) => (
+              ) : (supportMessages as any[]).filter(m => m.type !== "auction_request").map((m: any) => (
                 <div key={m.id} className="border rounded-xl p-4 bg-background">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs capitalize">{m.type === "complaint" ? "شكوى" : m.type === "suggestion" ? "اقتراح" : m.type === "missing_car" ? "سيارة مفقودة" : m.type}</Badge>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {m.type === "complaint" ? "شكوى"
+                          : m.type === "suggestion" ? "اقتراح"
+                          : m.type === "missing_car" ? "سيارة مفقودة"
+                          : m.type === "general" ? "عام"
+                          : m.type === "auction_request" ? "🏁 طلب مزاد"
+                          : m.type}
+                      </Badge>
                       {m.userName && <span className="text-sm font-medium">{m.userName}</span>}
                     </div>
                     <span className="text-xs text-muted-foreground">{new Date(m.createdAt).toLocaleDateString("ar-EG")}</span>
                   </div>
-                  <p className="text-sm text-foreground">{m.message}</p>
+                  <p className="text-sm text-foreground whitespace-pre-line">{m.message}</p>
                   {m.userPhone && <p className="text-xs text-muted-foreground mt-1" dir="ltr">{m.userPhone}</p>}
                   {m.userId && (
                     <div className="mt-3 pt-3 border-t flex justify-end">
