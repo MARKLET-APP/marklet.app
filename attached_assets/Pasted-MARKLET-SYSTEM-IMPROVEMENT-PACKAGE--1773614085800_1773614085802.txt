@@ -1,0 +1,222 @@
+MARKLET SYSTEM IMPROVEMENT PACKAGE
+
+قم بإضافة الأنظمة التالية داخل المشروع بدون تغيير بنية التطبيق الحالية أو حذف أي ميزات موجودة.
+
+الأنظمة المطلوبة:
+
+1 Seed Data Generator
+2 Smart Category Engine
+3 Marketplace Feed Ranking
+
+================================================
+1. إنشاء نظام توليد بيانات الاختبار
+Seed Data Generator
+================================================
+
+أنشئ ملف جديد:
+
+scripts/seedData.js
+
+الكود:
+
+const db = require("../server/db")
+
+const brands = [
+"Toyota",
+"Hyundai",
+"Kia",
+"BMW",
+"Mercedes",
+"Nissan",
+"Chevrolet"
+]
+
+const cities = [
+"دمشق",
+"حلب",
+"حمص",
+"اللاذقية",
+"طرطوس"
+]
+
+function randomItem(arr){
+return arr[Math.floor(Math.random()*arr.length)]
+}
+
+async function seedAds(){
+
+for(let i=0;i<100;i++){
+
+const brand = randomItem(brands)
+const city = randomItem(cities)
+
+const price = Math.floor(Math.random()*20000)+2000
+
+await db.query(
+`INSERT INTO ads
+(title,category,price,city)
+VALUES ($1,$2,$3,$4)`,
+[
+brand + " " + (2010 + Math.floor(Math.random()*10)),
+"cars",
+price,
+city
+]
+)
+
+}
+
+console.log("Seed ads created successfully")
+
+}
+
+seedAds()
+
+================================================
+2. إنشاء نظام فلترة الأقسام
+Smart Category Engine
+================================================
+
+أنشئ ملف:
+
+server/routes/getAdsByCategory.js
+
+الكود:
+
+const express = require("express")
+const router = express.Router()
+const db = require("../db")
+
+router.get("/:category", async (req,res)=>{
+
+const category = req.params.category
+
+try{
+
+const ads = await db.query(
+`SELECT * FROM ads
+WHERE category = $1
+ORDER BY created_at DESC`,
+[category]
+)
+
+res.json(ads.rows)
+
+}catch(err){
+
+res.status(500).json({
+error:"Server error loading ads"
+})
+
+}
+
+})
+
+module.exports = router
+
+ثم اربطه في server الرئيسي:
+
+app.use("/api/ads", require("./routes/getAdsByCategory"))
+
+================================================
+3. إنشاء نظام ترتيب الإعلانات
+Marketplace Feed Ranking
+================================================
+
+أنشئ ملف:
+
+server/services/feedRanking.js
+
+الكود:
+
+function rankAds(ads){
+
+return ads.sort((a,b)=>{
+
+let scoreA = 0
+let scoreB = 0
+
+if(a.images_count > 3) scoreA += 3
+if(b.images_count > 3) scoreB += 3
+
+if(a.messages_count > 5) scoreA += 2
+if(b.messages_count > 5) scoreB += 2
+
+scoreA += new Date(a.created_at).getTime() / 100000000
+scoreB += new Date(b.created_at).getTime() / 100000000
+
+return scoreB - scoreA
+
+})
+
+}
+
+module.exports = rankAds
+
+================================================
+4. استخدام ترتيب الإعلانات في الـ API
+================================================
+
+أنشئ endpoint جديد:
+
+/api/feed
+
+الكود:
+
+const express = require("express")
+const router = express.Router()
+const db = require("../db")
+const rankAds = require("../services/feedRanking")
+
+router.get("/", async(req,res)=>{
+
+const ads = await db.query("SELECT * FROM ads")
+
+const sortedAds = rankAds(ads.rows)
+
+res.json(sortedAds)
+
+})
+
+module.exports = router
+
+ثم اربطه في السيرفر:
+
+app.use("/api/feed", require("./routes/feed"))
+
+================================================
+5. التأكد من أن أسماء الأقسام في قاعدة البيانات موحدة
+================================================
+
+cars
+motorcycles
+scrap
+plates
+parts
+rental
+
+ولا يتم تغيير أي نظام موجود حالياً في التطبيق.
+
+================================================
+6. اختبار النظام
+================================================
+
+بعد التثبيت:
+
+قم بتشغيل:
+
+node scripts/seedData.js
+
+وسيتم توليد إعلانات اختبار تلقائياً.
+
+ثم اختبر:
+
+/api/ads/cars
+/api/ads/motorcycles
+/api/feed
+
+================================================
+
+اسم التطبيق يبقى:
+
+MARKLET

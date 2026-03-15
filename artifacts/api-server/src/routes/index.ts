@@ -23,9 +23,13 @@ import supportMessagesRouter from "./supportMessages";
 import missingCarsRouter from "./missingCars";
 import notificationsRouter from "./notifications";
 import followupRouter from "./followup";
+import adsByCategoryRouter from "./adsByCategory";
+import feedRouter from "./feed";
 
 const router: IRouter = Router();
 
+router.use(adsByCategoryRouter);
+router.use(feedRouter);
 router.use(healthRouter);
 router.use(authRouter);
 router.use(usersRouter);
