@@ -270,6 +270,9 @@ export default function Profile() {
                   {cp.role !== "admin" && cp.role !== "inspector" && (
                     <AccountModeSelector currentRole={cp.role} userId={cp.id} onRoleChanged={refetchProfile} />
                   )}
+
+                  {/* ── دعوة الأصدقاء ── */}
+                  <InviteFriends userId={cp.id} />
                 </div>
               ) : (
                 /* ── Edit Form ── */
@@ -489,6 +492,73 @@ export default function Profile() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function InviteFriends({ userId }: { userId: number }) {
+  const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+
+  const appUrl = typeof window !== "undefined" ? `${window.location.origin}?ref=${userId}` : "";
+  const shareMsg = `انضم إلى MARKLET — السوق الأول للسيارات في سورية 🚗\n${appUrl}`;
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(appUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({ title: "تم نسخ الرابط" });
+    });
+  };
+
+  const shareChannels = [
+    { label: "واتساب", color: "#25D366", url: `https://wa.me/?text=${encodeURIComponent(shareMsg)}`, icon: "💬" },
+    { label: "فيسبوك", color: "#1877F2", url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}`, icon: "👥" },
+    { label: "تيليغرام", color: "#229ED9", url: `https://t.me/share/url?url=${encodeURIComponent(appUrl)}&text=${encodeURIComponent(shareMsg)}`, icon: "✈️" },
+  ];
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border/50">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-l from-primary/10 to-accent/10 border border-primary/20 hover:border-primary/40 transition-all"
+      >
+        <span className="text-2xl">🎁</span>
+        <div className="flex-1 text-right">
+          <div className="font-bold text-sm text-primary">دعوة الأصدقاء</div>
+          <div className="text-xs text-muted-foreground">ادعُ أصدقاءك واحصل على مكافآت</div>
+        </div>
+        <span className="text-muted-foreground text-xs">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-3 animate-in slide-in-from-top-2">
+          <div className="bg-primary/5 rounded-xl p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">رابط الدعوة الخاص بك</p>
+            <p className="font-mono text-xs text-primary break-all">{appUrl}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {shareChannels.map(ch => (
+              <a key={ch.label} href={ch.url} target="_blank" rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1 p-3 rounded-xl text-white text-xs font-bold hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: ch.color }}>
+                <span className="text-lg">{ch.icon}</span>
+                {ch.label}
+              </a>
+            ))}
+          </div>
+          <button
+            onClick={copyLink}
+            className="w-full py-2.5 rounded-xl border-2 border-dashed border-primary/40 text-sm font-bold text-primary hover:bg-primary/5 transition-colors"
+          >
+            {copied ? "✓ تم النسخ" : "نسخ الرابط"}
+          </button>
+          <div className="bg-accent/10 rounded-xl p-3 text-center">
+            <p className="text-xs text-accent font-bold">🎁 مكافأة الدعوة</p>
+            <p className="text-xs text-muted-foreground mt-1">لكل صديق ينضم بدعوتك، تحصل على إعلان مميز مجاني</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

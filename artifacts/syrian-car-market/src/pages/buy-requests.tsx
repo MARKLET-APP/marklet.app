@@ -51,9 +51,12 @@ export default function BuyRequests() {
   const [open, setOpen] = useState(false);
   const [detailRequest, setDetailRequest] = useState<BuyRequest | null>(null);
   const [startingChat, setStartingChat] = useState(false);
+  const [vehicleType, setVehicleType] = useState<"car" | "motorcycle" | "junk" | "rental">("car");
   const [form, setForm] = useState({
     brand: "", model: "", minYear: "", maxYear: "",
     maxPrice: "", city: "", paymentType: "", description: "",
+    fuelType: "", transmission: "", mileage: "", condition: "",
+    bikeType: "", engineCC: "", weight: "", dailyPrice: "", weeklyPrice: "", rentalDuration: "",
   });
 
   const { data: requests = [], isLoading } = useQuery<BuyRequest[]>({
@@ -88,11 +91,34 @@ export default function BuyRequests() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const extras: string[] = [];
+    if (vehicleType === "motorcycle") {
+      if (form.bikeType) extras.push(`نوع الدراجة: ${form.bikeType}`);
+      if (form.engineCC) extras.push(`سعة المحرك: ${form.engineCC} CC`);
+      if (form.condition) extras.push(`الحالة: ${form.condition}`);
+    } else if (vehicleType === "junk") {
+      if (form.weight) extras.push(`الوزن التقريبي: ${form.weight} كغ`);
+      if (form.condition) extras.push(`الحالة العامة: ${form.condition}`);
+    } else if (vehicleType === "rental") {
+      if (form.dailyPrice) extras.push(`السعر اليومي: ${form.dailyPrice} $`);
+      if (form.weeklyPrice) extras.push(`السعر الأسبوعي: ${form.weeklyPrice} $`);
+      if (form.rentalDuration) extras.push(`مدة الإيجار: ${form.rentalDuration}`);
+    } else {
+      if (form.fuelType) extras.push(`الوقود: ${form.fuelType}`);
+      if (form.transmission) extras.push(`ناقل الحركة: ${form.transmission}`);
+      if (form.mileage) extras.push(`الكيلومترات: ${form.mileage}`);
+      if (form.condition) extras.push(`الحالة: ${form.condition}`);
+    }
+    const fullDesc = [form.description, ...extras].filter(Boolean).join(" | ");
     createMutation.mutate({
-      ...form,
+      brand: form.brand,
+      model: vehicleType === "motorcycle" ? form.bikeType || form.model : form.model,
       minYear: form.minYear ? Number(form.minYear) : undefined,
       maxYear: form.maxYear ? Number(form.maxYear) : undefined,
       maxPrice: form.maxPrice ? Number(form.maxPrice) : undefined,
+      city: form.city,
+      paymentType: form.paymentType,
+      description: fullDesc || undefined,
     });
   };
 
@@ -158,62 +184,147 @@ export default function BuyRequests() {
                 <DialogTitle className="text-xl font-bold">نشر طلب شراء</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">الماركة</label>
-                    <Input name="brand" value={form.brand} onChange={handleChange} placeholder="مثال: Toyota" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">الموديل</label>
-                    <Input name="model" value={form.model} onChange={handleChange} placeholder="مثال: كامري" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">سنة من</label>
-                    <Input type="number" name="minYear" value={form.minYear} onChange={handleChange} placeholder="2010" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">سنة إلى</label>
-                    <Input type="number" name="maxYear" value={form.maxYear} onChange={handleChange} placeholder="2023" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">الحد الأقصى للسعر (USD) *</label>
-                  <div className="relative">
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono">$</span>
-                    <Input type="number" name="maxPrice" value={form.maxPrice} onChange={handleChange} placeholder="5000" required className="pr-8" />
+                {/* Vehicle Type Selector */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold">نوع المركبة *</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {([
+                      { v: "car", icon: "🚗", label: "سيارة" },
+                      { v: "motorcycle", icon: "🏍️", label: "دراجة" },
+                      { v: "junk", icon: "🔧", label: "خردة" },
+                      { v: "rental", icon: "🔑", label: "إيجار" },
+                    ] as const).map(({ v, icon, label }) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setVehicleType(v)}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 text-xs transition-all ${vehicleType === v ? "border-primary bg-primary/10 text-primary font-bold" : "border-border hover:border-primary/40"}`}
+                      >
+                        <span className="text-lg">{icon}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">المدينة</label>
-                    <Input name="city" value={form.city} onChange={handleChange} placeholder="دمشق" />
+
+                {/* ── Car fields ── */}
+                {vehicleType === "car" && (<>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">الشركة</label>
+                      <Input name="brand" value={form.brand} onChange={handleChange} placeholder="Toyota" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">الموديل</label>
+                      <Input name="model" value={form.model} onChange={handleChange} placeholder="كامري" /></div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">طريقة الدفع</label>
-                    <select
-                      name="paymentType"
-                      value={form.paymentType}
-                      onChange={handleChange}
-                      className="w-full border rounded-md px-3 py-2 text-sm bg-background"
-                    >
-                      <option value="">غير محدد</option>
-                      <option value="cash">نقداً</option>
-                      <option value="installment">تقسيط</option>
-                    </select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">سنة من</label>
+                      <Input type="number" name="minYear" value={form.minYear} onChange={handleChange} placeholder="2010" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">سنة إلى</label>
+                      <Input type="number" name="maxYear" value={form.maxYear} onChange={handleChange} placeholder="2024" /></div>
                   </div>
-                </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">الوقود</label>
+                      <select name="fuelType" value={form.fuelType} onChange={handleChange} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                        <option value="">غير محدد</option><option value="بنزين">بنزين</option><option value="مازوت">مازوت</option><option value="كهرباء">كهرباء</option><option value="هجين">هجين</option>
+                      </select></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">ناقل الحركة</label>
+                      <select name="transmission" value={form.transmission} onChange={handleChange} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                        <option value="">غير محدد</option><option value="أوتوماتيك">أوتوماتيك</option><option value="يدوي">يدوي</option>
+                      </select></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">الكيلومترات (كم)</label>
+                      <Input type="number" name="mileage" value={form.mileage} onChange={handleChange} placeholder="50000" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">الحالة</label>
+                      <select name="condition" value={form.condition} onChange={handleChange} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                        <option value="">غير محدد</option><option value="جديدة">جديدة</option><option value="مستعملة">مستعملة</option>
+                      </select></div>
+                  </div>
+                </>)}
+
+                {/* ── Motorcycle fields ── */}
+                {vehicleType === "motorcycle" && (<>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">الشركة</label>
+                      <Input name="brand" value={form.brand} onChange={handleChange} placeholder="Honda, Yamaha..." /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">نوع الدراجة</label>
+                      <select name="bikeType" value={form.bikeType} onChange={handleChange} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                        <option value="">اختر</option><option value="سبورت">سبورت</option><option value="كروزر">كروزر</option><option value="سكوتر">سكوتر</option><option value="أوف رود">أوف رود</option>
+                      </select></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">سعة المحرك (CC)</label>
+                      <Input type="number" name="engineCC" value={form.engineCC} onChange={handleChange} placeholder="125" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">سنة الصنع</label>
+                      <Input type="number" name="minYear" value={form.minYear} onChange={handleChange} placeholder="2018" /></div>
+                  </div>
+                  <div className="space-y-1"><label className="text-sm font-medium">الحالة</label>
+                    <select name="condition" value={form.condition} onChange={handleChange} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                      <option value="">غير محدد</option><option value="جديدة">جديدة</option><option value="مستعملة">مستعملة</option>
+                    </select></div>
+                </>)}
+
+                {/* ── Junk fields ── */}
+                {vehicleType === "junk" && (<>
+                  <div className="space-y-1"><label className="text-sm font-medium">نوع المركبة</label>
+                    <Input name="brand" value={form.brand} onChange={handleChange} placeholder="سيارة، شاحنة، باص..." /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">الوزن التقريبي (كغ)</label>
+                      <Input type="number" name="weight" value={form.weight} onChange={handleChange} placeholder="800" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">المدينة</label>
+                      <Input name="city" value={form.city} onChange={handleChange} placeholder="دمشق" /></div>
+                  </div>
+                  <div className="space-y-1"><label className="text-sm font-medium">الحالة العامة</label>
+                    <select name="condition" value={form.condition} onChange={handleChange} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                      <option value="">غير محدد</option><option value="حالة جيدة">حالة جيدة</option><option value="مهشمة">مهشمة</option><option value="للقطع فقط">للقطع فقط</option>
+                    </select></div>
+                </>)}
+
+                {/* ── Rental fields ── */}
+                {vehicleType === "rental" && (<>
+                  <div className="space-y-1"><label className="text-sm font-medium">نوع المركبة</label>
+                    <Input name="brand" value={form.brand} onChange={handleChange} placeholder="سيارة، فان، شاحنة..." /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">السعر اليومي ($)</label>
+                      <Input type="number" name="dailyPrice" value={form.dailyPrice} onChange={handleChange} placeholder="20" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">السعر الأسبوعي ($)</label>
+                      <Input type="number" name="weeklyPrice" value={form.weeklyPrice} onChange={handleChange} placeholder="120" /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">المدينة</label>
+                      <Input name="city" value={form.city} onChange={handleChange} placeholder="دمشق" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">مدة الإيجار</label>
+                      <Input name="rentalDuration" value={form.rentalDuration} onChange={handleChange} placeholder="أسبوع، شهر..." /></div>
+                  </div>
+                </>)}
+
+                {/* Common: max price (for car/motorcycle), city (for car) */}
+                {(vehicleType === "car" || vehicleType === "motorcycle") && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">الحد الأقصى للسعر ($)</label>
+                      <div className="relative">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono">$</span>
+                        <Input type="number" name="maxPrice" value={form.maxPrice} onChange={handleChange} placeholder="5000" className="pr-8" />
+                      </div>
+                    </div>
+                    <div className="space-y-1"><label className="text-sm font-medium">المدينة</label>
+                      <Input name="city" value={form.city} onChange={handleChange} placeholder="دمشق" /></div>
+                  </div>
+                )}
+
+                {/* Payment type for all except junk/rental */}
+                {(vehicleType === "car" || vehicleType === "motorcycle") && (
+                  <div className="space-y-1"><label className="text-sm font-medium">طريقة الدفع</label>
+                    <select name="paymentType" value={form.paymentType} onChange={handleChange} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                      <option value="">غير محدد</option><option value="cash">نقداً</option><option value="installment">تقسيط</option>
+                    </select></div>
+                )}
+
                 <div className="space-y-1">
                   <label className="text-sm font-medium">تفاصيل إضافية</label>
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="أي مواصفات إضافية تريدها في السيارة..."
-                    className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none"
-                  />
+                  <textarea name="description" value={form.description} onChange={handleChange} rows={2}
+                    placeholder="أي ملاحظات أو تفاصيل أخرى..."
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
                 </div>
                 <Button type="submit" disabled={createMutation.isPending} className="w-full rounded-xl font-bold">
                   {createMutation.isPending ? "جارٍ النشر..." : "نشر الطلب"}
