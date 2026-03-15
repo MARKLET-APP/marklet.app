@@ -134,7 +134,7 @@ export function CarCard({ car }: { car: Car }) {
           </div>
           <div className="flex items-center gap-1.5">
             <Gauge className="w-4 h-4 text-primary" />
-            <span>{car.mileage.toLocaleString("ar-EG")} كم</span>
+            <span>{Number(car.mileage).toLocaleString("en-US")} كم</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Settings className="w-4 h-4 text-primary" />

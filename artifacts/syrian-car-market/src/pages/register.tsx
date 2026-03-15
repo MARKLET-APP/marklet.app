@@ -68,6 +68,7 @@ export default function Register() {
             <input
               type="password"
               {...formRegister("password", { required: t("common.requiredField") })}
+              autoComplete="new-password"
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr"
             />
             {errors.password && <p className="text-destructive text-xs">{errors.password.message as string}</p>}

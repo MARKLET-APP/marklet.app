@@ -59,14 +59,15 @@ export default function SearchPage() {
       maxYear: params.get("maxYear") ?? "",
       minPrice: params.get("minPrice") ?? "",
       maxPrice: params.get("maxPrice") ?? "",
-      city: params.get("city") ?? "",
+      province: params.get("province") ?? "",
       saleType: params.get("saleType") ?? "",
       category: params.get("category") ?? "",
       condition: params.get("condition") ?? "",
     };
   };
 
-  const [searchText, setSearchText] = useState("");
+  const getInitialSearch = () => new URLSearchParams(window.location.search).get("q") ?? "";
+  const [searchText, setSearchText] = useState(getInitialSearch);
   const [filters, setFilters] = useState(getInitialFilters);
   const [cars, setCars] = useState<Car[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +78,7 @@ export default function SearchPage() {
 
   useEffect(() => {
     setFilters(getInitialFilters());
+    setSearchText(getInitialSearch());
   }, [location]);
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function SearchPage() {
     if (filters.maxYear) params.set("maxYear", filters.maxYear);
     if (filters.minPrice) params.set("minPrice", filters.minPrice);
     if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
-    if (filters.city) params.set("city", filters.city);
+    if (filters.province) params.set("province", filters.province);
     if (filters.saleType) params.set("saleType", filters.saleType);
     if (filters.category) params.set("category", filters.category);
     if (filters.condition) params.set("condition", filters.condition);
@@ -110,7 +112,7 @@ export default function SearchPage() {
 
   const clearAll = () => {
     setSearchText("");
-    setFilters({ brand: "", minYear: "", maxYear: "", minPrice: "", maxPrice: "", city: "", saleType: "", category: "", condition: "" });
+    setFilters({ brand: "", minYear: "", maxYear: "", minPrice: "", maxPrice: "", province: "", saleType: "", category: "", condition: "" });
   };
 
   const handleBuySubmit = async (e: React.FormEvent) => {
@@ -161,15 +163,19 @@ export default function SearchPage() {
         <label className="text-sm font-bold text-foreground">الماركة</label>
         <select name="brand" value={filters.brand} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none">
           <option value="">الكل</option>
-          <option value="Toyota">تويوتا (Toyota)</option>
-          <option value="Hyundai">هيونداي (Hyundai)</option>
-          <option value="Kia">كيا (Kia)</option>
+          <option value="تويوتا">تويوتا (Toyota)</option>
+          <option value="هيونداي">هيونداي (Hyundai)</option>
+          <option value="كيا">كيا (Kia)</option>
           <option value="BMW">بي ام دبليو (BMW)</option>
-          <option value="Mercedes">مرسيدس (Mercedes)</option>
-          <option value="Honda">هوندا (Honda)</option>
-          <option value="Nissan">نيسان (Nissan)</option>
-          <option value="Audi">أودي (Audi)</option>
-          <option value="Chevrolet">شيفروليه (Chevrolet)</option>
+          <option value="مرسيدس">مرسيدس (Mercedes)</option>
+          <option value="هوندا">هوندا (Honda)</option>
+          <option value="نيسان">نيسان (Nissan)</option>
+          <option value="أودي">أودي (Audi)</option>
+          <option value="شيفروليه">شيفروليه (Chevrolet)</option>
+          <option value="ميتسوبيشي">ميتسوبيشي (Mitsubishi)</option>
+          <option value="مازدا">مازدا (Mazda)</option>
+          <option value="فولكسفاغن">فولكسفاغن (Volkswagen)</option>
+          <option value="لادا">لادا (Lada)</option>
         </select>
       </div>
 
@@ -191,7 +197,7 @@ export default function SearchPage() {
 
       <div className="space-y-3">
         <label className="text-sm font-bold text-foreground">المحافظة</label>
-        <select name="city" value={filters.city} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
+        <select name="province" value={filters.province} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
           <option value="">الكل</option>
           <option value="Damascus">دمشق</option>
           <option value="Aleppo">حلب</option>

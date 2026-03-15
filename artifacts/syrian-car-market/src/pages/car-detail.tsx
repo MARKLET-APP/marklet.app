@@ -210,7 +210,7 @@ export default function CarDetail() {
             { key: "brand", label: "الماركة" },
             { key: "model", label: "الموديل" },
             { key: "year", label: "السنة", type: "number" },
-            { key: "price", label: "السعر (ل.س)", type: "number" },
+            { key: "price", label: "السعر ($)", type: "number" },
             { key: "mileage", label: "عداد الكيلومتر", type: "number" },
             { key: "city", label: "المدينة" },
             { key: "province", label: "المحافظة" },
@@ -225,12 +225,12 @@ export default function CarDetail() {
               />
             </div>
           ))}
-          {[
-            { key: "fuelType", label: "نوع الوقود", options: ["بنزين","ديزل","كهربائي","هجين"] },
-            { key: "transmission", label: "ناقل الحركة", options: ["أوتوماتيك","يدوي"] },
-            { key: "saleType", label: "نوع البيع", options: ["بيع","تأجير","مقايضة"] },
-            { key: "category", label: "الفئة", options: ["سيارة","شاحنة","دراجة","حافلة","غير ذلك"] },
-          ].map(({ key, label, options }) => (
+          {([
+            { key: "fuelType", label: "نوع الوقود", options: [{ v:"petrol",l:"بنزين"},{ v:"diesel",l:"ديزل"},{ v:"electric",l:"كهربائي"},{ v:"hybrid",l:"هجين"}] },
+            { key: "transmission", label: "ناقل الحركة", options: [{ v:"automatic",l:"أوتوماتيك"},{ v:"manual",l:"يدوي"}] },
+            { key: "saleType", label: "نوع البيع", options: [{ v:"cash",l:"نقداً"},{ v:"installment",l:"أقساط"},{ v:"barter",l:"مقايضة"},{ v:"rental",l:"إيجار"}] },
+            { key: "category", label: "الفئة", options: [{ v:"sedan",l:"سيدان"},{ v:"suv",l:"SUV"},{ v:"truck",l:"شاحنة"},{ v:"motorcycle",l:"دراجة"},{ v:"van",l:"فان"},{ v:"pickup",l:"بيكب"},{ v:"other",l:"غير ذلك"}] },
+          ] as { key: string; label: string; options: { v: string; l: string }[] }[]).map(({ key, label, options }) => (
             <div key={key}>
               <Label className="mb-1 block">{label}</Label>
               <select
@@ -239,7 +239,7 @@ export default function CarDetail() {
                 className="w-full border rounded-xl px-3 h-10 bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
                 <option value="">— اختر —</option>
-                {options.map(o => <option key={o} value={o}>{o}</option>)}
+                {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
               </select>
             </div>
           ))}
@@ -357,8 +357,8 @@ export default function CarDetail() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 mb-4">
-            {(car as any).saleType && <Badge variant="secondary" className="rounded-xl text-xs">{(car as any).saleType}</Badge>}
-            {(car as any).category && <Badge variant="outline" className="rounded-xl text-xs">{(car as any).category}</Badge>}
+            {(car as any).saleType && <Badge variant="secondary" className="rounded-xl text-xs">{({'cash':'نقداً','installment':'أقساط','barter':'مقايضة','rental':'إيجار'} as any)[(car as any).saleType] ?? (car as any).saleType}</Badge>}
+            {(car as any).category && <Badge variant="outline" className="rounded-xl text-xs">{({'sedan':'سيدان','suv':'SUV','truck':'شاحنة','motorcycle':'دراجة','van':'فان','pickup':'بيكب','other':'غير ذلك','parts':'قطع غيار','rental':'إيجار'} as any)[(car as any).category] ?? (car as any).category}</Badge>}
           </div>
           <div className="flex items-center gap-3">
             <button onClick={shareCar} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-xl hover:bg-primary/5">
@@ -378,9 +378,9 @@ export default function CarDetail() {
           <h3 className="text-xl font-bold mb-4">المواصفات</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <SpecItem icon={<Calendar className="w-5 h-5" />} label="السنة" value={String(car.year)} />
-            <SpecItem icon={<Gauge className="w-5 h-5" />} label="المسافة" value={car.mileage ? `${car.mileage.toLocaleString('ar-EG')} كم` : "غير محدد"} />
-            <SpecItem icon={<Fuel className="w-5 h-5" />} label="الوقود" value={car.fuelType ?? "غير محدد"} />
-            <SpecItem icon={<Settings className="w-5 h-5" />} label="ناقل الحركة" value={car.transmission ?? "غير محدد"} />
+            <SpecItem icon={<Gauge className="w-5 h-5" />} label="المسافة" value={car.mileage ? `${Number(car.mileage).toLocaleString('en-US')} كم` : "غير محدد"} />
+            <SpecItem icon={<Fuel className="w-5 h-5" />} label="الوقود" value={({'petrol':'بنزين','diesel':'ديزل','electric':'كهربائي','hybrid':'هجين'} as any)[car.fuelType ?? ''] ?? car.fuelType ?? "غير محدد"} />
+            <SpecItem icon={<Settings className="w-5 h-5" />} label="ناقل الحركة" value={car.transmission === 'automatic' ? 'أوتوماتيك' : car.transmission === 'manual' ? 'يدوي' : car.transmission ?? "غير محدد"} />
             <SpecItem icon={<MapPin className="w-5 h-5" />} label="المحافظة" value={car.province ?? "غير محدد"} />
           </div>
         </div>

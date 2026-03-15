@@ -40,6 +40,7 @@ export default function Login() {
             <label className="text-sm font-bold">{t("auth.login.email")}</label>
             <input
               {...register("identifier", { required: t("common.requiredField") })}
+              autoComplete="username"
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr"
             />
             {errors.identifier && <p className="text-destructive text-xs">{errors.identifier.message as string}</p>}
@@ -50,6 +51,7 @@ export default function Login() {
             <input
               type="password"
               {...register("password", { required: t("common.requiredField") })}
+              autoComplete="current-password"
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr"
             />
             {errors.password && <p className="text-destructive text-xs">{errors.password.message as string}</p>}
