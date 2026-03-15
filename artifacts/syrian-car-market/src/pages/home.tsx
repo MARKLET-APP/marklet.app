@@ -255,8 +255,8 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {categories.map((cat, i) => {
             const iconMap: Record<string, React.ReactNode> = {
-              'car-new': <span className="text-3xl leading-none">🚗</span>,
-              'car-used': <span className="text-3xl leading-none">🚙</span>,
+              'car-new': <span className="relative inline-flex"><Car size={32} /><span className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-green-500 border-2 border-card" title="جديدة" /></span>,
+              'car-used': <span className="relative inline-flex opacity-80"><Car size={32} className="text-muted-foreground" /><span className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-amber-400 border-2 border-card" title="مستعملة" /></span>,
               'key': <Key size={32} />,
               'bike': <Bike size={32} />,
               'plates': <Hash size={32} />,
