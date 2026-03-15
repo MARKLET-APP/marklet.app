@@ -24,6 +24,7 @@ import MissingCarsPage from "@/pages/missing-cars";
 import InspectionsPage from "@/pages/inspections";
 import SupportPage from "@/pages/support";
 import PlatesPage from "@/pages/plates";
+import AuctionsPage from "@/pages/auctions";
 import NotFound from "@/pages/not-found";
 import AppRatingPopup from "@/components/AppRatingPopup";
 
@@ -59,6 +60,7 @@ function Router() {
         <Route path="/inspections" component={InspectionsPage} />
         <Route path="/support" component={SupportPage} />
         <Route path="/plates" component={PlatesPage} />
+        <Route path="/auctions" component={AuctionsPage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

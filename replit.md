@@ -100,3 +100,10 @@ lib/
 - `GET /api/ai/recommendations` - AI recommendations
 - `GET /api/settings` - Platform settings
 - `GET/PATCH /api/admin/*` - Admin endpoints
+
+## Global Auctions Feature (/auctions)
+- Page: `artifacts/syrian-car-market/src/pages/auctions.tsx`
+- 3 regions: عربية (Emirates Auction), أمريكية (Copart + IAAI), كورية (Encar)
+- Iframe viewer with disclaimer + external-link fallback for sites that block iframes
+- 'طلب شراء عبر MARKLET' fixed button → sends auction_request to POST /api/support
+- Category icon added to home page categories grid

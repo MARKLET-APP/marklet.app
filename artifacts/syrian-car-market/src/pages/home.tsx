@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
-  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar
+  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,6 +111,7 @@ export default function Home() {
     { id: 'inspect', name: t("home.browse.inspections"), icon: 'shield', href: '/inspections' },
     { id: 'missing', name: t("home.browse.missing"), icon: 'search', href: '/missing-cars' },
     { id: 'buy-request', name: t("nav.buyRequests"), icon: 'cart', href: '/buy-requests' },
+    { id: 'auctions', name: isRTL ? '🏁 مزادات' : '🏁 Auctions', icon: 'auctions', href: '/auctions' },
   ];
 
   return (
@@ -265,6 +266,7 @@ export default function Home() {
               'shield': <Shield size={32} />,
               'search': <SearchIcon size={32} />,
               'cart': <CartIcon size={32} />,
+              'auctions': <span className="relative inline-flex"><Flag size={32} className="text-primary" /><span className="absolute -top-1.5 -right-1.5 text-[14px] leading-none">🏁</span></span>,
             };
             return (
               <motion.div
