@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCircle } from "lucide-react";
+import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCircle, MessageCircle } from "lucide-react";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
 type CarPart = {
@@ -31,6 +32,7 @@ export default function CarPartsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
 
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [search, setSearch] = useState("");
@@ -39,8 +41,9 @@ export default function CarPartsPage() {
   const [buyOpen, setBuyOpen] = useState(false);
   const [followupId, setFollowupId] = useState<number | null>(null);
 
-  const [sellForm, setSellForm] = useState({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", city: "", description: "" });
-  const [buyForm, setBuyForm] = useState({ partName: "", carType: "", model: "", maxPrice: "", city: "", description: "" });
+  const [sellForm, setSellForm] = useState({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", currency: "USD", city: "", description: "" });
+  const [buyForm, setBuyForm] = useState({ partName: "", carType: "", model: "", maxPrice: "", currency: "USD", city: "", description: "" });
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -99,8 +102,31 @@ export default function CarPartsPage() {
 
   const handleSellChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
-  const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
+
+  const startChatWithSeller = async (sellerId: number, partName: string) => {
+    if (!user) { navigate("/login"); return; }
+    if (user.id === sellerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
+    setStartingChat(true);
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(`${BASE}/api/chats/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sellerId, carId: null }),
+      });
+      const data = await res.json() as any;
+      if (!res.ok) { throw new Error(data.error ?? "فشل"); }
+      const initialMsg = encodeURIComponent(`مرحباً، أنا مهتم بالقطعة: ${partName}. هل ما زالت متوفرة؟`);
+      navigate(`/messages?conversationId=${data.id}&initial=${initialMsg}`);
+    } catch (err: any) {
+      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -160,9 +186,14 @@ export default function CarPartsPage() {
                     </div>
                     {(p.carType || p.model) && <p className="text-sm text-muted-foreground">{[p.carType, p.model, p.year].filter(Boolean).join(" • ")}</p>}
                     <div className="flex items-center justify-between pt-1">
-                      <span className="font-bold text-primary">{Number(p.price).toLocaleString("ar-SY")} ل.س</span>
+                      {p.price ? <span className="font-bold text-primary" dir="ltr">${Number(p.price).toLocaleString()}</span> : <span className="text-muted-foreground text-sm">السعر عند التواصل</span>}
                       {p.city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{p.city}</span>}
                     </div>
+                    {user && user.id !== p.sellerId && (
+                      <Button size="sm" variant="outline" className="w-full gap-1 border-primary/40 text-primary mt-1" onClick={() => startChatWithSeller(p.sellerId, p.name)} disabled={startingChat}>
+                        <MessageCircle className="w-3.5 h-3.5" /> مراسلة البائع
+                      </Button>
+                    )}
                     {user && user.id === p.sellerId && (
                       <Button size="sm" variant="ghost" className="w-full text-destructive hover:bg-destructive/10 mt-1" onClick={() => deletePart.mutate(p.id)}>
                         <Trash2 className="w-4 h-4 me-1" /> حذف
@@ -201,7 +232,7 @@ export default function CarPartsPage() {
       <Dialog open={sellOpen} onOpenChange={setSellOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">نشر قطعة سيارة للبيع</DialogTitle></DialogHeader>
-          <form onSubmit={e => { e.preventDefault(); createSell.mutate({ ...sellForm, year: sellForm.year ? Number(sellForm.year) : undefined, price: Number(sellForm.price) }); }} className="space-y-3 mt-2">
+          <form onSubmit={e => { e.preventDefault(); createSell.mutate({ ...sellForm, year: sellForm.year ? Number(sellForm.year) : undefined, price: sellForm.price ? Number(sellForm.price) : 0 }); }} className="space-y-3 mt-2">
             <Input name="name" value={sellForm.name} onChange={handleSellChange} placeholder="اسم القطعة *" required />
             <div className="grid grid-cols-2 gap-3">
               <Input name="carType" value={sellForm.carType} onChange={handleSellChange} placeholder="نوع السيارة" />
@@ -212,7 +243,16 @@ export default function CarPartsPage() {
                 <option value="مستعملة">مستعملة</option>
               </select>
             </div>
-            <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر (ل.س) *" required />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{sellForm.currency === "USD" ? "$" : "ل.س"}</span>
+                <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر — اختياري" className="pr-8" />
+              </div>
+              <select name="currency" value={sellForm.currency} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
+                <option value="USD">USD</option>
+                <option value="SYP">SYP</option>
+              </select>
+            </div>
             <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
             <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="وصف إضافي" className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
@@ -241,7 +281,16 @@ export default function CarPartsPage() {
               <Input name="carType" value={buyForm.carType} onChange={handleBuyChange} placeholder="نوع السيارة" />
               <Input name="model" value={buyForm.model} onChange={handleBuyChange} placeholder="الموديل" />
             </div>
-            <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر (ل.س)" />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{buyForm.currency === "USD" ? "$" : "ل.س"}</span>
+                <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر — اختياري" className="pr-8" />
+              </div>
+              <select name="currency" value={buyForm.currency} onChange={handleBuyChange} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
+                <option value="USD">USD</option>
+                <option value="SYP">SYP</option>
+              </select>
+            </div>
             <Input name="city" value={buyForm.city} onChange={handleBuyChange} placeholder="المدينة" />
             <textarea name="description" value={buyForm.description} onChange={handleBuyChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold">

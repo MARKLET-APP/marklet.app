@@ -119,6 +119,8 @@ export default function Messages() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("conversationId");
     if (id) setActiveChatId(Number(id));
+    const initial = params.get("initial");
+    if (initial) setNewMessage(decodeURIComponent(initial));
   }, []);
 
   useEffect(() => {

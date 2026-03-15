@@ -38,8 +38,8 @@ export default function JunkCarsPage() {
   const [buyOpen, setBuyOpen] = useState(false);
   const [followupId, setFollowupId] = useState<number | null>(null);
 
-  const [sellForm, setSellForm] = useState({ type: "", model: "", year: "", condition: "حادث", price: "", city: "", description: "" });
-  const [buyForm, setBuyForm] = useState({ type: "", model: "", year: "", maxPrice: "", city: "", description: "" });
+  const [sellForm, setSellForm] = useState({ type: "", model: "", year: "", condition: "حادث", price: "", currency: "USD", city: "", description: "", isAccident: false, accidentImages: "" });
+  const [buyForm, setBuyForm] = useState({ type: "", model: "", year: "", maxPrice: "", currency: "USD", city: "", description: "" });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -152,7 +152,7 @@ export default function JunkCarsPage() {
                     )}
                   </div>
                   <div className="flex items-center justify-between pt-1">
-                    {c.price ? <span className="font-bold text-primary">{Number(c.price).toLocaleString("ar-SY")} ل.س</span> : <span className="text-muted-foreground text-sm">السعر قابل للتفاوض</span>}
+                    {c.price ? <span className="font-bold text-primary" dir="ltr">${Number(c.price).toLocaleString()}</span> : <span className="text-muted-foreground text-sm">السعر قابل للتفاوض</span>}
                     {c.city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</span>}
                   </div>
                   {c.description && <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>}
@@ -195,7 +195,20 @@ export default function JunkCarsPage() {
       <Dialog open={sellOpen} onOpenChange={setSellOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">بيع سيارة معطوبة / خردة</DialogTitle></DialogHeader>
-          <form onSubmit={e => { e.preventDefault(); createSell.mutate({ ...sellForm, year: sellForm.year ? Number(sellForm.year) : undefined, price: sellForm.price ? Number(sellForm.price) : undefined }); }} className="space-y-3 mt-2">
+          <form onSubmit={e => {
+            e.preventDefault();
+            const desc = [
+              sellForm.description,
+              sellForm.isAccident ? "⚠️ السيارة تعرضت لحادث" : "",
+              sellForm.isAccident && sellForm.accidentImages ? `صور الحادث: ${sellForm.accidentImages}` : "",
+            ].filter(Boolean).join(" | ");
+            createSell.mutate({
+              ...sellForm,
+              year: sellForm.year ? Number(sellForm.year) : undefined,
+              price: sellForm.price ? Number(sellForm.price) : undefined,
+              description: desc || undefined,
+            });
+          }} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <Input name="type" value={sellForm.type} onChange={handleSellChange} placeholder="نوع السيارة" />
               <Input name="model" value={sellForm.model} onChange={handleSellChange} placeholder="الموديل" />
@@ -204,9 +217,25 @@ export default function JunkCarsPage() {
                 {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر (ل.س) — اختياري" />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{sellForm.currency === "USD" ? "$" : "ل.س"}</span>
+                <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر — اختياري" className="pr-8" />
+              </div>
+              <select name="currency" value={sellForm.currency} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
+                <option value="USD">USD</option>
+                <option value="SYP">SYP</option>
+              </select>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+              <input type="checkbox" checked={sellForm.isAccident} onChange={e => setSellForm(p => ({ ...p, isAccident: e.target.checked }))} className="rounded" />
+              السيارة تعرضت لحادث
+            </label>
+            {sellForm.isAccident && (
+              <Input name="accidentImages" value={sellForm.accidentImages} onChange={handleSellChange} placeholder="روابط صور الحادث (اختياري)" />
+            )}
             <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
-            <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={3} placeholder="وصف الحالة..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="وصف الحالة..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
               {createSell.isPending ? "جارٍ النشر..." : "نشر الإعلان"}
             </Button>
@@ -222,7 +251,16 @@ export default function JunkCarsPage() {
               <Input name="type" value={buyForm.type} onChange={handleBuyChange} placeholder="نوع السيارة" />
               <Input name="model" value={buyForm.model} onChange={handleBuyChange} placeholder="الموديل" />
               <Input type="number" name="year" value={buyForm.year} onChange={handleBuyChange} placeholder="السنة" />
-              <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر (ل.س)" />
+            </div>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{buyForm.currency === "USD" ? "$" : "ل.س"}</span>
+                <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر" className="pr-8" />
+              </div>
+              <select name="currency" value={buyForm.currency} onChange={handleBuyChange} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
+                <option value="USD">USD</option>
+                <option value="SYP">SYP</option>
+              </select>
             </div>
             <Input name="city" value={buyForm.city} onChange={handleBuyChange} placeholder="المدينة" />
             <textarea name="description" value={buyForm.description} onChange={handleBuyChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />

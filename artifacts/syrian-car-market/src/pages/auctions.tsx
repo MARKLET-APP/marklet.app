@@ -98,9 +98,10 @@ export default function AuctionsPage() {
   const ArrowIcon = isRTL ? ArrowRight : ArrowLeft;
 
   const openSite = (site: AuctionSite) => {
+    window.open(site.url, "_blank");
     setActiveSite(site);
     setIframeError(false);
-    setIframeLoading(true);
+    setIframeLoading(false);
     setForm(f => ({ ...f, carUrl: site.url, name: user?.name ?? "", phone: user?.phone ?? "" }));
   };
 
@@ -169,46 +170,27 @@ export default function AuctionsPage() {
           يعرض MARKLET المزادات العالمية للتصفح فقط. عملية الشراء تتم مباشرة عبر موقع المزاد أو عبر فريق MARKLET عند طلب المساعدة.
         </div>
 
-        {/* iframe area */}
-        <div className="relative flex-1 overflow-hidden">
-          {iframeLoading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background z-10 gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-muted-foreground text-sm">جاري التحميل...</p>
-            </div>
-          )}
-
-          {iframeError ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-6 px-8 text-center">
-              <Globe className="w-16 h-16 text-muted-foreground/40" />
-              <div>
-                <p className="font-bold text-lg mb-1">لا يمكن عرض الموقع هنا</p>
-                <p className="text-muted-foreground text-sm">
-                  هذا الموقع لا يسمح بالعرض المدمج. يمكنك فتحه في متصفح جديد.
-                </p>
-              </div>
-              <a
-                href={activeSite.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button className="gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  فتح {activeSite.nameAr}
-                </Button>
-              </a>
-            </div>
-          ) : (
-            <iframe
-              key={activeSite.id}
-              src={activeSite.url}
-              title={activeSite.nameAr}
-              className="w-full h-full border-none"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-            />
-          )}
+        {/* Site opened - show purchase CTA */}
+        <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center gap-6 px-6 py-8 text-center">
+          <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+            <ExternalLink className="w-10 h-10 text-green-600 dark:text-green-400" />
+          </div>
+          <div>
+            <p className="font-bold text-xl mb-1">{activeSite.flag} {activeSite.nameAr}</p>
+            <p className="text-muted-foreground text-sm mb-4">تم فتح الموقع في تبويب جديد</p>
+            <button
+              onClick={() => window.open(activeSite.url, "_blank")}
+              className="text-primary text-sm underline hover:no-underline font-medium"
+            >
+              إعادة فتح الموقع
+            </button>
+          </div>
+          <div className="w-full max-w-sm bg-primary/5 border border-primary/20 rounded-2xl p-4 text-sm text-right space-y-1">
+            <p className="font-bold text-foreground mb-2">كيف يعمل MARKLET للمزادات؟</p>
+            <p className="text-muted-foreground">١. ابحث عن سيارتك في موقع المزاد</p>
+            <p className="text-muted-foreground">٢. انسخ رابط السيارة وأرسله لنا</p>
+            <p className="text-muted-foreground">٣. يقوم فريق MARKLET بالمزايدة والشراء نيابةً عنك</p>
+          </div>
         </div>
 
         {/* Fixed purchase button */}

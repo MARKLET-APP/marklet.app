@@ -29,6 +29,7 @@ type BuyRequest = {
   paymentType: string | null;
   description: string | null;
   status: string | null;
+  category: string | null;
   createdAt: string;
   userName: string | null;
   userPhoto: string | null;
@@ -52,6 +53,7 @@ export default function BuyRequests() {
   const [detailRequest, setDetailRequest] = useState<BuyRequest | null>(null);
   const [startingChat, setStartingChat] = useState(false);
   const [vehicleType, setVehicleType] = useState<"car" | "motorcycle" | "junk" | "rental">("car");
+  const [filterCat, setFilterCat] = useState<"all" | "car" | "motorcycle" | "junk" | "parts">("all");
   const [form, setForm] = useState({
     brand: "", model: "", minYear: "", maxYear: "",
     maxPrice: "", city: "", paymentType: "", description: "",
@@ -110,6 +112,7 @@ export default function BuyRequests() {
       if (form.condition) extras.push(`الحالة: ${form.condition}`);
     }
     const fullDesc = [form.description, ...extras].filter(Boolean).join(" | ");
+    const categoryMap: Record<string, string> = { car: "car", motorcycle: "motorcycle", junk: "junk", rental: "rental" };
     createMutation.mutate({
       brand: form.brand,
       model: vehicleType === "motorcycle" ? form.bikeType || form.model : form.model,
@@ -119,6 +122,7 @@ export default function BuyRequests() {
       city: form.city,
       paymentType: form.paymentType,
       description: fullDesc || undefined,
+      category: categoryMap[vehicleType] ?? undefined,
     });
   };
 
@@ -335,18 +339,43 @@ export default function BuyRequests() {
         )}
       </div>
 
+      {/* Category filter tabs */}
+      <div className="flex gap-1 flex-wrap">
+        {([
+          { v: "all", label: "الكل", icon: "📋" },
+          { v: "car", label: "سيارات", icon: "🚗" },
+          { v: "motorcycle", label: "دراجات", icon: "🏍️" },
+          { v: "junk", label: "خردة", icon: "🔧" },
+          { v: "parts", label: "قطع", icon: "⚙️" },
+        ] as const).map(({ v, label, icon }) => (
+          <button
+            key={v}
+            onClick={() => setFilterCat(v)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${filterCat === v ? "border-primary bg-primary text-white" : "border-border bg-card text-muted-foreground hover:border-primary/40"}`}
+          >
+            <span>{icon}</span> {label}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center py-24">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
         </div>
-      ) : requests.length === 0 ? (
-        <div className="text-center py-24 text-muted-foreground">
-          <p className="text-xl font-bold mb-2">لا توجد طلبات حتى الآن</p>
-          <p className="text-sm">كن أول من ينشر طلب شراء</p>
-        </div>
-      ) : (
+      ) : (() => {
+        const filtered = requests.filter(r => {
+          if (filterCat === "all") return !r.category || r.category === "car" || r.category === "motorcycle" || r.category === "junk" || r.category === "parts" || r.category === "rental";
+          if (filterCat === "car") return !r.category || r.category === "car";
+          return r.category === filterCat;
+        });
+        if (filtered.length === 0) return (
+          <div className="text-center py-24 text-muted-foreground">
+            <p className="text-xl font-bold mb-2">لا توجد طلبات في هذا القسم</p>
+          </div>
+        );
+        return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {requests.map((r) => (
+          {filtered.map((r) => (
             <div key={r.id} className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
               <div className="flex items-start justify-between">
                 <div>
@@ -443,7 +472,8 @@ export default function BuyRequests() {
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
 
       {/* ── Buy Request Detail Dialog ── */}
       <Dialog open={!!detailRequest} onOpenChange={(o) => { if (!o) setDetailRequest(null); }}>

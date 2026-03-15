@@ -91,7 +91,8 @@ export default function CarDetail() {
         throw new Error(err.error ?? "فشل بدء المحادثة");
       }
       const conversation = await res.json() as { id: number };
-      navigate(`/messages?conversationId=${conversation.id}`);
+      const initialMsg = encodeURIComponent(`مرحباً، أنا مهتم بـ ${car.brand} ${car.model} ${car.year}. هل ما زالت متوفرة؟`);
+      navigate(`/messages?conversationId=${conversation.id}&initial=${initialMsg}`);
     } catch (err: any) {
       toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
     } finally {

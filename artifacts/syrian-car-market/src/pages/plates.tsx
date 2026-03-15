@@ -33,8 +33,8 @@ export default function PlatesPage() {
   const [buyOpen, setBuyOpen] = useState(false);
   const [followupId, setFollowupId] = useState<number | null>(null);
 
-  const [sellForm, setSellForm] = useState({ plateNumber: "", price: "", city: "", description: "" });
-  const [buyForm, setBuyForm] = useState({ plateDesc: "", maxPrice: "", city: "", description: "" });
+  const [sellForm, setSellForm] = useState({ plateNumber: "", plateType: "خصوصي", price: "", city: "", description: "" });
+  const [buyForm, setBuyForm] = useState({ plateDesc: "", plateType: "خصوصي", maxPrice: "", city: "", description: "" });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -86,9 +86,9 @@ export default function PlatesPage() {
     },
   });
 
-  const handleSellChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const handleSellChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
-  const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
   return (
@@ -140,7 +140,7 @@ export default function PlatesPage() {
                 <div className="p-4 space-y-2">
                   {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
                   <div className="flex items-center justify-between pt-1">
-                    {p.price ? <span className="font-bold text-primary">{Number(p.price).toLocaleString("ar-SY")} ل.س</span> : <span className="text-muted-foreground text-sm">السعر قابل للتفاوض</span>}
+                    {p.price ? <span className="font-bold text-primary" dir="ltr">${Number(p.price).toLocaleString()}</span> : <span className="text-muted-foreground text-sm">السعر قابل للتفاوض</span>}
                     {p.city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{p.city}</span>}
                   </div>
                   {p.sellerName && <p className="text-xs text-muted-foreground">البائع: {p.sellerName}</p>}
@@ -161,7 +161,7 @@ export default function PlatesPage() {
             {buyReqs.map((r: any) => (
               <div key={r.id} className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
                 <p className="font-bold text-foreground">{r.brand || "لوحة مميزة"}</p>
-                {r.maxPrice && <p className="text-sm text-primary font-semibold">حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "ل.س"}</p>}
+                {r.maxPrice && <p className="text-sm text-primary font-semibold" dir="ltr">حتى ${Number(r.maxPrice).toLocaleString()}</p>}
                 {r.description && <p className="text-sm text-muted-foreground mt-1">{r.description}</p>}
                 <div className="flex gap-3 text-xs text-muted-foreground flex-wrap mt-1">
                   {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
@@ -179,16 +179,31 @@ export default function PlatesPage() {
           <form onSubmit={e => {
             e.preventDefault();
             createSell.mutate({
-              brand: sellForm.plateNumber,
-              price: sellForm.price ? Number(sellForm.price) : undefined,
-              city: sellForm.city || undefined,
-              description: sellForm.description || undefined,
+              brand: `${sellForm.plateType}: ${sellForm.plateNumber}`,
+              model: "plate",
+              year: 2024,
+              mileage: 0,
+              fuelType: "petrol",
+              transmission: "manual",
+              province: sellForm.city || "Damascus",
+              price: sellForm.price ? Number(sellForm.price) : 0,
+              city: sellForm.city || "دمشق",
+              description: `رقم اللوحة: ${sellForm.plateNumber} | نوع: ${sellForm.plateType}${sellForm.description ? " | " + sellForm.description : ""}`,
               category: "plates",
-              saleType: "sale",
+              saleType: "cash",
             });
           }} className="space-y-3 mt-2">
-            <Input name="plateNumber" value={sellForm.plateNumber} onChange={handleSellChange} placeholder="رقم اللوحة أو وصفها *" required />
-            <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر (ل.س)" />
+            <div className="grid grid-cols-2 gap-3">
+              <Input name="plateNumber" value={sellForm.plateNumber} onChange={handleSellChange} placeholder="رقم اللوحة *" required />
+              <select name="plateType" value={sellForm.plateType} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background">
+                <option value="خصوصي">خصوصي</option>
+                <option value="عمومي">عمومي</option>
+              </select>
+            </div>
+            <div className="relative">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
+              <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر (USD)" className="pr-7" />
+            </div>
             <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
             <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
@@ -211,8 +226,17 @@ export default function PlatesPage() {
               category: "plates",
             });
           }} className="space-y-3 mt-2">
-            <Input name="plateDesc" value={buyForm.plateDesc} onChange={handleBuyChange} placeholder="وصف اللوحة المطلوبة *" required />
-            <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر (ل.س)" />
+            <div className="grid grid-cols-2 gap-3">
+              <Input name="plateDesc" value={buyForm.plateDesc} onChange={handleBuyChange} placeholder="وصف اللوحة المطلوبة *" required />
+              <select name="plateType" value={buyForm.plateType} onChange={handleBuyChange} className="border rounded-md px-3 py-2 text-sm bg-background">
+                <option value="خصوصي">خصوصي</option>
+                <option value="عمومي">عمومي</option>
+              </select>
+            </div>
+            <div className="relative">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
+              <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر (USD)" className="pr-7" />
+            </div>
             <Input name="city" value={buyForm.city} onChange={handleBuyChange} placeholder="المدينة" />
             <textarea name="description" value={buyForm.description} onChange={handleBuyChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold">

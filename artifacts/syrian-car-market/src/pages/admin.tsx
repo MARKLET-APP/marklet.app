@@ -83,6 +83,12 @@ export default function AdminDashboard() {
   });
   const pendingBuyRequests = (adminBuyRequests as any[]).filter(r => r.status === "pending");
 
+  const { data: adminJunkCars = [], refetch: refetchJunkCars } = useQuery<any[]>({
+    queryKey: ["/admin/junk-cars"],
+    queryFn: () => api.get("/api/admin/junk-cars").then(r => r.json()),
+    enabled: user?.role === 'admin',
+  });
+
   const { data: supportMessages = [], refetch: refetchSupport } = useQuery({
     queryKey: ["/support"],
     queryFn: () => api.admin.listSupportMessages(),
@@ -170,7 +176,7 @@ export default function AdminDashboard() {
   const handleCarStatus = async (id: number, status: "approved" | "rejected", fromPending = false) => {
     try {
       await api.admin.updateCarStatus(id, status);
-      toast({ title: status === "approved" ? "تمت الموافقة على الإعلان" : "تم رفض الإعلان" });
+      toast({ title: status === "approved" ? "✅ تمت الموافقة على الإعلان ونشره — تم إشعار المستخدم" : "❌ تم رفض الإعلان — تم إشعار المستخدم" });
       refetchCars();
       refetchPending();
     } catch {
@@ -509,11 +515,10 @@ export default function AdminDashboard() {
               })
             )}
           </div>
-        </TabsContent>
 
-        {/* ===== Buy Requests section moved to review tab ===== */}
-        <TabsContent value="review" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-5 border-b flex justify-between items-center bg-blue-50/50">
+          {/* ===== Buy Requests sub-section ===== */}
+          <div className="border-t-4 border-border mt-2">
+          <div className="p-5 border-b flex justify-between items-center bg-blue-50/50 dark:bg-blue-950/10">
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <CartIcon className="w-5 h-5 text-primary" /> طلبات الشراء
@@ -564,6 +569,7 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
+          </div>{/* end buy-requests sub-section */}
         </TabsContent>
 
         {/* Listings Tab */}
@@ -631,6 +637,52 @@ export default function AdminDashboard() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Scrap Listings Section */}
+          <div className="border-t-4 border-border">
+            <div className="p-5 border-b flex justify-between items-center bg-orange-50/50 dark:bg-orange-950/10">
+              <h2 className="text-xl font-bold flex items-center gap-2">🔧 إعلانات السكراب والخردة
+                <Badge variant="secondary">{adminJunkCars.length}</Badge>
+              </h2>
+              <Button variant="outline" size="sm" onClick={() => refetchJunkCars()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead className="text-right">السيارة</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">السعر</TableHead>
+                    <TableHead className="text-right">البائع</TableHead>
+                    <TableHead className="text-right">المدينة</TableHead>
+                    <TableHead className="text-center">إجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {adminJunkCars.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">لا توجد إعلانات سكراب</TableCell></TableRow>
+                  ) : adminJunkCars.map((j: any) => (
+                    <TableRow key={j.id}>
+                      <TableCell className="font-medium">{[j.type, j.model, j.year].filter(Boolean).join(" ") || "سيارة معطوبة"}</TableCell>
+                      <TableCell><Badge variant="outline">{j.condition ?? "—"}</Badge></TableCell>
+                      <TableCell>{j.price ? `$${Number(j.price).toLocaleString()}` : "—"}</TableCell>
+                      <TableCell>{j.sellerName ?? "—"} {j.sellerPhone ? <span className="text-xs text-muted-foreground" dir="ltr"> ({j.sellerPhone})</span> : null}</TableCell>
+                      <TableCell>{j.city ?? "—"}</TableCell>
+                      <TableCell className="text-center">
+                        <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 h-8" onClick={async () => {
+                          if (!confirm("حذف هذا الإعلان؟")) return;
+                          await api.delete(`/api/admin/junk-cars/${j.id}`);
+                          refetchJunkCars();
+                        }}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </TabsContent>
 

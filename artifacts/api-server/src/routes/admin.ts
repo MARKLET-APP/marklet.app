@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable } from "@workspace/db";
+import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable } from "@workspace/db";
 import { eq, desc, count, sql } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -214,8 +214,26 @@ router.patch("/admin/cars/:id/status", ...guard, async (req: AuthRequest, res): 
     return;
   }
 
+  const [car] = await db.select({ id: carsTable.id, sellerId: carsTable.sellerId, brand: carsTable.brand, model: carsTable.model }).from(carsTable).where(eq(carsTable.id, id));
+  if (!car) { res.status(404).json({ error: "Car not found" }); return; }
+
   const [updated] = await db.update(carsTable).set({ status }).where(eq(carsTable.id, id)).returning({ id: carsTable.id, status: carsTable.status });
-  if (!updated) { res.status(404).json({ error: "Car not found" }); return; }
+
+  if (status === "approved" && car.sellerId) {
+    await db.insert(notificationsTable).values({
+      userId: car.sellerId,
+      type: "approval",
+      message: `تمت الموافقة على إعلانك "${car.brand ?? ""} ${car.model ?? ""}".  تم نشره الآن في MARKLET.`,
+      link: `/cars/${car.id}`,
+    }).catch(() => {});
+  } else if (status === "rejected" && car.sellerId) {
+    await db.insert(notificationsTable).values({
+      userId: car.sellerId,
+      type: "rejection",
+      message: `تم رفض إعلانك "${car.brand ?? ""} ${car.model ?? ""}". يمكنك تعديله وإعادة إرساله.`,
+      link: `/cars/${car.id}`,
+    }).catch(() => {});
+  }
 
   res.json(updated);
 });
@@ -327,6 +345,37 @@ router.get("/admin/conversations", ...guard, async (_req, res): Promise<void> =>
   });
 
   res.json(result);
+});
+
+router.get("/admin/junk-cars", ...guard, async (_req, res): Promise<void> => {
+  const junkCars = await db
+    .select({
+      id: junkCarsTable.id,
+      sellerId: junkCarsTable.sellerId,
+      type: junkCarsTable.type,
+      model: junkCarsTable.model,
+      year: junkCarsTable.year,
+      condition: junkCarsTable.condition,
+      price: junkCarsTable.price,
+      city: junkCarsTable.city,
+      images: junkCarsTable.images,
+      description: junkCarsTable.description,
+      createdAt: junkCarsTable.createdAt,
+      sellerName: usersTable.name,
+      sellerPhone: usersTable.phone,
+    })
+    .from(junkCarsTable)
+    .leftJoin(usersTable, eq(junkCarsTable.sellerId, usersTable.id))
+    .orderBy(desc(junkCarsTable.createdAt))
+    .limit(100);
+  res.json(junkCars);
+});
+
+router.delete("/admin/junk-cars/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  await db.delete(junkCarsTable).where(eq(junkCarsTable.id, id));
+  res.json({ success: true });
 });
 
 export default router;

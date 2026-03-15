@@ -80,7 +80,6 @@ export default function Register() {
               <option value="buyer">{t("auth.register.role.buyer")}</option>
               <option value="seller">{t("auth.register.role.seller")}</option>
               <option value="dealer">{t("auth.register.role.dealer")}</option>
-              <option value="inspector">{t("auth.register.role.inspector")}</option>
             </select>
           </div>
 

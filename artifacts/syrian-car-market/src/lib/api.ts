@@ -149,4 +149,5 @@ export const api = {
 
   post: (url: string, body: unknown) => apiRequest(url, "POST", body),
   patch: (url: string, body: unknown) => apiRequest(url, "PATCH", body),
+  delete: (url: string) => apiRequest(url, "DELETE"),
 };
