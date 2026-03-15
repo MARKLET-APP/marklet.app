@@ -248,6 +248,24 @@ router.post("/admin/approve/:id", ...guard, async (req: AuthRequest, res): Promi
   res.send("approved");
 });
 
+router.patch("/admin/cars/:id/feature", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { isFeatured, isHighlighted, isActive } = req.body as {
+    isFeatured?: boolean; isHighlighted?: boolean; isActive?: boolean;
+  };
+  const updateData: Record<string, boolean> = {};
+  if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+  if (isHighlighted !== undefined) updateData.isHighlighted = isHighlighted;
+  if (isActive !== undefined) updateData.isActive = isActive;
+  if (!Object.keys(updateData).length) { res.status(400).json({ error: "No fields to update" }); return; }
+  const [updated] = await db.update(carsTable).set(updateData).where(eq(carsTable.id, id)).returning({
+    id: carsTable.id, isFeatured: carsTable.isFeatured, isHighlighted: carsTable.isHighlighted, isActive: carsTable.isActive,
+  });
+  if (!updated) { res.status(404).json({ error: "Car not found" }); return; }
+  res.json(updated);
+});
+
 router.delete("/admin/cars/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) {

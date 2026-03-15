@@ -11,10 +11,11 @@ import { Redirect, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CarCard } from "@/components/CarCard";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   User, MapPin, Phone, ShieldCheck, Star,
   Settings, LogOut, Loader2, Edit3, Mail, Camera,
-  Store, Building2, Upload, Check, X, ShoppingCart, DollarSign, Trash2
+  Store, Building2, Upload, Check, X, ShoppingCart, DollarSign, Trash2, Sparkles, Crown, Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,6 +37,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [localPhoto, setLocalPhoto] = useState<string | null>(null);
+  const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
@@ -385,11 +387,62 @@ export default function Profile() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {userCars.cars.map((car) => (
-                  <CarCard key={car.id} car={car} />
+                  <div key={car.id} className="relative group">
+                    <CarCard car={car} />
+                    {(car as any).isFeatured ? (
+                      <div className="mt-2 flex items-center gap-1.5 text-amber-600 text-xs font-medium bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                        <Star className="w-3.5 h-3.5 fill-amber-500" />
+                        <span>إعلان مميز</span>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 w-full rounded-xl border-dashed border-amber-400 text-amber-600 hover:bg-amber-50 hover:border-amber-500 gap-1.5 text-xs"
+                        onClick={() => setShowFeatureModal(true)}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        تمييز الإعلان
+                      </Button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
           </div>
+
+          {/* Featured Subscription Modal */}
+          <Dialog open={showFeatureModal} onOpenChange={setShowFeatureModal}>
+            <DialogContent className="max-w-sm rounded-3xl text-right" dir="rtl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+                  <Crown className="w-5 h-5 text-amber-500" />
+                  تمييز الإعلان
+                </DialogTitle>
+                <DialogDescription className="sr-only">تمييز الإعلان يتطلب اشتراكاً مدفوعاً</DialogDescription>
+              </DialogHeader>
+              <div className="py-2 space-y-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center space-y-2">
+                  <Sparkles className="w-10 h-10 text-amber-500 mx-auto" />
+                  <p className="font-bold text-amber-800">الإعلانات المميزة</p>
+                  <p className="text-sm text-amber-700 leading-relaxed">
+                    تظهر الإعلانات المميزة في أعلى نتائج البحث وفي قسم "الإعلانات المميزة" على الصفحة الرئيسية، مما يزيد من فرص البيع بشكل كبير.
+                  </p>
+                </div>
+                <div className="bg-muted/40 rounded-2xl p-4 flex items-start gap-3">
+                  <Lock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">يتطلب اشتراكاً مدفوعاً</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">سيتم تفعيل هذه الميزة قريباً ضمن نافذة الاشتراكات. ترقّب الإطلاق!</p>
+                  </div>
+                </div>
+                <Button className="w-full rounded-xl gap-2" disabled>
+                  <Crown className="w-4 h-4" />
+                  الاشتراك قريباً
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* My Buy Requests */}
           <div>

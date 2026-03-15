@@ -1,0 +1,251 @@
+MARKLET RENTAL CARS FEATURE ACTIVATION
+
+قم بتنفيذ التعديلات التالية لتفعيل نافذة "سيارات للإيجار" بالكامل مثل باقي الأقسام.
+
+========================================
+1 إنشاء فئة الإيجار في قاعدة البيانات
+========================================
+
+تأكد أن category التالية موجودة:
+
+rental
+
+وأن جدول ads يقبل هذه الفئة.
+
+========================================
+2 إنشاء نموذج نشر إعلان تأجير
+========================================
+
+أنشئ نموذج جديد لنشر إعلان تأجير سيارة.
+
+الحقول المطلوبة:
+
+car_brand
+car_model
+year
+city
+daily_price
+weekly_price
+monthly_price
+description
+images
+
+مثال كود الواجهة:
+
+<form id="rentalAdForm">
+
+<input type="text" name="car_brand" placeholder="الشركة" required>
+
+<input type="text" name="car_model" placeholder="الموديل" required>
+
+<input type="number" name="year" placeholder="سنة الصنع" required>
+
+<input type="text" name="city" placeholder="المدينة" required>
+
+<input type="number" name="daily_price" placeholder="السعر اليومي بالدولار">
+
+<input type="number" name="weekly_price" placeholder="السعر الأسبوعي بالدولار">
+
+<input type="number" name="monthly_price" placeholder="السعر الشهري بالدولار">
+
+<textarea name="description" placeholder="وصف السيارة"></textarea>
+
+<input type="file" name="images" multiple accept="image/*">
+
+<button type="submit">نشر إعلان تأجير</button>
+
+</form>
+
+========================================
+3 API نشر إعلان تأجير
+========================================
+
+أنشئ endpoint:
+
+POST /api/rental/create
+
+الكود:
+
+router.post("/rental/create", async(req,res)=>{
+
+try{
+
+const {
+car_brand,
+car_model,
+year,
+city,
+daily_price,
+weekly_price,
+monthly_price,
+description
+} = req.body
+
+await db.query(
+`INSERT INTO ads
+(title,category,city,price,description)
+VALUES ($1,$2,$3,$4,$5)`,
+[
+car_brand+" "+car_model+" "+year,
+"rental",
+city,
+daily_price,
+description
+]
+)
+
+res.json({
+success:true,
+message:"تم نشر إعلان التأجير"
+})
+
+}catch(err){
+
+res.status(500).json({
+error:"Rental ad creation failed"
+})
+
+}
+
+})
+
+========================================
+4 زر طلب استئجار سيارة
+========================================
+
+أنشئ نموذج طلب استئجار:
+
+<form id="rentalRequestForm">
+
+<input type="text" name="car_type" placeholder="نوع السيارة المطلوب">
+
+<input type="text" name="city" placeholder="المدينة">
+
+<input type="date" name="start_date">
+
+<input type="date" name="end_date">
+
+<textarea name="description" placeholder="تفاصيل الطلب"></textarea>
+
+<button type="submit">نشر طلب استئجار</button>
+
+</form>
+
+========================================
+5 API طلب الاستئجار
+========================================
+
+POST /api/rental/request
+
+الكود:
+
+router.post("/rental/request", async(req,res)=>{
+
+try{
+
+const {
+car_type,
+city,
+start_date,
+end_date,
+description
+} = req.body
+
+await db.query(
+`INSERT INTO purchase_requests
+(title,category,city,description)
+VALUES ($1,$2,$3,$4)`,
+[
+car_type,
+"rental",
+city,
+description
+]
+)
+
+res.json({
+success:true,
+message:"تم نشر طلب الاستئجار"
+})
+
+}catch(err){
+
+res.status(500).json({
+error:"Rental request failed"
+})
+
+}
+
+})
+
+========================================
+6 تفعيل المراسلة
+========================================
+
+داخل بطاقة الإعلان أضف زر:
+
+<button onclick="openChat(ad.user_id)">
+مراسلة
+</button>
+
+عند الضغط:
+
+يفتح محادثة مباشرة مع صاحب الإعلان.
+
+========================================
+7 عرض الإعلانات داخل نافذة الإيجار
+========================================
+
+GET /api/ads/rental
+
+يجب عرض:
+
+إعلانات التأجير فقط.
+
+========================================
+8 عرض طلبات الاستئجار
+========================================
+
+GET /api/requests/rental
+
+عرض طلبات الاستئجار فقط.
+
+========================================
+9 تنظيم الصفحة
+========================================
+
+داخل نافذة "سيارات للإيجار":
+
+يجب ترتيب الصفحة كالتالي:
+
+زر نشر إعلان تأجير
+
+زر نشر طلب استئجار
+
+--------------------
+
+إعلانات التأجير
+
+--------------------
+
+طلبات الاستئجار
+
+========================================
+10 اختبار النظام
+========================================
+
+قم باختبار:
+
+نشر إعلان تأجير
+رفع الصور
+نشر طلب استئجار
+المراسلة
+عرض الإعلانات
+
+وإصلاح أي خطأ يظهر.
+
+========================================
+
+اسم التطبيق يبقى:
+
+MARKLET

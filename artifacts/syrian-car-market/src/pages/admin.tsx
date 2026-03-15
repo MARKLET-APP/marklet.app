@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/lib/auth";
 import { 
   useAdminListUsers, useAdminUpdateUser, useAdminDeleteUser,
@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -172,6 +172,21 @@ export default function AdminDashboard() {
       toast({ title: "حدث خطأ", variant: "destructive" });
     }
   };
+
+  const handleFeatureToggle = useCallback(async (id: number, field: "isFeatured" | "isHighlighted" | "isActive", currentValue: boolean) => {
+    try {
+      await api.patch(`/api/admin/cars/${id}/feature`, { [field]: !currentValue });
+      const labels: Record<string, [string, string]> = {
+        isFeatured: ["✨ تم تمييز الإعلان", "تم إلغاء تمييز الإعلان"],
+        isHighlighted: ["🔆 تم إبراز الإعلان", "تم إلغاء إبراز الإعلان"],
+        isActive: ["👁️ تم إظهار الإعلان", "🚫 تم إخفاء الإعلان من الإعلانات المميزة"],
+      };
+      toast({ title: labels[field][currentValue ? 1 : 0] });
+      refetchCars();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+  }, [refetchCars, toast]);
 
   const handleCarStatus = async (id: number, status: "approved" | "rejected", fromPending = false) => {
     try {
@@ -605,18 +620,25 @@ export default function AdminDashboard() {
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">البائع</TableHead>
                   <TableHead className="text-center">الحالة</TableHead>
+                  <TableHead className="text-center">التمييز</TableHead>
                   <TableHead className="text-center">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingCars ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
                 ) : !carsData?.cars?.length ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">لا يوجد إعلانات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">لا يوجد إعلانات</TableCell></TableRow>
                 ) : (
                   carsData.cars.map((car) => (
-                    <TableRow key={car.id}>
-                      <TableCell className="font-medium">{car.brand} {car.model}</TableCell>
+                    <TableRow key={car.id} className={(car as any).isFeatured ? "bg-amber-50/40 dark:bg-amber-900/10" : ""}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1.5">
+                          {(car as any).isFeatured && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
+                          {(car as any).isHighlighted && <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
+                          {car.brand} {car.model}
+                        </div>
+                      </TableCell>
                       <TableCell>{car.year}</TableCell>
                       <TableCell>{car.price.toLocaleString('ar-SY')} ل.س</TableCell>
                       <TableCell>{(car as any).sellerName || 'مجهول'}</TableCell>
@@ -624,6 +646,34 @@ export default function AdminDashboard() {
                         {(car as any).status === 'approved' && <Badge className="bg-green-500 hover:bg-green-600">مقبول</Badge>}
                         {(car as any).status === 'pending'  && <Badge variant="secondary" className="bg-amber-100 text-amber-700">معلق</Badge>}
                         {(car as any).status === 'rejected' && <Badge variant="destructive">مرفوض</Badge>}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            size="sm" variant="outline"
+                            className={`h-8 px-2 ${(car as any).isFeatured ? "border-amber-500 bg-amber-50 text-amber-600 hover:bg-amber-100" : "border-muted-foreground/30 text-muted-foreground hover:border-amber-400 hover:text-amber-500"}`}
+                            onClick={() => handleFeatureToggle(car.id, "isFeatured", !!(car as any).isFeatured)}
+                            title={(car as any).isFeatured ? "إلغاء التمييز" : "تمييز الإعلان"}
+                          >
+                            <Star className={`w-4 h-4 ${(car as any).isFeatured ? "fill-amber-500" : ""}`} />
+                          </Button>
+                          <Button
+                            size="sm" variant="outline"
+                            className={`h-8 px-2 ${(car as any).isHighlighted ? "border-blue-500 bg-blue-50 text-blue-600 hover:bg-blue-100" : "border-muted-foreground/30 text-muted-foreground hover:border-blue-400 hover:text-blue-500"}`}
+                            onClick={() => handleFeatureToggle(car.id, "isHighlighted", !!(car as any).isHighlighted)}
+                            title={(car as any).isHighlighted ? "إلغاء الإبراز" : "إبراز الإعلان"}
+                          >
+                            <Sparkles className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm" variant="outline"
+                            className={`h-8 px-2 ${!(car as any).isActive ? "border-red-500 bg-red-50 text-red-600 hover:bg-red-100" : "border-muted-foreground/30 text-muted-foreground hover:border-red-400 hover:text-red-500"}`}
+                            onClick={() => handleFeatureToggle(car.id, "isActive", !!(car as any).isActive)}
+                            title={(car as any).isActive ? "إخفاء من المميزة" : "إظهار في المميزة"}
+                          >
+                            {(car as any).isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
