@@ -135,4 +135,12 @@ router.patch("/admin/buy-requests/:id", ...guard, async (req: AuthRequest, res):
   res.json(updated);
 });
 
+router.delete("/admin/buy-requests/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const deleted = await db.delete(buyRequestsTable).where(eq(buyRequestsTable.id, id)).returning({ id: buyRequestsTable.id });
+  if (!deleted.length) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ success: true });
+});
+
 export default router;

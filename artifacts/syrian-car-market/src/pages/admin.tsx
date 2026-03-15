@@ -565,6 +565,24 @@ export default function AdminDashboard() {
                       </Button>
                     </>
                   )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    title="حذف الطلب"
+                    onClick={async () => {
+                      if (!confirm(`حذف طلب شراء "${r.brand || "هذا الطلب"}"؟`)) return;
+                      try {
+                        await api.delete(`/api/admin/buy-requests/${r.id}`);
+                        toast({ title: "✅ تم حذف طلب الشراء" });
+                        refetchBuyRequests();
+                      } catch {
+                        toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             ))}
