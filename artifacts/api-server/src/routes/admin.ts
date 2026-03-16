@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable, buyRequestsTable, inspectionCentersTable, scrapCentersTable } from "@workspace/db";
+import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable, buyRequestsTable, inspectionCentersTable, scrapCentersTable, showroomsTable } from "@workspace/db";
 import { eq, desc, count, sql, ilike, or } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -398,12 +398,13 @@ router.delete("/admin/junk-cars/:id", ...guard, async (req: AuthRequest, res): P
 
 // ─── Enhanced Dashboard Stats ──────────────────────────────────────────────
 router.get("/admin/stats", ...guard, async (_req, res): Promise<void> => {
-  const [[usersCount], [dealersCount], [listingsCount], [inspectionCount], [scrapCount]] = await Promise.all([
+  const [[usersCount], [dealersCount], [listingsCount], [inspectionCount], [scrapCount], [showroomsCount]] = await Promise.all([
     db.select({ count: count() }).from(usersTable),
     db.select({ count: count() }).from(usersTable).where(eq(usersTable.role, "dealer")),
     db.select({ count: count() }).from(carsTable),
     db.select({ count: count() }).from(inspectionCentersTable),
     db.select({ count: count() }).from(scrapCentersTable),
+    db.select({ count: count() }).from(showroomsTable),
   ]);
   res.json({
     totalUsers: usersCount.count,
@@ -411,6 +412,7 @@ router.get("/admin/stats", ...guard, async (_req, res): Promise<void> => {
     totalListings: listingsCount.count,
     totalInspectionCenters: inspectionCount.count,
     totalScrapCenters: scrapCount.count,
+    totalShowrooms: showroomsCount.count,
   });
 });
 
@@ -530,6 +532,88 @@ router.delete("/admin/scrap-centers/:id", ...guard, async (req: AuthRequest, res
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
   await db.delete(scrapCentersTable).where(eq(scrapCentersTable.id, id));
   res.json({ success: true });
+});
+
+// ─── Showrooms Admin ───────────────────────────────────────────────────────
+router.get("/admin/showrooms", ...guard, async (_req, res): Promise<void> => {
+  const showrooms = await db
+    .select({
+      id: showroomsTable.id, name: showroomsTable.name, city: showroomsTable.city,
+      phone: showroomsTable.phone, whatsapp: showroomsTable.whatsapp, email: showroomsTable.email,
+      logo: showroomsTable.logo, coverImage: showroomsTable.coverImage, description: showroomsTable.description,
+      isVerified: showroomsTable.isVerified, isFeatured: showroomsTable.isFeatured,
+      isSuspended: showroomsTable.isSuspended, ownerUserId: showroomsTable.ownerUserId,
+      address: showroomsTable.address, rating: showroomsTable.rating, createdAt: showroomsTable.createdAt,
+      ownerName: usersTable.name, ownerPhone: usersTable.phone,
+    })
+    .from(showroomsTable)
+    .leftJoin(usersTable, eq(showroomsTable.ownerUserId, usersTable.id))
+    .orderBy(desc(showroomsTable.createdAt))
+    .limit(100);
+  res.json(showrooms);
+});
+
+router.post("/admin/showrooms", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const { name, city, address, phone, whatsapp, email, description, ownerUserId } = req.body;
+  if (!name || !city) { res.status(400).json({ error: "name and city are required" }); return; }
+  const [showroom] = await db.insert(showroomsTable).values({ name, city, address, phone, whatsapp, email, description, ownerUserId: ownerUserId || null }).returning();
+  res.json(showroom);
+});
+
+router.patch("/admin/showrooms/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { name, city, address, phone, whatsapp, email, description, isVerified, isFeatured, isSuspended, ownerUserId } = req.body;
+  const updateData: Record<string, unknown> = {};
+  if (name !== undefined) updateData.name = name;
+  if (city !== undefined) updateData.city = city;
+  if (address !== undefined) updateData.address = address;
+  if (phone !== undefined) updateData.phone = phone;
+  if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
+  if (email !== undefined) updateData.email = email;
+  if (description !== undefined) updateData.description = description;
+  if (ownerUserId !== undefined) updateData.ownerUserId = ownerUserId || null;
+  if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+  if (isSuspended !== undefined) updateData.isSuspended = isSuspended;
+  if (isVerified !== undefined) {
+    updateData.isVerified = isVerified;
+    // When verifying a showroom, promote its owner to dealer
+    if (isVerified && ownerUserId) {
+      await db.update(usersTable).set({ role: "dealer", isVerified: true }).where(eq(usersTable.id, ownerUserId));
+    }
+  }
+  const [updated] = await db.update(showroomsTable).set(updateData).where(eq(showroomsTable.id, id)).returning();
+  res.json(updated);
+});
+
+router.delete("/admin/showrooms/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  await db.delete(showroomsTable).where(eq(showroomsTable.id, id));
+  res.json({ success: true });
+});
+
+// Link showroom to a user (by email or phone lookup)
+router.post("/admin/showrooms/:id/link-user", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { email, phone } = req.body;
+  if (!email && !phone) { res.status(400).json({ error: "email or phone required" }); return; }
+  
+  let user = null;
+  if (email) {
+    [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  } else if (phone) {
+    [user] = await db.select().from(usersTable).where(eq(usersTable.phone, phone));
+  }
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  
+  const [updated] = await db.update(showroomsTable).set({ ownerUserId: user.id }).where(eq(showroomsTable.id, id)).returning();
+  // Promote to dealer if showroom is verified
+  if (updated.isVerified) {
+    await db.update(usersTable).set({ role: "dealer", isVerified: true }).where(eq(usersTable.id, user.id));
+  }
+  res.json({ showroom: updated, user: { id: user.id, name: user.name, email: user.email } });
 });
 
 export default router;

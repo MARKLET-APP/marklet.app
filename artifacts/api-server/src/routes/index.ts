@@ -25,6 +25,7 @@ import notificationsRouter from "./notifications";
 import followupRouter from "./followup";
 import adsByCategoryRouter from "./adsByCategory";
 import feedRouter from "./feed";
+import showroomsRouter from "./showrooms";
 
 const router: IRouter = Router();
 
@@ -54,5 +55,6 @@ router.use(supportMessagesRouter);
 router.use(missingCarsRouter);
 router.use(notificationsRouter);
 router.use(followupRouter);
+router.use(showroomsRouter);
 
 export default router;

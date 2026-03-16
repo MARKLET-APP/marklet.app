@@ -148,9 +148,16 @@ export default function AdminDashboard() {
     enabled: user?.role === 'admin',
   });
 
+  const { data: showrooms = [], isLoading: loadingShowrooms, refetch: refetchShowrooms } = useQuery<any[]>({
+    queryKey: ["/admin/showrooms"],
+    queryFn: () => apiRequest("/api/admin/showrooms"),
+    enabled: user?.role === 'admin',
+  });
+
   const [dealerSearch, setDealerSearch] = useState("");
   const [inspectionSearch, setInspectionSearch] = useState("");
   const [scrapSearch, setScrapSearch] = useState("");
+  const [showroomSearch, setShowroomSearch] = useState("");
 
   type CenterForm = { name: string; city: string; address: string; phone: string; whatsapp: string; description: string };
   const emptyCenterForm: CenterForm = { name: "", city: "", address: "", phone: "", whatsapp: "", description: "" };
@@ -160,6 +167,14 @@ export default function AdminDashboard() {
   const [scrapForm, setScrapForm] = useState<CenterForm>(emptyCenterForm);
   const [editingScrap, setEditingScrap] = useState<any | null>(null);
   const [showScrapDialog, setShowScrapDialog] = useState(false);
+
+  type ShowroomForm = { name: string; city: string; address: string; phone: string; whatsapp: string; email: string; description: string; ownerEmail: string };
+  const emptyShowroomForm: ShowroomForm = { name: "", city: "", address: "", phone: "", whatsapp: "", email: "", description: "", ownerEmail: "" };
+  const [showroomForm, setShowroomForm] = useState<ShowroomForm>(emptyShowroomForm);
+  const [editingShowroom, setEditingShowroom] = useState<any | null>(null);
+  const [showShowroomDialog, setShowShowroomDialog] = useState(false);
+  const [linkUserEmail, setLinkUserEmail] = useState("");
+  const [linkingShowroomId, setLinkingShowroomId] = useState<number | null>(null);
 
   const handleRentalApproval = async (id: number, action: "approve" | "reject") => {
     try {
@@ -386,6 +401,51 @@ export default function AdminDashboard() {
     } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
   };
 
+  const saveShowroom = async () => {
+    try {
+      const payload = { name: showroomForm.name, city: showroomForm.city, address: showroomForm.address, phone: showroomForm.phone, whatsapp: showroomForm.whatsapp, email: showroomForm.email, description: showroomForm.description };
+      if (editingShowroom) {
+        await apiRequest(`/api/admin/showrooms/${editingShowroom.id}`, "PATCH", payload);
+        toast({ title: "تم تحديث المعرض" });
+      } else {
+        await apiRequest("/api/admin/showrooms", "POST", payload);
+        toast({ title: "تم إضافة المعرض" });
+      }
+      setShowShowroomDialog(false);
+      setShowroomForm(emptyShowroomForm);
+      setEditingShowroom(null);
+      refetchShowrooms();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const deleteShowroom = async (id: number) => {
+    if (!confirm("هل أنت متأكد من حذف المعرض؟")) return;
+    try {
+      await apiRequest(`/api/admin/showrooms/${id}`, "DELETE");
+      toast({ title: "تم حذف المعرض" });
+      refetchShowrooms();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const toggleShowroomField = async (id: number, field: "isVerified" | "isFeatured" | "isSuspended", current: boolean, ownerUserId?: number) => {
+    try {
+      await apiRequest(`/api/admin/showrooms/${id}`, "PATCH", { [field]: !current, ...(field === "isVerified" && ownerUserId ? { ownerUserId } : {}) });
+      toast({ title: "تم التحديث" });
+      refetchShowrooms();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const linkShowroomUser = async (showroomId: number) => {
+    if (!linkUserEmail.trim()) return;
+    try {
+      const result = await apiRequest(`/api/admin/showrooms/${showroomId}/link-user`, "POST", { email: linkUserEmail });
+      toast({ title: `تم ربط المعرض بـ ${(result as any).user?.name}` });
+      setLinkUserEmail("");
+      setLinkingShowroomId(null);
+      refetchShowrooms();
+    } catch { toast({ title: "لم يُعثر على مستخدم بهذا البريد", variant: "destructive" }); }
+  };
+
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto w-full min-h-[70vh]">
       <div className="flex items-center gap-3 mb-8">
@@ -399,10 +459,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* Dashboard stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         {[
           { label: "المستخدمين", value: adminStats?.totalUsers ?? dashboard?.usersCount, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
           { label: "التجار", value: adminStats?.totalDealers, icon: Store, color: "text-violet-600", bg: "bg-violet-50" },
+          { label: "المعارض", value: adminStats?.totalShowrooms, icon: Building2, color: "text-primary", bg: "bg-primary/10" },
           { label: "الإعلانات", value: adminStats?.totalListings ?? dashboard?.listingsCount, icon: Car, color: "text-green-600", bg: "bg-green-50" },
           { label: "مراكز الفحص", value: adminStats?.totalInspectionCenters, icon: Building2, color: "text-cyan-600", bg: "bg-cyan-50" },
           { label: "مراكز الخردة", value: adminStats?.totalScrapCenters, icon: Recycle, color: "text-orange-600", bg: "bg-orange-50" },
@@ -442,12 +503,15 @@ export default function AdminDashboard() {
       )}
 
       <Tabs defaultValue="review" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-4 mb-2 h-auto bg-muted/50 rounded-xl p-1 gap-1">
+        <TabsList className="grid w-full grid-cols-5 mb-2 h-auto bg-muted/50 rounded-xl p-1 gap-1">
           <TabsTrigger value="users" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
             <Users className="w-4 h-4 ml-1" /> المستخدمين
           </TabsTrigger>
           <TabsTrigger value="dealers" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
             <Store className="w-4 h-4 ml-1 text-violet-500" /> التجار
+          </TabsTrigger>
+          <TabsTrigger value="showrooms" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
+            <Building2 className="w-4 h-4 ml-1 text-primary" /> المعارض
           </TabsTrigger>
           <TabsTrigger value="inspection" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
             <Building2 className="w-4 h-4 ml-1 text-cyan-500" /> مراكز الفحص
@@ -772,6 +836,113 @@ export default function AdminDashboard() {
                           <Edit2 className="w-4 h-4" />
                         </Button>
                         <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => deleteScrapCenter(center.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Showrooms Tab */}
+        <TabsContent value="showrooms" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b flex justify-between items-center bg-primary/5">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2"><Building2 className="w-5 h-5 text-primary" /> معارض السيارات</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">{showrooms.length} معرض مسجّل</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => refetchShowrooms()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1" onClick={() => { setEditingShowroom(null); setShowroomForm(emptyShowroomForm); setShowShowroomDialog(true); }}>
+                <Plus className="w-4 h-4" /> إضافة معرض
+              </Button>
+            </div>
+          </div>
+          <div className="p-4 border-b">
+            <Input placeholder="بحث بالاسم أو المدينة أو المالك..." value={showroomSearch} onChange={e => setShowroomSearch(e.target.value)} className="max-w-sm" dir="rtl" />
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="text-right">المعرض</TableHead>
+                  <TableHead className="text-right">المالك</TableHead>
+                  <TableHead className="text-right">المدينة / الهاتف</TableHead>
+                  <TableHead className="text-center">موثّق</TableHead>
+                  <TableHead className="text-center">مميّز</TableHead>
+                  <TableHead className="text-center">موقوف</TableHead>
+                  <TableHead className="text-center">إجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingShowrooms ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : showrooms.filter(s => !showroomSearch || s.name?.includes(showroomSearch) || s.city?.includes(showroomSearch) || s.ownerName?.includes(showroomSearch)).length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">لا يوجد معارض</TableCell></TableRow>
+                ) : showrooms.filter(s => !showroomSearch || s.name?.includes(showroomSearch) || s.city?.includes(showroomSearch) || s.ownerName?.includes(showroomSearch)).map((showroom) => (
+                  <TableRow key={showroom.id} className={showroom.isSuspended ? "opacity-50" : ""}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {showroom.logo ? (
+                          <img src={showroom.logo} alt="" className="w-9 h-9 rounded-lg object-cover border" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center border">
+                            <Building2 className="w-4 h-4 text-primary" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-bold">{showroom.name}</p>
+                          {showroom.email && <p className="text-xs text-muted-foreground">{showroom.email}</p>}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {showroom.ownerName ? (
+                        <div>
+                          <p className="text-sm font-medium">{showroom.ownerName}</p>
+                          <p className="text-xs text-muted-foreground" dir="ltr">{showroom.ownerPhone}</p>
+                        </div>
+                      ) : (
+                        linkingShowroomId === showroom.id ? (
+                          <div className="flex gap-1">
+                            <Input className="h-7 text-xs w-32" placeholder="بريد إلكتروني" value={linkUserEmail} onChange={e => setLinkUserEmail(e.target.value)} dir="ltr" />
+                            <Button size="sm" className="h-7 text-xs" onClick={() => linkShowroomUser(showroom.id)}>ربط</Button>
+                          </div>
+                        ) : (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setLinkingShowroomId(showroom.id)}>ربط مستخدم</Button>
+                        )
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm">{showroom.city}</p>
+                        {showroom.phone && <p className="text-xs text-muted-foreground" dir="ltr">{showroom.phone}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="ghost" className={showroom.isVerified ? "text-green-600" : "text-muted-foreground"} onClick={() => toggleShowroomField(showroom.id, "isVerified", showroom.isVerified, showroom.ownerUserId)}>
+                        {showroom.isVerified ? <ShieldCheck className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="ghost" className={showroom.isFeatured ? "text-amber-500" : "text-muted-foreground"} onClick={() => toggleShowroomField(showroom.id, "isFeatured", showroom.isFeatured)}>
+                        <Star className={`w-5 h-5 ${showroom.isFeatured ? "fill-amber-500" : ""}`} />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="ghost" className={showroom.isSuspended ? "text-red-600" : "text-muted-foreground"} onClick={() => toggleShowroomField(showroom.id, "isSuspended", showroom.isSuspended)} title={showroom.isSuspended ? "رفع الإيقاف" : "إيقاف المعرض"}>
+                        {showroom.isSuspended ? <Ban className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-2">
+                        <Button size="sm" variant="outline" className="h-8" onClick={() => { setEditingShowroom(showroom); setShowroomForm({ name: showroom.name, city: showroom.city, address: showroom.address || "", phone: showroom.phone || "", whatsapp: showroom.whatsapp || "", email: showroom.email || "", description: showroom.description || "", ownerEmail: showroom.ownerEmail || "" }); setShowShowroomDialog(true); }}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => deleteShowroom(showroom.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -2011,6 +2182,58 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
       )}
+
+      {/* Showroom Dialog */}
+      <Dialog open={showShowroomDialog} onOpenChange={setShowShowroomDialog}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              {editingShowroom ? "تعديل المعرض" : "إضافة معرض جديد"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">اسم المعرض *</label>
+                <Input value={showroomForm.name} onChange={e => setShowroomForm(f => ({ ...f, name: e.target.value }))} placeholder="معرض النجمة" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">المدينة *</label>
+                <Input value={showroomForm.city} onChange={e => setShowroomForm(f => ({ ...f, city: e.target.value }))} placeholder="دمشق" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">العنوان</label>
+              <Input value={showroomForm.address} onChange={e => setShowroomForm(f => ({ ...f, address: e.target.value }))} placeholder="شارع..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">الهاتف</label>
+                <Input value={showroomForm.phone} onChange={e => setShowroomForm(f => ({ ...f, phone: e.target.value }))} placeholder="+963..." dir="ltr" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">واتساب</label>
+                <Input value={showroomForm.whatsapp} onChange={e => setShowroomForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="+963..." dir="ltr" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">البريد الإلكتروني</label>
+              <Input value={showroomForm.email} onChange={e => setShowroomForm(f => ({ ...f, email: e.target.value }))} placeholder="info@showroom.sy" dir="ltr" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">الوصف</label>
+              <Input value={showroomForm.description} onChange={e => setShowroomForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف المعرض..." />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={saveShowroom} disabled={!showroomForm.name || !showroomForm.city}>
+                <CheckCircle className="w-4 h-4 ml-2" /> {editingShowroom ? "حفظ التعديلات" : "إضافة المعرض"}
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowShowroomDialog(false)}>إلغاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Inspection Center Dialog */}
       <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>

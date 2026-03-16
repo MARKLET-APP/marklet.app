@@ -3,7 +3,8 @@ import { Link, useLocation } from "wouter";
 import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
-  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag
+  AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag,
+  Building2, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -294,6 +295,9 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Featured Showrooms */}
+      <FeaturedShowrooms />
 
       {/* Latest Cars */}
       <section className="py-12 max-w-7xl mx-auto px-4 w-full">
@@ -589,5 +593,52 @@ export default function Home() {
         </Dialog>
       )}
     </div>
+  );
+}
+
+function FeaturedShowrooms() {
+  const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const { data: showrooms = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/showrooms/featured"],
+    queryFn: () => fetch(`${BASE}/api/showrooms/featured`).then(r => r.json()),
+    staleTime: 60_000,
+  });
+
+  if (isLoading || showrooms.length === 0) return null;
+
+  return (
+    <section className="py-12 w-full bg-gradient-to-br from-primary/5 to-primary/10" dir="rtl">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between items-end mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <span className="w-3 h-8 bg-primary rounded-full inline-block"></span>
+              <Building2 className="w-6 h-6 text-primary" />
+              معارض سيارات مميزة
+            </h2>
+            <p className="text-muted-foreground mt-1">معارض موثقة ومميزة على المنصة</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          {showrooms.map((showroom: any) => (
+            <Link key={showroom.id} href={`/showroom/${showroom.id}`} className="group">
+              <div className="bg-card border rounded-2xl p-4 text-center hover:shadow-md hover:border-primary/30 transition-all">
+                <div className="w-16 h-16 rounded-xl border bg-muted mx-auto mb-3 overflow-hidden flex items-center justify-center">
+                  {showroom.logo ? (
+                    <img src={showroom.logo} alt={showroom.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 className="w-8 h-8 text-primary/40" />
+                  )}
+                </div>
+                <p className="font-bold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">{showroom.name}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-0.5">
+                  <MapPin className="w-3 h-3" />{showroom.city}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

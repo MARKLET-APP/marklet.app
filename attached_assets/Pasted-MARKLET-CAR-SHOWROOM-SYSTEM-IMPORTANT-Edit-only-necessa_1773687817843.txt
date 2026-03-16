@@ -1,0 +1,221 @@
+MARKLET CAR SHOWROOM SYSTEM
+
+IMPORTANT
+Edit only necessary files.
+Do not rebuild the entire project.
+Integrate with existing admin dashboard and marketplace system.
+
+Goal:
+Add Car Showroom system with full admin control and connection to listings and users.
+
+================================================
+1 CREATE SHOWROOM TABLE
+================================================
+
+Create table:
+
+showrooms
+
+fields:
+
+id
+name
+owner_user_id
+email
+phone
+whatsapp
+city
+address
+logo
+cover_image
+description
+rating
+verified
+is_featured
+created_at
+
+Relation:
+
+showrooms.owner_user_id → users.id
+
+================================================
+2 ADMIN MANAGEMENT FOR SHOWROOMS
+================================================
+
+Add section in admin dashboard:
+
+Car Showrooms
+
+Admin abilities:
+
+• Add showroom
+• Edit showroom
+• Verify showroom
+• Feature showroom
+• Suspend showroom
+
+Admin can link showroom to user email or phone.
+
+================================================
+3 USER BECOMES SHOWROOM OWNER
+================================================
+
+When admin verifies showroom:
+
+Update user role:
+
+role = dealer
+
+Add badge:
+
+🏢 معرض سيارات
+
+================================================
+4 SHOWROOM PROFILE PAGE
+================================================
+
+Create page:
+
+/showroom/{id}
+
+Display:
+
+Showroom name
+
+Logo
+
+Cover image
+
+City
+
+Address
+
+Phone
+
+WhatsApp
+
+Description
+
+Rating
+
+Buttons:
+
+مراسلة المعرض
+عرض سيارات المعرض
+
+================================================
+5 SHOWROOM LISTINGS
+================================================
+
+All listings created by showroom must include:
+
+showroom_id
+
+Example DB update:
+
+ALTER TABLE ads
+ADD COLUMN showroom_id INTEGER;
+
+When a dealer publishes a listing:
+
+showroom_id = dealer showroom
+
+================================================
+6 SHOWROOM BADGE IN LISTINGS
+================================================
+
+If listing.showroom_id exists:
+
+Display badge:
+
+🏢 معرض سيارات
+
+Example:
+
+<div class="dealer-badge">
+🏢 معرض سيارات
+</div>
+
+================================================
+7 FEATURED SHOWROOMS SECTION
+================================================
+
+Create section on homepage:
+
+معارض سيارات مميزة
+
+Show:
+
+logo
+name
+city
+
+Button:
+
+عرض سيارات المعرض
+
+================================================
+8 SHOWROOM SEARCH
+================================================
+
+Add search filters:
+
+Showroom name
+
+City
+
+Vehicle brand
+
+================================================
+9 CONTACT SHOWROOM
+================================================
+
+Button:
+
+مراسلة المعرض
+
+Function:
+
+openChat(showroom.owner_user_id)
+
+================================================
+10 SHOWROOM DASHBOARD FOR DEALERS
+================================================
+
+Dealers can:
+
+View their listings
+
+Edit listings
+
+See messages
+
+Manage showroom profile
+
+================================================
+11 ADMIN REVIEW
+================================================
+
+New showrooms must be saved as:
+
+verified = false
+
+Admin approves them manually.
+
+================================================
+12 TESTING
+================================================
+
+Test:
+
+Create showroom
+
+Link showroom to user
+
+Publish listing from showroom
+
+Show showroom badge
+
+Contact showroom
+
+Search showroom

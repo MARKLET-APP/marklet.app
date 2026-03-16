@@ -30,6 +30,7 @@ import NewCarsPage from "@/pages/new-cars";
 import UsedCarsPage from "@/pages/used-cars";
 import MotorcyclesPage from "@/pages/motorcycles";
 import NotFound from "@/pages/not-found";
+import ShowroomPage from "@/pages/showroom";
 import AppRatingPopup from "@/components/AppRatingPopup";
 
 const queryClient = new QueryClient({
@@ -69,6 +70,7 @@ function Router() {
         <Route path="/new-cars" component={NewCarsPage} />
         <Route path="/used-cars" component={UsedCarsPage} />
         <Route path="/motorcycles" component={MotorcyclesPage} />
+        <Route path="/showroom/:id" component={ShowroomPage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

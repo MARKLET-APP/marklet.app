@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock } from "lucide-react";
+import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2 } from "lucide-react";
+import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -122,6 +123,13 @@ export function ListingCard({ type, data, onChat, onDelete, chatLoading, deleteL
         {data.isFeatured && (
           <div className="absolute top-2 left-2">
             <Badge className="bg-amber-500 text-white border-0">مميز</Badge>
+          </div>
+        )}
+        {data.showroomId && !data.isFeatured && (
+          <div className="absolute top-2 left-2">
+            <Badge className="bg-blue-600 text-white border-0 gap-1 text-[10px]">
+              <Building2 className="w-2.5 h-2.5" /> معرض
+            </Badge>
           </div>
         )}
       </div>

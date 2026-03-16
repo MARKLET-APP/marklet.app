@@ -23,6 +23,7 @@ export const carsTable = pgTable("cars", {
   isFeatured: boolean("is_featured").notNull().default(false),
   isHighlighted: boolean("is_highlighted").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
+  showroomId: integer("showroom_id"),
   soldAt: timestamp("sold_at", { withTimezone: true }),
   viewCount: integer("view_count").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
