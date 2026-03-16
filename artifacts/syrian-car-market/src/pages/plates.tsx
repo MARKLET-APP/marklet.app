@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, MapPin, Trash2, ShoppingCart, CheckCircle2, XCircle, Hash, Upload, X, ImageIcon, MessageCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { useStartChat } from "@/hooks/use-start-chat";
 
 type PlateItem = {
   id: number; userId: number; brand: string | null; price: number | null;
@@ -54,7 +55,7 @@ export default function PlatesPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [sellImages, setSellImages] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [startingChat, setStartingChat] = useState(false);
+  const { startChat, loading: startingChat } = useStartChat();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -163,29 +164,6 @@ export default function PlatesPage() {
     });
   };
 
-  const startChat = async (targetUserId: number, initialMsg?: string) => {
-    if (!user) { navigate("/login"); return; }
-    if (user.id === targetUserId) {
-      toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return;
-    }
-    setStartingChat(true);
-    try {
-      const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/chats/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ sellerId: targetUserId, carId: null }),
-      });
-      const data = await res.json() as any;
-      if (!res.ok) throw new Error(data.error ?? "فشل بدء المحادثة");
-      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
-      navigate(`/messages?conversationId=${data.id}${suffix}`);
-    } catch (err: any) {
-      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
-    } finally {
-      setStartingChat(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">

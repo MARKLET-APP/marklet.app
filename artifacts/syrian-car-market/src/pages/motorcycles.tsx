@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, MapPin, ShoppingCart, MessageCircle, Loader2, Bike, Info } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useStartChat } from "@/hooks/use-start-chat";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -36,7 +37,7 @@ export default function MotorcyclesPage() {
 
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [buyOpen, setBuyOpen] = useState(false);
-  const [startingChat, setStartingChat] = useState(false);
+  const { startChat, loading: startingChat } = useStartChat();
   const [buyForm, setBuyForm] = useState({ brand: "", model: "", maxPrice: "", city: "", description: "" });
 
   const { data: motos = [], isLoading } = useQuery<MotoItem[]>({
@@ -66,27 +67,6 @@ export default function MotorcyclesPage() {
     createBuy.mutate({ ...buyForm, maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined, category: "motorcycle" });
   };
 
-  const startChat = async (sellerId: number, initialMsg?: string) => {
-    if (!user) { navigate("/login"); return; }
-    if (user.id === sellerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-    try {
-      setStartingChat(true);
-      const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/chats/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ sellerId, carId: null }),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json() as { id: number };
-      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
-      navigate(`/messages?conversationId=${data.id}${suffix}`);
-    } catch {
-      toast({ title: "تعذّر فتح المحادثة", variant: "destructive" });
-    } finally {
-      setStartingChat(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">

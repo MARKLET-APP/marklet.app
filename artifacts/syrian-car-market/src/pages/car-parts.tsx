@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCircle, MessageCircle, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useStartChat } from "@/hooks/use-start-chat";
 
 type CarPart = {
   id: number; sellerId: number; name: string; carType: string | null;
@@ -43,7 +44,7 @@ export default function CarPartsPage() {
 
   const [sellForm, setSellForm] = useState({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", currency: "USD", city: "", description: "" });
   const [buyForm, setBuyForm] = useState({ partName: "", carType: "", model: "", maxPrice: "", currency: "USD", city: "", description: "" });
-  const [startingChat, setStartingChat] = useState(false);
+  const { startChat, loading: startingChat } = useStartChat();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -105,51 +106,11 @@ export default function CarPartsPage() {
   const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  const startChatWithBuyer = async (buyerId: number, partName: string) => {
-    if (!user) { navigate("/login"); return; }
-    if (user.id === buyerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-    setStartingChat(true);
-    try {
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/chats/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ sellerId: buyerId, carId: null }),
-      });
-      const data = await res.json() as any;
-      if (!res.ok) { throw new Error(data.error ?? "فشل"); }
-      const initialMsg = encodeURIComponent(`مرحباً، رأيت طلبك للقطعة: ${partName}. أنا لدي ما تبحث عنه!`);
-      navigate(`/messages?conversationId=${data.id}&initial=${initialMsg}`);
-    } catch (err: any) {
-      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
-    } finally {
-      setStartingChat(false);
-    }
-  };
+  const startChatWithBuyer = (buyerId: number, partName: string) =>
+    startChat(buyerId, `مرحباً، رأيت طلبك للقطعة: ${partName}. أنا لدي ما تبحث عنه!`);
 
-  const startChatWithSeller = async (sellerId: number, partName: string) => {
-    if (!user) { navigate("/login"); return; }
-    if (user.id === sellerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-    setStartingChat(true);
-    try {
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/chats/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ sellerId, carId: null }),
-      });
-      const data = await res.json() as any;
-      if (!res.ok) { throw new Error(data.error ?? "فشل"); }
-      const initialMsg = encodeURIComponent(`مرحباً، أنا مهتم بالقطعة: ${partName}. هل ما زالت متوفرة؟`);
-      navigate(`/messages?conversationId=${data.id}&initial=${initialMsg}`);
-    } catch (err: any) {
-      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
-    } finally {
-      setStartingChat(false);
-    }
-  };
+  const startChatWithSeller = (sellerId: number, partName: string) =>
+    startChat(sellerId, `مرحباً، أنا مهتم بالقطعة: ${partName}. هل ما زالت متوفرة؟`);
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">

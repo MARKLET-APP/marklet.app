@@ -16,6 +16,7 @@ import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
+import { useStartChat } from "@/hooks/use-start-chat";
 
 export default function Home() {
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
@@ -30,35 +31,11 @@ export default function Home() {
   const [missingInfoCarId, setMissingInfoCarId] = useState<number | null>(null);
   const [infoMsg, setInfoMsg] = useState("");
   const [sendingInfo, setSendingInfo] = useState(false);
-  const [startingChat, setStartingChat] = useState<number | null>(null);
+  const { startChat, loading: startingChat } = useStartChat();
   const [detailRequest, setDetailRequest] = useState<any | null>(null);
 
-  const startChatWithBuyer = async (targetUserId: number, requestId: number, initialMsg?: string) => {
-    if (!user) { navigate("/login"); return; }
-    if (user.id === targetUserId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-    setStartingChat(requestId);
-    try {
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/chats/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ sellerId: targetUserId, carId: null }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        if (err.error === "Cannot start conversation with yourself") { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-        throw new Error("failed");
-      }
-      const conv = await res.json();
-      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
-      navigate(`/messages?conversationId=${conv.id}${suffix}`);
-    } catch {
-      toast({ title: t("common.error"), variant: "destructive" });
-    } finally {
-      setStartingChat(null);
-    }
-  };
+  const startChatWithBuyer = (targetUserId: number, _requestId: number, initialMsg?: string) =>
+    startChat(targetUserId, initialMsg);
 
   const { data: buyRequests = [] } = useQuery({
     queryKey: ["/buy-requests"],
@@ -394,10 +371,10 @@ export default function Home() {
                     <Button
                       size="sm"
                       className="flex-1 rounded-xl gap-1 bg-primary hover:bg-primary/90 text-xs font-bold"
-                      disabled={startingChat === r.id}
+                      disabled={startingChat}
                       onClick={() => startChatWithBuyer(r.userId, r.id, `مرحباً، رأيت طلب الشراء الخاص بك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "سيارة"}. أنا لدي ما تبحث عنه!`)}
                     >
-                      {startingChat === r.id
+                      {startingChat
                         ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
                         : <MessageCircle className="w-3.5 h-3.5" />
                       }
@@ -594,10 +571,10 @@ export default function Home() {
               <div className="flex gap-2 pt-1">
                 <Button
                   className="flex-1 gap-1.5 h-11 rounded-xl"
-                  disabled={startingChat === detailRequest.id}
+                  disabled={startingChat}
                   onClick={() => { setDetailRequest(null); startChatWithBuyer(detailRequest.userId, detailRequest.id, `مرحباً، رأيت طلب الشراء الخاص بك لـ ${[detailRequest.brand, detailRequest.model].filter(Boolean).join(" ") || "سيارة"}. أنا لدي ما تبحث عنه!`); }}
                 >
-                  {startingChat === detailRequest.id
+                  {startingChat
                     ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
                     : <MessageCircle className="w-4 h-4" />
                   }

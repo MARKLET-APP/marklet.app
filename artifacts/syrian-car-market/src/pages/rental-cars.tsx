@@ -12,6 +12,7 @@ import {
   DollarSign, Calendar, Phone, ImageIcon, Loader2, LogIn,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useStartChat } from "@/hooks/use-start-chat";
 import { cn } from "@/lib/utils";
 
 type RentalCar = {
@@ -42,7 +43,7 @@ export default function RentalCarsPage() {
   const [tab, setTab] = useState<"ads" | "requests">("ads");
   const [sellOpen, setSellOpen] = useState(false);
   const [reqOpen, setReqOpen] = useState(false);
-  const [startingChat, setStartingChat] = useState(false);
+  const { startChat, loading: startingChat } = useStartChat();
   const [uploadingImages, setUploadingImages] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -180,26 +181,6 @@ export default function RentalCarsPage() {
     });
   };
 
-  const startChat = async (sellerId: number, initialMsg?: string) => {
-    if (!user) { navigate("/login"); return; }
-    if (user.id === sellerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-    setStartingChat(true);
-    try {
-      const resp = await fetch(`${BASE}/api/chats/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("scm_token")}` },
-        body: JSON.stringify({ sellerId, carId: null }),
-      });
-      if (!resp.ok) throw new Error();
-      const data = await resp.json() as { id: number };
-      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
-      navigate(`/messages?conversationId=${data.id}${suffix}`);
-    } catch {
-      toast({ title: "تعذّر فتح المحادثة", variant: "destructive" });
-    } finally {
-      setStartingChat(false);
-    }
-  };
 
   const formatPrice = (val: number | null, label: string) =>
     val ? `${val.toLocaleString()} $ ${label}` : null;

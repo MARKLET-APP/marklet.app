@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { useLocation } from "wouter";
+import { useStartChat } from "@/hooks/use-start-chat";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -87,7 +88,7 @@ export default function BuyRequests() {
 
   const [activeCat, setActiveCat] = useState<Category>("car");
   const [open, setOpen] = useState(false);
-  const [startingChat, setStartingChat] = useState(false);
+  const { startChat, loading: startingChat } = useStartChat();
   const [vehicleType, setVehicleType] = useState<"car" | "motorcycle" | "junk" | "rental">("car");
   const [form, setForm] = useState({
     brand: "", model: "", minYear: "", maxYear: "",
@@ -175,25 +176,6 @@ export default function BuyRequests() {
     });
   };
 
-  const startChat = async (targetUserId: number, initialMsg?: string) => {
-    if (!user) { navigate("/login"); return; }
-    if (user.id === targetUserId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-    setStartingChat(true);
-    try {
-      const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/chats/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ sellerId: targetUserId, carId: null }),
-      });
-      const data = await res.json() as any;
-      if (!res.ok) throw new Error(data.error ?? "فشل");
-      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
-      navigate(`/messages?conversationId=${data.id}${suffix}`);
-    } catch (err: any) {
-      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
-    } finally { setStartingChat(false); }
-  };
 
   const filteredRequests = allRequests.filter(r => {
     if (activeCat === "car") return !r.category || r.category === "car" || r.category === "cars";

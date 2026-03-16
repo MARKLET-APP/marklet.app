@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
+import { useStartChat } from "@/hooks/use-start-chat";
 import { CarCard } from "@/components/CarCard";
 
 export default function CarDetail() {
@@ -24,7 +25,7 @@ export default function CarDetail() {
 
   const [similarCars, setSimilarCars] = useState<any[]>([]);
   const [showPhone, setShowPhone] = useState(false);
-  const [startingChat, setStartingChat] = useState(false);
+  const { startChat, loading: startingChat } = useStartChat();
   const [markingSold, setMarkingSold] = useState(false);
   const [showSoldConfirm, setShowSoldConfirm] = useState(false);
   const [showRatingPopup, setShowRatingPopup] = useState(false);
@@ -72,33 +73,6 @@ export default function CarDetail() {
     toast({ title: "تم نسخ رابط السيارة", description: url });
   };
 
-  const startChat = async () => {
-    if (!user) { navigate("/login"); return; }
-    if (!car) return;
-    setStartingChat(true);
-    try {
-      const res = await fetch("/api/chats/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sellerId: (car as any).sellerId, carId: car.id }),
-      });
-      if (!res.ok) {
-        const err = await res.json() as { error?: string };
-        if (err.error?.includes("yourself")) {
-          toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" });
-          return;
-        }
-        throw new Error(err.error ?? "فشل بدء المحادثة");
-      }
-      const conversation = await res.json() as { id: number };
-      const initialMsg = encodeURIComponent(`مرحباً، أنا مهتم بـ ${car.brand} ${car.model} ${car.year}. هل ما زالت متوفرة؟`);
-      navigate(`/messages?conversationId=${conversation.id}&initial=${initialMsg}`);
-    } catch (err: any) {
-      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
-    } finally {
-      setStartingChat(false);
-    }
-  };
 
   const handleMarkSold = async () => {
     setMarkingSold(true);
@@ -492,7 +466,7 @@ export default function CarDetail() {
               {/* Safe chat button */}
               {carStatus !== "sold" && (
                 <Button
-                  onClick={startChat}
+                  onClick={() => car && startChat((car as any).sellerId, `مرحباً، أنا مهتم بـ ${[car.brand, car.model, car.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`, car.id)}
                   disabled={startingChat}
                   variant="outline"
                   className="w-full rounded-xl h-12 text-base font-bold gap-2 border-2 border-primary/30 hover:bg-primary/5 hover:border-primary text-primary transition-all"

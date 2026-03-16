@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, MapPin, ShoppingCart, Car, MessageCircle, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useStartChat } from "@/hooks/use-start-chat";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -36,7 +37,7 @@ export default function NewCarsPage() {
 
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [buyOpen, setBuyOpen] = useState(false);
-  const [startingChat, setStartingChat] = useState(false);
+  const { startChat, loading: startingChat } = useStartChat();
   const [buyForm, setBuyForm] = useState({ brand: "", model: "", maxPrice: "", city: "", description: "" });
 
   const { data: cars = [], isLoading } = useQuery<CarItem[]>({
@@ -66,25 +67,6 @@ export default function NewCarsPage() {
     createBuy.mutate({ ...buyForm, maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined, category: "new-car" });
   };
 
-  const startChat = async (sellerId: number) => {
-    if (!user) { navigate("/login"); return; }
-    if (user.id === sellerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
-    try {
-      setStartingChat(true);
-      const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/conversations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ participantId: sellerId }),
-      });
-      const data = await res.json() as { id: number };
-      navigate(`/chat?conversationId=${data.id}`);
-    } catch {
-      toast({ title: "تعذّر فتح المحادثة", variant: "destructive" });
-    } finally {
-      setStartingChat(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -155,7 +137,7 @@ export default function NewCarsPage() {
                     </div>
                     {c.price && <p className="text-emerald-700 font-bold text-lg">${c.price.toLocaleString()}</p>}
                     {c.city && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</p>}
-                    <Button size="sm" variant="outline" className="w-full gap-1.5 border-emerald-300 text-emerald-700 mt-1" onClick={e => { e.stopPropagation(); startChat(c.sellerId); }} disabled={startingChat}>
+                    <Button size="sm" variant="outline" className="w-full gap-1.5 border-emerald-300 text-emerald-700 mt-1" onClick={e => { e.stopPropagation(); startChat(c.sellerId, `مرحباً، أنا مهتم بـ ${[c.brand, c.model, c.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }} disabled={startingChat}>
                       {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />} مراسلة البائع
                     </Button>
                   </div>
