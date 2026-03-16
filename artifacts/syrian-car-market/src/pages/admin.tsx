@@ -620,6 +620,65 @@ export default function AdminDashboard() {
             ))}
           </div>
           </div>{/* end buy-requests sub-section */}
+
+          {/* ===== Rental Cars Pending Approval sub-section ===== */}
+          <div className="border-t-4 border-border mt-2">
+            <div className="p-5 border-b flex justify-between items-center bg-blue-50/50 dark:bg-blue-950/10">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  🚗 إعلانات التأجير المعلقة
+                  {pendingRentals.length > 0 && (
+                    <Badge className="bg-blue-600 hover:bg-blue-700 text-white">{pendingRentals.length} معلق</Badge>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">إعلانات تأجير السيارات بانتظار الموافقة</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchRentals()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3">
+              {pendingRentals.length === 0 ? (
+                <div className="text-center py-10">
+                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                  <p className="font-bold">لا توجد إعلانات تأجير معلقة</p>
+                </div>
+              ) : pendingRentals.map((r: any) => (
+                <div key={r.id} className="border-2 border-blue-200 rounded-2xl p-4 bg-background flex items-start justify-between gap-4 hover:shadow-md transition-shadow">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="font-bold text-foreground text-base">{[r.brand, r.model, r.year].filter(Boolean).join(" ") || "سيارة للإيجار"}</p>
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs">معلق للمراجعة</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                      {r.dailyPrice && <span className="text-primary font-bold">${r.dailyPrice} / يوم</span>}
+                      {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
+                      {(r.sellerName || r.userName) && <span>المالك: {r.sellerName || r.userName}</span>}
+                      {r.sellerPhone && <span dir="ltr">{r.sellerPhone}</span>}
+                    </div>
+                    {r.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{r.description}</p>}
+                    {r.createdAt && <p className="text-xs text-muted-foreground/60 mt-1">{new Date(r.createdAt).toLocaleDateString("ar-EG")}</p>}
+                  </div>
+                  <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                    <Button
+                      size="sm"
+                      className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                      onClick={() => handleRentalApproval(r.id, "approve")}
+                    >
+                      <CheckCircle className="w-4 h-4" /> موافقة
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 border-red-400 text-red-600 hover:bg-red-50 gap-1.5"
+                      onClick={() => handleRentalApproval(r.id, "reject")}
+                    >
+                      <XCircle className="w-4 h-4" /> رفض
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>{/* end rental-cars sub-section */}
+
         </TabsContent>
 
         {/* Listings Tab */}
@@ -722,65 +781,6 @@ export default function AdminDashboard() {
                 )}
               </TableBody>
             </Table>
-          </div>
-
-          {/* Pending Rental Cars Section */}
-          <div className="border-t-4 border-border">
-            <div className="p-5 border-b flex justify-between items-center bg-blue-50/50 dark:bg-blue-950/10">
-              <h2 className="text-xl font-bold flex items-center gap-2">🚗 إعلانات التأجير المعلقة
-                <Badge variant="secondary" className={pendingRentals.length > 0 ? "bg-blue-100 text-blue-700" : ""}>{pendingRentals.length}</Badge>
-              </h2>
-              <Button variant="outline" size="sm" onClick={() => refetchRentals()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
-            </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow>
-                    <TableHead className="text-right">السيارة</TableHead>
-                    <TableHead className="text-right">اليومي</TableHead>
-                    <TableHead className="text-right">المالك</TableHead>
-                    <TableHead className="text-right">المدينة</TableHead>
-                    <TableHead className="text-center">إجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingRentals.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">لا توجد إعلانات تأجير معلقة</TableCell></TableRow>
-                  ) : pendingRentals.map((r: any) => (
-                    <TableRow key={r.id} className="hover:bg-muted/30">
-                      <TableCell className="font-bold">{[r.brand, r.model, r.year].filter(Boolean).join(" ")}</TableCell>
-                      <TableCell>{r.dailyPrice ? `$${r.dailyPrice}` : "—"}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <p className="font-medium">{r.sellerName || r.userName || "مجهول"}</p>
-                          <p className="text-xs text-muted-foreground">{r.sellerPhone || ""}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{r.city || "—"}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-center">
-                          <Button
-                            size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1 text-xs"
-                            onClick={() => handleRentalApproval(r.id, "approve")}
-                          >
-                            <CheckCircle className="w-3 h-3" /> موافقة
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="rounded-lg gap-1 text-xs"
-                            onClick={() => handleRentalApproval(r.id, "reject")}
-                          >
-                            <XCircle className="w-3 h-3" /> رفض
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
           </div>
 
           {/* Scrap Listings Section */}
