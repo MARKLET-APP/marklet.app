@@ -72,11 +72,12 @@ export default function MotorcyclesPage() {
     try {
       setStartingChat(true);
       const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/conversations`, {
+      const res = await fetch(`${BASE}/api/chats/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ participantId: sellerId }),
+        body: JSON.stringify({ sellerId, carId: null }),
       });
+      if (!res.ok) throw new Error();
       const data = await res.json() as { id: number };
       navigate(`/chat?conversationId=${data.id}`);
     } catch {

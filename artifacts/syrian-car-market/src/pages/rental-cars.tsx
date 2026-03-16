@@ -191,8 +191,8 @@ export default function RentalCarsPage() {
         body: JSON.stringify({ sellerId, carId: null }),
       });
       if (!resp.ok) throw new Error();
-      const data = await resp.json();
-      navigate(`/chat?id=${data.conversationId}`);
+      const data = await resp.json() as { id: number };
+      navigate(`/chat?conversationId=${data.id}`);
     } catch {
       toast({ title: "تعذّر فتح المحادثة", variant: "destructive" });
     } finally {
