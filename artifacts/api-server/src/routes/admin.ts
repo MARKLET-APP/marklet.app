@@ -34,6 +34,8 @@ router.get("/admin/users", ...guard, async (_req, res): Promise<void> => {
     city: u.city,
     isVerified: u.isVerified,
     isPremium: u.isPremium,
+    subscriptionActive: u.subscriptionActive,
+    isBanned: u.isBanned,
     createdAt: u.createdAt,
   })));
 });
@@ -56,6 +58,7 @@ router.patch("/admin/users/:id", ...guard, async (req: AuthRequest, res): Promis
   if (parsed.data.isVerified !== undefined) updateData.isVerified = parsed.data.isVerified;
   if (parsed.data.isPremium !== undefined) updateData.isPremium = parsed.data.isPremium;
   if (parsed.data.isBanned !== undefined) updateData.isBanned = parsed.data.isBanned;
+  if (parsed.data.subscriptionActive !== undefined) updateData.subscriptionActive = parsed.data.subscriptionActive;
 
   const [updated] = await db.update(usersTable).set(updateData).where(eq(usersTable.id, id)).returning();
   if (!updated) {
@@ -74,6 +77,7 @@ router.patch("/admin/users/:id", ...guard, async (req: AuthRequest, res): Promis
     city: updated.city,
     isVerified: updated.isVerified,
     isPremium: updated.isPremium,
+    subscriptionActive: updated.subscriptionActive,
     createdAt: updated.createdAt,
   });
 });

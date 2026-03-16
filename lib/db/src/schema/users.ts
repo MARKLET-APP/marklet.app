@@ -17,6 +17,7 @@ export const usersTable = pgTable("users", {
   isBanned: boolean("is_banned").notNull().default(false),
   whatsapp: text("whatsapp"),
   isFeaturedSeller: boolean("is_featured_seller").notNull().default(false),
+  subscriptionActive: boolean("subscription_active").notNull().default(false),
   showroomName: text("showroom_name"),
   showroomAddress: text("showroom_address"),
   showroomPhone: text("showroom_phone"),

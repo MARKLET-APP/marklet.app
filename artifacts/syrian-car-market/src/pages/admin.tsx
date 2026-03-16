@@ -558,51 +558,61 @@ export default function AdminDashboard() {
                   <TableHead className="text-right">الاسم</TableHead>
                   <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">الدور</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-center">مميّز</TableHead>
+                  <TableHead className="text-center">اشتراك</TableHead>
                   <TableHead className="text-center">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingUsers ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
                 ) : !users?.length ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">لا يوجد مستخدمين</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">لا يوجد مستخدمين</TableCell></TableRow>
                 ) : (
                   users.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
+                    <TableRow key={u.id} className={(u as any).isBanned ? "opacity-50" : ""}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{u.name}</p>
+                          {u.isVerified && <Badge className="bg-green-500 hover:bg-green-600 text-xs mt-0.5">موثق</Badge>}
+                        </div>
+                      </TableCell>
                       <TableCell dir="ltr" className="text-right">{u.phone}</TableCell>
                       <TableCell>
                         <Badge variant={u.role === 'admin' ? 'default' : (u.role === 'dealer' || u.role === 'seller') ? 'secondary' : 'outline'}>
                           {u.role === 'admin' ? 'مدير' : u.role === 'dealer' ? 'تاجر' : u.role === 'seller' ? 'بائع' : u.role === 'inspector' ? 'فاحص' : 'مشتري'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {u.isVerified && <Badge className="bg-green-500 hover:bg-green-600">موثق</Badge>}
-                          {u.role === 'banned' && <Badge variant="destructive">محظور</Badge>}
-                        </div>
+                      <TableCell className="text-center">
+                        <Button size="sm" variant="ghost" title={u.isPremium ? "إلغاء المميّز" : "منح المميّز"} className={u.isPremium ? "text-amber-500" : "text-muted-foreground"} onClick={() => apiRequest(`/api/admin/users/${u.id}`, "PATCH", { isPremium: !u.isPremium }).then(() => refetchUsers()).catch(() => {})}>
+                          <Star className={`w-5 h-5 ${u.isPremium ? "fill-amber-500" : ""}`} />
+                        </Button>
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <Button size="sm" variant="ghost" title={(u as any).subscriptionActive ? "إلغاء الاشتراك" : "تفعيل الاشتراك"} className={(u as any).subscriptionActive ? "text-violet-600" : "text-muted-foreground"} onClick={() => apiRequest(`/api/admin/users/${u.id}`, "PATCH", { subscriptionActive: !(u as any).subscriptionActive }).then(() => refetchUsers()).catch(() => {})}>
+                          <CheckCircle className={`w-5 h-5 ${(u as any).subscriptionActive ? "fill-violet-100" : ""}`} />
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1.5">
                           {!u.isVerified && u.role !== 'admin' && (
-                            <Button size="sm" variant="outline" className="h-8 border-green-500 text-green-600 hover:bg-green-50" onClick={() => handleUserAction(u.id, 'verify')}>
-                              <CheckCircle className="w-4 h-4" />
+                            <Button size="sm" variant="outline" title="توثيق" className="h-7 w-7 p-0 border-green-500 text-green-600 hover:bg-green-50" onClick={() => handleUserAction(u.id, 'verify')}>
+                              <CheckCircle className="w-3.5 h-3.5" />
                             </Button>
                           )}
-                          {u.role !== 'admin' && u.role !== 'banned' && (
-                            <Button size="sm" variant="outline" className="h-8 border-orange-500 text-orange-600 hover:bg-orange-50" onClick={() => handleUserAction(u.id, 'ban')}>
-                              <Ban className="w-4 h-4" />
+                          {u.role !== 'admin' && !(u as any).isBanned && (
+                            <Button size="sm" variant="outline" title="حظر" className="h-7 w-7 p-0 border-orange-500 text-orange-600 hover:bg-orange-50" onClick={() => handleUserAction(u.id, 'ban')}>
+                              <Ban className="w-3.5 h-3.5" />
                             </Button>
                           )}
-                          {u.role === 'banned' && (
-                            <Button size="sm" variant="outline" className="h-8" onClick={() => handleUserAction(u.id, 'unban')}>
+                          {(u as any).isBanned && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs px-2" onClick={() => handleUserAction(u.id, 'unban')}>
                               رفع الحظر
                             </Button>
                           )}
                           {u.role !== 'admin' && (
-                            <Button size="sm" variant="outline" className="h-8 border-red-500 text-red-600 hover:bg-red-50" onClick={() => handleUserAction(u.id, 'delete')}>
-                              <Trash2 className="w-4 h-4" />
+                            <Button size="sm" variant="outline" title="حذف" className="h-7 w-7 p-0 border-red-500 text-red-600 hover:bg-red-50" onClick={() => handleUserAction(u.id, 'delete')}>
+                              <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           )}
                         </div>

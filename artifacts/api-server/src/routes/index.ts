@@ -26,6 +26,7 @@ import followupRouter from "./followup";
 import adsByCategoryRouter from "./adsByCategory";
 import feedRouter from "./feed";
 import showroomsRouter from "./showrooms";
+import videoRouter from "./video";
 
 const router: IRouter = Router();
 
@@ -56,5 +57,6 @@ router.use(missingCarsRouter);
 router.use(notificationsRouter);
 router.use(followupRouter);
 router.use(showroomsRouter);
+router.use(videoRouter);
 
 export default router;

@@ -11,4 +11,5 @@ export interface AdminUpdateUserBody {
   isVerified?: boolean;
   isPremium?: boolean;
   isBanned?: boolean;
+  subscriptionActive?: boolean;
 }

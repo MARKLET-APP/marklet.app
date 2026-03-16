@@ -55,6 +55,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       city: user.city,
       isVerified: user.isVerified,
       isPremium: user.isPremium,
+      subscriptionActive: user.subscriptionActive,
       createdAt: user.createdAt,
     },
   });
@@ -103,6 +104,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       city: user.city,
       isVerified: user.isVerified,
       isPremium: user.isPremium,
+      subscriptionActive: user.subscriptionActive,
       createdAt: user.createdAt,
     },
   });
@@ -125,6 +127,7 @@ router.get("/auth/me", authMiddleware, async (req: AuthRequest, res): Promise<vo
     city: user.city,
     isVerified: user.isVerified,
     isPremium: user.isPremium,
+      subscriptionActive: user.subscriptionActive,
     createdAt: user.createdAt,
   });
 });
@@ -178,6 +181,7 @@ router.post("/register", async (req, res): Promise<void> => {
       city: user.city,
       isVerified: user.isVerified,
       isPremium: user.isPremium,
+      subscriptionActive: user.subscriptionActive,
       createdAt: user.createdAt,
     },
   });
@@ -226,6 +230,7 @@ router.post("/login", async (req, res): Promise<void> => {
       city: user.city,
       isVerified: user.isVerified,
       isPremium: user.isPremium,
+      subscriptionActive: user.subscriptionActive,
       createdAt: user.createdAt,
     },
   });
@@ -248,6 +253,7 @@ router.get("/profile", authMiddleware, async (req: AuthRequest, res): Promise<vo
     city: user.city,
     isVerified: user.isVerified,
     isPremium: user.isPremium,
+      subscriptionActive: user.subscriptionActive,
     createdAt: user.createdAt,
   });
 });

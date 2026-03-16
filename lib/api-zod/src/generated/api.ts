@@ -646,6 +646,7 @@ export const AdminUpdateUserBody = zod.object({
   isVerified: zod.boolean().optional(),
   isPremium: zod.boolean().optional(),
   isBanned: zod.boolean().optional(),
+  subscriptionActive: zod.boolean().optional(),
 });
 
 export const AdminUpdateUserResponse = zod.object({

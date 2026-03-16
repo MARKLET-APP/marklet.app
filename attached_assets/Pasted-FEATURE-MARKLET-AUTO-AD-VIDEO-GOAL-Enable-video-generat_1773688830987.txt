@@ -1,0 +1,120 @@
+FEATURE: MARKLET AUTO AD VIDEO
+
+GOAL
+Enable video generation ONLY for premium users or dealers.
+
+-----------------------------------
+1 ADD FIELD TO USERS TABLE
+-----------------------------------
+
+Add new fields:
+
+isDealer: boolean
+isPremium: boolean
+subscriptionActive: boolean
+
+Example:
+
+{
+ id: "user123",
+ name: "Ali Motors",
+ role: "dealer",
+ isDealer: true,
+ isPremium: true,
+ subscriptionActive: true
+}
+
+-----------------------------------
+2 CREATE PERMISSION CHECK
+-----------------------------------
+
+Create helper function:
+
+function canGenerateVideo(user){
+
+ if(user.isPremium === true) return true
+
+ if(user.role === "dealer") return true
+
+ if(user.subscriptionActive === true) return true
+
+ return false
+}
+
+-----------------------------------
+3 PROTECT VIDEO GENERATION ROUTE
+-----------------------------------
+
+Example route:
+
+app.post("/generate-ad-video", async (req,res)=>{
+
+ const user = req.user
+
+ if(!canGenerateVideo(user)){
+   return res.status(403).json({
+     message:"هذه الميزة متاحة فقط للاشتراك المدفوع"
+   })
+ }
+
+ // continue video generation
+
+})
+
+-----------------------------------
+4 ADD BUTTON IN LISTING PAGE
+-----------------------------------
+
+Inside listing page:
+
+if(user.isPremium || user.role === "dealer"){
+
+ showButton("إنشاء فيديو للإعلان")
+
+}
+
+else{
+
+ showButton("إنشاء فيديو للإعلان (ميزة مدفوعة)")
+
+}
+
+-----------------------------------
+5 PREMIUM POPUP
+-----------------------------------
+
+If user clicks while not subscribed:
+
+show popup:
+
+"ميزة إنشاء فيديو للإعلان متاحة فقط للحسابات المميزة.
+قم بالترقية للاستفادة من هذه الميزة."
+
+Button:
+
+ترقية الحساب
+
+-----------------------------------
+6 ADMIN CONTROL
+-----------------------------------
+
+In admin panel add:
+
+Dealers
+Premium users
+Subscriptions
+
+Admin can enable or disable:
+
+user.isPremium = true
+subscriptionActive = true
+
+-----------------------------------
+7 FUTURE OPTION
+-----------------------------------
+
+Allow:
+
+Generate video automatically when publishing ad.
+
+Premium feature only.
