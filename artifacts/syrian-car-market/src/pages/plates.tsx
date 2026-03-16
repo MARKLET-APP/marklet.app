@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
+import { BuyRequestCard } from "@/components/BuyRequestCard";
+import { apiRequest } from "@/lib/api";
 
 type PlateItem = {
   id: number; userId: number; brand: string | null; price: number | null;
@@ -104,6 +106,12 @@ export default function PlatesPage() {
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+  });
+
+  const deleteBuy = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/buy-requests/${id}`, "DELETE"),
+    onSuccess: () => { toast({ title: "تم حذف الطلب" }); qc.invalidateQueries({ queryKey: BUY_QK }); },
+    onError: () => toast({ title: "حدث خطأ في الحذف", variant: "destructive" }),
   });
 
   const followupRespond = useMutation({
@@ -238,22 +246,19 @@ export default function PlatesPage() {
         ) : buyReqs.length === 0 ? (
           <div className="text-center py-24 text-muted-foreground"><p className="text-xl font-bold mb-2">لا توجد طلبات شراء حالياً</p></div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
             {buyReqs.map((r: any) => (
-              <div key={r.id} className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                <p className="font-bold text-foreground">{r.brand || "لوحة مميزة"}</p>
-                {r.maxPrice && <p className="text-sm text-primary font-semibold" dir="ltr">حتى ${Number(r.maxPrice).toLocaleString()}</p>}
-                {r.description && <p className="text-sm text-muted-foreground mt-1">{r.description}</p>}
-                <div className="flex gap-3 text-xs text-muted-foreground flex-wrap mt-1">
-                  {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
-                  {r.userName && <span>الطالب: {r.userName}</span>}
-                </div>
-                {user && user.id !== r.userId && (
-                  <Button size="sm" variant="outline" className="rounded-xl gap-1.5 mt-2 text-xs" onClick={() => startChat(r.userId)} disabled={startingChat}>
-                    {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة الطالب
-                  </Button>
-                )}
-              </div>
+              <BuyRequestCard
+                key={r.id}
+                data={r}
+                currentUserId={user?.id}
+                accentColor="amber"
+                label="لوحة سيارة"
+                onChat={() => startChat(r.userId, `مرحباً، أنا مالك لوحة ${r.brand || "مميزة"} وقد تناسبك. هل ما زلت مهتماً؟`)}
+                chatLoading={startingChat}
+                onDelete={() => { if (confirm("حذف هذا الطلب؟")) deleteBuy.mutate(r.id); }}
+                deleteLoading={deleteBuy.isPending}
+              />
             ))}
           </div>
         )

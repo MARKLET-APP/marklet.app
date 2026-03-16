@@ -11,6 +11,8 @@ import { Plus, MapPin, ShoppingCart, Car, MessageCircle, Loader2 } from "lucide-
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { BuyRequestCard } from "@/components/BuyRequestCard";
+import { apiRequest } from "@/lib/api";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -59,6 +61,12 @@ export default function NewCarsPage() {
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+  });
+
+  const deleteBuy = useMutation({
+    mutationFn: (id: number) => apiRequest(`${BASE}/api/buy-requests/${id}`, "DELETE"),
+    onSuccess: () => { toast({ title: "تم حذف الطلب" }); qc.invalidateQueries({ queryKey: BUY_QK }); },
+    onError: () => toast({ title: "حدث خطأ في الحذف", variant: "destructive" }),
   });
 
   const handleBuySubmit = (e: React.FormEvent) => {
@@ -157,18 +165,17 @@ export default function NewCarsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
               {buyReqs.map(r => (
-                <div key={r.id} className="bg-card border rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-bold text-foreground">{[r.brand, r.model].filter(Boolean).join(" ") || "سيارة جديدة"}</h3>
-                    <Badge variant="outline" className="text-xs shrink-0 border-emerald-300 text-emerald-700">طلب شراء</Badge>
-                  </div>
-                  {r.description && <p className="text-sm text-muted-foreground mb-2">{r.description}</p>}
-                  <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
-                    {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
-                    {r.maxPrice && <span className="font-semibold text-emerald-700">حتى ${r.maxPrice.toLocaleString()}</span>}
-                    {r.userName && <span>{r.userName}</span>}
-                  </div>
-                </div>
+                <BuyRequestCard
+                  key={r.id}
+                  data={r}
+                  currentUserId={user?.id}
+                  accentColor="emerald"
+                  label="سيارة جديدة"
+                  onChat={() => startChat(r.userId, `مرحباً، أنا بائع وأملك ${[r.brand, r.model].filter(Boolean).join(" ") || "سيارة جديدة"} وقد تناسبك. هل ما زلت مهتماً؟`)}
+                  chatLoading={startingChat}
+                  onDelete={() => { if (confirm("حذف هذا الطلب؟")) deleteBuy.mutate(r.id); }}
+                  deleteLoading={deleteBuy.isPending}
+                />
               ))}
             </div>
           )

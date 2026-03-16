@@ -12,6 +12,8 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
+import { BuyRequestCard } from "@/components/BuyRequestCard";
+import { apiRequest } from "@/lib/api";
 
 type JunkCar = {
   id: number; sellerId: number; type: string | null; model: string | null;
@@ -82,6 +84,12 @@ export default function JunkCarsPage() {
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+  });
+
+  const deleteBuy = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/buy-requests/${id}`, "DELETE"),
+    onSuccess: () => { toast({ title: "تم حذف الطلب" }); qc.invalidateQueries({ queryKey: BUY_QK }); },
+    onError: () => toast({ title: "حدث خطأ في الحذف", variant: "destructive" }),
   });
 
   const deleteJunk = useMutation({
@@ -177,19 +185,19 @@ export default function JunkCarsPage() {
         ) : buyReqs.length === 0 ? (
           <div className="text-center py-24 text-muted-foreground"><p className="text-xl font-bold mb-2">لا توجد طلبات شراء حالياً</p></div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
             {buyReqs.map(r => (
-              <div key={r.id} className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="font-bold text-foreground">{[r.brand, r.model].filter(Boolean).join(" ") || "سيارة معطوبة / خردة"}</p>
-                  {r.maxPrice && <p className="text-sm text-primary font-semibold">حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "ل.س"}</p>}
-                  {r.description && <p className="text-sm text-muted-foreground">{r.description}</p>}
-                  <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
-                    {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
-                    {r.userName && <span>الطالب: {r.userName}</span>}
-                  </div>
-                </div>
-              </div>
+              <BuyRequestCard
+                key={r.id}
+                data={{ ...r, brand: [r.brand, r.model].filter(Boolean).join(" ") || undefined }}
+                currentUserId={user?.id}
+                accentColor="slate"
+                label="سيارة معطوبة / خردة"
+                onChat={() => startChat(r.userId, `مرحباً، أنا بائع وأملك ${[r.brand, r.model].filter(Boolean).join(" ") || "سيارة معطوبة"} وقد تناسبك. هل ما زلت مهتماً؟`)}
+                chatLoading={startingChat}
+                onDelete={() => { if (confirm("حذف هذا الطلب؟")) deleteBuy.mutate(r.id); }}
+                deleteLoading={deleteBuy.isPending}
+              />
             ))}
           </div>
         )

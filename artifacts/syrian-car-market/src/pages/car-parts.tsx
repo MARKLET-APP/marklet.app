@@ -12,6 +12,8 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
+import { BuyRequestCard } from "@/components/BuyRequestCard";
+import { apiRequest } from "@/lib/api";
 
 type CarPart = {
   id: number; sellerId: number; name: string; carType: string | null;
@@ -86,6 +88,12 @@ export default function CarPartsPage() {
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+  });
+
+  const deleteBuy = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/buy-requests/${id}`, "DELETE"),
+    onSuccess: () => { toast({ title: "تم حذف الطلب" }); qc.invalidateQueries({ queryKey: BUY_QK }); },
+    onError: () => toast({ title: "حدث خطأ في الحذف", variant: "destructive" }),
   });
 
   const deletePart = useMutation({
@@ -194,31 +202,19 @@ export default function CarPartsPage() {
         ) : buyReqs.length === 0 ? (
           <div className="text-center py-24 text-muted-foreground"><p className="text-xl font-bold mb-2">لا توجد طلبات شراء حالياً</p></div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
             {buyReqs.map(r => (
-              <div key={r.id} className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                <p className="font-bold text-foreground">{r.brand || "قطعة غيار"}</p>
-                {r.model && <p className="text-sm text-muted-foreground">نوع السيارة: {r.model}</p>}
-                {r.maxPrice && <p className="text-sm text-primary font-semibold">حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "ل.س"}</p>}
-                {r.description && <p className="text-sm text-muted-foreground mt-1">{r.description}</p>}
-                <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
-                  <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
-                    {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
-                    {r.userName && <span>الطالب: {r.userName}</span>}
-                  </div>
-                  {user && user.id !== r.userId && (
-                    <Button size="sm" className="rounded-xl gap-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs"
-                      onClick={() => startChatWithBuyer(r.userId, r.brand || "القطعة")} disabled={startingChat}>
-                      {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />} لدي ما تبحث عنه
-                    </Button>
-                  )}
-                  {!user && (
-                    <Button size="sm" variant="outline" className="rounded-xl gap-1.5 text-xs" onClick={() => navigate("/login")}>
-                      <MessageCircle className="w-3 h-3" /> سجّل دخولك للتواصل
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <BuyRequestCard
+                key={r.id}
+                data={r}
+                currentUserId={user?.id}
+                accentColor="orange"
+                label="قطعة غيار"
+                onChat={() => startChatWithBuyer(r.userId, r.brand || "القطعة")}
+                chatLoading={startingChat}
+                onDelete={() => { if (confirm("حذف هذا الطلب؟")) deleteBuy.mutate(r.id); }}
+                deleteLoading={deleteBuy.isPending}
+              />
             ))}
           </div>
         )
