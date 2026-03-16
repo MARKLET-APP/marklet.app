@@ -124,6 +124,28 @@
     @apply bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
   }
 
+  /* Header Watermark Animation */
+  @keyframes watermarkMove {
+    0%   { transform: translateX(-3%) translateY(-3%) scale(1.05); }
+    50%  { transform: translateX(3%) translateY(3%) scale(1.05); }
+    100% { transform: translateX(-3%) translateY(-3%) scale(1.05); }
+  }
+
+  .header-watermark {
+    position: absolute;
+    inset: -10%;
+    width: 120%;
+    height: 120%;
+    opacity: 0.09;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 60%;
+    animation: watermarkMove 18s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+    filter: brightness(10);
+  }
+
   /* Custom scrollbar for webkit */
   ::-webkit-scrollbar {
     width: 6px;

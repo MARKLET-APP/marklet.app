@@ -90,8 +90,9 @@ export default function MotorcyclesPage() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Gradient Header + Buttons */}
-      <div className="bg-gradient-to-l from-rose-600 to-rose-800 text-white px-4 pt-6 pb-5">
-        <div className="max-w-5xl mx-auto">
+      <div className="relative overflow-hidden bg-gradient-to-l from-rose-600 to-rose-800 text-white px-4 pt-6 pb-5">
+        <div className="header-watermark" style={{ backgroundImage: "url('/watermarks/motorcycle.svg')" }} />
+        <div className="relative z-[1] max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-1">
             <Bike className="w-7 h-7" />
             <h1 className="text-2xl font-extrabold tracking-tight">دراجات نارية</h1>

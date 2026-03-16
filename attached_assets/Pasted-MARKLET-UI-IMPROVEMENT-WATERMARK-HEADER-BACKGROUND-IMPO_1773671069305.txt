@@ -1,0 +1,169 @@
+MARKLET UI IMPROVEMENT – WATERMARK HEADER BACKGROUND
+
+IMPORTANT:
+Edit only header style and page headers.
+Do not modify backend.
+Do not rebuild the whole project.
+
+================================================
+Goal
+================================================
+
+Each service page already has a colored header.
+
+Add a light animated watermark image inside the colored header
+similar to the animation used in the main homepage banner.
+
+The watermark must:
+
+• match the service category
+• be semi-transparent
+• move slowly
+• not affect text readability
+• stay behind the text layer
+
+================================================
+1 Add Watermark Layer in Header
+================================================
+
+Update header container:
+
+<div class="service-header">
+
+<div class="header-watermark"></div>
+
+<div class="header-content">
+
+<h1>عنوان الصفحة</h1>
+<p>وصف القسم</p>
+
+</div>
+
+</div>
+
+================================================
+2 Header CSS
+================================================
+
+.service-header{
+
+position:relative;
+overflow:hidden;
+
+}
+
+.header-watermark{
+
+position:absolute;
+
+top:0;
+left:0;
+
+width:120%;
+height:120%;
+
+opacity:0.08;
+
+background-repeat:no-repeat;
+background-position:center;
+background-size:60%;
+
+animation: watermarkMove 18s linear infinite;
+
+}
+
+.header-content{
+
+position:relative;
+z-index:2;
+
+}
+
+================================================
+3 Animation
+================================================
+
+@keyframes watermarkMove{
+
+0%{
+transform:translateX(-3%) translateY(-3%);
+}
+
+50%{
+transform:translateX(3%) translateY(3%);
+}
+
+100%{
+transform:translateX(-3%) translateY(-3%);
+}
+
+}
+
+================================================
+4 Category Watermark Images
+================================================
+
+Assign watermark image per section.
+
+Cars:
+
+.header-cars .header-watermark{
+background-image:url("/watermarks/car.png");
+}
+
+Motorcycles:
+
+.header-motorcycles .header-watermark{
+background-image:url("/watermarks/motorcycle.png");
+}
+
+Scrap Parts:
+
+.header-scrap .header-watermark{
+background-image:url("/watermarks/gear.png");
+}
+
+Car Rental:
+
+.header-rental .header-watermark{
+background-image:url("/watermarks/rent-car.png");
+}
+
+Vehicle Inspection:
+
+.header-inspection .header-watermark{
+background-image:url("/watermarks/inspection.png");
+}
+
+================================================
+5 Apply Category Class
+================================================
+
+Example:
+
+<div class="service-header header-scrap">
+
+or
+
+<div class="service-header header-rental">
+
+================================================
+6 Performance Requirement
+================================================
+
+Watermark must:
+
+• load as lightweight PNG or SVG
+• not increase page load time
+• work on mobile smoothly
+
+================================================
+7 Visual Rule
+================================================
+
+The watermark must be:
+
+• subtle
+• elegant
+• barely visible
+• moving slowly like homepage banner

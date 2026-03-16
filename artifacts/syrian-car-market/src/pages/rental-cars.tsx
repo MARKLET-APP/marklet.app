@@ -206,8 +206,9 @@ export default function RentalCarsPage() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header + Action Buttons inside gradient */}
-      <div className="bg-gradient-to-l from-blue-600 to-blue-800 text-white px-4 pt-6 pb-5">
-        <div className="max-w-2xl mx-auto">
+      <div className="relative overflow-hidden bg-gradient-to-l from-blue-600 to-blue-800 text-white px-4 pt-6 pb-5">
+        <div className="header-watermark" style={{ backgroundImage: "url('/watermarks/rent-car.svg')" }} />
+        <div className="relative z-[1] max-w-2xl mx-auto">
           <div className="flex items-center gap-3 mb-1">
             <Car className="w-7 h-7" />
             <h1 className="text-2xl font-extrabold tracking-tight">سيارات للإيجار</h1>
