@@ -1,0 +1,274 @@
+انسخ **الأمر الكامل التالي** وأرسله إلى AI داخل Replit.
+الكود يتضمن **الإصلاحات + الملاحظة لتقليل استهلاك الرصيد**.
+
+```text
+MARKLET BUG FIX + RENTAL SYSTEM CORRECTION
+
+IMPORTANT NOTE:
+Edit only the affected files.
+Do not scan the entire project.
+Do not rebuild the application.
+Apply fixes only where needed.
+
+================================================
+1 Fix Rental Ads Publishing Without Admin Approval
+================================================
+
+Problem:
+Rental ads are published immediately without admin approval.
+
+Solution:
+
+When creating a rental ad set:
+
+status = "pending"
+
+Update API:
+
+POST /api/rental/create
+
+Code:
+
+await db.query(
+`INSERT INTO ads
+(title,category,city,price,description,status)
+VALUES ($1,$2,$3,$4,$5,$6)`,
+[
+title,
+"rental",
+city,
+price,
+description,
+"pending"
+]
+)
+
+Only show ads if:
+
+status = "approved"
+
+================================================
+2 Fix Messaging Button in Rental Ads
+================================================
+
+Problem:
+Message button opens general messages page instead of conversation.
+
+Fix:
+
+Use seller user_id.
+
+Button:
+
+<button onclick="openChat(ad.user_id, ad.id)">
+مراسلة
+</button>
+
+Function:
+
+function openChat(userId, adId){
+
+window.location.href =
+`/messages?user=${userId}&ad=${adId}`
+
+}
+
+================================================
+3 Improve Rental Request Display
+================================================
+
+Problem:
+Rental requests appear as simple text.
+
+Fix:
+Add thumbnail icon.
+
+Example:
+
+<div class="request-card">
+
+<img src="/icons/rental-request.png" class="request-thumb">
+
+<div class="request-info">
+
+<h4>طلب استئجار سيارة</h4>
+
+<p>المدينة: ${city}</p>
+
+</div>
+
+<button onclick="openRequest(request.id)">
+معاينة
+</button>
+
+</div>
+
+================================================
+4 Organize Homepage Sections
+================================================
+
+Homepage must be structured as:
+
+Featured Ads
+
+Latest Ads
+
+Then separated sections:
+
+New Cars For Sale
+
+Used Cars For Sale
+
+Motorcycles For Sale
+
+Cars For Rent
+
+Car Purchase Requests
+
+Motorcycle Purchase Requests
+
+Car Rental Requests
+
+Only Featured and Latest show mixed content.
+
+Each section must load ads using category filtering.
+
+================================================
+5 Fix Motorcycle Chat Error
+================================================
+
+Problem:
+Chat button returns "Unable to open chat".
+
+Fix:
+
+Ensure user_id exists.
+
+Button:
+
+<button onclick="openChat(ad.user_id, ad.id)">
+مراسلة
+</button>
+
+If user_id missing:
+
+show alert:
+
+"لا يمكن فتح المحادثة حالياً"
+
+================================================
+6 Motorcycle Purchase Requests Buttons
+================================================
+
+Add buttons:
+
+<button onclick="openRequest(request.id)">
+التفاصيل
+</button>
+
+<button onclick="openChat(request.user_id)">
+مراسلة
+</button>
+
+================================================
+7 Activate Vehicle Inspection Page
+================================================
+
+Create page:
+
+VehicleInspectionPage
+
+Database structure:
+
+inspection_centers
+
+fields:
+
+id
+name
+city
+address
+phone
+rating
+is_featured
+
+================================================
+Search System
+================================================
+
+Allow search by:
+
+center name
+city
+province
+
+Example input:
+
+<input type="text" placeholder="ابحث عن مركز فحص">
+
+================================================
+Inspection Center Card
+================================================
+
+<div class="inspection-center">
+
+<h3>{center.name}</h3>
+
+<p>{center.city}</p>
+
+<button onclick="openCenter(center.id)">
+التفاصيل
+</button>
+
+<button onclick="contactCenter(center.phone)">
+تواصل
+</button>
+
+<button onclick="rateCenter(center.id)">
+تقييم
+</button>
+
+</div>
+
+================================================
+Featured Centers
+================================================
+
+If:
+
+is_featured = true
+
+Display:
+
+⭐ مركز مميز
+
+================================================
+Contact System
+================================================
+
+Contact button must open chat with center.
+
+Example:
+
+openChat(center.user_id)
+
+================================================
+8 Testing
+================================================
+
+After fixes test:
+
+Create rental ad
+
+Admin approval
+
+Rental messaging
+
+Motorcycle messaging
+
+Rental requests
+
+Vehicle inspection page
+
+All buttons must work.
+```

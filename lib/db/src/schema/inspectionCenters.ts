@@ -1,11 +1,15 @@
-import { pgTable, serial, text, numeric, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const inspectionCentersTable = pgTable("inspection_centers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   city: text("city").notNull(),
+  province: text("province"),
+  address: text("address"),
+  phone: text("phone"),
   contact: text("contact"),
   rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
+  isFeatured: boolean("is_featured").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

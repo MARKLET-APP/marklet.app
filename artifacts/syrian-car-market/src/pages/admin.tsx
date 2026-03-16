@@ -101,8 +101,25 @@ export default function AdminDashboard() {
     enabled: user?.role === 'admin',
   });
 
+  const { data: pendingRentals = [], refetch: refetchRentals } = useQuery<any[]>({
+    queryKey: ["/admin/rental-cars/pending"],
+    queryFn: () => api.get("/api/admin/rental-cars/pending").then(r => r.json()),
+    enabled: user?.role === 'admin',
+  });
+
+  const handleRentalApproval = async (id: number, action: "approve" | "reject") => {
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      await api.patch(`${BASE}/api/admin/rental-cars/${id}/approve`, { approve: action === "approve" });
+      toast({ title: action === "approve" ? "تمت الموافقة على إعلان التأجير" : "تم رفض إعلان التأجير" });
+      refetchRentals();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+  };
+
   const totalInboxUnread = (supportMessages as any[]).length;
-  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length;
+  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingRentals.length;
 
   const handleBuyRequestStatus = async (id: number, status: "approved" | "rejected") => {
     try {
@@ -705,6 +722,65 @@ export default function AdminDashboard() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pending Rental Cars Section */}
+          <div className="border-t-4 border-border">
+            <div className="p-5 border-b flex justify-between items-center bg-blue-50/50 dark:bg-blue-950/10">
+              <h2 className="text-xl font-bold flex items-center gap-2">🚗 إعلانات التأجير المعلقة
+                <Badge variant="secondary" className={pendingRentals.length > 0 ? "bg-blue-100 text-blue-700" : ""}>{pendingRentals.length}</Badge>
+              </h2>
+              <Button variant="outline" size="sm" onClick={() => refetchRentals()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead className="text-right">السيارة</TableHead>
+                    <TableHead className="text-right">اليومي</TableHead>
+                    <TableHead className="text-right">المالك</TableHead>
+                    <TableHead className="text-right">المدينة</TableHead>
+                    <TableHead className="text-center">إجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingRentals.length === 0 ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">لا توجد إعلانات تأجير معلقة</TableCell></TableRow>
+                  ) : pendingRentals.map((r: any) => (
+                    <TableRow key={r.id} className="hover:bg-muted/30">
+                      <TableCell className="font-bold">{[r.brand, r.model, r.year].filter(Boolean).join(" ")}</TableCell>
+                      <TableCell>{r.dailyPrice ? `$${r.dailyPrice}` : "—"}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p className="font-medium">{r.sellerName || r.userName || "مجهول"}</p>
+                          <p className="text-xs text-muted-foreground">{r.sellerPhone || ""}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{r.city || "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 justify-center">
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1 text-xs"
+                            onClick={() => handleRentalApproval(r.id, "approve")}
+                          >
+                            <CheckCircle className="w-3 h-3" /> موافقة
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="rounded-lg gap-1 text-xs"
+                            onClick={() => handleRentalApproval(r.id, "reject")}
+                          >
+                            <XCircle className="w-3 h-3" /> رفض
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {/* Scrap Listings Section */}

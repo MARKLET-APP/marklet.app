@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, numeric, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const rentalCarsTable = pgTable("rental_cars", {
   id: serial("id").primaryKey(),
@@ -12,6 +12,7 @@ export const rentalCarsTable = pgTable("rental_cars", {
   monthlyPrice: numeric("monthly_price", { precision: 12, scale: 2 }),
   description: text("description"),
   images: text("images").array(),
+  isApproved: boolean("is_approved").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

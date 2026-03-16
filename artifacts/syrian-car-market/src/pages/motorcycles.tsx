@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, MapPin, ShoppingCart, MessageCircle, Loader2, Bike } from "lucide-react";
+import { Plus, MapPin, ShoppingCart, MessageCircle, Loader2, Bike, Info } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
@@ -174,17 +174,32 @@ export default function MotorcyclesPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
               {buyReqs.map(r => (
-                <div key={r.id} className="bg-card border rounded-2xl p-4 shadow-sm">
+                <div key={r.id} className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-bold text-foreground">{[r.brand, r.model].filter(Boolean).join(" ") || "دراجة نارية"}</h3>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                        <Bike className="w-4 h-4 text-rose-600" />
+                      </div>
+                      <h3 className="font-bold text-foreground text-sm">{[r.brand, r.model].filter(Boolean).join(" ") || "دراجة نارية"}</h3>
+                    </div>
                     <Badge variant="outline" className="text-xs shrink-0 border-rose-300 text-rose-700">طلب شراء</Badge>
                   </div>
-                  {r.description && <p className="text-sm text-muted-foreground mb-2">{r.description}</p>}
-                  <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
+                  {r.description && <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{r.description}</p>}
+                  <div className="flex gap-3 text-xs text-muted-foreground flex-wrap mb-3">
                     {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
                     {r.maxPrice && <span className="font-semibold text-rose-700">حتى ${r.maxPrice.toLocaleString()}</span>}
-                    {r.userName && <span>{r.userName}</span>}
+                    {r.userName && <span className="font-medium">{r.userName}</span>}
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1.5 border-rose-300 text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-bold"
+                    onClick={() => startChat(r.userId)}
+                    disabled={startingChat}
+                  >
+                    {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}
+                    مراسلة صاحب الطلب
+                  </Button>
                 </div>
               ))}
             </div>
