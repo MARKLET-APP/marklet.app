@@ -5,7 +5,7 @@ import {
   useGetSettings, useUpdateSettings
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, apiRequest } from "@/lib/api";
 import { Redirect, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
 
   const { data: pendingRentals = [], refetch: refetchRentals } = useQuery<any[]>({
     queryKey: ["/admin/rental-cars/pending"],
-    queryFn: () => api.get("/api/admin/rental-cars/pending").then(r => r.json()),
+    queryFn: () => apiRequest<any[]>("/api/admin/rental-cars/pending"),
     enabled: user?.role === 'admin',
   });
 

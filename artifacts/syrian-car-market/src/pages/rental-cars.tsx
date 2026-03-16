@@ -351,25 +351,37 @@ export default function RentalCarsPage() {
               </div>
             ) : (
               requests.map((req) => (
-                <div key={req.id} className="bg-card border rounded-2xl p-4 shadow-sm flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                    <ShoppingCart className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-bold text-sm">{req.brand}</p>
-                      <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">طلب استئجار</Badge>
+                <div key={req.id} className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-5 h-5 text-blue-600" />
                     </div>
-                    {req.city && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                        <MapPin className="w-3 h-3" /> {req.city}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-bold text-sm">{req.brand || "طلب استئجار"}</p>
+                        <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 shrink-0">طلب استئجار</Badge>
                       </div>
-                    )}
-                    {req.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{req.description}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">{req.userName} · {new Date(req.createdAt).toLocaleDateString("ar-SY")}</p>
+                      {req.city && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                          <MapPin className="w-3 h-3" /> {req.city}
+                        </div>
+                      )}
+                      {req.description && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{req.description}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1 font-medium">{req.userName} · {new Date(req.createdAt).toLocaleDateString("ar-SY")}</p>
+                    </div>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1.5 border-blue-300 text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold"
+                    onClick={() => startChat(req.userId, req.brand || "مستأجر")}
+                    disabled={startingChat}
+                  >
+                    {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}
+                    مراسلة صاحب الطلب
+                  </Button>
                 </div>
               ))
             )}
