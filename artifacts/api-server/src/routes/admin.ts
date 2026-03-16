@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable, buyRequestsTable } from "@workspace/db";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable, buyRequestsTable, inspectionCentersTable, scrapCentersTable } from "@workspace/db";
+import { eq, desc, count, sql, ilike, or } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
 
@@ -393,6 +393,142 @@ router.delete("/admin/junk-cars/:id", ...guard, async (req: AuthRequest, res): P
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
   await db.delete(junkCarsTable).where(eq(junkCarsTable.id, id));
+  res.json({ success: true });
+});
+
+// ─── Enhanced Dashboard Stats ──────────────────────────────────────────────
+router.get("/admin/stats", ...guard, async (_req, res): Promise<void> => {
+  const [[usersCount], [dealersCount], [listingsCount], [inspectionCount], [scrapCount]] = await Promise.all([
+    db.select({ count: count() }).from(usersTable),
+    db.select({ count: count() }).from(usersTable).where(eq(usersTable.role, "dealer")),
+    db.select({ count: count() }).from(carsTable),
+    db.select({ count: count() }).from(inspectionCentersTable),
+    db.select({ count: count() }).from(scrapCentersTable),
+  ]);
+  res.json({
+    totalUsers: usersCount.count,
+    totalDealers: dealersCount.count,
+    totalListings: listingsCount.count,
+    totalInspectionCenters: inspectionCount.count,
+    totalScrapCenters: scrapCount.count,
+  });
+});
+
+// ─── Dealers Management (users with role=dealer) ───────────────────────────
+router.get("/admin/dealers", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const q = req.query.q as string | undefined;
+  let query = db.select({
+    id: usersTable.id, name: usersTable.name, email: usersTable.email,
+    phone: usersTable.phone, whatsapp: usersTable.whatsapp, role: usersTable.role,
+    isVerified: usersTable.isVerified, isFeaturedSeller: usersTable.isFeaturedSeller,
+    showroomName: usersTable.showroomName, showroomAddress: usersTable.showroomAddress,
+    showroomPhone: usersTable.showroomPhone, showroomPhoto: usersTable.showroomPhoto,
+    city: usersTable.city, createdAt: usersTable.createdAt,
+  }).from(usersTable).where(eq(usersTable.role, "dealer")).$dynamic();
+  const dealers = await query.orderBy(desc(usersTable.createdAt)).limit(100);
+  res.json(q ? dealers.filter(d => d.name?.includes(q) || d.phone?.includes(q) || d.showroomName?.includes(q)) : dealers);
+});
+
+router.patch("/admin/dealers/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { isVerified, isFeaturedSeller, showroomName, showroomAddress, showroomPhone } = req.body;
+  const updateData: Record<string, unknown> = {};
+  if (isVerified !== undefined) updateData.isVerified = isVerified;
+  if (isFeaturedSeller !== undefined) updateData.isFeaturedSeller = isFeaturedSeller;
+  if (showroomName !== undefined) updateData.showroomName = showroomName;
+  if (showroomAddress !== undefined) updateData.showroomAddress = showroomAddress;
+  if (showroomPhone !== undefined) updateData.showroomPhone = showroomPhone;
+  const [updated] = await db.update(usersTable).set(updateData).where(eq(usersTable.id, id)).returning();
+  res.json(updated);
+});
+
+router.patch("/admin/users/:id/promote-dealer", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const [updated] = await db.update(usersTable).set({ role: "dealer", isVerified: true }).where(eq(usersTable.id, id)).returning();
+  res.json(updated);
+});
+
+router.patch("/admin/users/:id/featured-seller", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { isFeaturedSeller } = req.body;
+  const [updated] = await db.update(usersTable).set({ isFeaturedSeller: !!isFeaturedSeller }).where(eq(usersTable.id, id)).returning();
+  res.json(updated);
+});
+
+// ─── Inspection Centers Admin ──────────────────────────────────────────────
+router.get("/admin/inspection-centers", ...guard, async (_req, res): Promise<void> => {
+  const centers = await db.select().from(inspectionCentersTable).orderBy(desc(inspectionCentersTable.createdAt)).limit(100);
+  res.json(centers);
+});
+
+router.post("/admin/inspection-centers", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const { name, city, address, phone, whatsapp, description } = req.body;
+  if (!name || !city) { res.status(400).json({ error: "name and city are required" }); return; }
+  const [center] = await db.insert(inspectionCentersTable).values({ name, city, address, phone, whatsapp, description }).returning();
+  res.json(center);
+});
+
+router.patch("/admin/inspection-centers/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { name, city, address, phone, whatsapp, description, isVerified, isFeatured } = req.body;
+  const updateData: Record<string, unknown> = {};
+  if (name !== undefined) updateData.name = name;
+  if (city !== undefined) updateData.city = city;
+  if (address !== undefined) updateData.address = address;
+  if (phone !== undefined) updateData.phone = phone;
+  if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
+  if (description !== undefined) updateData.description = description;
+  if (isVerified !== undefined) updateData.isVerified = isVerified;
+  if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+  const [updated] = await db.update(inspectionCentersTable).set(updateData).where(eq(inspectionCentersTable.id, id)).returning();
+  res.json(updated);
+});
+
+router.delete("/admin/inspection-centers/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  await db.delete(inspectionCentersTable).where(eq(inspectionCentersTable.id, id));
+  res.json({ success: true });
+});
+
+// ─── Scrap Centers Admin ───────────────────────────────────────────────────
+router.get("/admin/scrap-centers", ...guard, async (_req, res): Promise<void> => {
+  const centers = await db.select().from(scrapCentersTable).orderBy(desc(scrapCentersTable.createdAt)).limit(100);
+  res.json(centers);
+});
+
+router.post("/admin/scrap-centers", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const { name, city, address, phone, whatsapp, description } = req.body;
+  if (!name || !city) { res.status(400).json({ error: "name and city are required" }); return; }
+  const [center] = await db.insert(scrapCentersTable).values({ name, city, address, phone, whatsapp, description }).returning();
+  res.json(center);
+});
+
+router.patch("/admin/scrap-centers/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { name, city, address, phone, whatsapp, description, isVerified, isFeatured } = req.body;
+  const updateData: Record<string, unknown> = {};
+  if (name !== undefined) updateData.name = name;
+  if (city !== undefined) updateData.city = city;
+  if (address !== undefined) updateData.address = address;
+  if (phone !== undefined) updateData.phone = phone;
+  if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
+  if (description !== undefined) updateData.description = description;
+  if (isVerified !== undefined) updateData.isVerified = isVerified;
+  if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+  const [updated] = await db.update(scrapCentersTable).set(updateData).where(eq(scrapCentersTable.id, id)).returning();
+  res.json(updated);
+});
+
+router.delete("/admin/scrap-centers/:id", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  await db.delete(scrapCentersTable).where(eq(scrapCentersTable.id, id));
   res.json({ success: true });
 });
 

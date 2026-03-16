@@ -20,3 +20,4 @@ export * from "./supportMessages";
 export * from "./missingCars";
 export * from "./referrals";
 export * from "./rentalCars";
+export * from "./scrapCenters";

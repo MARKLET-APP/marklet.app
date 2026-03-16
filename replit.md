@@ -4,6 +4,16 @@
 
 A full-stack mobile-first Arabic RTL marketplace for buying and selling cars in Syria.
 
+## Admin Panel
+- **URL**: `/admin` — requires login as `admin@carmarket.sy` / `Admin@123`
+- **Tabs (row 1)**: Users, Dealers, Inspection Centers, Scrap Centers
+- **Tabs (row 2)**: Review (pending listings), Listings, Inbox, Settings
+- **Stats**: Total users, dealers, listings, inspection centers, scrap centers
+- **Dealers tab**: list with verified/featured-seller toggles, search by name/phone/showroom
+- **Inspection Centers tab**: full CRUD (add/edit/delete), verified/featured toggles
+- **Scrap Centers tab**: full CRUD (add/edit/delete), verified/featured toggles
+- **New DB tables**: `scrap_centers`; users table has `whatsapp`, `is_featured_seller`; inspection_centers has `whatsapp`, `logo`, `description`, `is_verified`
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

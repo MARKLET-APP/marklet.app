@@ -1,0 +1,329 @@
+MARKLET ADMIN CONTROL PANEL SYSTEM
+
+IMPORTANT
+Edit only necessary files.
+Do not rebuild the project.
+Do not change existing marketplace logic.
+
+Goal:
+Create a complete admin dashboard to manage users, dealers, inspection centers, and scrap centers.
+
+================================================
+1 ADMIN DASHBOARD STRUCTURE
+================================================
+
+Create new admin panel:
+
+/admin
+
+Sections:
+
+Dashboard
+
+Users
+
+Dealers (Car Showrooms)
+
+Inspection Centers
+
+Scrap Centers
+
+Listings Review
+
+Reports
+
+================================================
+2 USERS MANAGEMENT
+================================================
+
+Create table:
+
+users
+
+fields:
+
+id
+name
+email
+phone
+whatsapp
+role
+verified
+created_at
+
+roles:
+
+buyer
+seller
+dealer
+admin
+
+Admin abilities:
+
+• View all users
+• Ban / activate users
+• Promote user to dealer
+• Mark user as trusted seller
+
+Add column:
+
+is_featured_seller BOOLEAN
+
+================================================
+3 DEALERS MANAGEMENT (CAR SHOWROOMS)
+================================================
+
+Create table:
+
+dealers
+
+fields:
+
+id
+name
+email
+phone
+whatsapp
+city
+address
+logo
+description
+verified
+created_at
+
+Link dealer with user account:
+
+dealers.user_id → users.id
+
+Dealer benefits:
+
+• badge "معرض موثق"
+• dealership page
+• priority listings
+
+================================================
+4 INSPECTION CENTERS MANAGEMENT
+================================================
+
+Create table:
+
+inspection_centers
+
+fields:
+
+id
+name
+city
+address
+phone
+whatsapp
+logo
+description
+rating
+verified
+is_featured
+
+Admin abilities:
+
+• add center
+• edit center
+• verify center
+• mark center as featured
+
+Users can:
+
+• search centers
+• contact center
+• rate center
+
+================================================
+5 SCRAP CENTERS MANAGEMENT
+================================================
+
+Create table:
+
+scrap_centers
+
+fields:
+
+id
+name
+city
+address
+phone
+whatsapp
+description
+verified
+rating
+is_featured
+
+Users can:
+
+• sell scrap vehicles
+• contact scrap centers
+
+================================================
+6 LISTINGS REVIEW PANEL
+================================================
+
+Admin must see:
+
+Pending Sale Listings
+
+Pending Purchase Requests
+
+Pending Rental Listings
+
+Pending Rental Requests
+
+Each listing must show:
+
+title
+user
+category
+city
+images
+
+Buttons:
+
+Approve
+Reject
+Edit
+
+================================================
+7 USER PROFILE EXPANSION
+================================================
+
+Update user profile to include:
+
+profile_image
+dealer_name
+dealer_address
+dealer_phone
+whatsapp
+email
+
+If user becomes dealer:
+
+show dealership info automatically.
+
+================================================
+8 BUSINESS BADGES
+================================================
+
+Show badges in listings:
+
+⭐ بائع موثوق
+🏢 معرض سيارات
+🔧 مركز فحص
+♻️ مركز خردة
+
+================================================
+9 ADMIN DASHBOARD STATS
+================================================
+
+Add dashboard stats:
+
+Total users
+
+Total dealers
+
+Total listings
+
+Pending approvals
+
+Active listings
+
+================================================
+10 SEARCH SYSTEM
+================================================
+
+Admin must be able to search by:
+
+User name
+
+Dealer name
+
+Phone number
+
+Email
+
+================================================
+11 CONNECT SERVICES TO USERS
+================================================
+
+Users can interact with:
+
+Dealers
+
+Inspection Centers
+
+Scrap Centers
+
+Messaging system must support:
+
+chat with dealer
+
+chat with inspection center
+
+chat with scrap center
+
+================================================
+12 SECURITY
+================================================
+
+Admin routes must require:
+
+role = admin
+
+Example middleware:
+
+if(user.role !== "admin"){
+
+return res.status(403).send("Access denied")
+
+}
+
+================================================
+13 ADMIN MENU
+================================================
+
+Admin sidebar:
+
+Dashboard
+
+Users
+
+Dealers
+
+Inspection Centers
+
+Scrap Centers
+
+Listings Review
+
+Reports
+
+================================================
+14 TESTING
+================================================
+
+Test:
+
+Add dealer
+
+Add inspection center
+
+Add scrap center
+
+Verify user
+
+Approve listing
+
+Check messaging with service centers
+
+================================================
+
+App name remains:
+
+MARKLET

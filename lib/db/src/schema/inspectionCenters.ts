@@ -7,9 +7,13 @@ export const inspectionCentersTable = pgTable("inspection_centers", {
   province: text("province"),
   address: text("address"),
   phone: text("phone"),
+  whatsapp: text("whatsapp"),
   contact: text("contact"),
+  logo: text("logo"),
+  description: text("description"),
   rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
   isFeatured: boolean("is_featured").default(false),
+  isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -123,6 +123,43 @@ export default function AdminDashboard() {
     queryFn: () => apiRequest<any[]>("/api/admin/junk-cars/pending"),
     enabled: user?.role === 'admin',
   });
+
+  const { data: adminStats } = useQuery<any>({
+    queryKey: ["/admin/stats"],
+    queryFn: () => apiRequest("/api/admin/stats"),
+    enabled: user?.role === 'admin',
+  });
+
+  const { data: dealers = [], isLoading: loadingDealers, refetch: refetchDealers } = useQuery<any[]>({
+    queryKey: ["/admin/dealers"],
+    queryFn: () => apiRequest("/api/admin/dealers"),
+    enabled: user?.role === 'admin',
+  });
+
+  const { data: inspectionCenters = [], isLoading: loadingInspection, refetch: refetchInspection } = useQuery<any[]>({
+    queryKey: ["/admin/inspection-centers"],
+    queryFn: () => apiRequest("/api/admin/inspection-centers"),
+    enabled: user?.role === 'admin',
+  });
+
+  const { data: scrapCenters = [], isLoading: loadingScrap, refetch: refetchScrap } = useQuery<any[]>({
+    queryKey: ["/admin/scrap-centers"],
+    queryFn: () => apiRequest("/api/admin/scrap-centers"),
+    enabled: user?.role === 'admin',
+  });
+
+  const [dealerSearch, setDealerSearch] = useState("");
+  const [inspectionSearch, setInspectionSearch] = useState("");
+  const [scrapSearch, setScrapSearch] = useState("");
+
+  type CenterForm = { name: string; city: string; address: string; phone: string; whatsapp: string; description: string };
+  const emptyCenterForm: CenterForm = { name: "", city: "", address: "", phone: "", whatsapp: "", description: "" };
+  const [inspectionForm, setInspectionForm] = useState<CenterForm>(emptyCenterForm);
+  const [editingInspection, setEditingInspection] = useState<any | null>(null);
+  const [showInspectionDialog, setShowInspectionDialog] = useState(false);
+  const [scrapForm, setScrapForm] = useState<CenterForm>(emptyCenterForm);
+  const [editingScrap, setEditingScrap] = useState<any | null>(null);
+  const [showScrapDialog, setShowScrapDialog] = useState(false);
 
   const handleRentalApproval = async (id: number, action: "approve" | "reject") => {
     try {
@@ -265,6 +302,90 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDealerToggle = async (id: number, field: "isVerified" | "isFeaturedSeller", currentVal: boolean) => {
+    try {
+      await apiRequest(`/api/admin/dealers/${id}`, "PATCH", { [field]: !currentVal });
+      toast({ title: "تم التحديث بنجاح" });
+      refetchDealers();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const handlePromoteDealer = async (id: number) => {
+    if (!confirm("هل تريد ترقية هذا المستخدم إلى تاجر وتوثيقه؟")) return;
+    try {
+      await apiRequest(`/api/admin/users/${id}/promote-dealer`, "PATCH", {});
+      toast({ title: "تم ترقية المستخدم إلى تاجر" });
+      refetchUsers();
+      refetchDealers();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const saveInspectionCenter = async () => {
+    try {
+      if (editingInspection) {
+        await apiRequest(`/api/admin/inspection-centers/${editingInspection.id}`, "PATCH", inspectionForm);
+        toast({ title: "تم تحديث مركز الفحص" });
+      } else {
+        await apiRequest("/api/admin/inspection-centers", "POST", inspectionForm);
+        toast({ title: "تم إضافة مركز الفحص" });
+      }
+      setShowInspectionDialog(false);
+      setInspectionForm(emptyCenterForm);
+      setEditingInspection(null);
+      refetchInspection();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const deleteInspectionCenter = async (id: number) => {
+    if (!confirm("هل أنت متأكد من حذف مركز الفحص؟")) return;
+    try {
+      await apiRequest(`/api/admin/inspection-centers/${id}`, "DELETE");
+      toast({ title: "تم حذف مركز الفحص" });
+      refetchInspection();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const toggleInspectionField = async (id: number, field: "isVerified" | "isFeatured", current: boolean) => {
+    try {
+      await apiRequest(`/api/admin/inspection-centers/${id}`, "PATCH", { [field]: !current });
+      toast({ title: "تم التحديث" });
+      refetchInspection();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const saveScrapCenter = async () => {
+    try {
+      if (editingScrap) {
+        await apiRequest(`/api/admin/scrap-centers/${editingScrap.id}`, "PATCH", scrapForm);
+        toast({ title: "تم تحديث مركز الخردة" });
+      } else {
+        await apiRequest("/api/admin/scrap-centers", "POST", scrapForm);
+        toast({ title: "تم إضافة مركز الخردة" });
+      }
+      setShowScrapDialog(false);
+      setScrapForm(emptyCenterForm);
+      setEditingScrap(null);
+      refetchScrap();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const deleteScrapCenter = async (id: number) => {
+    if (!confirm("هل أنت متأكد من حذف مركز الخردة؟")) return;
+    try {
+      await apiRequest(`/api/admin/scrap-centers/${id}`, "DELETE");
+      toast({ title: "تم حذف مركز الخردة" });
+      refetchScrap();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
+  const toggleScrapField = async (id: number, field: "isVerified" | "isFeatured", current: boolean) => {
+    try {
+      await apiRequest(`/api/admin/scrap-centers/${id}`, "PATCH", { [field]: !current });
+      toast({ title: "تم التحديث" });
+      refetchScrap();
+    } catch { toast({ title: "حدث خطأ", variant: "destructive" }); }
+  };
+
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto w-full min-h-[70vh]">
       <div className="flex items-center gap-3 mb-8">
@@ -278,11 +399,13 @@ export default function AdminDashboard() {
       </div>
 
       {/* Dashboard stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         {[
-          { label: "عدد المستخدمين", value: dashboard?.usersCount, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "عدد الإعلانات", value: dashboard?.listingsCount, icon: Car, color: "text-green-600", bg: "bg-green-50" },
-          { label: "السيارات المفقودة", value: dashboard?.missingCarsCount, icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "المستخدمين", value: adminStats?.totalUsers ?? dashboard?.usersCount, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "التجار", value: adminStats?.totalDealers, icon: Store, color: "text-violet-600", bg: "bg-violet-50" },
+          { label: "الإعلانات", value: adminStats?.totalListings ?? dashboard?.listingsCount, icon: Car, color: "text-green-600", bg: "bg-green-50" },
+          { label: "مراكز الفحص", value: adminStats?.totalInspectionCenters, icon: Building2, color: "text-cyan-600", bg: "bg-cyan-50" },
+          { label: "مراكز الخردة", value: adminStats?.totalScrapCenters, icon: Recycle, color: "text-orange-600", bg: "bg-orange-50" },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-card border rounded-2xl p-5 shadow-sm flex items-center gap-4">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${bg}`}>
@@ -319,11 +442,22 @@ export default function AdminDashboard() {
       )}
 
       <Tabs defaultValue="review" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-5 mb-8 h-14 bg-muted/50 rounded-xl p-1">
-          <TabsTrigger value="users" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+        <TabsList className="grid w-full grid-cols-4 mb-2 h-auto bg-muted/50 rounded-xl p-1 gap-1">
+          <TabsTrigger value="users" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
             <Users className="w-4 h-4 ml-1" /> المستخدمين
           </TabsTrigger>
-          <TabsTrigger value="review" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
+          <TabsTrigger value="dealers" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
+            <Store className="w-4 h-4 ml-1 text-violet-500" /> التجار
+          </TabsTrigger>
+          <TabsTrigger value="inspection" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
+            <Building2 className="w-4 h-4 ml-1 text-cyan-500" /> مراكز الفحص
+          </TabsTrigger>
+          <TabsTrigger value="scrap" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
+            <Recycle className="w-4 h-4 ml-1 text-orange-500" /> مراكز الخردة
+          </TabsTrigger>
+        </TabsList>
+        <TabsList className="grid w-full grid-cols-4 mb-8 h-auto bg-muted/50 rounded-xl p-1 gap-1">
+          <TabsTrigger value="review" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 relative">
             <AlertTriangle className="w-4 h-4 ml-1 text-red-500" /> مراجعة
             {totalReviewPending > 0 && (
               <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
@@ -331,10 +465,10 @@ export default function AdminDashboard() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="listings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsTrigger value="listings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
             <Car className="w-4 h-4 ml-1" /> الإعلانات
           </TabsTrigger>
-          <TabsTrigger value="inbox" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
+          <TabsTrigger value="inbox" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 relative">
             <Inbox className="w-4 h-4 ml-1 text-blue-500" /> الرسائل
             {totalInboxUnread > 0 && (
               <span className="absolute -top-1.5 -left-1.5 bg-blue-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
@@ -342,7 +476,7 @@ export default function AdminDashboard() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsTrigger value="settings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
             <Settings className="w-4 h-4 ml-1" /> الإعدادات
           </TabsTrigger>
         </TabsList>
@@ -412,6 +546,238 @@ export default function AdminDashboard() {
                     </TableRow>
                   ))
                 )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Dealers Tab */}
+        <TabsContent value="dealers" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b flex justify-between items-center bg-violet-50 dark:bg-violet-950/10">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2"><Store className="w-5 h-5 text-violet-600" /> إدارة التجار</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">{dealers.length} تاجر مسجّل</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetchDealers()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+          </div>
+          <div className="p-4 border-b">
+            <Input
+              placeholder="بحث بالاسم أو الهاتف أو المعرض..."
+              value={dealerSearch}
+              onChange={e => setDealerSearch(e.target.value)}
+              className="max-w-sm"
+              dir="rtl"
+            />
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="text-right">التاجر</TableHead>
+                  <TableHead className="text-right">المعرض / الهاتف</TableHead>
+                  <TableHead className="text-right">المدينة</TableHead>
+                  <TableHead className="text-center">موثّق</TableHead>
+                  <TableHead className="text-center">مميّز</TableHead>
+                  <TableHead className="text-center">إجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingDealers ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : dealers.filter(d => !dealerSearch || d.name?.includes(dealerSearch) || d.phone?.includes(dealerSearch) || d.showroomName?.includes(dealerSearch)).length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">لا يوجد تجار</TableCell></TableRow>
+                ) : dealers.filter(d => !dealerSearch || d.name?.includes(dealerSearch) || d.phone?.includes(dealerSearch) || d.showroomName?.includes(dealerSearch)).map((dealer) => (
+                  <TableRow key={dealer.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-bold">{dealer.name}</p>
+                        <p className="text-xs text-muted-foreground">{dealer.email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        {dealer.showroomName && <p className="font-medium text-sm">{dealer.showroomName}</p>}
+                        <p className="text-xs text-muted-foreground" dir="ltr">{dealer.phone}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{dealer.city || "—"}</TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        size="sm" variant="ghost"
+                        className={dealer.isVerified ? "text-green-600" : "text-muted-foreground"}
+                        onClick={() => handleDealerToggle(dealer.id, "isVerified", dealer.isVerified)}
+                        title={dealer.isVerified ? "إلغاء التوثيق" : "توثيق التاجر"}
+                      >
+                        {dealer.isVerified ? <ShieldCheck className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        size="sm" variant="ghost"
+                        className={dealer.isFeaturedSeller ? "text-amber-500" : "text-muted-foreground"}
+                        onClick={() => handleDealerToggle(dealer.id, "isFeaturedSeller", dealer.isFeaturedSeller)}
+                        title={dealer.isFeaturedSeller ? "إلغاء التمييز" : "جعله مميزاً"}
+                      >
+                        <Star className={`w-5 h-5 ${dealer.isFeaturedSeller ? "fill-amber-500" : ""}`} />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => handleUserAction(dealer.id, 'delete')}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="p-4 border-t bg-muted/10">
+            <p className="text-xs text-muted-foreground">لترقية مستخدم إلى تاجر، انتقل إلى تبويب <strong>المستخدمين</strong> وعدّل دوره.</p>
+          </div>
+        </TabsContent>
+
+        {/* Inspection Centers Tab */}
+        <TabsContent value="inspection" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b flex justify-between items-center bg-cyan-50 dark:bg-cyan-950/10">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2"><Building2 className="w-5 h-5 text-cyan-600" /> مراكز الفحص</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">{inspectionCenters.length} مركز مسجّل</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => refetchInspection()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+              <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white gap-1" onClick={() => { setEditingInspection(null); setInspectionForm(emptyCenterForm); setShowInspectionDialog(true); }}>
+                <Plus className="w-4 h-4" /> إضافة مركز
+              </Button>
+            </div>
+          </div>
+          <div className="p-4 border-b">
+            <Input placeholder="بحث بالاسم أو المدينة..." value={inspectionSearch} onChange={e => setInspectionSearch(e.target.value)} className="max-w-sm" dir="rtl" />
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="text-right">الاسم</TableHead>
+                  <TableHead className="text-right">المدينة</TableHead>
+                  <TableHead className="text-right">الهاتف / واتساب</TableHead>
+                  <TableHead className="text-center">موثّق</TableHead>
+                  <TableHead className="text-center">مميّز</TableHead>
+                  <TableHead className="text-center">إجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingInspection ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : inspectionCenters.filter(c => !inspectionSearch || c.name?.includes(inspectionSearch) || c.city?.includes(inspectionSearch)).length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">لا يوجد مراكز فحص</TableCell></TableRow>
+                ) : inspectionCenters.filter(c => !inspectionSearch || c.name?.includes(inspectionSearch) || c.city?.includes(inspectionSearch)).map((center) => (
+                  <TableRow key={center.id}>
+                    <TableCell className="font-medium">{center.name}</TableCell>
+                    <TableCell>{center.city}</TableCell>
+                    <TableCell>
+                      <div dir="ltr" className="text-sm">
+                        {center.phone && <p>{center.phone}</p>}
+                        {center.whatsapp && <p className="text-green-600">{center.whatsapp}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="ghost" className={center.isVerified ? "text-green-600" : "text-muted-foreground"} onClick={() => toggleInspectionField(center.id, "isVerified", !!center.isVerified)}>
+                        {center.isVerified ? <ShieldCheck className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="ghost" className={center.isFeatured ? "text-amber-500" : "text-muted-foreground"} onClick={() => toggleInspectionField(center.id, "isFeatured", !!center.isFeatured)}>
+                        <Star className={`w-5 h-5 ${center.isFeatured ? "fill-amber-500" : ""}`} />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-2">
+                        <Button size="sm" variant="outline" className="h-8" onClick={() => { setEditingInspection(center); setInspectionForm({ name: center.name, city: center.city, address: center.address || "", phone: center.phone || "", whatsapp: center.whatsapp || "", description: center.description || "" }); setShowInspectionDialog(true); }}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => deleteInspectionCenter(center.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Scrap Centers Tab */}
+        <TabsContent value="scrap" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b flex justify-between items-center bg-orange-50 dark:bg-orange-950/10">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2"><Recycle className="w-5 h-5 text-orange-600" /> مراكز الخردة</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">{scrapCenters.length} مركز مسجّل</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => refetchScrap()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+              <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white gap-1" onClick={() => { setEditingScrap(null); setScrapForm(emptyCenterForm); setShowScrapDialog(true); }}>
+                <Plus className="w-4 h-4" /> إضافة مركز
+              </Button>
+            </div>
+          </div>
+          <div className="p-4 border-b">
+            <Input placeholder="بحث بالاسم أو المدينة..." value={scrapSearch} onChange={e => setScrapSearch(e.target.value)} className="max-w-sm" dir="rtl" />
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="text-right">الاسم</TableHead>
+                  <TableHead className="text-right">المدينة / العنوان</TableHead>
+                  <TableHead className="text-right">الهاتف / واتساب</TableHead>
+                  <TableHead className="text-center">موثّق</TableHead>
+                  <TableHead className="text-center">مميّز</TableHead>
+                  <TableHead className="text-center">إجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingScrap ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : scrapCenters.filter(c => !scrapSearch || c.name?.includes(scrapSearch) || c.city?.includes(scrapSearch)).length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">لا يوجد مراكز خردة</TableCell></TableRow>
+                ) : scrapCenters.filter(c => !scrapSearch || c.name?.includes(scrapSearch) || c.city?.includes(scrapSearch)).map((center) => (
+                  <TableRow key={center.id}>
+                    <TableCell className="font-medium">{center.name}</TableCell>
+                    <TableCell>
+                      <div>
+                        <p>{center.city}</p>
+                        {center.address && <p className="text-xs text-muted-foreground">{center.address}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div dir="ltr" className="text-sm">
+                        {center.phone && <p>{center.phone}</p>}
+                        {center.whatsapp && <p className="text-green-600">{center.whatsapp}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="ghost" className={center.isVerified ? "text-green-600" : "text-muted-foreground"} onClick={() => toggleScrapField(center.id, "isVerified", !!center.isVerified)}>
+                        {center.isVerified ? <ShieldCheck className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="ghost" className={center.isFeatured ? "text-amber-500" : "text-muted-foreground"} onClick={() => toggleScrapField(center.id, "isFeatured", !!center.isFeatured)}>
+                        <Star className={`w-5 h-5 ${center.isFeatured ? "fill-amber-500" : ""}`} />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-2">
+                        <Button size="sm" variant="outline" className="h-8" onClick={() => { setEditingScrap(center); setScrapForm({ name: center.name, city: center.city, address: center.address || "", phone: center.phone || "", whatsapp: center.whatsapp || "", description: center.description || "" }); setShowScrapDialog(true); }}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => deleteScrapCenter(center.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
@@ -1645,6 +2011,102 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
       )}
+
+      {/* Inspection Center Dialog */}
+      <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-cyan-600" />
+              {editingInspection ? "تعديل مركز الفحص" : "إضافة مركز فحص جديد"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">اسم المركز *</label>
+                <Input value={inspectionForm.name} onChange={e => setInspectionForm(f => ({ ...f, name: e.target.value }))} placeholder="مركز الفحص الفني" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">المدينة *</label>
+                <Input value={inspectionForm.city} onChange={e => setInspectionForm(f => ({ ...f, city: e.target.value }))} placeholder="دمشق" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">العنوان</label>
+              <Input value={inspectionForm.address} onChange={e => setInspectionForm(f => ({ ...f, address: e.target.value }))} placeholder="شارع..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">الهاتف</label>
+                <Input value={inspectionForm.phone} onChange={e => setInspectionForm(f => ({ ...f, phone: e.target.value }))} placeholder="+963..." dir="ltr" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">واتساب</label>
+                <Input value={inspectionForm.whatsapp} onChange={e => setInspectionForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="+963..." dir="ltr" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">الوصف</label>
+              <Input value={inspectionForm.description} onChange={e => setInspectionForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف المركز..." />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button className="flex-1 bg-cyan-600 hover:bg-cyan-700" onClick={saveInspectionCenter} disabled={!inspectionForm.name || !inspectionForm.city}>
+                <CheckCircle className="w-4 h-4 ml-2" /> {editingInspection ? "حفظ التعديلات" : "إضافة المركز"}
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowInspectionDialog(false)}>إلغاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Scrap Center Dialog */}
+      <Dialog open={showScrapDialog} onOpenChange={setShowScrapDialog}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Recycle className="w-5 h-5 text-orange-600" />
+              {editingScrap ? "تعديل مركز الخردة" : "إضافة مركز خردة جديد"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">اسم المركز *</label>
+                <Input value={scrapForm.name} onChange={e => setScrapForm(f => ({ ...f, name: e.target.value }))} placeholder="مركز خردة..." />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">المدينة *</label>
+                <Input value={scrapForm.city} onChange={e => setScrapForm(f => ({ ...f, city: e.target.value }))} placeholder="دمشق" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">العنوان</label>
+              <Input value={scrapForm.address} onChange={e => setScrapForm(f => ({ ...f, address: e.target.value }))} placeholder="شارع..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">الهاتف</label>
+                <Input value={scrapForm.phone} onChange={e => setScrapForm(f => ({ ...f, phone: e.target.value }))} placeholder="+963..." dir="ltr" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">واتساب</label>
+                <Input value={scrapForm.whatsapp} onChange={e => setScrapForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="+963..." dir="ltr" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">الوصف</label>
+              <Input value={scrapForm.description} onChange={e => setScrapForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف المركز..." />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button className="flex-1 bg-orange-600 hover:bg-orange-700" onClick={saveScrapCenter} disabled={!scrapForm.name || !scrapForm.city}>
+                <CheckCircle className="w-4 h-4 ml-2" /> {editingScrap ? "حفظ التعديلات" : "إضافة المركز"}
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowScrapDialog(false)}>إلغاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
