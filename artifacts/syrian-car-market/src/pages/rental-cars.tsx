@@ -180,7 +180,7 @@ export default function RentalCarsPage() {
     });
   };
 
-  const startChat = async (sellerId: number, name: string) => {
+  const startChat = async (sellerId: number, initialMsg?: string) => {
     if (!user) { navigate("/login"); return; }
     if (user.id === sellerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
     setStartingChat(true);
@@ -192,7 +192,8 @@ export default function RentalCarsPage() {
       });
       if (!resp.ok) throw new Error();
       const data = await resp.json() as { id: number };
-      navigate(`/chat?conversationId=${data.id}`);
+      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
+      navigate(`/messages?conversationId=${data.id}${suffix}`);
     } catch {
       toast({ title: "تعذّر فتح المحادثة", variant: "destructive" });
     } finally {
@@ -319,7 +320,7 @@ export default function RentalCarsPage() {
                         )}
                         {user && user.id !== car.sellerId && (
                           <Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-700 text-white gap-1"
-                            onClick={() => startChat(car.sellerId, car.brand)} disabled={startingChat}>
+                            onClick={() => startChat(car.sellerId, `مرحباً، أنا مهتم بتأجير ${[car.brand, car.model, car.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`)} disabled={startingChat}>
                             <MessageCircle className="w-3.5 h-3.5" /> مراسلة
                           </Button>
                         )}
@@ -377,7 +378,7 @@ export default function RentalCarsPage() {
                     size="sm"
                     variant="outline"
                     className="w-full gap-1.5 border-blue-300 text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold"
-                    onClick={() => startChat(req.userId, req.brand || "مستأجر")}
+                    onClick={() => startChat(req.userId, `مرحباً، رأيت طلبك لاستئجار ${[req.brand, req.model].filter(Boolean).join(" ") || "سيارة"}. أنا أملك ما تبحث عنه!`)}
                     disabled={startingChat}
                   >
                     {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}

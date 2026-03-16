@@ -66,7 +66,7 @@ export default function MotorcyclesPage() {
     createBuy.mutate({ ...buyForm, maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined, category: "motorcycle" });
   };
 
-  const startChat = async (sellerId: number) => {
+  const startChat = async (sellerId: number, initialMsg?: string) => {
     if (!user) { navigate("/login"); return; }
     if (user.id === sellerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
     try {
@@ -79,7 +79,8 @@ export default function MotorcyclesPage() {
       });
       if (!res.ok) throw new Error();
       const data = await res.json() as { id: number };
-      navigate(`/chat?conversationId=${data.id}`);
+      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
+      navigate(`/messages?conversationId=${data.id}${suffix}`);
     } catch {
       toast({ title: "تعذّر فتح المحادثة", variant: "destructive" });
     } finally {
@@ -156,7 +157,7 @@ export default function MotorcyclesPage() {
                     </div>
                     {m.price && <p className="text-rose-700 font-bold text-lg">${m.price.toLocaleString()}</p>}
                     {m.city && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{m.city}</p>}
-                    <Button size="sm" variant="outline" className="w-full gap-1.5 border-rose-300 text-rose-700 mt-1" onClick={e => { e.stopPropagation(); startChat(m.sellerId); }} disabled={startingChat}>
+                    <Button size="sm" variant="outline" className="w-full gap-1.5 border-rose-300 text-rose-700 mt-1" onClick={e => { e.stopPropagation(); startChat(m.sellerId, `مرحباً، أنا مهتم بـ ${[m.brand, m.model, m.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }} disabled={startingChat}>
                       {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />} مراسلة البائع
                     </Button>
                   </div>
@@ -196,7 +197,7 @@ export default function MotorcyclesPage() {
                     size="sm"
                     variant="outline"
                     className="w-full gap-1.5 border-rose-300 text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-bold"
-                    onClick={() => startChat(r.userId)}
+                    onClick={() => startChat(r.userId, `مرحباً، رأيت طلبك للدراجة النارية ${[r.brand, r.model].filter(Boolean).join(" ") || ""}. أنا لدي ما تبحث عنه، تواصل معي!`)}
                     disabled={startingChat}
                   >
                     {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}

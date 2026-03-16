@@ -21,7 +21,11 @@ export default function Chat() {
     return id ? Number(id) : null;
   });
 
-  const [newMessage, setNewMessage] = useState("");
+  const [newMessage, setNewMessage] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initial = params.get("initial");
+    return initial ? decodeURIComponent(initial) : "";
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {

@@ -175,7 +175,7 @@ export default function BuyRequests() {
     });
   };
 
-  const startChat = async (targetUserId: number) => {
+  const startChat = async (targetUserId: number, initialMsg?: string) => {
     if (!user) { navigate("/login"); return; }
     if (user.id === targetUserId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
     setStartingChat(true);
@@ -188,7 +188,8 @@ export default function BuyRequests() {
       });
       const data = await res.json() as any;
       if (!res.ok) throw new Error(data.error ?? "فشل");
-      navigate(`/messages?conversationId=${data.id}`);
+      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
+      navigate(`/messages?conversationId=${data.id}${suffix}`);
     } catch (err: any) {
       toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
     } finally { setStartingChat(false); }
@@ -406,7 +407,7 @@ export default function BuyRequests() {
                         </Button>
                       )}
                       {user && sellerId && user.id !== sellerId && (
-                        <Button size="sm" className="flex-1 rounded-xl gap-1 text-xs bg-primary hover:bg-primary/90 font-bold" onClick={() => startChat(sellerId)} disabled={startingChat}>
+                        <Button size="sm" className="flex-1 rounded-xl gap-1 text-xs bg-primary hover:bg-primary/90 font-bold" onClick={() => startChat(sellerId, `مرحباً، أنا مهتم بـ ${title}. هل ما زال متوفراً؟`)} disabled={startingChat}>
                           {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة
                         </Button>
                       )}
@@ -470,7 +471,7 @@ export default function BuyRequests() {
                     </div>
                   )}
                   {user && user.id !== r.userId && (
-                    <Button size="sm" className="rounded-xl gap-1.5 bg-primary hover:bg-primary/90 font-bold text-xs" onClick={() => startChat(r.userId)} disabled={startingChat}>
+                    <Button size="sm" className="rounded-xl gap-1.5 bg-primary hover:bg-primary/90 font-bold text-xs" onClick={() => startChat(r.userId, `مرحباً، رأيت طلبك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "مركبة"}. أنا لدي ما تبحث عنه، تواصل معي!`)} disabled={startingChat}>
                       {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة
                     </Button>
                   )}

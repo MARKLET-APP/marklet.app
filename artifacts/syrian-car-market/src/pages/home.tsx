@@ -33,7 +33,7 @@ export default function Home() {
   const [startingChat, setStartingChat] = useState<number | null>(null);
   const [detailRequest, setDetailRequest] = useState<any | null>(null);
 
-  const startChatWithBuyer = async (targetUserId: number, requestId: number) => {
+  const startChatWithBuyer = async (targetUserId: number, requestId: number, initialMsg?: string) => {
     if (!user) { navigate("/login"); return; }
     if (user.id === targetUserId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
     setStartingChat(requestId);
@@ -51,7 +51,8 @@ export default function Home() {
         throw new Error("failed");
       }
       const conv = await res.json();
-      navigate(`/messages?conversationId=${conv.id}`);
+      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
+      navigate(`/messages?conversationId=${conv.id}${suffix}`);
     } catch {
       toast({ title: t("common.error"), variant: "destructive" });
     } finally {
@@ -394,7 +395,7 @@ export default function Home() {
                       size="sm"
                       className="flex-1 rounded-xl gap-1 bg-primary hover:bg-primary/90 text-xs font-bold"
                       disabled={startingChat === r.id}
-                      onClick={() => startChatWithBuyer(r.userId, r.id)}
+                      onClick={() => startChatWithBuyer(r.userId, r.id, `مرحباً، رأيت طلب الشراء الخاص بك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "سيارة"}. أنا لدي ما تبحث عنه!`)}
                     >
                       {startingChat === r.id
                         ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
@@ -594,7 +595,7 @@ export default function Home() {
                 <Button
                   className="flex-1 gap-1.5 h-11 rounded-xl"
                   disabled={startingChat === detailRequest.id}
-                  onClick={() => { setDetailRequest(null); startChatWithBuyer(detailRequest.userId, detailRequest.id); }}
+                  onClick={() => { setDetailRequest(null); startChatWithBuyer(detailRequest.userId, detailRequest.id, `مرحباً، رأيت طلب الشراء الخاص بك لـ ${[detailRequest.brand, detailRequest.model].filter(Boolean).join(" ") || "سيارة"}. أنا لدي ما تبحث عنه!`); }}
                 >
                   {startingChat === detailRequest.id
                     ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />

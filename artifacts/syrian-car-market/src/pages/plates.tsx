@@ -163,7 +163,7 @@ export default function PlatesPage() {
     });
   };
 
-  const startChat = async (targetUserId: number) => {
+  const startChat = async (targetUserId: number, initialMsg?: string) => {
     if (!user) { navigate("/login"); return; }
     if (user.id === targetUserId) {
       toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return;
@@ -178,7 +178,8 @@ export default function PlatesPage() {
       });
       const data = await res.json() as any;
       if (!res.ok) throw new Error(data.error ?? "فشل بدء المحادثة");
-      navigate(`/messages?conversationId=${data.id}`);
+      const suffix = initialMsg ? `&initial=${encodeURIComponent(initialMsg)}` : "";
+      navigate(`/messages?conversationId=${data.id}${suffix}`);
     } catch (err: any) {
       toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
     } finally {
@@ -259,7 +260,7 @@ export default function PlatesPage() {
                   </div>
                   {p.sellerName && <p className="text-xs text-muted-foreground">البائع: {p.sellerName}</p>}
                   {user && user.id !== p.userId && (
-                    <Button size="sm" className="w-full rounded-xl gap-1.5 mt-1 font-bold text-xs" onClick={() => startChat(p.userId)} disabled={startingChat}>
+                    <Button size="sm" className="w-full rounded-xl gap-1.5 mt-1 font-bold text-xs" onClick={() => startChat(p.userId, `مرحباً، أنا مهتم بلوحة ${[p.plateNumber, p.province].filter(Boolean).join(" - ")}. هل ما زالت متوفرة؟`)} disabled={startingChat}>
                       {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة البائع
                     </Button>
                   )}
