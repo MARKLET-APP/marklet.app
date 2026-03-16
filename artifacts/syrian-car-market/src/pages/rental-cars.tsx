@@ -205,34 +205,33 @@ export default function RentalCarsPage() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      {/* Header */}
-      <div className="bg-gradient-to-l from-blue-600 to-blue-800 text-white px-6 pt-6 pb-10">
+      {/* Header + Action Buttons inside gradient */}
+      <div className="bg-gradient-to-l from-blue-600 to-blue-800 text-white px-4 pt-6 pb-5">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-3 mb-1">
             <Car className="w-7 h-7" />
             <h1 className="text-2xl font-extrabold tracking-tight">سيارات للإيجار</h1>
           </div>
-          <p className="text-blue-100 text-sm">استئجار السيارات بسهولة في سوريا</p>
+          <p className="text-blue-100 text-sm mb-4">استئجار السيارات بسهولة في سوريا</p>
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <Button
+              className="flex-1 gap-2 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-sm py-3 shadow-lg border-0"
+              onClick={() => setSellOpen(true)}
+            >
+              <Plus className="w-5 h-5" /> نشر إعلان تأجير
+            </Button>
+            <Button
+              className="flex-1 gap-2 rounded-2xl bg-blue-500/40 hover:bg-blue-500/60 text-white font-bold text-sm py-3 border border-white/40 shadow-sm"
+              onClick={() => setReqOpen(true)}
+            >
+              <ShoppingCart className="w-5 h-5" /> طلب استئجار
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 -mt-4">
-        {/* Action Buttons */}
-        <div className="flex gap-3 mb-6">
-          <Button
-            className="flex-1 gap-2 rounded-2xl shadow-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-base py-3"
-            onClick={() => setSellOpen(true)}
-          >
-            <Plus className="w-5 h-5" /> نشر إعلان تأجير
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 gap-2 rounded-2xl border-2 border-blue-400 text-blue-700 hover:bg-blue-50 font-bold text-base py-3"
-            onClick={() => setReqOpen(true)}
-          >
-            <ShoppingCart className="w-5 h-5" /> طلب استئجار
-          </Button>
-        </div>
+      <div className="max-w-2xl mx-auto px-4 pt-4">
 
         {/* Tabs */}
         <div className="flex border-b mb-5">
