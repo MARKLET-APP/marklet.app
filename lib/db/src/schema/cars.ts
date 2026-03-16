@@ -17,6 +17,7 @@ export const carsTable = pgTable("cars", {
   saleType: text("sale_type").notNull(),
   condition: text("condition"),
   category: text("category").notNull(),
+  listingType: text("listing_type"),
   description: text("description"),
   status: text("status").notNull().default("pending"),
   isFeatured: boolean("is_featured").notNull().default(false),

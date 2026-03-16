@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, MapPin, Trash2, Car, ShoppingCart, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, MapPin, Trash2, Car, ShoppingCart, CheckCircle2, XCircle, MessageCircle, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useStartChat } from "@/hooks/use-start-chat";
+import { ListingCard } from "@/components/ListingCard";
 
 type JunkCar = {
   id: number; sellerId: number; type: string | null; model: string | null;
@@ -34,6 +36,8 @@ export default function JunkCarsPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
+
+  const { startChat, loading: startingChat } = useStartChat();
 
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [sellOpen, setSellOpen] = useState(false);
@@ -152,33 +156,16 @@ export default function JunkCarsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {cars.map(c => (
-              <div key={c.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                {c.images?.[0] ? (
-                  <img src={c.images[0]} alt={c.model ?? "خردة"} className="w-full h-40 object-cover" />
-                ) : (
-                  <div className="w-full h-40 bg-muted flex items-center justify-center"><Car className="w-12 h-12 text-muted-foreground/30" /></div>
-                )}
-                <div className="p-4 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-bold text-foreground">{[c.type, c.model, c.year].filter(Boolean).join(" ") || "سيارة معطوبة"}</h3>
-                    {c.condition && (
-                      <Badge className={c.condition === "خردة كاملة" ? "bg-destructive/10 text-destructive" : "bg-amber-100 text-amber-700"}>
-                        {c.condition}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    {c.price ? <span className="font-bold text-primary" dir="ltr">${Number(c.price).toLocaleString()}</span> : <span className="text-muted-foreground text-sm">السعر قابل للتفاوض</span>}
-                    {c.city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</span>}
-                  </div>
-                  {c.description && <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>}
-                  {user && user.id === c.sellerId && (
-                    <Button size="sm" variant="ghost" className="w-full text-destructive hover:bg-destructive/10 mt-1" onClick={() => deleteJunk.mutate(c.id)}>
-                      <Trash2 className="w-4 h-4 me-1" /> حذف
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <ListingCard
+                key={c.id}
+                type="junk"
+                data={c}
+                currentUserId={user?.id}
+                onChat={() => startChat(c.sellerId, `مرحباً، أنا مهتم بـ ${[c.type, c.model, c.year].filter(Boolean).join(" ") || "سيارتك المعطوبة"}. هل ما زالت متوفرة؟`)}
+                chatLoading={startingChat}
+                onDelete={() => deleteJunk.mutate(c.id)}
+                deleteLoading={deleteJunk.isPending}
+              />
             ))}
           </div>
         )

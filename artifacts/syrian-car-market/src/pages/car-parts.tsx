@@ -11,6 +11,7 @@ import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCirc
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { ListingCard } from "@/components/ListingCard";
 
 type CarPart = {
   id: number; sellerId: number; name: string; carType: string | null;
@@ -171,34 +172,16 @@ export default function CarPartsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {parts.map(p => (
-                <div key={p.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  {p.images?.[0] ? (
-                    <img src={p.images[0]} alt={p.name} className="w-full h-40 object-cover" />
-                  ) : (
-                    <div className="w-full h-40 bg-muted flex items-center justify-center"><Wrench className="w-12 h-12 text-muted-foreground/30" /></div>
-                  )}
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-start justify-between">
-                      <h3 className="font-bold text-foreground">{p.name}</h3>
-                      {p.condition && <Badge variant="secondary" className="text-xs">{p.condition}</Badge>}
-                    </div>
-                    {(p.carType || p.model) && <p className="text-sm text-muted-foreground">{[p.carType, p.model, p.year].filter(Boolean).join(" • ")}</p>}
-                    <div className="flex items-center justify-between pt-1">
-                      {p.price ? <span className="font-bold text-primary" dir="ltr">${Number(p.price).toLocaleString()}</span> : <span className="text-muted-foreground text-sm">السعر عند التواصل</span>}
-                      {p.city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{p.city}</span>}
-                    </div>
-                    {user && user.id !== p.sellerId && (
-                      <Button size="sm" variant="outline" className="w-full gap-1 border-primary/40 text-primary mt-1" onClick={() => startChatWithSeller(p.sellerId, p.name)} disabled={startingChat}>
-                        <MessageCircle className="w-3.5 h-3.5" /> مراسلة البائع
-                      </Button>
-                    )}
-                    {user && user.id === p.sellerId && (
-                      <Button size="sm" variant="ghost" className="w-full text-destructive hover:bg-destructive/10 mt-1" onClick={() => deletePart.mutate(p.id)}>
-                        <Trash2 className="w-4 h-4 me-1" /> حذف
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                <ListingCard
+                  key={p.id}
+                  type="part"
+                  data={p}
+                  currentUserId={user?.id}
+                  onChat={() => startChatWithSeller(p.sellerId, p.name)}
+                  chatLoading={startingChat}
+                  onDelete={() => deletePart.mutate(p.id)}
+                  deleteLoading={deletePart.isPending}
+                />
               ))}
             </div>
           )}

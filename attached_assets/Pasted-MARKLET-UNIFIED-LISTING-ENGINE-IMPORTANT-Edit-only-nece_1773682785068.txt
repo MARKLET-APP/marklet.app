@@ -1,0 +1,302 @@
+MARKLET UNIFIED LISTING ENGINE
+
+IMPORTANT
+Edit only necessary files.
+Do not rebuild the entire project.
+Do not scan the whole repository.
+Implement a unified marketplace logic.
+
+Goal:
+Create one core system controlling all listings, requests, rental ads, and messaging.
+
+================================================
+1 CREATE UNIVERSAL LISTING TYPE
+================================================
+
+All marketplace records must include:
+
+listing_type
+
+Possible values:
+
+sale
+purchase_request
+rental
+rental_request
+parts
+scrap
+plate
+
+Example DB update:
+
+ALTER TABLE ads
+ADD COLUMN listing_type TEXT;
+
+================================================
+2 CREATE GLOBAL STATUS SYSTEM
+================================================
+
+All ads and requests must have status:
+
+pending
+approved
+rejected
+sold
+rented
+closed
+
+Add column if missing:
+
+ALTER TABLE ads
+ADD COLUMN status TEXT DEFAULT 'pending';
+
+Only show listings where:
+
+status = 'approved'
+
+================================================
+3 CREATE BASE LISTING MODEL
+================================================
+
+All listings must include common fields:
+
+id
+title
+description
+city
+user_id
+category
+listing_type
+status
+images
+created_at
+
+================================================
+4 CREATE UNIFIED LISTING CARD
+================================================
+
+Create component:
+
+ListingCard
+
+Structure:
+
+<div class="listing-card">
+
+<img src={listing.images[0] || "/icons/default.png"} />
+
+<div class="listing-info">
+
+<h3>{listing.title}</h3>
+
+<p>{listing.city}</p>
+
+</div>
+
+<div class="listing-actions">
+
+<button onclick="openListing(listing.id)">
+التفاصيل
+</button>
+
+<button onclick="openChat(listing.user_id, listing.id)">
+مراسلة
+</button>
+
+</div>
+
+</div>
+
+================================================
+5 HANDLE DIFFERENT LISTING TYPES
+================================================
+
+Inside ListingCard render logic:
+
+if(listing.listing_type === "sale"){
+
+show price
+show button "تم البيع"
+
+}
+
+if(listing.listing_type === "purchase_request"){
+
+show label:
+🔎 مستخدم يبحث عن
+
+show button:
+تم الشراء
+
+}
+
+if(listing.listing_type === "rental"){
+
+show daily_price
+show weekly_price
+
+button:
+تم التأجير
+
+}
+
+if(listing.listing_type === "rental_request"){
+
+show label:
+🚗 مستخدم يبحث عن سيارة للإيجار
+
+button:
+تم الاستئجار
+
+}
+
+if(listing.listing_type === "parts"){
+
+show part_name
+show center_name
+
+}
+
+if(listing.listing_type === "scrap"){
+
+show vehicle_condition
+show damage_level
+
+}
+
+================================================
+6 UNIFY MESSAGING SYSTEM
+================================================
+
+Create universal function:
+
+function openChat(userId, listingId){
+
+if(!userId){
+alert("لا يمكن فتح المحادثة حالياً")
+return
+}
+
+window.location.href =
+`/messages?user=${userId}&listing=${listingId}`
+
+}
+
+Use same function everywhere.
+
+================================================
+7 IMAGE SYSTEM
+================================================
+
+Every sale listing must include at least one image.
+
+If missing show:
+
+/icons/default.png
+
+================================================
+8 ADMIN APPROVAL SYSTEM
+================================================
+
+All new listings must be saved as:
+
+status = "pending"
+
+Admins approve them manually.
+
+Only approved listings visible to users.
+
+================================================
+9 FILTER LISTINGS BY CATEGORY
+================================================
+
+Each page must load listings using:
+
+category
+listing_type
+
+Example:
+
+New cars page:
+
+category = cars
+listing_type = sale
+condition = new
+
+Used cars page:
+
+category = cars
+listing_type = sale
+condition = used
+
+Purchase requests page:
+
+listing_type = purchase_request
+
+Rental requests page:
+
+listing_type = rental_request
+
+================================================
+10 NOTIFICATION SYSTEM
+================================================
+
+When user creates listing:
+
+show message:
+
+"تم إرسال الطلب للمراجعة وسيتم نشره بعد موافقة الإدارة"
+
+When admin approves listing:
+
+send notification to user.
+
+================================================
+11 APPLY ENGINE TO ALL SECTIONS
+================================================
+
+Replace old listing rendering logic in:
+
+New Cars
+
+Used Cars
+
+Motorcycles
+
+Rental Cars
+
+Spare Parts
+
+Scrap
+
+Plate Numbers
+
+All sections must use ListingCard component.
+
+================================================
+12 TESTING
+================================================
+
+Test following flows:
+
+Create sale listing
+
+Create purchase request
+
+Create rental ad
+
+Create rental request
+
+Messaging between users
+
+Admin approval
+
+Image upload
+
+Ensure every section uses unified logic.
+
+================================================
+
+App name remains:
+
+MARKLET

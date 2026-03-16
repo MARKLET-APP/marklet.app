@@ -14,6 +14,7 @@ import {
 import { useLocation } from "wouter";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { cn } from "@/lib/utils";
+import { ListingCard } from "@/components/ListingCard";
 
 type RentalCar = {
   id: number; sellerId: number; brand: string; model: string;
@@ -246,75 +247,20 @@ export default function RentalCarsPage() {
                 </Button>
               </div>
             ) : (
-              cars.map((car) => (
-                <div key={car.id} className="bg-card border rounded-2xl shadow-sm overflow-hidden">
-                  {/* Images */}
-                  {car.images && car.images.length > 0 && (
-                    <div className="relative h-48 overflow-hidden">
-                      <img src={car.images[0]} alt={`${car.brand} ${car.model}`} className="w-full h-full object-cover" />
-                      {car.images.length > 1 && (
-                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg flex items-center gap-1">
-                          <ImageIcon className="w-3 h-3" /> {car.images.length}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-bold text-lg">{car.brand} {car.model}</h3>
-                        {car.year && <p className="text-sm text-muted-foreground">{car.year}</p>}
-                      </div>
-                      <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">للإيجار</Badge>
-                    </div>
-
-                    {/* Prices */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {[
-                        formatPrice(car.dailyPrice, "/ يوم"),
-                        formatPrice(car.weeklyPrice, "/ أسبوع"),
-                        formatPrice(car.monthlyPrice, "/ شهر"),
-                      ].filter(Boolean).map((p, i) => (
-                        <div key={i} className="flex items-center gap-1 bg-green-50 text-green-700 rounded-xl px-3 py-1 text-sm font-semibold border border-green-100">
-                          <DollarSign className="w-3.5 h-3.5" /> {p}
-                        </div>
-                      ))}
-                    </div>
-
-                    {car.city && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                        <MapPin className="w-3.5 h-3.5" /> {car.city}
-                      </div>
-                    )}
-                    {car.description && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{car.description}</p>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">{car.sellerName}</span>
-                      <div className="flex gap-2">
-                        {user && user.id === car.sellerId && (
-                          <Button size="sm" variant="outline" className="h-8 border-red-300 text-red-600 hover:bg-red-50 gap-1"
-                            onClick={() => { if (confirm("حذف هذا الإعلان؟")) deleteCar.mutate(car.id); }}>
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {user && user.id !== car.sellerId && (
-                          <Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-700 text-white gap-1"
-                            onClick={() => startChat(car.sellerId, `مرحباً، أنا مهتم بتأجير ${[car.brand, car.model, car.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`)} disabled={startingChat}>
-                            <MessageCircle className="w-3.5 h-3.5" /> مراسلة
-                          </Button>
-                        )}
-                        {!user && (
-                          <Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-700 text-white gap-1" onClick={() => navigate("/login")}>
-                            <MessageCircle className="w-3.5 h-3.5" /> مراسلة
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {cars.map((car) => (
+                  <ListingCard
+                    key={car.id}
+                    type="rental"
+                    data={car}
+                    currentUserId={user?.id}
+                    onChat={() => startChat(car.sellerId, `مرحباً، أنا مهتم بتأجير ${[car.brand, car.model, car.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`)}
+                    chatLoading={startingChat}
+                    onDelete={() => { if (confirm("حذف هذا الإعلان؟")) deleteCar.mutate(car.id); }}
+                    deleteLoading={deleteCar.isPending}
+                  />
+                ))}
+              </div>
             )}
           </div>
         )}

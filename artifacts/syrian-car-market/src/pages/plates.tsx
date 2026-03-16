@@ -10,6 +10,7 @@ import { Plus, MapPin, Trash2, ShoppingCart, CheckCircle2, XCircle, Hash, Upload
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { ListingCard } from "@/components/ListingCard";
 
 type PlateItem = {
   id: number; userId: number; brand: string | null; price: number | null;
@@ -218,32 +219,14 @@ export default function PlatesPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {plates.map((p: any) => (
-              <div key={p.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                {p.primaryImage ? (
-                  <img src={p.primaryImage} alt="لوحة" className="w-full h-36 object-cover border-b" />
-                ) : (
-                  <div className="w-full h-36 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 flex flex-col items-center justify-center gap-2 border-b">
-                    <div className="bg-amber-400 text-amber-900 font-black text-2xl tracking-widest px-6 py-2 rounded-lg border-4 border-amber-600 shadow-md">
-                      {p.brand?.replace(/^[^:]+:\s*/, "") ?? "لوحة مميزة"}
-                    </div>
-                    <span className="text-xs text-amber-700 font-semibold">لوحة مرور سورية</span>
-                  </div>
-                )}
-                <div className="p-4 space-y-2">
-                  <p className="font-bold text-sm">{p.brand ?? "لوحة مميزة"}</p>
-                  {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
-                  <div className="flex items-center justify-between pt-1">
-                    {p.price ? <span className="font-bold text-primary" dir="ltr">${Number(p.price).toLocaleString()}</span> : <span className="text-muted-foreground text-sm">السعر قابل للتفاوض</span>}
-                    {p.city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{p.city}</span>}
-                  </div>
-                  {p.sellerName && <p className="text-xs text-muted-foreground">البائع: {p.sellerName}</p>}
-                  {user && user.id !== p.userId && (
-                    <Button size="sm" className="w-full rounded-xl gap-1.5 mt-1 font-bold text-xs" onClick={() => startChat(p.userId, `مرحباً، أنا مهتم بلوحة ${[p.plateNumber, p.province].filter(Boolean).join(" - ")}. هل ما زالت متوفرة؟`)} disabled={startingChat}>
-                      {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة البائع
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <ListingCard
+                key={p.id}
+                type="plate"
+                data={{ ...p, sellerId: p.userId }}
+                currentUserId={user?.id}
+                onChat={() => startChat(p.userId, `مرحباً، أنا مهتم بلوحة ${[p.brand, p.city].filter(Boolean).join(" - ")}. هل ما زالت متوفرة؟`)}
+                chatLoading={startingChat}
+              />
             ))}
           </div>
         )

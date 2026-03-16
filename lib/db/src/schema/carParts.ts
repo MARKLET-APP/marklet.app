@@ -12,6 +12,7 @@ export const carPartsTable = pgTable("car_parts", {
   city: text("city"),
   images: text("images").array(),
   description: text("description"),
+  status: text("status").notNull().default("approved"),
   followupSentAt: timestamp("followup_sent_at"),
   soldConfirmed: text("sold_confirmed"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

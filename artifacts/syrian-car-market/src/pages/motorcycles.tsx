@@ -11,6 +11,7 @@ import { Plus, MapPin, ShoppingCart, MessageCircle, Loader2, Bike, Info } from "
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { ListingCard } from "@/components/ListingCard";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -124,24 +125,14 @@ export default function MotorcyclesPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-6">
               {motos.map(m => (
-                <div key={m.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/cars/${m.id}`)}>
-                  {m.images?.[0] ? (
-                    <img src={m.images[0]} alt={`${m.brand} ${m.model}`} className="w-full h-44 object-cover" />
-                  ) : (
-                    <div className="w-full h-44 bg-muted flex items-center justify-center"><Bike className="w-12 h-12 text-muted-foreground/30" /></div>
-                  )}
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-foreground">{[m.brand, m.model, m.year].filter(Boolean).join(" ")}</h3>
-                      {m.isFeatured && <Badge className="bg-amber-500 text-white text-xs shrink-0">مميز</Badge>}
-                    </div>
-                    {m.price && <p className="text-rose-700 font-bold text-lg">${m.price.toLocaleString()}</p>}
-                    {m.city && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{m.city}</p>}
-                    <Button size="sm" variant="outline" className="w-full gap-1.5 border-rose-300 text-rose-700 mt-1" onClick={e => { e.stopPropagation(); startChat(m.sellerId, `مرحباً، أنا مهتم بـ ${[m.brand, m.model, m.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }} disabled={startingChat}>
-                      {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />} مراسلة البائع
-                    </Button>
-                  </div>
-                </div>
+                <ListingCard
+                  key={m.id}
+                  type="moto"
+                  data={m}
+                  currentUserId={user?.id}
+                  onChat={() => startChat(m.sellerId, `مرحباً، أنا مهتم بـ ${[m.brand, m.model, m.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`)}
+                  chatLoading={startingChat}
+                />
               ))}
             </div>
           )

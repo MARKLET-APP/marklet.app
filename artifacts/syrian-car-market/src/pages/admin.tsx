@@ -112,6 +112,18 @@ export default function AdminDashboard() {
     enabled: user?.role === 'admin',
   });
 
+  const { data: pendingCarParts = [], refetch: refetchCarParts } = useQuery<any[]>({
+    queryKey: ["/admin/car-parts/pending"],
+    queryFn: () => apiRequest<any[]>("/api/admin/car-parts/pending"),
+    enabled: user?.role === 'admin',
+  });
+
+  const { data: pendingJunkCars = [], refetch: refetchJunkCarsAdmin } = useQuery<any[]>({
+    queryKey: ["/admin/junk-cars/pending"],
+    queryFn: () => apiRequest<any[]>("/api/admin/junk-cars/pending"),
+    enabled: user?.role === 'admin',
+  });
+
   const handleRentalApproval = async (id: number, action: "approve" | "reject") => {
     try {
       const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -123,8 +135,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleCarPartApproval = async (id: number, action: "approve" | "reject") => {
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      await api.patch(`${BASE}/api/admin/car-parts/${id}/approve`, { approve: action === "approve" });
+      toast({ title: action === "approve" ? "تمت الموافقة على إعلان القطعة" : "تم رفض إعلان القطعة" });
+      refetchCarParts();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+  };
+
+  const handleJunkCarApproval = async (id: number, action: "approve" | "reject") => {
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      await api.patch(`${BASE}/api/admin/junk-cars/${id}/approve`, { approve: action === "approve" });
+      toast({ title: action === "approve" ? "تمت الموافقة على الإعلان" : "تم رفض الإعلان" });
+      refetchJunkCarsAdmin();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
+  };
+
   const totalInboxUnread = (supportMessages as any[]).length;
-  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingPartRequests.length + pendingRentals.length;
+  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingPartRequests.length + pendingRentals.length + pendingCarParts.length + pendingJunkCars.length;
 
   const handleBuyRequestStatus = async (id: number, status: "approved" | "rejected") => {
     try {
@@ -748,6 +782,113 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>{/* end rental-cars sub-section */}
+
+          {/* Car Parts Pending */}
+          <div className="border-t-4 border-border mt-2">
+            <div className="p-5 border-b flex justify-between items-center bg-orange-50/50 dark:bg-orange-950/10">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Wrench className="w-5 h-5 text-orange-600" /> قطع السيارات المعلقة
+                  {pendingCarParts.length > 0 && (
+                    <Badge className="bg-orange-600 hover:bg-orange-700 text-white">{pendingCarParts.length} معلق</Badge>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">إعلانات قطع الغيار بانتظار الموافقة</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchCarParts()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3">
+              {pendingCarParts.length === 0 ? (
+                <div className="text-center py-10">
+                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                  <p className="font-bold">لا توجد قطع معلقة</p>
+                </div>
+              ) : pendingCarParts.map((p: any) => (
+                <div key={p.id} className="border-2 border-orange-200 rounded-2xl p-4 bg-background hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex gap-3">
+                      {p.images?.[0] && <img src={p.images[0]} alt={p.name} className="w-16 h-16 rounded-xl object-cover border shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="font-bold text-foreground">{p.name}</p>
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">معلق</Badge>
+                          {p.condition && <Badge variant="outline" className="text-xs">{p.condition}</Badge>}
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                          {p.price && <span className="text-primary font-bold">${Number(p.price).toLocaleString()}</span>}
+                          {p.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.city}</span>}
+                          {p.sellerName && <span>البائع: {p.sellerName}</span>}
+                          {(p.carType || p.model) && <span>{[p.carType, p.model, p.year].filter(Boolean).join(" • ")}</span>}
+                        </div>
+                        {p.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{p.description}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                      <Button size="sm" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5" onClick={() => handleCarPartApproval(p.id, "approve")}>
+                        <CheckCircle className="w-4 h-4" /> موافقة
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-9 border-red-400 text-red-600 hover:bg-red-50 gap-1.5" onClick={() => handleCarPartApproval(p.id, "reject")}>
+                        <XCircle className="w-4 h-4" /> رفض
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>{/* end car-parts sub-section */}
+
+          {/* Junk Cars Pending */}
+          <div className="border-t-4 border-border mt-2">
+            <div className="p-5 border-b flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/10">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  🚗 السيارات المعطوبة المعلقة
+                  {pendingJunkCars.length > 0 && (
+                    <Badge className="bg-slate-600 hover:bg-slate-700 text-white">{pendingJunkCars.length} معلق</Badge>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">إعلانات السيارات المعطوبة والخردة بانتظار الموافقة</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchJunkCarsAdmin()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3">
+              {pendingJunkCars.length === 0 ? (
+                <div className="text-center py-10">
+                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                  <p className="font-bold">لا توجد سيارات معطوبة معلقة</p>
+                </div>
+              ) : pendingJunkCars.map((j: any) => (
+                <div key={j.id} className="border-2 border-slate-200 rounded-2xl p-4 bg-background hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex gap-3">
+                      {j.images?.[0] && <img src={j.images[0]} alt={j.type ?? "خردة"} className="w-16 h-16 rounded-xl object-cover border shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="font-bold text-foreground">{[j.type, j.model, j.year].filter(Boolean).join(" ") || "سيارة معطوبة"}</p>
+                          <Badge variant="secondary" className="bg-slate-100 text-slate-700 text-xs">معلق</Badge>
+                          {j.condition && <Badge className={j.condition === "خردة كاملة" ? "bg-destructive/10 text-destructive text-xs" : "bg-amber-100 text-amber-700 text-xs"}>{j.condition}</Badge>}
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                          {j.price && <span className="text-primary font-bold">${Number(j.price).toLocaleString()}</span>}
+                          {j.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{j.city}</span>}
+                          {j.sellerName && <span>البائع: {j.sellerName}</span>}
+                        </div>
+                        {j.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{j.description}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                      <Button size="sm" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5" onClick={() => handleJunkCarApproval(j.id, "approve")}>
+                        <CheckCircle className="w-4 h-4" /> موافقة
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-9 border-red-400 text-red-600 hover:bg-red-50 gap-1.5" onClick={() => handleJunkCarApproval(j.id, "reject")}>
+                        <XCircle className="w-4 h-4" /> رفض
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>{/* end junk-cars sub-section */}
 
         </TabsContent>
 
