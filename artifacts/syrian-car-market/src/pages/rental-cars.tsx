@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, MapPin, Trash2, Car, ShoppingCart, MessageCircle,
-  DollarSign, Calendar, Phone, ImageIcon, Loader2,
+  DollarSign, Calendar, Phone, ImageIcon, Loader2, LogIn,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -134,6 +134,11 @@ export default function RentalCarsPage() {
   };
 
   const handleSellSubmit = () => {
+    if (!user) {
+      setSellOpen(false);
+      navigate("/login");
+      return;
+    }
     if (!sellForm.brand || !sellForm.model) {
       toast({ title: "يرجى إدخال الشركة والموديل", variant: "destructive" });
       return;
@@ -153,6 +158,11 @@ export default function RentalCarsPage() {
   };
 
   const handleReqSubmit = () => {
+    if (!user) {
+      setReqOpen(false);
+      navigate("/login");
+      return;
+    }
     if (!reqForm.carType) {
       toast({ title: "يرجى تحديد نوع السيارة", variant: "destructive" });
       return;
@@ -210,17 +220,17 @@ export default function RentalCarsPage() {
         {/* Action Buttons */}
         <div className="flex gap-3 mb-6">
           <Button
-            className="flex-1 gap-2 rounded-2xl shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => { if (!user) navigate("/login"); else setSellOpen(true); }}
+            className="flex-1 gap-2 rounded-2xl shadow-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-base py-3"
+            onClick={() => setSellOpen(true)}
           >
-            <Plus className="w-4 h-4" /> نشر إعلان تأجير
+            <Plus className="w-5 h-5" /> نشر إعلان تأجير
           </Button>
           <Button
             variant="outline"
-            className="flex-1 gap-2 rounded-2xl border-blue-300 text-blue-700 hover:bg-blue-50"
-            onClick={() => { if (!user) navigate("/login"); else setReqOpen(true); }}
+            className="flex-1 gap-2 rounded-2xl border-2 border-blue-400 text-blue-700 hover:bg-blue-50 font-bold text-base py-3"
+            onClick={() => setReqOpen(true)}
           >
-            <ShoppingCart className="w-4 h-4" /> طلب استئجار
+            <ShoppingCart className="w-5 h-5" /> طلب استئجار
           </Button>
         </div>
 
@@ -378,6 +388,19 @@ export default function RentalCarsPage() {
             <DialogDescription className="sr-only">نموذج نشر إعلان تأجير سيارة</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-2">
+            {!user && (
+              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <LogIn className="w-5 h-5 text-blue-600 shrink-0" />
+                <div className="flex-1 text-sm">
+                  <p className="font-semibold text-blue-800">يجب تسجيل الدخول أولاً</p>
+                  <p className="text-blue-600 text-xs mt-0.5">سيتم إعادة توجيهك لتسجيل الدخول عند النشر</p>
+                </div>
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs px-3"
+                  onClick={() => { setSellOpen(false); navigate("/login"); }}>
+                  دخول
+                </Button>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block">الشركة *</label>
@@ -475,6 +498,19 @@ export default function RentalCarsPage() {
             <DialogDescription className="sr-only">نموذج طلب استئجار سيارة</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-2">
+            {!user && (
+              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <LogIn className="w-5 h-5 text-blue-600 shrink-0" />
+                <div className="flex-1 text-sm">
+                  <p className="font-semibold text-blue-800">يجب تسجيل الدخول أولاً</p>
+                  <p className="text-blue-600 text-xs mt-0.5">سيتم إعادة توجيهك لتسجيل الدخول عند الإرسال</p>
+                </div>
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs px-3"
+                  onClick={() => { setReqOpen(false); navigate("/login"); }}>
+                  دخول
+                </Button>
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium mb-1 block">نوع السيارة المطلوب *</label>
               <Input placeholder="مثال: سيارة عائلية، SUV، سيدان" value={reqForm.carType}
