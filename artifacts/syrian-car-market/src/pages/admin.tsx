@@ -69,6 +69,8 @@ export default function AdminDashboard() {
   const [previewCar, setPreviewCar] = useState<PendingCar | null>(null);
   const [previewImgIdx, setPreviewImgIdx] = useState(0);
   const [previewBuyRequest, setPreviewBuyRequest] = useState<any | null>(null);
+  const [previewRental, setPreviewRental] = useState<any | null>(null);
+  const [previewRentalImgIdx, setPreviewRentalImgIdx] = useState(0);
 
   const { data: pendingCars, isLoading: loadingPending, refetch: refetchPending } = useQuery<PendingCar[]>({
     queryKey: ["/admin/pending-cars"],
@@ -658,6 +660,14 @@ export default function AdminDashboard() {
                     {r.createdAt && <p className="text-xs text-muted-foreground/60 mt-1">{new Date(r.createdAt).toLocaleDateString("ar-EG")}</p>}
                   </div>
                   <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
+                      onClick={() => { setPreviewRental(r); setPreviewRentalImgIdx(0); }}
+                    >
+                      <Eye className="w-4 h-4" /> معاينة
+                    </Button>
                     <Button
                       size="sm"
                       className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
@@ -1279,6 +1289,146 @@ export default function AdminDashboard() {
                 </Button>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      )}
+
+      {/* ===== Rental Car Full Preview Dialog ===== */}
+      {previewRental && (
+      <Dialog open={!!previewRental} onOpenChange={(open) => { if (!open) setPreviewRental(null); }}>
+        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir="rtl">
+          <DialogHeader className="px-6 pt-5 pb-0">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Car className="w-5 h-5 text-blue-600" />
+              معاينة إعلان التأجير — {[previewRental.brand, previewRental.model, previewRental.year].filter(Boolean).join(" ") || "سيارة للإيجار"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Images */}
+          <div className="bg-black relative">
+            {(previewRental.images ?? []).length > 0 ? (
+              <>
+                <div className="relative h-60 overflow-hidden">
+                  <img
+                    src={(previewRental.images ?? [])[previewRentalImgIdx]}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  {(previewRental.images ?? []).length > 1 && (
+                    <>
+                      <button
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+                        onClick={() => setPreviewRentalImgIdx(i => (i + 1) % (previewRental.images ?? []).length)}
+                      ><ChevronLeft className="w-4 h-4" /></button>
+                      <button
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+                        onClick={() => setPreviewRentalImgIdx(i => (i - 1 + (previewRental.images ?? []).length) % (previewRental.images ?? []).length)}
+                      ><ChevronRight className="w-4 h-4" /></button>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                        {(previewRental.images ?? []).map((_: any, i: number) => (
+                          <button key={i} onClick={() => setPreviewRentalImgIdx(i)}
+                            className={`w-2 h-2 rounded-full transition-all ${i === previewRentalImgIdx ? 'bg-white scale-125' : 'bg-white/50'}`} />
+                        ))}
+                      </div>
+                      <span className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+                        {previewRentalImgIdx + 1} / {(previewRental.images ?? []).length}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {(previewRental.images ?? []).length > 1 && (
+                  <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-black/70">
+                    {(previewRental.images ?? []).map((img: string, i: number) => (
+                      <button key={i} onClick={() => setPreviewRentalImgIdx(i)}
+                        className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${i === previewRentalImgIdx ? 'border-blue-400' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 text-white/60 gap-3">
+                <ImageOff className="w-10 h-10" />
+                <p className="text-sm">لم يرفع صاحب الإعلان أي صور</p>
+              </div>
+            )}
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            {/* Prices */}
+            <div className="grid grid-cols-3 gap-3">
+              {previewRental.dailyPrice && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 text-center border border-blue-200">
+                  <p className="text-xs text-muted-foreground">يومي</p>
+                  <p className="font-extrabold text-blue-700 text-base" dir="ltr">${previewRental.dailyPrice}</p>
+                </div>
+              )}
+              {previewRental.weeklyPrice && (
+                <div className="bg-muted/40 rounded-xl p-3 text-center">
+                  <p className="text-xs text-muted-foreground">أسبوعي</p>
+                  <p className="font-bold text-sm" dir="ltr">${previewRental.weeklyPrice}</p>
+                </div>
+              )}
+              {previewRental.monthlyPrice && (
+                <div className="bg-muted/40 rounded-xl p-3 text-center">
+                  <p className="text-xs text-muted-foreground">شهري</p>
+                  <p className="font-bold text-sm" dir="ltr">${previewRental.monthlyPrice}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Location + Date */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              {previewRental.city && (
+                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{previewRental.city}</span>
+              )}
+              {previewRental.createdAt && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4" />{new Date(previewRental.createdAt).toLocaleDateString("ar-EG")}
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            {previewRental.description && (
+              <div className="border rounded-xl p-4 bg-muted/20">
+                <p className="text-xs font-medium text-muted-foreground mb-2">وصف الإعلان</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{previewRental.description}</p>
+              </div>
+            )}
+
+            {/* Owner info */}
+            <div className="border rounded-xl p-4 flex items-center justify-between bg-muted/10">
+              <div>
+                <p className="text-xs text-muted-foreground">صاحب الإعلان</p>
+                <p className="font-bold">{previewRental.sellerName || "مجهول"}</p>
+              </div>
+              {previewRental.sellerPhone && (
+                <a href={`tel:${previewRental.sellerPhone}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                  <Phone className="w-4 h-4" />
+                  <span dir="ltr" className="font-mono">{previewRental.sellerPhone}</span>
+                </a>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3 pb-1">
+              <Button
+                className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-bold rounded-xl"
+                onClick={() => { handleRentalApproval(previewRental.id, "approve"); setPreviewRental(null); }}
+              >
+                <CheckCircle className="w-5 h-5" /> الموافقة ونشر الإعلان
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 h-11 border-2 border-red-400 text-red-600 hover:bg-red-50 gap-2 font-bold rounded-xl"
+                onClick={() => { handleRentalApproval(previewRental.id, "reject"); setPreviewRental(null); }}
+              >
+                <XCircle className="w-5 h-5" /> رفض الإعلان
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
