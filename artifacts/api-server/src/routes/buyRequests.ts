@@ -108,6 +108,7 @@ router.get("/admin/buy-requests", ...guard, async (_req, res): Promise<void> => 
       paymentType: buyRequestsTable.paymentType,
       description: buyRequestsTable.description,
       status: buyRequestsTable.status,
+      category: buyRequestsTable.category,
       createdAt: buyRequestsTable.createdAt,
       userName: usersTable.name,
       userPhone: usersTable.phone,

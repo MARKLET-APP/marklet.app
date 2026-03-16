@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCircle, MessageCircle } from "lucide-react";
+import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCircle, MessageCircle, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
@@ -104,6 +104,29 @@ export default function CarPartsPage() {
     setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
+
+  const startChatWithBuyer = async (buyerId: number, partName: string) => {
+    if (!user) { navigate("/login"); return; }
+    if (user.id === buyerId) { toast({ title: "لا يمكنك مراسلة نفسك", variant: "destructive" }); return; }
+    setStartingChat(true);
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(`${BASE}/api/chats/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sellerId: buyerId, carId: null }),
+      });
+      const data = await res.json() as any;
+      if (!res.ok) { throw new Error(data.error ?? "فشل"); }
+      const initialMsg = encodeURIComponent(`مرحباً، رأيت طلبك للقطعة: ${partName}. أنا لدي ما تبحث عنه!`);
+      navigate(`/messages?conversationId=${data.id}&initial=${initialMsg}`);
+    } catch (err: any) {
+      toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   const startChatWithSeller = async (sellerId: number, partName: string) => {
     if (!user) { navigate("/login"); return; }
@@ -230,12 +253,26 @@ export default function CarPartsPage() {
           <div className="space-y-3">
             {buyReqs.map(r => (
               <div key={r.id} className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                <p className="font-bold text-foreground">{[r.brand, r.model].filter(Boolean).join(" ") || "قطعة غيار"}</p>
+                <p className="font-bold text-foreground">{r.brand || "قطعة غيار"}</p>
+                {r.model && <p className="text-sm text-muted-foreground">نوع السيارة: {r.model}</p>}
                 {r.maxPrice && <p className="text-sm text-primary font-semibold">حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "ل.س"}</p>}
                 {r.description && <p className="text-sm text-muted-foreground mt-1">{r.description}</p>}
-                <div className="flex gap-3 text-xs text-muted-foreground flex-wrap mt-1">
-                  {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
-                  {r.userName && <span>الطالب: {r.userName}</span>}
+                <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
+                  <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
+                    {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
+                    {r.userName && <span>الطالب: {r.userName}</span>}
+                  </div>
+                  {user && user.id !== r.userId && (
+                    <Button size="sm" className="rounded-xl gap-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs"
+                      onClick={() => startChatWithBuyer(r.userId, r.brand || "القطعة")} disabled={startingChat}>
+                      {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />} لدي ما تبحث عنه
+                    </Button>
+                  )}
+                  {!user && (
+                    <Button size="sm" variant="outline" className="rounded-xl gap-1.5 text-xs" onClick={() => navigate("/login")}>
+                      <MessageCircle className="w-3 h-3" /> سجّل دخولك للتواصل
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
@@ -83,7 +83,10 @@ export default function AdminDashboard() {
     queryFn: () => api.admin.listBuyRequests(),
     enabled: user?.role === 'admin',
   });
-  const pendingBuyRequests = (adminBuyRequests as any[]).filter(r => r.status === "pending");
+  const adminCarBuyRequests = (adminBuyRequests as any[]).filter(r => r.category !== "parts");
+  const adminPartsBuyRequests = (adminBuyRequests as any[]).filter(r => r.category === "parts");
+  const pendingBuyRequests = adminCarBuyRequests.filter(r => r.status === "pending");
+  const pendingPartRequests = adminPartsBuyRequests.filter(r => r.status === "pending");
 
   const { data: adminJunkCars = [], refetch: refetchJunkCars } = useQuery<any[]>({
     queryKey: ["/admin/junk-cars"],
@@ -121,7 +124,7 @@ export default function AdminDashboard() {
   };
 
   const totalInboxUnread = (supportMessages as any[]).length;
-  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingRentals.length;
+  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingPartRequests.length + pendingRentals.length;
 
   const handleBuyRequestStatus = async (id: number, status: "approved" | "rejected") => {
     try {
@@ -555,19 +558,19 @@ export default function AdminDashboard() {
           <div className="p-5 border-b flex justify-between items-center bg-blue-50/50 dark:bg-blue-950/10">
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
-                <CartIcon className="w-5 h-5 text-primary" /> طلبات الشراء
+                <CartIcon className="w-5 h-5 text-primary" /> طلبات شراء السيارات
                 {pendingBuyRequests.length > 0 && (
                   <Badge className="bg-amber-500 hover:bg-amber-600">{pendingBuyRequests.length} معلق</Badge>
                 )}
               </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">{(adminBuyRequests as any[]).length} طلب إجمالاً</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{adminCarBuyRequests.length} طلب إجمالاً</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => refetchBuyRequests()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
           </div>
           <div className="p-4 space-y-3">
-            {(adminBuyRequests as any[]).length === 0 ? (
-              <div className="text-center py-10 text-muted-foreground">لا توجد طلبات شراء</div>
-            ) : (adminBuyRequests as any[]).map((r: any) => (
+            {adminCarBuyRequests.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">لا توجد طلبات شراء سيارات</div>
+            ) : adminCarBuyRequests.map((r: any) => (
               <div key={r.id} className="border rounded-xl p-4 bg-background flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -599,22 +602,12 @@ export default function AdminDashboard() {
                       </Button>
                     </>
                   )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    title="حذف الطلب"
+                  <Button size="sm" variant="ghost" className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive" title="حذف الطلب"
                     onClick={async () => {
                       if (!confirm(`حذف طلب شراء "${r.brand || "هذا الطلب"}"؟`)) return;
-                      try {
-                        await api.delete(`/api/admin/buy-requests/${r.id}`);
-                        toast({ title: "✅ تم حذف طلب الشراء" });
-                        refetchBuyRequests();
-                      } catch {
-                        toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" });
-                      }
-                    }}
-                  >
+                      try { await api.delete(`/api/admin/buy-requests/${r.id}`); toast({ title: "✅ تم حذف طلب الشراء" }); refetchBuyRequests(); }
+                      catch { toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" }); }
+                    }}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -622,6 +615,73 @@ export default function AdminDashboard() {
             ))}
           </div>
           </div>{/* end buy-requests sub-section */}
+
+          {/* ===== Car Parts Buy Requests sub-section ===== */}
+          <div className="border-t-4 border-border mt-2">
+            <div className="p-5 border-b flex justify-between items-center bg-orange-50/50 dark:bg-orange-950/10">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Wrench className="w-5 h-5 text-orange-500" /> طلبات شراء قطع السيارات
+                  {pendingPartRequests.length > 0 && (
+                    <Badge className="bg-orange-500 hover:bg-orange-600 text-white">{pendingPartRequests.length} معلق</Badge>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">{adminPartsBuyRequests.length} طلب إجمالاً</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchBuyRequests()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3">
+              {adminPartsBuyRequests.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">لا توجد طلبات شراء قطع</div>
+              ) : adminPartsBuyRequests.map((r: any) => (
+                <div key={r.id} className="border rounded-xl p-4 bg-background flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Wrench className="w-3 h-3" /> قطعة
+                      </span>
+                      <p className="font-bold text-foreground">{r.brand || "قطعة غير محددة"}</p>
+                      <Badge variant={r.status === "approved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"} className="text-xs">
+                        {r.status === "approved" ? "موافق عليه" : r.status === "rejected" ? "مرفوض" : "معلق"}
+                      </Badge>
+                    </div>
+                    {r.model && <p className="text-sm text-muted-foreground">نوع السيارة: {r.model}</p>}
+                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
+                      {r.maxPrice && <span className="text-primary font-bold">حتى {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}</span>}
+                      {r.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.city}</span>}
+                      {r.userName && <span>المستخدم: {r.userName}</span>}
+                      {r.userPhone && <span dir="ltr">{r.userPhone}</span>}
+                    </div>
+                    {r.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{r.description}</p>}
+                    <p className="text-xs text-muted-foreground/60 mt-1">{new Date(r.createdAt).toLocaleDateString("ar-EG")}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                    <Button size="sm" variant="outline" className="h-8 gap-1 border-orange-400/60 text-orange-600 hover:bg-orange-50" onClick={() => setPreviewBuyRequest(r)}>
+                      <Eye className="w-3.5 h-3.5" /> معاينة
+                    </Button>
+                    {r.status === "pending" && (
+                      <>
+                        <Button size="sm" className="h-8 bg-green-500 hover:bg-green-600 text-white" onClick={() => handleBuyRequestStatus(r.id, "approved")}>
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => handleBuyRequestStatus(r.id, "rejected")}>
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                    <Button size="sm" variant="ghost" className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive" title="حذف الطلب"
+                      onClick={async () => {
+                        if (!confirm(`حذف طلب قطعة "${r.brand || "هذا الطلب"}"؟`)) return;
+                        try { await api.delete(`/api/admin/buy-requests/${r.id}`); toast({ title: "✅ تم حذف طلب القطعة" }); refetchBuyRequests(); }
+                        catch { toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" }); }
+                      }}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>{/* end car parts buy-requests sub-section */}
 
           {/* ===== Rental Cars Pending Approval sub-section ===== */}
           <div className="border-t-4 border-border mt-2">
@@ -1229,19 +1289,30 @@ export default function AdminDashboard() {
           </DialogHeader>
           <div className="p-6 space-y-5">
             {/* Status badge */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {previewBuyRequest.category === "parts" && (
+                <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                  <Wrench className="w-3 h-3" /> قطعة سيارة
+                </span>
+              )}
               <Badge variant={previewBuyRequest.status === "approved" ? "default" : previewBuyRequest.status === "rejected" ? "destructive" : "secondary"} className="text-sm px-3 py-1">
                 {previewBuyRequest.status === "approved" ? "✓ موافق عليه" : previewBuyRequest.status === "rejected" ? "✗ مرفوض" : "⏳ معلق"}
               </Badge>
               <span className="text-xs text-muted-foreground">{new Date(previewBuyRequest.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })}</span>
             </div>
 
-            {/* Car info */}
+            {/* Info */}
             <div className="bg-muted/30 rounded-xl p-4 space-y-2">
-              <h3 className="font-bold text-base mb-2 flex items-center gap-2"><Car className="w-4 h-4" /> المركبة المطلوبة</h3>
+              <h3 className="font-bold text-base mb-2 flex items-center gap-2">
+                {previewBuyRequest.category === "parts" ? <Wrench className="w-4 h-4 text-orange-500" /> : <Car className="w-4 h-4" />}
+                {previewBuyRequest.category === "parts" ? "القطعة المطلوبة" : "المركبة المطلوبة"}
+              </h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="text-muted-foreground">الماركة: </span><span className="font-medium">{previewBuyRequest.brand || "أي ماركة"}</span></div>
-                <div><span className="text-muted-foreground">الموديل: </span><span className="font-medium">{previewBuyRequest.model || "أي موديل"}</span></div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">{previewBuyRequest.category === "parts" ? "اسم القطعة: " : "الماركة: "}</span>
+                  <span className="font-medium">{previewBuyRequest.brand || (previewBuyRequest.category === "parts" ? "غير محدد" : "أي ماركة")}</span>
+                </div>
+                <div><span className="text-muted-foreground">{previewBuyRequest.category === "parts" ? "نوع السيارة: " : "الموديل: "}</span><span className="font-medium">{previewBuyRequest.model || "—"}</span></div>
                 {previewBuyRequest.maxPrice && (
                   <div className="col-span-2"><span className="text-muted-foreground">الحد الأقصى للسعر: </span>
                     <span className="font-bold text-primary">{Number(previewBuyRequest.maxPrice).toLocaleString()} {previewBuyRequest.currency ?? "USD"}</span>
