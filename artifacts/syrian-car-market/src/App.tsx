@@ -26,6 +26,9 @@ import SupportPage from "@/pages/support";
 import PlatesPage from "@/pages/plates";
 import AuctionsPage from "@/pages/auctions";
 import RentalCarsPage from "@/pages/rental-cars";
+import NewCarsPage from "@/pages/new-cars";
+import UsedCarsPage from "@/pages/used-cars";
+import MotorcyclesPage from "@/pages/motorcycles";
 import NotFound from "@/pages/not-found";
 import AppRatingPopup from "@/components/AppRatingPopup";
 
@@ -63,6 +66,9 @@ function Router() {
         <Route path="/plates" component={PlatesPage} />
         <Route path="/auctions" component={AuctionsPage} />
         <Route path="/rental-cars" component={RentalCarsPage} />
+        <Route path="/new-cars" component={NewCarsPage} />
+        <Route path="/used-cars" component={UsedCarsPage} />
+        <Route path="/motorcycles" component={MotorcyclesPage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

@@ -187,35 +187,48 @@ export default function PlatesPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-      <div className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Hash className="w-8 h-8 text-primary" /> سوق لوحات السيارات
-          </h1>
-          <p className="text-muted-foreground mt-1">بيع وشراء أرقام وألواح السيارات المميزة</p>
-        </div>
-
-        {user && (
-          <div className="flex gap-3 flex-wrap">
-            <Button onClick={() => setSellOpen(true)} className="gap-2 rounded-xl font-bold bg-primary text-primary-foreground hover-elevate shadow-lg shadow-primary/25">
-              <Plus className="w-4 h-4" /> نشر لوحة للبيع
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Gradient Header + Buttons */}
+      <div className="bg-gradient-to-l from-amber-600 to-amber-800 text-white px-4 pt-6 pb-5">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center gap-3 mb-1">
+            <Hash className="w-7 h-7" />
+            <h1 className="text-2xl font-extrabold tracking-tight">سوق لوحات السيارات</h1>
+          </div>
+          <p className="text-amber-100 text-sm mb-4">بيع وشراء أرقام وألواح السيارات المميزة</p>
+          <div className="flex gap-3">
+            <Button
+              className="flex-1 gap-2 rounded-2xl bg-white text-amber-800 hover:bg-amber-50 font-bold text-sm py-3 shadow-lg border-0"
+              onClick={() => { if (!user) { navigate("/login"); return; } setSellOpen(true); }}
+            >
+              <Plus className="w-5 h-5" /> نشر لوحة للبيع
             </Button>
-            <Button onClick={() => setBuyOpen(true)} variant="outline" className="gap-2 rounded-xl font-bold border-2 border-primary text-primary hover:bg-primary/5">
-              <ShoppingCart className="w-4 h-4" /> طلب شراء لوحة
+            <Button
+              className="flex-1 gap-2 rounded-2xl bg-amber-500/40 hover:bg-amber-500/60 text-white font-bold text-sm py-3 border border-white/40 shadow-sm"
+              onClick={() => { if (!user) { navigate("/login"); return; } setBuyOpen(true); }}
+            >
+              <ShoppingCart className="w-5 h-5" /> طلب شراء لوحة
             </Button>
           </div>
-        )}
-
-        <div className="flex rounded-xl border overflow-hidden w-fit">
-          <button onClick={() => setTab("sell")} className={cn("px-5 py-2 text-sm font-bold transition-colors", tab === "sell" ? "bg-primary text-white" : "bg-card text-muted-foreground hover:bg-muted")}>
-            لوحات للبيع
-          </button>
-          <button onClick={() => setTab("buy")} className={cn("px-5 py-2 text-sm font-bold transition-colors", tab === "buy" ? "bg-primary text-white" : "bg-card text-muted-foreground hover:bg-muted")}>
-            طلبات شراء
-          </button>
         </div>
       </div>
+
+      <div className="max-w-5xl mx-auto px-4 pt-4 space-y-5">
+        {/* Tabs */}
+        <div className="flex border-b">
+          <button
+            className={cn("flex-1 pb-3 text-sm font-semibold transition-colors", tab === "sell" ? "text-amber-700 border-b-2 border-amber-700" : "text-muted-foreground")}
+            onClick={() => setTab("sell")}
+          >
+            لوحات للبيع
+          </button>
+          <button
+            className={cn("flex-1 pb-3 text-sm font-semibold transition-colors", tab === "buy" ? "text-amber-700 border-b-2 border-amber-700" : "text-muted-foreground")}
+            onClick={() => setTab("buy")}
+          >
+            طلبات الشراء
+          </button>
+        </div>
 
       {tab === "sell" && (
         isLoading ? (
@@ -282,6 +295,7 @@ export default function PlatesPage() {
           </div>
         )
       )}
+      </div>
 
       {/* Sell Dialog */}
       <Dialog open={sellOpen} onOpenChange={o => { setSellOpen(o); if (!o) { setSellImages([]); setImagePreviews([]); } }}>
