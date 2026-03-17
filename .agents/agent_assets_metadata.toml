@@ -12,3 +12,15 @@ id = "ytk4Sp2iV0YgnrdWp_y6j"
 uri = "file://all_files.txt"
 type = "text"
 title = "MARKLET - جميع ملفات الكود مدمجة"
+
+[[outputs]]
+id = "0SeIhX3uP3LZeMR4u4GEU"
+uri = "file://MARKLET_android.zip"
+type = "unspecified"
+title = "MARKLET Android Project"
+
+[[outputs]]
+id = "6H1Ee4cgdNL5CZtISkeUf"
+uri = "file://MARKLET_android.tar.gz"
+type = "unspecified"
+title = "MARKLET Android Project (tar.gz — 7.4MB)"
