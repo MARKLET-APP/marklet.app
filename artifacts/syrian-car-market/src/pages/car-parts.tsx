@@ -12,6 +12,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
+import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 import { apiRequest } from "@/lib/api";
 
@@ -44,6 +45,7 @@ export default function CarPartsPage() {
   const [sellOpen, setSellOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
   const [followupId, setFollowupId] = useState<number | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const [sellForm, setSellForm] = useState({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", currency: "USD", city: "", description: "" });
   const [buyForm, setBuyForm] = useState({ partName: "", carType: "", model: "", maxPrice: "", currency: "USD", city: "", description: "" });
@@ -71,9 +73,10 @@ export default function CarPartsPage() {
   const createSell = useMutation({
     mutationFn: (body: object) => api.carParts.create(body),
     onSuccess: () => {
-      toast({ title: "تم نشر القطعة بنجاح" });
+      toast({ title: "إعلانك تحت المراجعة", description: "سيظهر بعد موافقة الإدارة" });
       setSellOpen(false);
-      setSellForm({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", city: "", description: "" });
+      setShowPreview(false);
+      setSellForm({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", currency: "USD", city: "", description: "" });
       qc.invalidateQueries({ queryKey: PARTS_QK(q) });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -109,6 +112,23 @@ export default function CarPartsPage() {
       toast({ title: response === "yes" ? "شكراً! سعداء بمساعدتك 🎉" : "شكراً على إجابتك" });
     },
   });
+
+  const handleSellPreview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sellForm.name) {
+      toast({ title: "يرجى إدخال اسم القطعة", variant: "destructive" });
+      return;
+    }
+    setShowPreview(true);
+  };
+
+  const doSellSubmit = () => {
+    createSell.mutate({
+      ...sellForm,
+      year: sellForm.year ? Number(sellForm.year) : undefined,
+      price: sellForm.price ? Number(sellForm.price) : 0,
+    });
+  };
 
   const handleSellChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
@@ -224,7 +244,7 @@ export default function CarPartsPage() {
       <Dialog open={sellOpen} onOpenChange={setSellOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">نشر قطعة سيارة للبيع</DialogTitle></DialogHeader>
-          <form onSubmit={e => { e.preventDefault(); createSell.mutate({ ...sellForm, year: sellForm.year ? Number(sellForm.year) : undefined, price: sellForm.price ? Number(sellForm.price) : 0 }); }} className="space-y-3 mt-2">
+          <form onSubmit={handleSellPreview} className="space-y-3 mt-2">
             <Input name="name" value={sellForm.name} onChange={handleSellChange} placeholder="اسم القطعة *" required />
             <div className="grid grid-cols-2 gap-3">
               <Input name="carType" value={sellForm.carType} onChange={handleSellChange} placeholder="نوع السيارة" />
@@ -248,7 +268,7 @@ export default function CarPartsPage() {
             <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
             <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="وصف إضافي" className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
-              {createSell.isPending ? "جارٍ النشر..." : "نشر القطعة"}
+              معاينة قبل النشر
             </Button>
           </form>
         </DialogContent>
@@ -310,6 +330,23 @@ export default function CarPartsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <ListingPreviewDialog
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        onConfirm={doSellSubmit}
+        submitting={createSell.isPending}
+        listing={{
+          title: [sellForm.name, sellForm.carType, sellForm.model].filter(Boolean).join(" — "),
+          price: sellForm.price || null,
+          currency: (sellForm.currency as "USD" | "SYP") || "USD",
+          city: sellForm.city || null,
+          description: sellForm.description || null,
+          badges: [sellForm.condition, ...(sellForm.carType ? [sellForm.carType] : [])],
+          meta: [
+            ...(sellForm.year ? [{ label: "السنة", value: sellForm.year }] : []),
+          ],
+        }}
+      />
     </div>
   );
 }

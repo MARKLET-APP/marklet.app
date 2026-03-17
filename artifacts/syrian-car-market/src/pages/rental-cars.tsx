@@ -15,6 +15,7 @@ import { useLocation } from "wouter";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { cn } from "@/lib/utils";
 import { ListingCard } from "@/components/ListingCard";
+import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
 
 type RentalCar = {
   id: number; sellerId: number; brand: string; model: string;
@@ -48,6 +49,7 @@ export default function RentalCarsPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
 
   const [sellForm, setSellForm] = useState({
     brand: "", model: "", year: "", city: "",
@@ -71,9 +73,10 @@ export default function RentalCarsPage() {
 
   const createSell = useMutation({
     mutationFn: (body: object) => api.rentalCars.create(body),
-    onSuccess: (data: any) => {
-      toast({ title: data.message ?? "تم نشر إعلان التأجير بنجاح" });
+    onSuccess: () => {
+      toast({ title: "إعلانك تحت المراجعة", description: "سيظهر بعد موافقة الإدارة" });
       setSellOpen(false);
+      setShowPreview(false);
       setSellForm({ brand: "", model: "", year: "", city: "", dailyPrice: "", weeklyPrice: "", monthlyPrice: "", description: "" });
       setUploadedImages([]);
       setPreviewImages([]);
@@ -135,12 +138,8 @@ export default function RentalCarsPage() {
     setUploadedImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSellSubmit = () => {
-    if (!user) {
-      setSellOpen(false);
-      navigate("/login");
-      return;
-    }
+  const handleSellPreview = () => {
+    if (!user) { setSellOpen(false); navigate("/login"); return; }
     if (!sellForm.brand || !sellForm.model) {
       toast({ title: "يرجى إدخال الشركة والموديل", variant: "destructive" });
       return;
@@ -149,6 +148,10 @@ export default function RentalCarsPage() {
       toast({ title: "يرجى إدخال سعر واحد على الأقل", variant: "destructive" });
       return;
     }
+    setShowPreview(true);
+  };
+
+  const handleSellSubmit = () => {
     createSell.mutate({
       ...sellForm,
       year: sellForm.year ? Number(sellForm.year) : null,
@@ -418,11 +421,11 @@ export default function RentalCarsPage() {
 
             <Button
               className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={handleSellSubmit}
+              onClick={handleSellPreview}
               disabled={createSell.isPending || uploadingImages}
             >
-              {createSell.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
-              نشر إعلان التأجير
+              {uploadingImages ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
+              معاينة قبل النشر
             </Button>
           </div>
         </DialogContent>
@@ -494,6 +497,26 @@ export default function RentalCarsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <ListingPreviewDialog
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        onConfirm={handleSellSubmit}
+        submitting={createSell.isPending}
+        listing={{
+          title: `${sellForm.brand} ${sellForm.model}${sellForm.year ? ` ${sellForm.year}` : ""}`,
+          price: sellForm.dailyPrice || sellForm.weeklyPrice || sellForm.monthlyPrice,
+          currency: "USD",
+          city: sellForm.city || null,
+          description: sellForm.description || null,
+          images: previewImages,
+          badges: [
+            "تأجير",
+            ...(sellForm.dailyPrice ? [`يومي: $${sellForm.dailyPrice}`] : []),
+            ...(sellForm.weeklyPrice ? [`أسبوعي: $${sellForm.weeklyPrice}`] : []),
+            ...(sellForm.monthlyPrice ? [`شهري: $${sellForm.monthlyPrice}`] : []),
+          ],
+        }}
+      />
     </div>
   );
 }

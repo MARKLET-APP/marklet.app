@@ -12,6 +12,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
+import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 import { apiRequest } from "@/lib/api";
 
@@ -45,6 +46,7 @@ export default function JunkCarsPage() {
   const [sellOpen, setSellOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
   const [followupId, setFollowupId] = useState<number | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const [sellForm, setSellForm] = useState({ type: "", model: "", year: "", condition: "حادث", price: "", currency: "USD", city: "", description: "", isAccident: false, accidentImages: "" });
   const [buyForm, setBuyForm] = useState({ type: "", model: "", year: "", maxPrice: "", currency: "USD", city: "", description: "" });
@@ -66,10 +68,11 @@ export default function JunkCarsPage() {
 
   const createSell = useMutation({
     mutationFn: (body: object) => api.junkCars.create(body),
-    onSuccess: (data) => {
-      toast({ title: data.message ?? "تم نشر الإعلان" });
+    onSuccess: () => {
+      toast({ title: "إعلانك تحت المراجعة", description: "سيظهر بعد موافقة الإدارة" });
       setSellOpen(false);
-      setSellForm({ type: "", model: "", year: "", condition: "حادث", price: "", city: "", description: "" });
+      setShowPreview(false);
+      setSellForm({ type: "", model: "", year: "", condition: "حادث", price: "", currency: "USD", city: "", description: "", isAccident: false, accidentImages: "" });
       qc.invalidateQueries({ queryKey: JUNK_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -110,6 +113,25 @@ export default function JunkCarsPage() {
     setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handleSellPreview = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowPreview(true);
+  };
+
+  const doSellSubmit = () => {
+    const desc = [
+      sellForm.description,
+      sellForm.isAccident ? "⚠️ السيارة تعرضت لحادث" : "",
+      sellForm.isAccident && sellForm.accidentImages ? `صور الحادث: ${sellForm.accidentImages}` : "",
+    ].filter(Boolean).join(" | ");
+    createSell.mutate({
+      ...sellForm,
+      year: sellForm.year ? Number(sellForm.year) : undefined,
+      price: sellForm.price ? Number(sellForm.price) : undefined,
+      description: desc || undefined,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -207,20 +229,7 @@ export default function JunkCarsPage() {
       <Dialog open={sellOpen} onOpenChange={setSellOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">بيع سيارة معطوبة / خردة</DialogTitle></DialogHeader>
-          <form onSubmit={e => {
-            e.preventDefault();
-            const desc = [
-              sellForm.description,
-              sellForm.isAccident ? "⚠️ السيارة تعرضت لحادث" : "",
-              sellForm.isAccident && sellForm.accidentImages ? `صور الحادث: ${sellForm.accidentImages}` : "",
-            ].filter(Boolean).join(" | ");
-            createSell.mutate({
-              ...sellForm,
-              year: sellForm.year ? Number(sellForm.year) : undefined,
-              price: sellForm.price ? Number(sellForm.price) : undefined,
-              description: desc || undefined,
-            });
-          }} className="space-y-3 mt-2">
+          <form onSubmit={handleSellPreview} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <Input name="type" value={sellForm.type} onChange={handleSellChange} placeholder="نوع السيارة" />
               <Input name="model" value={sellForm.model} onChange={handleSellChange} placeholder="الموديل" />
@@ -249,7 +258,7 @@ export default function JunkCarsPage() {
             <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
             <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="وصف الحالة..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
-              {createSell.isPending ? "جارٍ النشر..." : "نشر الإعلان"}
+              معاينة قبل النشر
             </Button>
           </form>
         </DialogContent>
@@ -301,6 +310,26 @@ export default function JunkCarsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <ListingPreviewDialog
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        onConfirm={doSellSubmit}
+        submitting={createSell.isPending}
+        listing={{
+          title: [sellForm.type, sellForm.model, sellForm.year].filter(Boolean).join(" "),
+          price: sellForm.price || null,
+          currency: (sellForm.currency as "USD" | "SYP") || "USD",
+          city: sellForm.city || null,
+          description: sellForm.description || null,
+          badges: [
+            sellForm.condition,
+            ...(sellForm.isAccident ? ["⚠️ حادث"] : []),
+          ],
+          meta: [
+            ...(sellForm.year ? [{ label: "السنة", value: sellForm.year }] : []),
+          ],
+        }}
+      />
     </div>
   );
 }

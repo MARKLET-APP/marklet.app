@@ -1,0 +1,237 @@
+MARKLET LISTING SYSTEM FIX
+
+IMPORTANT
+Fix preview and save system for all categories.
+
+Do not rebuild the project.
+Update existing listing logic.
+
+Affected sections:
+
+Cars for rent
+Motorcycles
+Plate numbers
+Spare parts
+Scrap vehicles
+
+================================================
+1 CREATE UNIFIED SAVE FUNCTION
+================================================
+
+Create file:
+
+/server/controllers/saveListing.js
+
+Code:
+
+export async function saveListing(req,res){
+
+try{
+
+const listing = req.body
+
+listing.id = listing.id || crypto.randomUUID()
+
+listing.status = "pending"
+
+listing.created_at = new Date()
+
+await Listings.insertOne(listing)
+
+return res.json({
+success:true,
+message:"تم حفظ الإعلان وإرساله للمراجعة"
+})
+
+}catch(e){
+
+return res.status(500).json({
+success:false,
+message:"حدث خطأ أثناء حفظ الإعلان"
+})
+
+}
+
+}
+
+================================================
+2 CREATE SAVE ROUTE
+================================================
+
+In server routes add:
+
+app.post("/api/listings/save", saveListing)
+
+================================================
+3 CONNECT SAVE BUTTON
+================================================
+
+All save buttons must call:
+
+async function submitListing(){
+
+const form = document.getElementById("listingForm")
+
+const data = new FormData(form)
+
+const res = await fetch("/api/listings/save",{
+
+method:"POST",
+body:data
+
+})
+
+const result = await res.json()
+
+if(result.success){
+
+alert("تم إرسال الإعلان للمراجعة")
+
+window.location.href="/my-listings"
+
+}else{
+
+alert(result.message)
+
+}
+
+}
+
+Button:
+
+<button onclick="submitListing()">
+حفظ الإعلان
+</button>
+
+================================================
+4 CREATE PREVIEW SYSTEM
+================================================
+
+Preview button must open preview page.
+
+Function:
+
+function previewListing(){
+
+const form = document.getElementById("listingForm")
+
+const data = new FormData(form)
+
+localStorage.setItem("previewListing",JSON.stringify(Object.fromEntries(data)))
+
+window.location.href="/preview"
+
+}
+
+================================================
+5 CREATE PREVIEW PAGE
+================================================
+
+Create:
+
+/public/preview.html
+
+Code:
+
+<script>
+
+const listing = JSON.parse(localStorage.getItem("previewListing"))
+
+document.getElementById("title").innerText = listing.title
+document.getElementById("description").innerText = listing.description
+
+</script>
+
+================================================
+6 LOAD LISTINGS BY CATEGORY
+================================================
+
+Each page must load listings using category filter.
+
+Example:
+
+/api/listings?category=rent
+
+/app.get("/api/listings", async(req,res)=>{
+
+const category = req.query.category
+
+const listings = await Listings.find({
+category:category,
+status:"approved"
+}).toArray()
+
+res.json(listings)
+
+})
+
+================================================
+7 APPLY TO ALL SECTIONS
+================================================
+
+Categories mapping:
+
+cars_rent
+motorcycles
+plates
+parts
+scrap
+
+Each page must call:
+
+/api/listings?category=SECTION_NAME
+
+================================================
+8 SHOW LISTINGS
+================================================
+
+Example:
+
+fetch("/api/listings?category=motorcycles")
+.then(res=>res.json())
+.then(data=>renderListings(data))
+
+================================================
+9 VERIFY SAVE FLOW
+================================================
+
+After saving listing:
+
+status = pending
+
+Admin must approve listing.
+
+Once approved:
+
+status = approved
+
+Then listing appears in category page.
+
+================================================
+10 FINAL TEST
+================================================
+
+Test each category:
+
+Cars for rent
+
+Motorcycles
+
+Plates
+
+Parts
+
+Scrap
+
+Test:
+
+Preview button
+Save button
+Admin approval
+Listing display
+
+================================================
+
+App name:
+
+MARKLET

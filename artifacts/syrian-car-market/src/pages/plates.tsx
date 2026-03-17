@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
+import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 import { apiRequest } from "@/lib/api";
 
@@ -58,6 +59,7 @@ export default function PlatesPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [sellImages, setSellImages] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   const { startChat, loading: startingChat } = useStartChat();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,8 +89,9 @@ export default function PlatesPage() {
   const createSell = useMutation({
     mutationFn: (body: object) => api.post("/api/cars", body),
     onSuccess: () => {
-      toast({ title: "تم نشر اللوحة بنجاح وهي بانتظار مراجعة الإدارة" });
+      toast({ title: "إعلانك تحت المراجعة", description: "سيظهر بعد موافقة الإدارة" });
       setSellOpen(false);
+      setShowPreview(false);
       setSellForm({ plateNumber: "", plateType: "خصوصي", price: "", city: "", description: "" });
       setSellImages([]);
       setImagePreviews([]);
@@ -156,6 +159,14 @@ export default function PlatesPage() {
       toast({ title: "يجب إضافة صورة واحدة على الأقل", variant: "destructive" });
       return;
     }
+    if (!sellForm.plateNumber) {
+      toast({ title: "يرجى إدخال رقم اللوحة", variant: "destructive" });
+      return;
+    }
+    setShowPreview(true);
+  };
+
+  const doSellSubmit = () => {
     createSell.mutate({
       brand: `${sellForm.plateType}: ${sellForm.plateNumber}`,
       model: "plate",
@@ -310,7 +321,7 @@ export default function PlatesPage() {
             </div>
 
             <Button type="submit" disabled={createSell.isPending || uploadingImages} className="w-full rounded-xl font-bold">
-              {createSell.isPending ? "جارٍ النشر..." : "نشر اللوحة"}
+              {uploadingImages ? "جارٍ رفع الصور..." : "معاينة قبل النشر"}
             </Button>
           </form>
         </DialogContent>
@@ -368,6 +379,22 @@ export default function PlatesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ListingPreviewDialog
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        onConfirm={doSellSubmit}
+        submitting={createSell.isPending}
+        listing={{
+          title: `${sellForm.plateType}: ${sellForm.plateNumber}`,
+          price: sellForm.price || null,
+          currency: "USD",
+          city: sellForm.city || null,
+          description: sellForm.description || null,
+          images: imagePreviews,
+          badges: [sellForm.plateType, "لوحة سيارة"],
+        }}
+      />
     </div>
   );
 }

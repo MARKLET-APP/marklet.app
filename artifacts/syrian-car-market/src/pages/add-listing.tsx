@@ -269,7 +269,10 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     }
 
     createMutation.mutate({ data } as any, {
-      onSuccess: (res) => navigate(`/cars/${(res as any).id}`),
+      onSuccess: (res) => {
+        toast({ title: "تم إرسال الإعلان للمراجعة", description: "سيظهر بعد موافقة الإدارة" });
+        navigate(`/cars/${(res as any).id}`);
+      },
       onError: (err: any) => toast({ title: err.message ?? "حدث خطأ", variant: "destructive" }),
     });
   };
