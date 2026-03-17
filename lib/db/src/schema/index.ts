@@ -22,3 +22,4 @@ export * from "./referrals";
 export * from "./rentalCars";
 export * from "./scrapCenters";
 export * from "./showrooms";
+export * from "./savedListings";

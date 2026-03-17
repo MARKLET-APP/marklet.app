@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { shareListing } from "@/utils/shareListing";
 import type { ListingCardType } from "./ListingCard";
+import { SaveButton } from "./SaveButton";
+import type { ListingSaveType } from "@/hooks/use-saves";
 
 const TYPE_LABELS: Record<ListingCardType, string> = {
   moto: "دراجة نارية",
@@ -232,10 +234,10 @@ export function ListingDetailDialog({
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1 flex-wrap">
             {!isOwner && onChat && (
               <Button
-                className="flex-1 gap-2 rounded-xl font-bold"
+                className="flex-1 gap-2 rounded-xl font-bold min-w-[120px]"
                 onClick={onChat}
                 disabled={chatLoading}
               >
@@ -243,6 +245,7 @@ export function ListingDetailDialog({
                 مراسلة البائع
               </Button>
             )}
+            <SaveButton type={type as ListingSaveType} id={data.id} />
             <Button
               variant="outline"
               className="gap-2 rounded-xl"

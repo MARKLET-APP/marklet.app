@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
+import { useSaves } from "@/hooks/use-saves";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { CarCard } from "@/components/CarCard";
 
@@ -23,6 +24,7 @@ export default function CarDetail() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { isSaved, toggleSave } = useSaves();
 
   const [similarCars, setSimilarCars] = useState<any[]>([]);
   const [showPhone, setShowPhone] = useState(false);
@@ -368,8 +370,12 @@ export default function CarDetail() {
             <button onClick={shareCar} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-xl hover:bg-primary/5">
               <Share2 className="w-4 h-4" /> مشاركة
             </button>
-            <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-rose-500 transition-colors px-3 py-1.5 rounded-xl hover:bg-rose-50">
-              <Heart className="w-4 h-4" /> حفظ
+            <button
+              onClick={() => toggleSave("car", carId)}
+              className={`flex items-center gap-1.5 text-sm transition-colors px-3 py-1.5 rounded-xl ${isSaved("car", carId) ? "text-primary hover:text-primary/80 hover:bg-primary/5" : "text-muted-foreground hover:text-primary hover:bg-primary/5"}`}
+            >
+              <Heart className={`w-4 h-4 ${isSaved("car", carId) ? "fill-primary text-primary" : ""}`} />
+              {isSaved("car", carId) ? "محفوظ" : "حفظ"}
             </button>
             <span className="text-xs text-muted-foreground ms-auto flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" /> {(car as any).viewCount ?? 0} مشاهدة
