@@ -22,5 +22,7 @@ export interface User {
   city?: string | null;
   isVerified: boolean;
   isPremium: boolean;
+  isFeaturedSeller: boolean;
+  subscriptionActive: boolean;
   createdAt: Date;
 }

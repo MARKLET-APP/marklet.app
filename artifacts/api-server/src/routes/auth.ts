@@ -7,6 +7,24 @@ import { comparePasswords, generateToken, authMiddleware, type AuthRequest } fro
 
 const router: IRouter = Router();
 
+function serializeUser(user: typeof usersTable.$inferSelect) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    profilePhoto: user.profilePhoto,
+    province: user.province,
+    city: user.city,
+    isVerified: user.isVerified,
+    isPremium: user.isPremium,
+    isFeaturedSeller: user.isFeaturedSeller,
+    subscriptionActive: user.subscriptionActive,
+    createdAt: user.createdAt,
+  };
+}
+
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
@@ -41,24 +59,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }).returning();
 
   const token = generateToken(user.id, user.role);
-
-  res.status(201).json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      profilePhoto: user.profilePhoto,
-      province: user.province,
-      city: user.city,
-      isVerified: user.isVerified,
-      isPremium: user.isPremium,
-      subscriptionActive: user.subscriptionActive,
-      createdAt: user.createdAt,
-    },
-  });
+  res.status(201).json({ token, user: serializeUser(user) });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -90,24 +91,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const token = generateToken(user.id, user.role);
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      profilePhoto: user.profilePhoto,
-      province: user.province,
-      city: user.city,
-      isVerified: user.isVerified,
-      isPremium: user.isPremium,
-      subscriptionActive: user.subscriptionActive,
-      createdAt: user.createdAt,
-    },
-  });
+  res.json({ token, user: serializeUser(user) });
 });
 
 router.get("/auth/me", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
@@ -116,20 +100,7 @@ router.get("/auth/me", authMiddleware, async (req: AuthRequest, res): Promise<vo
     res.status(404).json({ error: "User not found" });
     return;
   }
-  res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    profilePhoto: user.profilePhoto,
-    province: user.province,
-    city: user.city,
-    isVerified: user.isVerified,
-    isPremium: user.isPremium,
-      subscriptionActive: user.subscriptionActive,
-    createdAt: user.createdAt,
-  });
+  res.json(serializeUser(user));
 });
 
 // Short-path aliases
@@ -167,24 +138,7 @@ router.post("/register", async (req, res): Promise<void> => {
   }).returning();
 
   const token = generateToken(user.id, user.role);
-
-  res.status(201).json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      profilePhoto: user.profilePhoto,
-      province: user.province,
-      city: user.city,
-      isVerified: user.isVerified,
-      isPremium: user.isPremium,
-      subscriptionActive: user.subscriptionActive,
-      createdAt: user.createdAt,
-    },
-  });
+  res.status(201).json({ token, user: serializeUser(user) });
 });
 
 router.post("/login", async (req, res): Promise<void> => {
@@ -216,24 +170,7 @@ router.post("/login", async (req, res): Promise<void> => {
   }
 
   const token = generateToken(user.id, user.role);
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      profilePhoto: user.profilePhoto,
-      province: user.province,
-      city: user.city,
-      isVerified: user.isVerified,
-      isPremium: user.isPremium,
-      subscriptionActive: user.subscriptionActive,
-      createdAt: user.createdAt,
-    },
-  });
+  res.json({ token, user: serializeUser(user) });
 });
 
 router.get("/profile", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
@@ -242,20 +179,7 @@ router.get("/profile", authMiddleware, async (req: AuthRequest, res): Promise<vo
     res.status(404).json({ error: "User not found" });
     return;
   }
-  res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    profilePhoto: user.profilePhoto,
-    province: user.province,
-    city: user.city,
-    isVerified: user.isVerified,
-    isPremium: user.isPremium,
-      subscriptionActive: user.subscriptionActive,
-    createdAt: user.createdAt,
-  });
+  res.json(serializeUser(user));
 });
 
 export default router;

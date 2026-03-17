@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import app from "./app";
 import { setSocketServer } from "./lib/socket.js";
 import { checkFeatures } from "./utils/checkFeatures.js";
+import { runFeaturedSellerCheck } from "./services/featuredSellerService.js";
 import { db, messagesTable, conversationsTable, junkCarsTable, carPartsTable, buyRequestsTable, notificationsTable } from "@workspace/db";
 import { eq, and, isNull, lt } from "drizzle-orm";
 import jwt from "jsonwebtoken";
@@ -144,4 +145,7 @@ server.listen(port, () => {
   // Run followup check on startup and every 2 hours
   setTimeout(runFollowupNotifications, 5000);
   setInterval(runFollowupNotifications, 2 * 60 * 60 * 1000);
+  // Run featured seller badge check on startup and every 24 hours
+  setTimeout(runFeaturedSellerCheck, 10000);
+  setInterval(runFeaturedSellerCheck, 24 * 60 * 60 * 1000);
 });

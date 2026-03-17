@@ -5,9 +5,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  MapPin, MessageCircle, Phone, Share2, Clock, Calendar,
+  MapPin, Phone, Share2, Clock, Calendar,
   DollarSign, ChevronLeft, ChevronRight, Bike, Car, Wrench,
-  Loader2, Building2, Hash,
+  Building2, Hash,
 } from "lucide-react";
 import { shareListing } from "@/utils/shareListing";
 import type { ListingCardType } from "./ListingCard";
@@ -234,27 +234,21 @@ export function ListingDetailDialog({
             </div>
           )}
 
-          {/* Contact buttons (Call + WhatsApp) */}
-          {!isOwner && (data.sellerPhone || data.phone) && (
+          {/* Contact buttons */}
+          {!isOwner && (
             <ContactButtons
-              phone={data.sellerPhone ?? data.phone}
+              phone={data.sellerPhone ?? data.phone ?? null}
+              sellerId={sellerId || null}
+              listingId={data.id}
               listingTitle={title}
+              onInAppMessage={onChat}
+              chatLoading={chatLoading}
               size="lg"
             />
           )}
 
           {/* Actions */}
           <div className="flex gap-2 pt-1 flex-wrap">
-            {!isOwner && onChat && (
-              <Button
-                className="flex-1 gap-2 rounded-xl font-bold min-w-[120px]"
-                onClick={onChat}
-                disabled={chatLoading}
-              >
-                {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
-                مراسلة البائع
-              </Button>
-            )}
             <SaveButton type={type as ListingSaveType} id={data.id} />
             <Button
               variant="outline"
