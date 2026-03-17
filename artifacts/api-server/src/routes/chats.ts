@@ -100,7 +100,16 @@ router.get("/chats", authMiddleware, async (req: AuthRequest, res): Promise<void
   const conversations = await db.select().from(conversationsTable)
     .where(or(eq(conversationsTable.buyerId, userId), eq(conversationsTable.sellerId, userId)))
     .orderBy(desc(conversationsTable.updatedAt));
-  res.json(await Promise.all(conversations.map((c) => buildConvResponse(c, userId))));
+
+  const seen = new Set<number>();
+  const deduped = conversations.filter(c => {
+    const partnerId = c.buyerId === userId ? c.sellerId : c.buyerId;
+    if (seen.has(partnerId)) return false;
+    seen.add(partnerId);
+    return true;
+  });
+
+  res.json(await Promise.all(deduped.map((c) => buildConvResponse(c, userId))));
 });
 
 router.post("/chats/start", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
@@ -109,14 +118,12 @@ router.post("/chats/start", authMiddleware, async (req: AuthRequest, res): Promi
   const { sellerId, carId = null } = parsed.data;
   const buyerId = req.userId!;
   if (buyerId === sellerId) { res.status(400).json({ error: "Cannot start conversation with yourself" }); return; }
-  const carIdCondition = carId != null
-    ? eq(conversationsTable.carId, carId)
-    : isNull(conversationsTable.carId);
-  const [existing] = await db.select().from(conversationsTable).where(and(
-    eq(conversationsTable.buyerId, buyerId),
-    eq(conversationsTable.sellerId, sellerId),
-    carIdCondition,
-  )).limit(1);
+  const [existing] = await db.select().from(conversationsTable).where(
+    or(
+      and(eq(conversationsTable.buyerId, buyerId), eq(conversationsTable.sellerId, sellerId)),
+      and(eq(conversationsTable.buyerId, sellerId), eq(conversationsTable.sellerId, buyerId)),
+    )
+  ).orderBy(desc(conversationsTable.updatedAt)).limit(1);
   if (existing) { res.status(201).json(await buildConvResponse(existing, buyerId)); return; }
   const [conv] = await db.insert(conversationsTable).values({ buyerId, sellerId, carId: carId ?? null }).returning();
   res.status(201).json(await buildConvResponse(conv, buyerId));
