@@ -143,7 +143,7 @@ export default function Home() {
             transition={{ delay: 0.05 }}
             className="text-4xl md:text-6xl font-extrabold text-white drop-shadow-xl leading-tight"
           >
-            {t("home.hero.title1")} <span className="text-accent">{t("home.hero.title2")}</span>
+            {t("home.hero.title1")}{t("home.hero.title2") ? <> <span className="text-accent">{t("home.hero.title2")}</span></> : null}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -157,7 +157,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-sm md:text-base text-white/75 max-w-xl mx-auto drop-shadow-sm"
+            className="text-sm md:text-base text-white/75 max-w-xl mx-auto drop-shadow-sm whitespace-pre-line"
           >
             {t("home.hero.description")}
           </motion.p>
