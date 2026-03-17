@@ -127,10 +127,19 @@ export default function Home() {
           transition={{ duration: 7, ease: "easeInOut", repeat: Infinity, delay: 1.5 }}
         />
 
-        <div className="relative z-20 max-w-3xl w-full px-6 text-center space-y-6">
+        <div className="relative z-20 max-w-3xl w-full px-6 text-center space-y-5">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 bg-primary/20 border border-primary/40 backdrop-blur-sm text-primary-foreground/90 text-sm font-semibold px-5 py-2 rounded-full shadow-lg"
+          >
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            {t("home.hero.badge")}
+          </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
             className="text-4xl md:text-6xl font-extrabold text-white drop-shadow-xl leading-tight"
           >
             {t("home.hero.title1")} <span className="text-accent">{t("home.hero.title2")}</span>
@@ -138,16 +147,24 @@ export default function Home() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-lg md:text-xl text-white/90 drop-shadow-md"
+            transition={{ delay: 0.12 }}
+            className="text-lg md:text-xl text-white font-semibold drop-shadow-md"
           >
             {t("home.hero.subtitle")}
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-sm md:text-base text-white/75 max-w-xl mx-auto drop-shadow-sm"
+          >
+            {t("home.hero.description")}
           </motion.p>
 
           <motion.form
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.3 }}
             onSubmit={(e) => { e.preventDefault(); navigate(`/search${heroSearch ? `?q=${encodeURIComponent(heroSearch)}` : ""}`); }}
             className="bg-white p-2 rounded-2xl shadow-2xl max-w-2xl mx-auto flex items-center gap-2"
           >
@@ -169,7 +186,7 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+            transition={{ delay: 0.45 }}
             className="flex flex-wrap justify-center gap-3 pt-2"
           >
             <button

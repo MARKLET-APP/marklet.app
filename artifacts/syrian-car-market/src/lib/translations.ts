@@ -21,9 +21,11 @@ const translations: Record<Lang, Record<string, string>> = {
     "nav.subscribeSoonDesc": "ميزة الاشتراك المدفوع ستكون متاحة قريباً — ابقَ بانتظارنا!",
 
     // Home page
-    "home.hero.title1": "السوق الأول",
-    "home.hero.title2": "لتجارة السيارات في سورية",
-    "home.hero.subtitle": "آلاف السيارات المعروضة يومياً بأسعار تناسب الجميع، مع ميزات الذكاء الاصطناعي لتسهيل اختيارك.",
+    "home.hero.badge": "بيع • شراء • تأجير • طلبات شراء",
+    "home.hero.title1": "السوق الذكي",
+    "home.hero.title2": "للمركبات والخدمات",
+    "home.hero.subtitle": "السيارات والدراجات وقطع الغيار والخدمات في مكان واحد",
+    "home.hero.description": "منصة MARKLET تجمع البائعين والمشترين والتجار في سوق واحد، مع مراسلة مباشرة وبحث ذكي لسهولة العثور على ما تحتاجه.",
     "home.hero.search": "ابحث عن ماركة، موديل، أو مدينة...",
     "home.hero.searchBtn": "بحث",
     "home.hero.requestCar": "نشر طلب شراء",
@@ -350,9 +352,11 @@ const translations: Record<Lang, Record<string, string>> = {
     "nav.subscribeSoonDesc": "Premium subscription will be available soon — stay tuned!",
 
     // Home page
-    "home.hero.title1": "Syria's #1",
-    "home.hero.title2": "Car Marketplace",
-    "home.hero.subtitle": "Thousands of cars listed daily at prices for everyone, with AI-powered features to make your choice easier.",
+    "home.hero.badge": "Buy • Sell • Rent • Requests",
+    "home.hero.title1": "Smart Market",
+    "home.hero.title2": "for Vehicles & Services",
+    "home.hero.subtitle": "Cars, Motorcycles, Parts & Services — all in one place",
+    "home.hero.description": "MARKLET connects buyers, sellers, and dealers in one smart marketplace with direct messaging and intelligent search.",
     "home.hero.search": "Search by brand, model, or city...",
     "home.hero.searchBtn": "Search",
     "home.hero.requestCar": "Request a Car",
