@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "U4kGT9_NV2-ypI1YiE3JX"
+uri = "file://MARKLET_project.zip"
+type = "unspecified"
+title = "MARKLET - كامل الكود المصدري"
