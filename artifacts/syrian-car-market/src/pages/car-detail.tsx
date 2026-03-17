@@ -16,6 +16,7 @@ import { useAuthStore } from "@/lib/auth";
 import { useSaves } from "@/hooks/use-saves";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { CarCard } from "@/components/CarCard";
+import { ContactButtons, ContactButtonsFixed } from "@/components/ContactButtons";
 
 export default function CarDetail() {
   const [, params] = useRoute("/cars/:id");
@@ -485,16 +486,23 @@ export default function CarDetail() {
                   )}
                 </div>
               ) : (
-                <div className="w-full rounded-xl border-2 border-primary/30 bg-primary/5 px-4 h-12 flex items-center justify-between">
-                  <span dir="ltr" className="font-bold text-lg text-foreground font-mono tracking-wider">
-                    {(car as any).sellerPhone ?? "غير متاح"}
-                  </span>
-                  <button
-                    onClick={() => setShowPhone(false)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <EyeOff className="w-4 h-4" />
-                  </button>
+                <div className="space-y-3">
+                  <div className="w-full rounded-xl border-2 border-primary/30 bg-primary/5 px-4 h-12 flex items-center justify-between">
+                    <span dir="ltr" className="font-bold text-lg text-foreground font-mono tracking-wider">
+                      {(car as any).sellerPhone ?? "غير متاح"}
+                    </span>
+                    <button
+                      onClick={() => setShowPhone(false)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <EyeOff className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <ContactButtons
+                    phone={(car as any).sellerPhone}
+                    listingTitle={`${car.brand} ${car.model} ${car.year}`}
+                    size="lg"
+                  />
                 </div>
               )}
 
@@ -536,6 +544,13 @@ export default function CarDetail() {
       </div>
     )}
 
+    {/* Fixed mobile contact bar — shown whenever phone is revealed */}
+    {showPhone && !isSeller && (
+      <ContactButtonsFixed
+        phone={(car as any).sellerPhone}
+        listingTitle={`${car.brand} ${car.model} ${car.year}`}
+      />
+    )}
 
     </>
   );

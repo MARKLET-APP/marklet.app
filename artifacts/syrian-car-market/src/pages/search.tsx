@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { CarCard } from "@/components/CarCard";
-import { Car, Wrench, Trash2, CalendarDays, Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart, MapPin, Tag } from "lucide-react";
+import { ContactButtons } from "@/components/ContactButtons";
+import { Car, Wrench, Trash2, CalendarDays, Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart, MapPin, Tag, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,6 +30,7 @@ type UnifiedResult = {
   dailyPrice?: number | null;
   name?: string;
   sellerName?: string;
+  sellerPhone?: string | null;
 };
 
 const TYPE_TABS: { key: ListingType; label: string; icon: any; color: string }[] = [
@@ -71,11 +73,27 @@ function getPrice(item: UnifiedResult): string {
   return item.price ? `${item.price.toLocaleString()} $` : "تواصل للسعر";
 }
 
+const WA_MSG = encodeURIComponent("مرحباً، رأيت إعلانك على MARKLET. هل ما زال متوفراً؟");
+
+function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("963")) return "+" + digits;
+  if (digits.startsWith("0")) return "+963" + digits.slice(1);
+  return "+963" + digits;
+}
+
 function UnifiedCard({ item, onClick }: { item: UnifiedResult; onClick?: () => void }) {
   const badge = TYPE_BADGE[item._type] ?? { label: item._type, color: "bg-muted text-muted-foreground" };
   const img = getImage(item);
   const title = getTitle(item);
   const price = getPrice(item);
+  const isCar = item._type === "car" || item._type === "motorcycle" || item._type === "plates";
+  const phone = item.sellerPhone?.trim() || null;
+  const phoneClean = phone ? formatPhone(phone) : null;
+
+  const handleContactClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
 
   return (
     <div
@@ -112,6 +130,43 @@ function UnifiedCard({ item, onClick }: { item: UnifiedResult; onClick?: () => v
             <Tag className="w-3 h-3" />{item.condition === "new" ? "جديد" : item.condition === "used" ? "مستعمل" : item.condition}
           </span>
         )}
+
+        {/* Contact buttons */}
+        <div className="flex gap-2 mt-1" onClick={handleContactClick}>
+          {phoneClean ? (
+            <>
+              <a
+                href={`https://wa.me/${phoneClean.replace("+", "")}?text=${WA_MSG}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold bg-green-600 hover:bg-green-700 text-white transition-colors no-underline"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.556 4.123 1.529 5.856L.057 23.998 6.305 22.53C8.001 23.468 9.94 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.896 0-3.67-.512-5.192-1.407l-.372-.22-3.855.992 1.013-3.744-.243-.389C2.406 15.417 1.818 13.77 1.818 12 1.818 6.58 6.58 1.818 12 1.818c5.42 0 10.182 4.762 10.182 10.182C22.182 17.42 17.42 21.818 12 21.818z"/>
+                </svg>
+                واتساب
+              </a>
+              <a
+                href={`tel:${phoneClean}`}
+                onClick={e => e.stopPropagation()}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors no-underline"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                اتصال
+              </a>
+            </>
+          ) : isCar ? (
+            <button
+              onClick={e => { e.stopPropagation(); window.location.href = `/cars/${item.id}`; }}
+              className="w-full h-9 rounded-xl text-xs font-bold border-2 border-primary/30 text-primary hover:bg-primary/5 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              عرض معلومات التواصل
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

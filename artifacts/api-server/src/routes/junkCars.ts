@@ -24,6 +24,7 @@ router.get("/junk-cars", async (req: any, res): Promise<void> => {
     status: junkCarsTable.status,
     createdAt: junkCarsTable.createdAt,
     sellerName: usersTable.name,
+    sellerPhone: usersTable.phone,
   })
     .from(junkCarsTable)
     .leftJoin(usersTable, eq(junkCarsTable.sellerId, usersTable.id))
@@ -51,6 +52,7 @@ router.get("/admin/junk-cars/pending", authMiddleware, async (req: AuthRequest, 
     status: junkCarsTable.status,
     createdAt: junkCarsTable.createdAt,
     sellerName: usersTable.name,
+    sellerPhone: usersTable.phone,
   })
     .from(junkCarsTable)
     .leftJoin(usersTable, eq(junkCarsTable.sellerId, usersTable.id))

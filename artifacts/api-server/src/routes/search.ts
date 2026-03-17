@@ -115,6 +115,7 @@ router.get("/search", async (req: any, res): Promise<void> => {
         description: rentalCarsTable.description,
         createdAt:   rentalCarsTable.createdAt,
         sellerName:  usersTable.name,
+        sellerPhone: usersTable.phone,
       })
         .from(rentalCarsTable)
         .leftJoin(usersTable, eq(rentalCarsTable.sellerId, usersTable.id))
@@ -160,6 +161,7 @@ router.get("/search", async (req: any, res): Promise<void> => {
         condition:   carPartsTable.condition,
         createdAt:   carPartsTable.createdAt,
         sellerName:  usersTable.name,
+        sellerPhone: usersTable.phone,
       })
         .from(carPartsTable)
         .leftJoin(usersTable, eq(carPartsTable.sellerId, usersTable.id))
@@ -203,6 +205,7 @@ router.get("/search", async (req: any, res): Promise<void> => {
         condition:   junkCarsTable.condition,
         createdAt:   junkCarsTable.createdAt,
         sellerName:  usersTable.name,
+        sellerPhone: usersTable.phone,
       })
         .from(junkCarsTable)
         .leftJoin(usersTable, eq(junkCarsTable.sellerId, usersTable.id))

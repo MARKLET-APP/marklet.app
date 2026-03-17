@@ -29,6 +29,7 @@ router.get("/car-parts", async (req: any, res): Promise<void> => {
       status: carPartsTable.status,
       createdAt: carPartsTable.createdAt,
       sellerName: usersTable.name,
+      sellerPhone: usersTable.phone,
     })
       .from(carPartsTable)
       .leftJoin(usersTable, eq(carPartsTable.sellerId, usersTable.id))
@@ -59,6 +60,7 @@ router.get("/car-parts", async (req: any, res): Promise<void> => {
       status: carPartsTable.status,
       createdAt: carPartsTable.createdAt,
       sellerName: usersTable.name,
+      sellerPhone: usersTable.phone,
     })
       .from(carPartsTable)
       .leftJoin(usersTable, eq(carPartsTable.sellerId, usersTable.id))

@@ -13,6 +13,7 @@ import { shareListing } from "@/utils/shareListing";
 import type { ListingCardType } from "./ListingCard";
 import { SaveButton } from "./SaveButton";
 import type { ListingSaveType } from "@/hooks/use-saves";
+import { ContactButtons } from "./ContactButtons";
 
 const TYPE_LABELS: Record<ListingCardType, string> = {
   moto: "دراجة نارية",
@@ -231,6 +232,15 @@ export function ListingDetailDialog({
             <div className="bg-muted/50 rounded-xl p-3">
               <p className="text-sm text-foreground leading-relaxed">{data.description}</p>
             </div>
+          )}
+
+          {/* Contact buttons (Call + WhatsApp) */}
+          {!isOwner && (data.sellerPhone || data.phone) && (
+            <ContactButtons
+              phone={data.sellerPhone ?? data.phone}
+              listingTitle={title}
+              size="lg"
+            />
           )}
 
           {/* Actions */}

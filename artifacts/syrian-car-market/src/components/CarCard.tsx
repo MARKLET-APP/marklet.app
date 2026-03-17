@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
-import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { useLocation } from "wouter";
+import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, Share2, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -13,6 +13,7 @@ function formatUSD(price: number): string {
 
 export function CarCard({ car }: { car: Car }) {
   const { user } = useAuthStore();
+  const [, navigate] = useLocation();
   const [views, setViews] = useState(0);
   const [tag, setTag] = useState("");
   const [imgIndex, setImgIndex] = useState(0);
@@ -34,19 +35,22 @@ export function CarCard({ car }: { car: Car }) {
   }, [car.id]);
 
   const goNext = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     setImgIndex(i => (i + 1) % images.length);
   };
 
   const goPrev = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     setImgIndex(i => (i - 1 + images.length) % images.length);
   };
 
+  const goToDetail = () => navigate(`/cars/${car.id}`);
+
   return (
-    <Link href={`/cars/${car.id}`} className="group block bg-card rounded-2xl border shadow-sm hover-elevate overflow-hidden">
+    <div
+      className="group block bg-card rounded-2xl border shadow-sm hover-elevate overflow-hidden cursor-pointer"
+      onClick={goToDetail}
+    >
       <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {currentImage ? (
           <img
@@ -149,7 +153,6 @@ export function CarCard({ car }: { car: Car }) {
 
         <button
           onClick={(e) => {
-            e.preventDefault();
             e.stopPropagation();
             shareListing({
               title: `${car.brand} ${car.model} ${car.year}`,
@@ -164,7 +167,30 @@ export function CarCard({ car }: { car: Car }) {
           <Share2 className="w-4 h-4" />
           مشاركة الإعلان
         </button>
+
+        {/* Contact buttons — navigate to car detail to reveal phone (premium gated) */}
+        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+          <button
+            onClick={() => navigate(`/cars/${car.id}`)}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl text-sm font-bold bg-green-600 hover:bg-green-700 text-white shadow-sm transition-colors"
+            title="تواصل عبر واتساب"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.556 4.123 1.529 5.856L.057 23.998 6.305 22.53C8.001 23.468 9.94 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.896 0-3.67-.512-5.192-1.407l-.372-.22-3.855.992 1.013-3.744-.243-.389C2.406 15.417 1.818 13.77 1.818 12 1.818 6.58 6.58 1.818 12 1.818c5.42 0 10.182 4.762 10.182 10.182C22.182 17.42 17.42 21.818 12 21.818z"/>
+            </svg>
+            واتساب
+          </button>
+          <button
+            onClick={() => navigate(`/cars/${car.id}`)}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl text-sm font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+            title="اتصل بالبائع"
+          >
+            <Phone className="w-4 h-4" />
+            اتصال
+          </button>
+        </div>
       </div>
-    </Link>
+    </div>
   );
 }
