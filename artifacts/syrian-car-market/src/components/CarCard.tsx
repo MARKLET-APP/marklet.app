@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
 import type { Car } from "@workspace/api-client-react";
+import { shareListing } from "@/utils/shareListing";
 
 function formatUSD(price: number): string {
   return "$" + price.toLocaleString("en-US");
@@ -145,6 +146,24 @@ export function CarCard({ car }: { car: Car }) {
             <span>مشاهدات اليوم: {views}</span>
           </div>
         </div>
+
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            shareListing({
+              title: `${car.brand} ${car.model} ${car.year}`,
+              price: car.price,
+              city: car.city,
+              url: `${window.location.origin}/listing/${car.id}`,
+              description: (car as any).description ?? null,
+            });
+          }}
+          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors py-2 border border-dashed border-muted-foreground/30 rounded-xl hover:border-primary/40 hover:bg-primary/5"
+        >
+          <Share2 className="w-4 h-4" />
+          مشاركة الإعلان
+        </button>
       </div>
     </Link>
   );

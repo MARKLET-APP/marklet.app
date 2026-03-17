@@ -1,6 +1,7 @@
-import { MessageCircle, Trash2, Loader2, MapPin, ShoppingCart } from "lucide-react";
+import { MessageCircle, Trash2, Loader2, MapPin, ShoppingCart, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { shareListing } from "@/utils/shareListing";
 
 export type BuyRequestData = {
   id: number;
@@ -139,6 +140,23 @@ export function BuyRequestCard({
             حذف طلبي
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="gap-1.5 rounded-xl text-xs text-muted-foreground hover:text-primary"
+          onClick={() =>
+            shareListing({
+              title,
+              price: data.maxPrice,
+              city: data.city,
+              url: `${window.location.origin}/listing/${data.id}`,
+              description: data.description,
+            })
+          }
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          مشاركة
+        </Button>
       </div>
     </div>
   );
