@@ -6,3 +6,9 @@ id = "U4kGT9_NV2-ypI1YiE3JX"
 uri = "file://MARKLET_project.zip"
 type = "unspecified"
 title = "MARKLET - كامل الكود المصدري"
+
+[[outputs]]
+id = "ytk4Sp2iV0YgnrdWp_y6j"
+uri = "file://all_files.txt"
+type = "text"
+title = "MARKLET - جميع ملفات الكود مدمجة"
