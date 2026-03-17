@@ -96,7 +96,7 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full overflow-hidden">
       {/* Hero Section */}
-      <section className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
+      <section className="relative w-full min-h-[600px] flex items-center justify-center overflow-hidden py-16">
 
         <motion.img
           src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
