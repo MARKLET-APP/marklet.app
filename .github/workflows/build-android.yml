@@ -1,0 +1,87 @@
+name: Build MARKLET Android APK
+
+on:
+  workflow_dispatch:          # تشغيل يدوي بضغطة زر
+  push:
+    branches: [main]
+    paths:
+      - 'artifacts/syrian-car-market/src/**'
+      - 'artifacts/syrian-car-market/public/**'
+      - 'artifacts/syrian-car-market/capacitor.config.ts'
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. تحميل الكود ─────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. إعداد Node.js ───────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── 3. تثبيت pnpm ──────────────────────────────────────
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # ── 4. تثبيت الحزم ─────────────────────────────────────
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── 5. بناء React app ──────────────────────────────────
+      - name: Build React app (BASE_PATH=/)
+        working-directory: artifacts/syrian-car-market
+        env:
+          BASE_PATH: /
+          PORT: 3000
+          API_PORT: 8080
+          NODE_ENV: production
+        run: pnpm run build
+
+      # ── 6. إعداد Java 17 ───────────────────────────────────
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # ── 7. مزامنة Capacitor ─────────────────────────────────
+      - name: Capacitor sync
+        working-directory: artifacts/syrian-car-market
+        run: npx cap sync android
+
+      # ── 8. صلاحيات gradlew ─────────────────────────────────
+      - name: Grant execute permission for gradlew
+        working-directory: artifacts/syrian-car-market/android
+        run: chmod +x gradlew
+
+      # ── 9. بناء Debug APK ──────────────────────────────────
+      - name: Build Debug APK
+        working-directory: artifacts/syrian-car-market/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      # ── 10. رفع APK كـ artifact ─────────────────────────────
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MARKLET-debug-apk
+          path: artifacts/syrian-car-market/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      # ── 11. عرض معلومات APK ─────────────────────────────────
+      - name: Show APK info
+        run: |
+          APK_PATH="artifacts/syrian-car-market/android/app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$APK_PATH" ]; then
+            SIZE=$(du -sh "$APK_PATH" | cut -f1)
+            echo "✅ APK built successfully!"
+            echo "📦 Size: $SIZE"
+            echo "📍 Path: $APK_PATH"
+          fi
