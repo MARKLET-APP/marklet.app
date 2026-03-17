@@ -97,67 +97,84 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full overflow-hidden">
       {/* Hero Section */}
-      <section className="relative w-full min-h-[600px] flex items-center justify-center overflow-hidden py-16">
-
-        <motion.img
-          src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-          alt="Hero Background"
-          className="absolute inset-0 w-full h-full object-cover origin-center"
-          animate={{ scale: [1, 1.07, 1] }}
-          transition={{ duration: 20, ease: "easeInOut", repeat: Infinity }}
+      <section
+        className="relative w-full flex items-center justify-center overflow-hidden text-white text-center"
+        style={{
+          background: "linear-gradient(135deg, #062f2f 0%, #0f5132 40%, #1c3d2b 100%)",
+          padding: "120px 20px",
+        }}
+      >
+        {/* Car outline watermark */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url("${import.meta.env.BASE_URL}assets/car-outline.svg")`,
+            backgroundSize: "600px",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            opacity: 0.05,
+          }}
         />
 
-        <div className="absolute inset-0 bg-black/45 z-10" />
-
+        {/* Animated glow blobs */}
         <motion.div
-          className="absolute z-10 w-72 h-72 rounded-full bg-primary/20 blur-3xl pointer-events-none"
-          style={{ top: "-10%", right: "10%" }}
+          className="absolute w-72 h-72 rounded-full blur-3xl pointer-events-none"
+          style={{ top: "-10%", right: "10%", background: "rgba(22,163,74,0.25)" }}
           animate={{ y: [0, 28, 0], x: [0, -16, 0], opacity: [0.5, 0.8, 0.5] }}
           transition={{ duration: 9, ease: "easeInOut", repeat: Infinity }}
         />
         <motion.div
-          className="absolute z-10 w-56 h-56 rounded-full bg-accent/15 blur-3xl pointer-events-none"
-          style={{ bottom: "0%", left: "8%" }}
+          className="absolute w-56 h-56 rounded-full blur-3xl pointer-events-none"
+          style={{ bottom: "0%", left: "8%", background: "rgba(212,175,55,0.12)" }}
           animate={{ y: [0, -24, 0], x: [0, 18, 0], opacity: [0.4, 0.7, 0.4] }}
           transition={{ duration: 12, ease: "easeInOut", repeat: Infinity, delay: 3 }}
         />
-        <motion.div
-          className="absolute z-10 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none"
-          style={{ top: "30%", left: "30%" }}
-          animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.45, 0.2] }}
-          transition={{ duration: 7, ease: "easeInOut", repeat: Infinity, delay: 1.5 }}
-        />
 
-        <div className="relative z-20 max-w-3xl w-full px-6 text-center space-y-5">
+        <div className="relative z-10 max-w-3xl w-full space-y-5">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 bg-primary/20 border border-primary/40 backdrop-blur-sm text-primary-foreground/90 text-sm font-semibold px-5 py-2 rounded-full shadow-lg"
+            className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm text-white/90 text-sm font-semibold px-5 py-2 rounded-full shadow-lg"
           >
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
             {t("home.hero.badge")}
           </motion.div>
+
+          {/* Title */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="text-4xl md:text-6xl font-extrabold text-white drop-shadow-xl leading-tight"
+            style={{
+              fontSize: "clamp(42px, 10vw, 64px)",
+              fontWeight: 800,
+              color: "#d4af37",
+              letterSpacing: "2px",
+              lineHeight: 1.15,
+              textShadow: "0 2px 20px rgba(212,175,55,0.3)",
+            }}
           >
-            {t("home.hero.title1")}{t("home.hero.title2") ? <> <span className="text-accent">{t("home.hero.title2")}</span></> : null}
+            {t("home.hero.title1")}{t("home.hero.title2") ? <> <span>{t("home.hero.title2")}</span></> : null}
           </motion.h1>
+
+          {/* Subtitle */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12 }}
-            className="text-lg md:text-xl text-white font-semibold drop-shadow-md"
+            style={{ fontSize: "clamp(18px, 4vw, 28px)", marginTop: "10px", color: "#fff" }}
+            className="font-semibold drop-shadow-md"
           >
             {t("home.hero.subtitle")}
           </motion.p>
+
+          {/* Description */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-sm md:text-base text-white/75 max-w-xl mx-auto drop-shadow-sm whitespace-pre-line"
+            style={{ marginTop: "15px", fontSize: "18px", opacity: 0.9, color: "#fff" }}
+            className="max-w-xl mx-auto whitespace-pre-line"
           >
             {t("home.hero.description")}
           </motion.p>

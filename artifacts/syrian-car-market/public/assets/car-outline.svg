@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Body -->
+  <path d="M80 180 L80 200 Q80 220 100 220 L700 220 Q720 220 720 200 L720 180 L680 180 L660 140 Q640 100 600 95 L480 85 Q440 80 400 80 Q360 80 320 85 L200 95 Q160 100 140 140 L120 180 Z"/>
+  <!-- Roof -->
+  <path d="M200 95 L230 55 Q250 38 290 35 L510 35 Q550 38 570 55 L600 95"/>
+  <!-- Windshield front -->
+  <path d="M200 95 L230 55 Q260 42 300 40 L400 38"/>
+  <!-- Windshield rear -->
+  <path d="M600 95 L570 55 Q540 42 500 40 L400 38"/>
+  <!-- Front wheel arch -->
+  <circle cx="190" cy="218" r="42" stroke-width="3"/>
+  <circle cx="190" cy="218" r="24" stroke-width="2"/>
+  <!-- Rear wheel arch -->
+  <circle cx="610" cy="218" r="42" stroke-width="3"/>
+  <circle cx="610" cy="218" r="24" stroke-width="2"/>
+  <!-- Door lines -->
+  <line x1="370" y1="88" x2="378" y2="185" stroke-width="2"/>
+  <!-- Headlights -->
+  <path d="M82 155 L82 178 Q82 183 87 183 L118 183 L118 155 Q105 148 82 155 Z" stroke-width="2"/>
+  <!-- Taillights -->
+  <path d="M718 155 L718 178 Q718 183 713 183 L682 183 L682 155 Q695 148 718 155 Z" stroke-width="2"/>
+  <!-- Grill -->
+  <path d="M84 190 L116 190" stroke-width="2"/>
+  <path d="M84 200 L116 200" stroke-width="2"/>
+  <!-- Door handle -->
+  <path d="M320 138 L355 138" stroke-width="2.5"/>
+  <path d="M415 138 L450 138" stroke-width="2.5"/>
+  <!-- Side mirror -->
+  <path d="M138 128 L155 128 L155 140 L138 140 Z" stroke-width="1.5"/>
+</svg>
