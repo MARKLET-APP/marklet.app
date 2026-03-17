@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, useRoute } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,6 +33,14 @@ import NotFound from "@/pages/not-found";
 import ShowroomPage from "@/pages/showroom";
 import AppRatingPopup from "@/components/AppRatingPopup";
 
+function ListingRedirect() {
+  const [, params] = useRoute("/listing/:id");
+  const [, navigate] = useLocation();
+  const id = params?.id;
+  if (id) navigate(`/cars/${id}`, { replace: true });
+  return null;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -48,6 +56,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/search" component={SearchPage} />
+        <Route path="/listing/:id" component={ListingRedirect} />
         <Route path="/cars/:id" component={CarDetail} />
         <Route path="/add-listing" component={AddListing} />
         <Route path="/vehicle-info" component={VehicleInfo} />

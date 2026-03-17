@@ -2,7 +2,8 @@ import { useRoute, useLocation } from "wouter";
 import { useGetCar } from "@workspace/api-client-react";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { MapPin, Settings, Calendar, Gauge, Fuel, Eye, EyeOff, Heart, Share2, Loader2, MessageCircle, CheckCircle, Pencil, Lock, Crown, XCircle, Clock, Video, Sparkles, Copy } from "lucide-react";
+import { MapPin, Settings, Calendar, Gauge, Fuel, Eye, EyeOff, Heart, Share2, Loader2, MessageCircle, CheckCircle, Pencil, Lock, Crown, Clock } from "lucide-react";
+import { shareListing } from "@/utils/shareListing";
 import AppRatingPopup from "@/components/AppRatingPopup";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,15 +38,9 @@ export default function CarDetail() {
 
   const isLoggedIn = !!user;
   const isPremium = !!(user as any)?.isPremium || !!(user as any)?.isVerified || !!(user as any)?.subscriptionActive;
-  const canVideo = isPremium || (user as any)?.role === "dealer" || (user as any)?.role === "seller" || (user as any)?.role === "admin";
   const isSeller = isLoggedIn && car && (user as any)?.id === (car as any)?.sellerId;
   const isAdmin = (user as any)?.role === "admin";
   const carStatus = (car as any)?.status;
-
-  const [showVideoDialog, setShowVideoDialog] = useState(false);
-  const [showPremiumPopup, setShowPremiumPopup] = useState(false);
-  const [generatingVideo, setGeneratingVideo] = useState(false);
-  const [videoResult, setVideoResult] = useState<any>(null);
 
   useEffect(() => {
     if (!carId) return;
@@ -53,6 +48,26 @@ export default function CarDetail() {
       .then((data) => setSimilarCars(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [carId]);
+
+  useEffect(() => {
+    if (!car) return;
+    const title = [(car as any).brand, (car as any).model, (car as any).year].filter(Boolean).join(" ") || "MARKLET";
+    const description = (car as any).description || `${(car as any).city ?? ""} — ${(car as any).price ? "$" + Number((car as any).price).toLocaleString() : ""}`;
+    const image = (car as any).images?.[0] ?? "";
+    const url = `${window.location.origin}/listing/${car.id}`;
+    document.title = `${title} | MARKLET`;
+    const setMeta = (property: string, content: string) => {
+      let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement("meta"); el.setAttribute("property", property); document.head.appendChild(el); }
+      el.setAttribute("content", content);
+    };
+    setMeta("og:title", title);
+    setMeta("og:description", description);
+    setMeta("og:image", image);
+    setMeta("og:url", url);
+    setMeta("og:type", "website");
+    return () => { document.title = "MARKLET"; };
+  }, [car]);
 
   useEffect(() => {
     if (car && showEditDialog) {
@@ -74,34 +89,17 @@ export default function CarDetail() {
   }, [car, showEditDialog]);
 
   const shareCar = () => {
-    const url = `${window.location.origin}/cars/${carId}`;
-    navigator.clipboard.writeText(url);
-    toast({ title: "تم نسخ رابط السيارة", description: url });
-  };
-
-  const handleGenerateVideo = async () => {
-    if (!isLoggedIn) { navigate("/login"); return; }
-    if (!canVideo) { setShowPremiumPopup(true); return; }
-    setGeneratingVideo(true);
-    setVideoResult(null);
-    setShowVideoDialog(true);
-    try {
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/generate-ad-video`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ carId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? "حدث خطأ");
-      setVideoResult(data);
-    } catch (err: any) {
-      toast({ title: err.message ?? "حدث خطأ في توليد الفيديو", variant: "destructive" });
-      setShowVideoDialog(false);
-    } finally {
-      setGeneratingVideo(false);
-    }
+    const url = `${window.location.origin}/listing/${carId}`;
+    shareListing(
+      {
+        title: [(car as any)?.brand, (car as any)?.model, (car as any)?.year].filter(Boolean).join(" ") || "إعلان على MARKLET",
+        price: (car as any)?.price,
+        city: (car as any)?.city,
+        url,
+        description: (car as any)?.description,
+      },
+      () => toast({ title: "تم نسخ رابط الإعلان", description: "يمكنك مشاركته على واتساب أو فيسبوك" })
+    );
   };
 
 
@@ -510,28 +508,6 @@ export default function CarDetail() {
                 </Button>
               )}
 
-              {/* Video generation button */}
-              {canVideo ? (
-                <Button
-                  onClick={handleGenerateVideo}
-                  disabled={generatingVideo}
-                  variant="outline"
-                  className="w-full rounded-xl h-12 text-base font-bold gap-2 border-2 border-violet-300 hover:bg-violet-50 hover:border-violet-500 text-violet-600 dark:text-violet-400 transition-all"
-                >
-                  {generatingVideo ? <Loader2 className="w-5 h-5 animate-spin" /> : <Video className="w-5 h-5" />}
-                  إنشاء فيديو للإعلان
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => isLoggedIn ? setShowPremiumPopup(true) : navigate("/login")}
-                  variant="outline"
-                  className="w-full rounded-xl h-12 text-base font-bold gap-2 border-2 border-muted hover:bg-muted/30 text-muted-foreground transition-all"
-                >
-                  <Video className="w-5 h-5" />
-                  إنشاء فيديو للإعلان
-                  <Badge className="mr-1 bg-amber-500 text-white text-xs px-1.5 py-0 h-5">مدفوع</Badge>
-                </Button>
-              )}
             </div>
 
             <div className="mt-6 pt-6 border-t text-sm text-muted-foreground text-center">
@@ -554,85 +530,6 @@ export default function CarDetail() {
       </div>
     )}
 
-    {/* Video Generation Dialog */}
-    <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
-      <DialogContent className="max-w-md" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-violet-600">
-            <Video className="w-5 h-5" /> إنشاء فيديو للإعلان
-          </DialogTitle>
-          <DialogDescription>
-            محتوى جاهز للنشر على منصات التواصل الاجتماعي
-          </DialogDescription>
-        </DialogHeader>
-        {generatingVideo ? (
-          <div className="flex flex-col items-center gap-4 py-10">
-            <div className="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-violet-500 animate-pulse" />
-            </div>
-            <p className="text-base font-medium text-muted-foreground">جارٍ إنشاء محتوى الفيديو...</p>
-          </div>
-        ) : videoResult ? (
-          <div className="space-y-4 py-2">
-            <div className="bg-muted/40 rounded-xl p-4 text-sm font-mono whitespace-pre-line leading-relaxed border">
-              {videoResult.script}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {videoResult.slides?.map((slide: any) => (
-                <div key={slide.order} className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">شريحة {slide.order}</p>
-                  <p className="font-bold text-sm">{slide.text}</p>
-                  {slide.sub && <p className="text-xs text-muted-foreground mt-1">{slide.sub}</p>}
-                </div>
-              ))}
-            </div>
-            <Button
-              className="w-full gap-2"
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(videoResult.script);
-                toast({ title: "تم نسخ النص", description: "يمكنك استخدامه في إنشاء فيديو على منصات التواصل" });
-              }}
-            >
-              <Copy className="w-4 h-4" /> نسخ النص
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">{videoResult.note}</p>
-          </div>
-        ) : null}
-      </DialogContent>
-    </Dialog>
-
-    {/* Premium Popup */}
-    <Dialog open={showPremiumPopup} onOpenChange={setShowPremiumPopup}>
-      <DialogContent className="max-w-sm text-center" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex flex-col items-center gap-3 pt-4">
-            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
-              <Crown className="w-8 h-8 text-amber-500" />
-            </div>
-            ميزة مدفوعة
-          </DialogTitle>
-          <DialogDescription className="text-base mt-2">
-            ميزة إنشاء فيديو للإعلان متاحة فقط للحسابات المميزة.
-            قم بالترقية للاستفادة من هذه الميزة.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="flex-col gap-2 sm:flex-col mt-2">
-          <Button
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white gap-2 h-12 text-base font-bold"
-            onClick={() => {
-              setShowPremiumPopup(false);
-              toast({ title: "الاشتراك المميز قريباً", description: "سيتم إطلاق خطط الاشتراك قريباً — ابقَ بانتظارنا!" });
-            }}
-          >
-            <Sparkles className="w-5 h-5" /> ترقية الحساب
-          </Button>
-          <Button variant="outline" className="w-full" onClick={() => setShowPremiumPopup(false)}>
-            لاحقاً
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
 
     </>
   );

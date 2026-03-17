@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2 } from "lucide-react";
+import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Share2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { shareListing } from "@/utils/shareListing";
 
 export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate";
 
@@ -227,6 +228,24 @@ export function ListingCard({ type, data, onChat, onDelete, chatLoading, deleteL
               حذف
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1.5 rounded-xl text-xs text-muted-foreground hover:text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              shareListing({
+                title,
+                price: data.price ?? data.dailyPrice ?? null,
+                city: data.city ?? null,
+                url: `${window.location.origin}/listing/${data.id}`,
+                description: data.description ?? null,
+              });
+            }}
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            مشاركة
+          </Button>
         </div>
       </div>
     </div>
