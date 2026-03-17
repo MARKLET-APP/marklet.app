@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
+import { ListingDetailDialog } from "@/components/ListingDetailDialog";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 import { apiRequest } from "@/lib/api";
 
@@ -47,6 +48,7 @@ export default function JunkCarsPage() {
   const [buyOpen, setBuyOpen] = useState(false);
   const [followupId, setFollowupId] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [selectedJunk, setSelectedJunk] = useState<JunkCar | null>(null);
 
   const [sellForm, setSellForm] = useState({ type: "", model: "", year: "", condition: "حادث", price: "", currency: "USD", city: "", description: "", isAccident: false, accidentImages: "" });
   const [buyForm, setBuyForm] = useState({ type: "", model: "", year: "", maxPrice: "", currency: "USD", city: "", description: "" });
@@ -191,6 +193,7 @@ export default function JunkCarsPage() {
                 type="junk"
                 data={c}
                 currentUserId={user?.id}
+                onCardClick={() => setSelectedJunk(c)}
                 onChat={() => startChat(c.sellerId, `مرحباً، أنا مهتم بـ ${[c.type, c.model, c.year].filter(Boolean).join(" ") || "سيارتك المعطوبة"}. هل ما زالت متوفرة؟`)}
                 chatLoading={startingChat}
                 onDelete={() => deleteJunk.mutate(c.id)}
@@ -310,6 +313,18 @@ export default function JunkCarsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      {selectedJunk && (
+        <ListingDetailDialog
+          open={!!selectedJunk}
+          onClose={() => setSelectedJunk(null)}
+          type="junk"
+          data={selectedJunk}
+          currentUserId={user?.id}
+          onChat={() => { setSelectedJunk(null); startChat(selectedJunk.sellerId, `مرحباً، أنا مهتم بـ ${[selectedJunk.type, selectedJunk.model, selectedJunk.year].filter(Boolean).join(" ") || "سيارتك المعطوبة"}. هل ما زالت متوفرة؟`); }}
+          chatLoading={startingChat}
+        />
+      )}
+
       <ListingPreviewDialog
         open={showPreview}
         onClose={() => setShowPreview(false)}

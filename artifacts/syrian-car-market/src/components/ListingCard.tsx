@@ -12,6 +12,7 @@ interface ListingCardProps {
   data: any;
   onChat?: () => void;
   onDelete?: () => void;
+  onCardClick?: () => void;
   chatLoading?: boolean;
   deleteLoading?: boolean;
   showSelf?: boolean;
@@ -58,7 +59,7 @@ function getSellerId(data: any): number {
   return data.sellerId ?? data.userId ?? 0;
 }
 
-export function ListingCard({ type, data, onChat, onDelete, chatLoading, deleteLoading, currentUserId }: ListingCardProps) {
+export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoading, deleteLoading, currentUserId }: ListingCardProps) {
   const [imgIdx, setImgIdx] = useState(0);
   const images = getImages(type, data);
   const currentImg = images[imgIdx] ?? null;
@@ -72,7 +73,10 @@ export function ListingCard({ type, data, onChat, onDelete, chatLoading, deleteL
   const goPrev = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx(i => (i - 1 + images.length) % images.length); };
 
   return (
-    <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <div
+      className={`bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${onCardClick ? "cursor-pointer" : ""}`}
+      onClick={onCardClick}
+    >
       {/* Image */}
       <div className="relative">
         {type === "plate" && !currentImg ? (
@@ -206,7 +210,7 @@ export function ListingCard({ type, data, onChat, onDelete, chatLoading, deleteL
               size="sm"
               variant="outline"
               className="flex-1 gap-1.5 rounded-xl text-xs font-bold"
-              onClick={onChat}
+              onClick={(e) => { e.stopPropagation(); onChat(); }}
               disabled={chatLoading}
             >
               {chatLoading
@@ -221,7 +225,7 @@ export function ListingCard({ type, data, onChat, onDelete, chatLoading, deleteL
               size="sm"
               variant="ghost"
               className="flex-1 text-destructive hover:bg-destructive/10 rounded-xl gap-1.5 text-xs"
-              onClick={onDelete}
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
               disabled={deleteLoading}
             >
               {deleteLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}

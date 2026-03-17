@@ -12,6 +12,7 @@ import { useLocation } from "wouter";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
+import { ListingDetailDialog } from "@/components/ListingDetailDialog";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 import { apiRequest } from "@/lib/api";
 
@@ -60,6 +61,7 @@ export default function PlatesPage() {
   const [sellImages, setSellImages] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [selectedPlate, setSelectedPlate] = useState<PlateItem | null>(null);
   const { startChat, loading: startingChat } = useStartChat();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -243,6 +245,7 @@ export default function PlatesPage() {
                 type="plate"
                 data={{ ...p, sellerId: p.userId }}
                 currentUserId={user?.id}
+                onCardClick={() => setSelectedPlate(p)}
                 onChat={() => startChat(p.userId, `مرحباً، أنا مهتم بلوحة ${[p.brand, p.city].filter(Boolean).join(" - ")}. هل ما زالت متوفرة؟`)}
                 chatLoading={startingChat}
               />
@@ -379,6 +382,18 @@ export default function PlatesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {selectedPlate && (
+        <ListingDetailDialog
+          open={!!selectedPlate}
+          onClose={() => setSelectedPlate(null)}
+          type="plate"
+          data={{ ...selectedPlate, sellerId: selectedPlate.userId }}
+          currentUserId={user?.id}
+          onChat={() => { setSelectedPlate(null); startChat(selectedPlate.userId, `مرحباً، أنا مهتم بلوحة ${selectedPlate.brand ?? ""}. هل ما زالت متوفرة؟`); }}
+          chatLoading={startingChat}
+        />
+      )}
 
       <ListingPreviewDialog
         open={showPreview}

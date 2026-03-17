@@ -16,6 +16,7 @@ import { useStartChat } from "@/hooks/use-start-chat";
 import { cn } from "@/lib/utils";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
+import { ListingDetailDialog } from "@/components/ListingDetailDialog";
 
 type RentalCar = {
   id: number; sellerId: number; brand: string; model: string;
@@ -50,6 +51,7 @@ export default function RentalCarsPage() {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [selectedCar, setSelectedCar] = useState<RentalCar | null>(null);
 
   const [sellForm, setSellForm] = useState({
     brand: "", model: "", year: "", city: "",
@@ -257,6 +259,7 @@ export default function RentalCarsPage() {
                     type="rental"
                     data={car}
                     currentUserId={user?.id}
+                    onCardClick={() => setSelectedCar(car)}
                     onChat={() => startChat(car.sellerId, `مرحباً، أنا مهتم بتأجير ${[car.brand, car.model, car.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`)}
                     chatLoading={startingChat}
                     onDelete={() => { if (confirm("حذف هذا الإعلان؟")) deleteCar.mutate(car.id); }}
@@ -497,6 +500,18 @@ export default function RentalCarsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      {selectedCar && (
+        <ListingDetailDialog
+          open={!!selectedCar}
+          onClose={() => setSelectedCar(null)}
+          type="rental"
+          data={selectedCar}
+          currentUserId={user?.id}
+          onChat={() => { setSelectedCar(null); startChat(selectedCar.sellerId, `مرحباً، أنا مهتم بتأجير ${[selectedCar.brand, selectedCar.model, selectedCar.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }}
+          chatLoading={startingChat}
+        />
+      )}
+
       <ListingPreviewDialog
         open={showPreview}
         onClose={() => setShowPreview(false)}

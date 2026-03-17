@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
+import { ListingDetailDialog } from "@/components/ListingDetailDialog";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 import { apiRequest } from "@/lib/api";
 
@@ -46,6 +47,7 @@ export default function CarPartsPage() {
   const [buyOpen, setBuyOpen] = useState(false);
   const [followupId, setFollowupId] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [selectedPart, setSelectedPart] = useState<CarPart | null>(null);
 
   const [sellForm, setSellForm] = useState({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", currency: "USD", city: "", description: "" });
   const [buyForm, setBuyForm] = useState({ partName: "", carType: "", model: "", maxPrice: "", currency: "USD", city: "", description: "" });
@@ -205,6 +207,7 @@ export default function CarPartsPage() {
                   type="part"
                   data={p}
                   currentUserId={user?.id}
+                  onCardClick={() => setSelectedPart(p)}
                   onChat={() => startChatWithSeller(p.sellerId, p.name)}
                   chatLoading={startingChat}
                   onDelete={() => deletePart.mutate(p.id)}
@@ -330,6 +333,18 @@ export default function CarPartsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      {selectedPart && (
+        <ListingDetailDialog
+          open={!!selectedPart}
+          onClose={() => setSelectedPart(null)}
+          type="part"
+          data={selectedPart}
+          currentUserId={user?.id}
+          onChat={() => { setSelectedPart(null); startChatWithSeller(selectedPart.sellerId, selectedPart.name); }}
+          chatLoading={startingChat}
+        />
+      )}
+
       <ListingPreviewDialog
         open={showPreview}
         onClose={() => setShowPreview(false)}

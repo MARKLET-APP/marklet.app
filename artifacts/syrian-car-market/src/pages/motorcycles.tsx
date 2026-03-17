@@ -12,6 +12,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
+import { ListingDetailDialog } from "@/components/ListingDetailDialog";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -38,6 +39,7 @@ export default function MotorcyclesPage() {
 
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [buyOpen, setBuyOpen] = useState(false);
+  const [selectedMoto, setSelectedMoto] = useState<MotoItem | null>(null);
   const { startChat, loading: startingChat } = useStartChat();
   const [buyForm, setBuyForm] = useState({ brand: "", model: "", maxPrice: "", city: "", description: "" });
 
@@ -130,6 +132,7 @@ export default function MotorcyclesPage() {
                   type="moto"
                   data={m}
                   currentUserId={user?.id}
+                  onCardClick={() => setSelectedMoto(m)}
                   onChat={() => startChat(m.sellerId, `مرحباً، أنا مهتم بـ ${[m.brand, m.model, m.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`)}
                   chatLoading={startingChat}
                 />
@@ -199,6 +202,17 @@ export default function MotorcyclesPage() {
           </form>
         </DialogContent>
       </Dialog>
+      {selectedMoto && (
+        <ListingDetailDialog
+          open={!!selectedMoto}
+          onClose={() => setSelectedMoto(null)}
+          type="moto"
+          data={selectedMoto}
+          currentUserId={user?.id}
+          onChat={() => { setSelectedMoto(null); startChat(selectedMoto.sellerId, `مرحباً، أنا مهتم بـ ${[selectedMoto.brand, selectedMoto.model, selectedMoto.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }}
+          chatLoading={startingChat}
+        />
+      )}
     </div>
   );
 }
