@@ -415,23 +415,23 @@ export default function Messages() {
 
   return (
     <div
-      className="flex h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] w-full max-w-7xl mx-auto overflow-hidden bg-background"
+      className="flex h-[calc(100dvh-64px)] sm:h-[calc(100dvh-80px)] w-full max-w-7xl mx-auto overflow-hidden bg-background"
       onClick={() => { setContextMenu(null); }}
     >
       {/* ── Conversation list ── */}
       <div className={cn("w-full sm:w-80 md:w-96 flex-shrink-0 border-l bg-card flex flex-col", activeChatId ? "hidden sm:flex" : "flex")}>
-        <div className="p-4 border-b flex items-center justify-between gap-2">
+        <div className="px-4 py-3 border-b flex items-center justify-between gap-2 bg-primary/5">
           <div className="flex items-center gap-2 shrink-0">
-            <h2 className="text-xl font-bold">
+            <h2 className="text-lg font-bold">
               {adminViewAll ? "كل المحادثات" : "الرسائل"}
             </h2>
-          </div>
-          <div className="flex items-center gap-2">
             {!adminViewAll && conversations.reduce((s, c) => s + c.unreadCount, 0) > 0 && (
-              <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full px-2 py-0.5">
-                {conversations.reduce((s, c) => s + c.unreadCount, 0)} جديدة
+              <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full min-w-[22px] h-[22px] flex items-center justify-center px-1.5">
+                {conversations.reduce((s, c) => s + c.unreadCount, 0)}
               </span>
             )}
+          </div>
+          <div className="flex items-center gap-2">
             {isAdmin && (
               <Button
                 variant={adminViewAll ? "default" : "outline"}
@@ -504,7 +504,7 @@ export default function Messages() {
                 <p className="text-sm mt-1">ابدأ محادثة من صفحة أي سيارة</p>
               </div>
             ) : (
-              <div className="divide-y divide-border/40">
+              <div className="divide-y divide-border/30">
                 {conversations.map((conv) => {
                   const hasUnread = conv.unreadCount > 0;
                   const ts = conv.lastMessageAt ?? conv.createdAt;
@@ -512,37 +512,44 @@ export default function Messages() {
                     <button
                       key={conv.id}
                       onClick={() => setActiveChatId(conv.id)}
-                      className={cn("w-full text-right p-3 flex gap-3 hover:bg-secondary/50 transition-colors items-center", conv.id === activeChatId && "bg-secondary")}
+                      className={cn(
+                        "w-full text-right px-4 py-3.5 flex gap-3 transition-colors items-center",
+                        conv.id === activeChatId
+                          ? "bg-primary/8 border-r-4 border-r-primary"
+                          : "hover:bg-secondary/40 border-r-4 border-r-transparent",
+                        hasUnread && conv.id !== activeChatId && "bg-primary/4"
+                      )}
                     >
                       <div className="relative shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-border">
+                        <div className={cn(
+                          "w-12 h-12 rounded-full flex items-center justify-center overflow-hidden",
+                          hasUnread ? "ring-2 ring-primary ring-offset-1 ring-offset-card" : "border-2 border-border"
+                        )}>
                           {conv.otherUserPhoto
                             ? <img src={conv.otherUserPhoto} alt={conv.otherUserName} className="w-full h-full object-cover" />
-                            : <User className="w-6 h-6 text-muted-foreground" />
+                            : <div className="w-full h-full bg-primary/10 flex items-center justify-center"><User className="w-6 h-6 text-primary/60" /></div>
                           }
                         </div>
                         {hasUnread && (
-                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-card">
+                          <span className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-sm">
                             {conv.unreadCount}
                           </span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-0.5">
-                          <span className={cn("font-bold text-foreground text-sm truncate", hasUnread && "text-primary")}>{conv.otherUserName}</span>
-                          <span className="text-[10px] text-muted-foreground shrink-0 ms-1" dir="ltr">{formatTime(ts)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 flex items-center gap-1">
-                            <Car className="w-2.5 h-2.5" />
-                            {conv.carBrand} {conv.carModel}
+                        <div className="flex justify-between items-baseline mb-1">
+                          <span className={cn("font-bold text-sm truncate", hasUnread ? "text-primary" : "text-foreground")}>
+                            {conv.otherUserName}
                           </span>
-                          {conv.lastMessage && (
-                            <span className={cn("text-xs truncate", hasUnread ? "font-semibold text-foreground" : "text-muted-foreground")}>{conv.lastMessage}</span>
-                          )}
+                          <span className="text-[10px] text-muted-foreground shrink-0 ms-2" dir="ltr">{formatTime(ts)}</span>
                         </div>
+                        <p className={cn(
+                          "text-xs truncate leading-relaxed",
+                          hasUnread ? "font-semibold text-foreground" : "text-muted-foreground font-normal"
+                        )}>
+                          {conv.lastMessage || `${conv.carBrand} ${conv.carModel}`}
+                        </p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                     </button>
                   );
                 })}
@@ -555,15 +562,20 @@ export default function Messages() {
       {/* ── Chat panel ── */}
       <div className={cn("flex-1 flex flex-col min-w-0", !activeChatId ? "hidden sm:flex" : "flex")}>
         {!activeChatId ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
-            <MessageSquare className="w-16 h-16 opacity-10" />
-            <p className="text-lg font-medium">اختر محادثة للبدء</p>
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+              <MessageSquare className="w-10 h-10 text-primary/40" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-foreground/70">اختر محادثة للبدء</p>
+              <p className="text-sm text-muted-foreground mt-1">رسائلك الخاصة آمنة ومشفرة</p>
+            </div>
           </div>
         ) : (
           <>
             {/* Chat header */}
-            <div className="border-b bg-card px-4 py-3 flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="sm:hidden shrink-0" onClick={() => setActiveChatId(null)}>
+            <div className="border-b bg-card px-4 py-2.5 flex items-center gap-3 shadow-sm z-10">
+              <Button variant="ghost" size="icon" className="sm:hidden shrink-0 -mr-1" onClick={() => setActiveChatId(null)}>
                 <ChevronRight className="w-5 h-5" />
               </Button>
 
@@ -587,22 +599,30 @@ export default function Messages() {
                 </>
               ) : (
                 <>
-                  {activeConv?.carImage
-                    ? <img src={activeConv.carImage} alt="car" className="w-10 h-10 rounded-lg object-cover shrink-0 border" />
-                    : <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0"><Car className="w-5 h-5 text-muted-foreground" /></div>
-                  }
+                  <div className="relative shrink-0">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/20">
+                      {activeConv?.otherUserPhoto
+                        ? <img src={activeConv.otherUserPhoto} alt={activeConv.otherUserName} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full bg-primary/10 flex items-center justify-center"><User className="w-5 h-5 text-primary/60" /></div>
+                      }
+                    </div>
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card" title="متصل" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm truncate">{activeConv?.otherUserName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{activeConv?.carBrand} {activeConv?.carModel} {activeConv?.carYear}</p>
+                    <p className="font-bold text-sm leading-tight truncate">{activeConv?.otherUserName}</p>
+                    <p className="text-xs text-primary truncate flex items-center gap-1 mt-0.5">
+                      <Car className="w-3 h-3 shrink-0" />
+                      {activeConv?.carBrand} {activeConv?.carModel} {activeConv?.carYear}
+                    </p>
                   </div>
                   {isBlocked && (
-                    <span className="text-xs text-red-500 font-medium flex items-center gap-1">
+                    <span className="text-xs text-red-500 font-medium flex items-center gap-1 bg-red-50 dark:bg-red-950/20 px-2 py-1 rounded-full">
                       <Ban className="w-3.5 h-3.5" /> محظور
                     </span>
                   )}
                   <Button
                     variant="ghost" size="icon"
-                    className="text-muted-foreground hover:text-red-500"
+                    className="text-muted-foreground hover:text-red-500 hover:bg-red-50"
                     onClick={() => setBlockDialog(true)}
                     title={blockedByMe ? "رفع الحظر" : "حظر المستخدم"}
                   >
@@ -613,165 +633,235 @@ export default function Messages() {
             </div>
 
             {/* Messages area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-1 bg-gradient-to-b from-background to-muted/20">
+            <div
+              className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2316a34a' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                backgroundColor: 'hsl(var(--muted) / 0.2)',
+              }}
+            >
               {loadingMsgs ? (
-                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
               ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground gap-2">
-                  <MessageSquare className="w-10 h-10 opacity-20" />
-                  <p>لا توجد رسائل بعد. ابدأ المحادثة!</p>
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground gap-3 py-16">
+                  <div className="w-16 h-16 rounded-full bg-muted/80 flex items-center justify-center">
+                    <MessageSquare className="w-8 h-8 opacity-30" />
+                  </div>
+                  <div>
+                    <p className="font-medium">لا توجد رسائل بعد</p>
+                    <p className="text-sm mt-0.5 opacity-70">ابدأ المحادثة الآن 👋</p>
+                  </div>
                 </div>
               ) : (
-                messages.map((msg) => {
-                  const isMine = msg.senderId === user.id;
-                  const isSystem = msg.messageType === "system" || msg.senderId === 0;
-                  const reactions = msg.reactions ?? {};
-                  const reactionKeys = Object.keys(reactions).filter((k) => reactions[k].length > 0);
-
-                  if (isSystem) {
-                    return (
-                      <div key={msg.id} className="flex justify-center my-2">
-                        <span className="bg-muted text-muted-foreground text-xs px-3 py-1.5 rounded-full max-w-xs text-center">{msg.content}</span>
-                      </div>
-                    );
+                (() => {
+                  let firstUnreadIdx = -1;
+                  const totalUnread = activeConv?.unreadCount ?? 0;
+                  if (totalUnread > 0) {
+                    firstUnreadIdx = messages.length - totalUnread;
                   }
+                  return messages.map((msg, idx) => {
+                    const isMine = msg.senderId === user.id;
+                    const isSystem = msg.messageType === "system" || msg.senderId === 0;
+                    const reactions = msg.reactions ?? {};
+                    const reactionKeys = Object.keys(reactions).filter((k) => reactions[k].length > 0);
 
-                  return (
-                    <div key={msg.id} className={cn("flex gap-2 group", isMine ? "flex-row-reverse" : "flex-row")} style={{ alignItems: "flex-end" }}>
-                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 mb-1">
-                        {msg.senderPhoto
-                          ? <img src={msg.senderPhoto} alt={msg.senderName} className="w-full h-full object-cover" />
-                          : <User className="w-3.5 h-3.5 text-muted-foreground" />
-                        }
-                      </div>
+                    const prevMsg = messages[idx - 1];
+                    const showDateSep = idx === 0 || (
+                      prevMsg && new Date(msg.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString()
+                    );
+                    const showUnreadSep = idx === firstUnreadIdx && !isMine;
 
-                      <div className={cn("flex flex-col max-w-[70%]", isMine ? "items-end" : "items-start")}>
-                        <div className="relative">
-                          {/* Reaction bar (shown on hover) */}
-                          {!msg.isDeleted && hoveredReaction === msg.id && (
-                            <div
-                              className={cn("absolute -top-9 flex gap-1 bg-background border border-border rounded-full px-2 py-1 shadow-lg z-10",
-                                isMine ? "right-0" : "left-0"
-                              )}
-                              onMouseLeave={() => setHoveredReaction(null)}
-                            >
-                              {REACTION_EMOJIS.map((emoji) => (
-                                <button
-                                  key={emoji}
-                                  onClick={() => handleReact(msg.id, emoji)}
-                                  className="text-lg hover:scale-125 transition-transform"
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          {editingId === msg.id ? (
-                            <div className="flex gap-2">
-                              <Input
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === "Enter") handleEdit(msg.id); if (e.key === "Escape") setEditingId(null); }}
-                                className="text-sm h-8"
-                                autoFocus
-                              />
-                              <Button size="sm" onClick={() => handleEdit(msg.id)} className="h-8 px-2"><Check className="w-3.5 h-3.5" /></Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-8 px-2"><X className="w-3.5 h-3.5" /></Button>
-                            </div>
-                          ) : (
-                            <div
-                              onMouseEnter={() => setHoveredReaction(msg.id)}
-                              onMouseLeave={() => setHoveredReaction(null)}
-                              onContextMenu={(e) => { if (isMine && !msg.isDeleted && !adminViewAll) openContextMenu(e, msg.id); }}
-                              className={cn(
-                                "px-3 py-2 rounded-2xl text-sm shadow-sm cursor-default select-text break-words",
-                                isMine
-                                  ? msg.isDeleted ? "bg-muted text-muted-foreground italic rounded-br-none" : "bg-primary text-primary-foreground rounded-br-none"
-                                  : msg.isDeleted ? "bg-muted text-muted-foreground italic rounded-bl-none" : "bg-card border border-border rounded-bl-none",
-                              )}
-                            >
-                              {msg.messageType === "image" && msg.imageUrl && !msg.isDeleted ? (
-                                <img src={msg.imageUrl} alt="صورة" className="rounded-lg max-w-48 max-h-48 object-cover cursor-pointer" onClick={() => window.open(msg.imageUrl!, "_blank")} />
-                              ) : msg.messageType === "audio" && msg.imageUrl && !msg.isDeleted ? (
-                                <div className="flex items-center gap-2 min-w-[180px]">
-                                  <Play className="w-4 h-4 shrink-0 opacity-70" />
-                                  <audio controls src={msg.imageUrl} className="h-8 max-w-[200px]" style={{ minWidth: 160 }} />
-                                </div>
-                              ) : (
-                                <span>{msg.isDeleted ? "تم حذف هذه الرسالة" : msg.content}</span>
-                              )}
-                              {msg.editedAt && !msg.isDeleted && (
-                                <span className={cn("text-[10px] ms-1", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>(معدل)</span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Context menu */}
-                          {contextMenu?.msgId === msg.id && (
-                            <div
-                              className="fixed z-50 bg-card border border-border rounded-xl shadow-xl py-1 min-w-36"
-                              style={{ top: contextMenu.y, left: contextMenu.x }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {canEdit(msg) && (
-                                <button
-                                  className="w-full text-right px-4 py-2 text-sm hover:bg-secondary flex items-center gap-2"
-                                  onClick={() => { setEditingId(msg.id); setEditContent(msg.content); setContextMenu(null); }}
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" /> تعديل
-                                </button>
-                              )}
-                              <button
-                                className="w-full text-right px-4 py-2 text-sm hover:bg-secondary flex items-center gap-2 text-red-500"
-                                onClick={() => { setPendingDelete(msg.id); setContextMenu(null); }}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" /> حذف
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Reactions display */}
-                        {reactionKeys.length > 0 && (
-                          <div className={cn("flex gap-1 mt-1 flex-wrap", isMine ? "justify-end" : "justify-start")}>
-                            {reactionKeys.map((emoji) => (
-                              <button
-                                key={emoji}
-                                onClick={() => handleReact(msg.id, emoji)}
-                                className={cn(
-                                  "text-xs px-1.5 py-0.5 rounded-full border flex items-center gap-0.5 transition-colors",
-                                  reactions[emoji]?.includes(user.id) ? "bg-primary/10 border-primary/30" : "bg-background border-border"
-                                )}
-                              >
-                                {emoji} <span className="text-[10px] text-muted-foreground">{reactions[emoji]?.length}</span>
-                              </button>
-                            ))}
+                    return (
+                      <div key={msg.id}>
+                        {showDateSep && (
+                          <div className="flex items-center justify-center my-4">
+                            <span className="bg-background/80 backdrop-blur-sm border border-border text-muted-foreground text-xs px-3 py-1 rounded-full shadow-sm">
+                              {new Date(msg.createdAt).toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
+                            </span>
+                          </div>
+                        )}
+                        {showUnreadSep && (
+                          <div className="flex items-center gap-2 my-3">
+                            <div className="flex-1 h-px bg-primary/30" />
+                            <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
+                              {totalUnread} رسالة غير مقروءة
+                            </span>
+                            <div className="flex-1 h-px bg-primary/30" />
                           </div>
                         )}
 
-                        {/* Time + status */}
-                        <div className={cn("flex items-center gap-1 mt-0.5", isMine ? "flex-row-reverse" : "flex-row")}>
-                          <StatusIcon status={msg.status} isMine={isMine} />
-                          <span className="text-[10px] text-muted-foreground" dir="ltr">
-                            {new Date(msg.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
+                        {isSystem ? (
+                          <div className="flex justify-center my-2">
+                            <span className="bg-background/80 text-muted-foreground text-xs px-3 py-1.5 rounded-full max-w-xs text-center shadow-sm">
+                              {msg.content}
+                            </span>
+                          </div>
+                        ) : (
+                          <div
+                            className={cn("flex gap-2 group mb-0.5", isMine ? "flex-row-reverse" : "flex-row")}
+                            style={{ alignItems: "flex-end" }}
+                          >
+                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 mb-1 shadow-sm">
+                              {msg.senderPhoto
+                                ? <img src={msg.senderPhoto} alt={msg.senderName} className="w-full h-full object-cover" />
+                                : <User className="w-3.5 h-3.5 text-muted-foreground" />
+                              }
+                            </div>
+
+                            <div className={cn("flex flex-col max-w-[75%] sm:max-w-[65%]", isMine ? "items-end" : "items-start")}>
+                              <div className="relative">
+                                {/* Reaction bar (hover) */}
+                                {!msg.isDeleted && hoveredReaction === msg.id && (
+                                  <div
+                                    className={cn(
+                                      "absolute -top-10 flex gap-1 bg-card border border-border rounded-full px-2 py-1.5 shadow-xl z-20",
+                                      isMine ? "right-0" : "left-0"
+                                    )}
+                                    onMouseLeave={() => setHoveredReaction(null)}
+                                  >
+                                    {REACTION_EMOJIS.map((emoji) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => handleReact(msg.id, emoji)}
+                                        className="text-lg hover:scale-125 transition-transform"
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {editingId === msg.id ? (
+                                  <div className="flex gap-2 min-w-[200px]">
+                                    <Input
+                                      value={editContent}
+                                      onChange={(e) => setEditContent(e.target.value)}
+                                      onKeyDown={(e) => { if (e.key === "Enter") handleEdit(msg.id); if (e.key === "Escape") setEditingId(null); }}
+                                      className="text-sm h-9 flex-1"
+                                      autoFocus
+                                    />
+                                    <Button size="sm" onClick={() => handleEdit(msg.id)} className="h-9 px-2.5">
+                                      <Check className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-9 px-2">
+                                      <X className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div
+                                    onMouseEnter={() => setHoveredReaction(msg.id)}
+                                    onMouseLeave={() => setHoveredReaction(null)}
+                                    onContextMenu={(e) => { if (isMine && !msg.isDeleted && !adminViewAll) openContextMenu(e, msg.id); }}
+                                    className={cn(
+                                      "px-3.5 py-2.5 rounded-2xl text-sm shadow-md cursor-default select-text break-words transition-opacity",
+                                      "animate-in fade-in-0 slide-in-from-bottom-1",
+                                      isMine
+                                        ? msg.isDeleted
+                                          ? "bg-muted text-muted-foreground italic rounded-bl-sm"
+                                          : "bg-primary text-primary-foreground rounded-bl-sm"
+                                        : msg.isDeleted
+                                          ? "bg-card border border-border text-muted-foreground italic rounded-br-sm"
+                                          : "bg-card border border-border rounded-br-sm",
+                                    )}
+                                  >
+                                    {msg.messageType === "image" && msg.imageUrl && !msg.isDeleted ? (
+                                      <img
+                                        src={msg.imageUrl}
+                                        alt="صورة"
+                                        className="rounded-xl max-w-52 max-h-52 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => window.open(msg.imageUrl!, "_blank")}
+                                      />
+                                    ) : msg.messageType === "audio" && msg.imageUrl && !msg.isDeleted ? (
+                                      <div className="flex items-center gap-2 min-w-[160px]">
+                                        <Play className="w-4 h-4 shrink-0 opacity-70" />
+                                        <audio controls src={msg.imageUrl} className="h-8 max-w-[190px]" style={{ minWidth: 140 }} />
+                                      </div>
+                                    ) : (
+                                      <p className="leading-relaxed whitespace-pre-wrap">
+                                        {msg.isDeleted ? "🚫 تم حذف هذه الرسالة" : msg.content}
+                                      </p>
+                                    )}
+                                    {msg.editedAt && !msg.isDeleted && (
+                                      <span className={cn("text-[10px] ms-1.5 opacity-60", isMine ? "text-primary-foreground" : "text-muted-foreground")}>
+                                        (معدّل)
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Context menu */}
+                                {contextMenu?.msgId === msg.id && (
+                                  <div
+                                    className="fixed z-50 bg-card border border-border rounded-xl shadow-2xl py-1 min-w-36 overflow-hidden"
+                                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {canEdit(msg) && (
+                                      <button
+                                        className="w-full text-right px-4 py-2.5 text-sm hover:bg-secondary flex items-center gap-2 transition-colors"
+                                        onClick={() => { setEditingId(msg.id); setEditContent(msg.content); setContextMenu(null); }}
+                                      >
+                                        <Edit2 className="w-3.5 h-3.5 text-primary" /> تعديل
+                                      </button>
+                                    )}
+                                    <button
+                                      className="w-full text-right px-4 py-2.5 text-sm hover:bg-destructive/5 flex items-center gap-2 text-red-500 transition-colors"
+                                      onClick={() => { setPendingDelete(msg.id); setContextMenu(null); }}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" /> حذف
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Reactions display */}
+                              {reactionKeys.length > 0 && (
+                                <div className={cn("flex gap-1 mt-1 flex-wrap", isMine ? "justify-end" : "justify-start")}>
+                                  {reactionKeys.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => handleReact(msg.id, emoji)}
+                                      className={cn(
+                                        "text-xs px-1.5 py-0.5 rounded-full border flex items-center gap-0.5 transition-all hover:scale-110",
+                                        reactions[emoji]?.includes(user.id)
+                                          ? "bg-primary/15 border-primary/40 shadow-sm"
+                                          : "bg-background border-border"
+                                      )}
+                                    >
+                                      {emoji} <span className="text-[10px] text-muted-foreground font-medium">{reactions[emoji]?.length}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Time + status */}
+                              <div className={cn("flex items-center gap-1 mt-1", isMine ? "flex-row-reverse" : "flex-row")}>
+                                <StatusIcon status={msg.status} isMine={isMine} />
+                                <span className="text-[10px] text-muted-foreground/70" dir="ltr">
+                                  {new Date(msg.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  });
+                })()
               )}
 
               {/* Typing indicator */}
               {typingUser && (
-                <div className="flex gap-2 items-end">
-                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0"><User className="w-3.5 h-3.5 text-muted-foreground" /></div>
-                  <div className="bg-card border border-border rounded-2xl rounded-bl-none px-4 py-2.5 flex gap-1 items-center">
-                    <span className="text-xs text-muted-foreground me-1">{typingUser}</span>
-                    <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0ms]" />
-                    <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:150ms]" />
-                    <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:300ms]" />
+                <div className="flex gap-2 items-end animate-in fade-in-0 slide-in-from-bottom-2">
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 shadow-sm">
+                    <User className="w-3.5 h-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="bg-card border border-border rounded-2xl rounded-br-sm px-4 py-2.5 flex gap-1.5 items-center shadow-sm">
+                    <span className="text-xs text-muted-foreground me-1 font-medium">{typingUser}</span>
+                    <span className="text-primary text-xs font-bold">يكتب</span>
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0ms]" />
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:160ms]" />
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:320ms]" />
                   </div>
                 </div>
               )}
@@ -846,12 +936,12 @@ export default function Messages() {
 
                 {/* Message input form */}
                 {!isRecording && !audioBlob && (
-                  <form onSubmit={handleSend} className="flex gap-2 items-center p-3">
+                  <form onSubmit={handleSend} className="flex gap-1.5 items-center px-3 py-2.5">
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={cn("shrink-0", showEmojiPicker ? "text-primary" : "text-muted-foreground hover:text-primary")}
+                      className={cn("shrink-0 w-9 h-9 rounded-full transition-colors", showEmojiPicker ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}
                       onClick={(e) => { e.stopPropagation(); setShowEmojiPicker((v) => !v); }}
                       disabled={isBlocked}
                     >
@@ -861,7 +951,7 @@ export default function Messages() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="shrink-0 text-muted-foreground hover:text-primary"
+                      className="shrink-0 w-9 h-9 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isBlocked}
                     >
@@ -875,20 +965,20 @@ export default function Messages() {
                       placeholder={
                         blockedByOther ? "لا يمكنك الرد (تم حظرك)" :
                         blockedByMe ? "أنت حظرت هذا المستخدم" :
-                        "اكتب رسالتك هنا..."
+                        "اكتب رسالتك..."
                       }
                       disabled={isBlocked}
-                      className="flex-1 rounded-full text-sm"
+                      className="flex-1 rounded-full text-sm bg-secondary/50 border-transparent focus-visible:border-primary/30 focus-visible:ring-primary/20 h-10 px-4"
                       dir="auto"
+                      autoComplete="off"
                     />
-                    {/* Mic button — shown only when input is empty */}
                     {!newMessage.trim() && !imageFile ? (
                       <Button
                         type="button"
                         size="icon"
                         onClick={handleStartRecording}
                         disabled={isBlocked || isRecording}
-                        className="shrink-0 rounded-full bg-primary hover:bg-primary/90"
+                        className="shrink-0 w-10 h-10 rounded-full bg-primary hover:bg-primary/90 shadow-md transition-all"
                         title="تسجيل رسالة صوتية"
                       >
                         <Mic className="w-4 h-4" />
@@ -898,7 +988,7 @@ export default function Messages() {
                         type="submit"
                         size="icon"
                         disabled={(!newMessage.trim() && !imageFile) || sending || isBlocked}
-                        className="shrink-0 rounded-full bg-primary hover:bg-primary/90"
+                        className="shrink-0 w-10 h-10 rounded-full bg-primary hover:bg-primary/90 shadow-md transition-all disabled:opacity-50"
                       >
                         {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rotate-180" />}
                       </Button>

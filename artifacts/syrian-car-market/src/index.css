@@ -160,4 +160,65 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/50;
   }
+
+  /* Animate-in utilities */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+  @keyframes slide-in-from-bottom {
+    from { transform: translateY(var(--tw-slide-from, 8px)); }
+    to   { transform: translateY(0); }
+  }
+  @keyframes slide-in-from-top {
+    from { transform: translateY(calc(-1 * var(--tw-slide-from, 8px))); }
+    to   { transform: translateY(0); }
+  }
+  @keyframes slide-in-from-left {
+    from { transform: translateX(calc(-1 * var(--tw-slide-from, 8px))); }
+    to   { transform: translateX(0); }
+  }
+  @keyframes slide-in-from-right {
+    from { transform: translateX(var(--tw-slide-from, 8px)); }
+    to   { transform: translateX(0); }
+  }
+  @keyframes zoom-in {
+    from { transform: scale(var(--tw-zoom-from, 0.95)); }
+    to   { transform: scale(1); }
+  }
+  @keyframes spin-in {
+    from { transform: rotate(var(--tw-spin-from, -30deg)); }
+    to   { transform: rotate(0deg); }
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+    animation-duration: var(--animate-duration, 200ms);
+  }
+  .animate-in.fade-in-0 {
+    animation-name: fade-in;
+  }
+  .animate-in.slide-in-from-bottom-1 {
+    --tw-slide-from: 4px;
+    animation-name: slide-in-from-bottom;
+  }
+  .animate-in.slide-in-from-bottom-2 {
+    --tw-slide-from: 8px;
+    animation-name: slide-in-from-bottom;
+  }
+  .animate-in.fade-in-0.slide-in-from-bottom-1 {
+    --tw-slide-from: 4px;
+    animation-name: fade-in, slide-in-from-bottom;
+  }
+  .animate-in.fade-in-0.slide-in-from-bottom-2 {
+    --tw-slide-from: 8px;
+    animation-name: fade-in, slide-in-from-bottom;
+  }
 }
