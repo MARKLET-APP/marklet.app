@@ -1,5 +1,5 @@
 import { Link, useRoute } from "wouter";
-import { Home, Search, Plus, Heart, User, MessageCircle, ShoppingBag } from "lucide-react";
+import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 
 export function BottomNav() {
@@ -18,7 +18,7 @@ export function BottomNav() {
         <NavItem href="/" icon={<Home className="w-5 h-5" />} label="الرئيسية" isActive={isHome} />
         <NavItem href="/search" icon={<Search className="w-5 h-5" />} label="البحث" isActive={isSearch} />
 
-        {/* Center add button — same height as others */}
+        {/* Center add button */}
         <Link
           href="/add-listing"
           className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${isAdd ? "text-primary" : "text-primary"}`}
@@ -29,12 +29,14 @@ export function BottomNav() {
           <span className="text-[10px] font-medium text-primary">نشر</span>
         </Link>
 
-        <NavItem href="/buy-requests" icon={<ShoppingBag className="w-5 h-5" />} label="أريد أشتري" isActive={isBuyRequests} />
+        {/* Always show favorites */}
+        <NavItem href="/favorites" icon={<Bookmark className="w-5 h-5" />} label="المحفوظات" isActive={isFavorites} />
 
+        {/* Show chat for logged-in users, buy requests for guests */}
         {user ? (
           <NavItem href="/chat" icon={<MessageCircle className="w-5 h-5" />} label="المحادثات" isActive={isChat} />
         ) : (
-          <NavItem href="/favorites" icon={<Heart className="w-5 h-5" />} label="المفضلة" isActive={isFavorites} />
+          <NavItem href="/buy-requests" icon={<ShoppingBag className="w-5 h-5" />} label="أريد أشتري" isActive={isBuyRequests} />
         )}
 
         <NavItem href="/profile" icon={<User className="w-5 h-5" />} label="حسابي" isActive={isProfile} />

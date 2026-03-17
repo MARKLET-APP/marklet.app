@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight, Globe } from "lucide-react";
+import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight, Globe, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -134,6 +134,16 @@ export function Header() {
                   variant="ghost"
                   size="icon"
                   className="relative text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate("/favorites")}
+                  title="المحفوظات"
+                >
+                  <Bookmark className="w-5 h-5" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative text-muted-foreground hover:text-foreground"
                   onClick={() => navigate("/messages")}
                   title={t("nav.messages")}
                 >
@@ -216,6 +226,9 @@ export function Header() {
               <>
                 <Link href="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground">
                   <User className="w-4 h-4" /> {t("nav.myAccount")}
+                </Link>
+                <Link href="/favorites" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground">
+                  <Bookmark className="w-4 h-4" /> المحفوظات
                 </Link>
                 <Link href="/messages" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground">
                   <Bell className="w-4 h-4" /> {t("nav.messages")}
