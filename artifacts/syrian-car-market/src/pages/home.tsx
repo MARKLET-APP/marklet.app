@@ -28,6 +28,7 @@ export default function Home() {
   const { t, isRTL } = useLanguage();
 
   const [heroSearch, setHeroSearch] = useState("");
+  const [heroProvince, setHeroProvince] = useState("");
   const [missingInfoOpen, setMissingInfoOpen] = useState(false);
   const [missingInfoCarId, setMissingInfoCarId] = useState<number | null>(null);
   const [infoMsg, setInfoMsg] = useState("");
@@ -165,20 +166,45 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            onSubmit={(e) => { e.preventDefault(); navigate(`/search${heroSearch ? `?q=${encodeURIComponent(heroSearch)}` : ""}`); }}
-            className="bg-white p-2 rounded-2xl shadow-2xl max-w-2xl mx-auto flex items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const params = new URLSearchParams();
+              if (heroSearch) params.set("q", heroSearch);
+              if (heroProvince) params.set("province", heroProvince);
+              navigate(`/search${params.toString() ? `?${params.toString()}` : ""}`);
+            }}
+            className="bg-white p-2 rounded-2xl shadow-2xl max-w-2xl mx-auto flex flex-col sm:flex-row items-stretch gap-2"
           >
-            <div className="flex-1 flex items-center bg-muted/50 rounded-xl px-4 py-3">
-              <Search className="w-5 h-5 text-muted-foreground ms-2" />
+            <div className="flex-1 flex items-center bg-muted/50 rounded-xl px-4 py-3 min-w-0">
+              <Search className="w-5 h-5 text-muted-foreground shrink-0 ms-2" />
               <input
                 type="text"
                 value={heroSearch}
                 onChange={(e) => setHeroSearch(e.target.value)}
-                placeholder={t("home.hero.search")}
-                className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground"
+                placeholder={isRTL ? "ابحث عن ماركة، موديل..." : "Brand, model..."}
+                className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground text-sm"
               />
             </div>
-            <Button type="submit" size="lg" className="rounded-xl px-8 font-bold text-base h-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-all">
+            <div className="hidden sm:block w-px bg-border/60 self-stretch my-1" />
+            <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-4 py-3 sm:w-44">
+              <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+              <select
+                value={heroProvince}
+                onChange={(e) => setHeroProvince(e.target.value)}
+                className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground text-sm cursor-pointer"
+              >
+                <option value="">{isRTL ? "كل المحافظات" : "All Regions"}</option>
+                <option value="Damascus">{isRTL ? "دمشق" : "Damascus"}</option>
+                <option value="Aleppo">{isRTL ? "حلب" : "Aleppo"}</option>
+                <option value="Homs">{isRTL ? "حمص" : "Homs"}</option>
+                <option value="Lattakia">{isRTL ? "اللاذقية" : "Lattakia"}</option>
+                <option value="Hama">{isRTL ? "حماة" : "Hama"}</option>
+                <option value="Deir ez-Zor">{isRTL ? "دير الزور" : "Deir ez-Zor"}</option>
+                <option value="Tartus">{isRTL ? "طرطوس" : "Tartus"}</option>
+                <option value="Idlib">{isRTL ? "إدلب" : "Idlib"}</option>
+              </select>
+            </div>
+            <Button type="submit" size="lg" className="rounded-xl px-6 font-bold text-base bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-all whitespace-nowrap">
               {t("home.hero.searchBtn")}
             </Button>
           </motion.form>
