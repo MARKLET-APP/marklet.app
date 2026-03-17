@@ -1,0 +1,222 @@
+MARKLET CORE STABILITY UPDATE
+
+IMPORTANT
+Edit existing project safely.
+Do not rebuild the project.
+Do not delete current marketplace logic.
+
+Goal:
+Stabilize MARKLET before converting to mobile app.
+
+Implement:
+
+• Fixed listing ID system
+• Direct listing URLs
+• Universal share button
+• PWA support
+• App name standardization
+
+================================================
+1 STANDARDIZE APP NAME
+================================================
+
+Set application name everywhere:
+
+MARKLET
+
+Update:
+
+document.title = "MARKLET"
+
+Replace any old names such as:
+
+Syrian Car Connect
+
+================================================
+2 CREATE PERMANENT LISTING ID SYSTEM
+================================================
+
+All listings must have permanent unique ID.
+
+Update database model:
+
+id: {
+type: String,
+required: true,
+unique: true
+}
+
+When creating listing:
+
+import { v4 as uuidv4 } from "uuid"
+
+listing.id = uuidv4()
+
+Example result:
+
+listing.id = "3f0e3d2c-91c0-4a0b-9a12-5d20f55a7d12"
+
+Install dependency if missing:
+
+npm install uuid
+
+================================================
+3 CREATE DIRECT LISTING ROUTE
+================================================
+
+Add route:
+
+/listing/:id
+
+Example Express route:
+
+app.get("/listing/:id", async (req,res)=>{
+
+const listing = await Listings.findOne({id:req.params.id})
+
+if(!listing){
+return res.status(404).send("Listing not found")
+}
+
+res.render("listingPage",{listing})
+
+})
+
+Example public link:
+
+https://yourdomain.com/listing/3f0e3d2c
+
+================================================
+4 ADD UNIVERSAL SHARE BUTTON
+================================================
+
+Create file:
+
+/public/js/shareListing.js
+
+Code:
+
+function shareListing(listing){
+
+const url = window.location.origin + "/listing/" + listing.id
+
+const text =
+`${listing.title}
+
+${listing.city || ""}
+
+شاهد الإعلان على MARKLET:
+${url}`
+
+if(navigator.share){
+
+navigator.share({
+title: listing.title,
+text: text,
+url: url
+})
+
+}else{
+
+navigator.clipboard.writeText(text)
+
+alert("تم نسخ رابط الإعلان للمشاركة")
+
+}
+
+}
+
+================================================
+5 ADD SHARE BUTTON TO LISTINGS
+================================================
+
+Inside every listing card add:
+
+<button onclick="shareListing(listing)">
+🔗 مشاركة
+</button>
+
+================================================
+6 ENABLE SOCIAL MEDIA PREVIEW
+================================================
+
+Inside listing page head add:
+
+<meta property="og:title" content="{{listing.title}}">
+<meta property="og:description" content="{{listing.description}}">
+<meta property="og:image" content="{{listing.images[0]}}">
+<meta property="og:url" content="/listing/{{listing.id}}">
+
+================================================
+7 ADD PWA SUPPORT
+================================================
+
+Create file:
+
+/public/manifest.json
+
+{
+"name": "MARKLET",
+"short_name": "MARKLET",
+"start_url": "/",
+"display": "standalone",
+"background_color": "#ffffff",
+"theme_color": "#111111",
+"icons": [
+{
+"src": "/icons/icon-192.png",
+"sizes": "192x192",
+"type": "image/png"
+},
+{
+"src": "/icons/icon-512.png",
+"sizes": "512x512",
+"type": "image/png"
+}
+]
+}
+
+------------------------------------------------
+
+Create service worker:
+
+/public/sw.js
+
+self.addEventListener("install", e=>{
+self.skipWaiting()
+})
+
+self.addEventListener("fetch", event=>{})
+
+------------------------------------------------
+
+Register service worker in main JS:
+
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("/sw.js")
+}
+
+------------------------------------------------
+
+Add to index.html:
+
+<link rel="manifest" href="/manifest.json">
+
+================================================
+8 FINAL TEST
+================================================
+
+Test these flows:
+
+1 Create listing
+2 Ensure listing has unique ID
+3 Open listing URL directly
+4 Click share button
+5 Share on WhatsApp or Telegram
+6 Install site as PWA
+
+================================================
+
+App Name:
+
+MARKLET
