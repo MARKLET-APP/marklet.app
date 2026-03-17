@@ -56,7 +56,7 @@ function estimateCarPrice(brand: string, year: number, mileage: number, similarP
 
 type PriceEval = { level: "high" | "low" | "good"; market: number; range: [number, number]; text: string } | null;
 
-type ListingType = "car" | "motorcycle" | "rental" | "parts";
+type ListingType = "car_sale" | "motorcycles" | "car_rent" | "car_parts";
 
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
@@ -81,7 +81,7 @@ export default function AddListing() {
   const [isUploading, setIsUploading] = useState(false);
   const [priceEval, setPriceEval] = useState<PriceEval>(null);
   const [estimating, setEstimating] = useState(false);
-  const [listingType, setListingType] = useState<ListingType>("car");
+  const [listingType, setListingType] = useState<ListingType>("car_sale");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fields, setFields] = useState({
@@ -134,7 +134,7 @@ export default function AddListing() {
       toast({ title: "الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", variant: "destructive" });
       return;
     }
-    const isMoto = listingType === "motorcycle";
+    const isMoto = listingType === "motorcycles";
     generateDescMutation.mutate({
       data: {
         brand: fields.brand, model: fields.model, year: Number(fields.year),
@@ -180,7 +180,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
       const entered = Number(fields.price) || 0;
 
       const cars = (allCarsData?.cars ?? []) as any[];
-      const isMoto = listingType === "motorcycle";
+      const isMoto = listingType === "motorcycles";
 
       const similar = cars.filter((c: any) => {
         const brandMatch = c.brand?.toLowerCase() === fields.brand.toLowerCase();
@@ -232,30 +232,31 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     }
 
     let data: Record<string, any>;
-    if (listingType === "car") {
+    if (listingType === "car_sale") {
       data = {
         brand: fields.brand, model: fields.model, year: Number(fields.year),
         price, mileage: Number(fields.mileage), fuelType: fields.fuelType,
         transmission: fields.transmission, province: fields.province,
         city: fields.city, saleType: fields.saleType, condition: fields.condition,
         category: fields.category, description: fields.description, images,
+        listingType: "car_sale",
       };
-    } else if (listingType === "motorcycle") {
+    } else if (listingType === "motorcycles") {
       data = {
         brand: fields.brand, model: fields.model, year: Number(fields.year),
         price, category: "motorcycle", description: fields.description,
         province: fields.province, city: fields.city, saleType: fields.saleType,
         condition: fields.condition,
         fuelType: "petrol", transmission: "manual", mileage: 0,
-        images,
+        images, listingType: "motorcycles",
       };
-    } else if (listingType === "rental") {
+    } else if (listingType === "car_rent") {
       data = {
         brand: fields.brand, model: fields.model, year: Number(fields.year),
         price: Number(fields.dailyPrice) || price, category: "rental",
         saleType: "rental", province: fields.province, city: fields.city,
         description: fields.description, fuelType: "petrol", transmission: "automatic",
-        mileage: 0, images,
+        mileage: 0, images, listingType: "car_rent",
       };
     } else {
       data = {
@@ -264,7 +265,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         price, category: "parts", saleType: "cash",
         province: fields.province, city: fields.city,
         description: fields.description, fuelType: "petrol", transmission: "manual",
-        mileage: 0, images,
+        mileage: 0, images, listingType: "car_parts",
       };
     }
 
@@ -381,10 +382,10 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {([
-              { value: "car",        label: "🚗 سيارة" },
-              { value: "motorcycle", label: "🏍️ دراجة نارية" },
-              { value: "rental",     label: "🔑 تأجير" },
-              { value: "parts",      label: "🔧 قطع غيار" },
+              { value: "car_sale",   label: "🚗 سيارة" },
+              { value: "motorcycles",label: "🏍️ دراجة نارية" },
+              { value: "car_rent",   label: "🔑 تأجير" },
+              { value: "car_parts",  label: "🔧 قطع غيار" },
             ] as const).map(opt => (
               <button
                 key={opt.value}
@@ -465,7 +466,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           </h3>
 
           {/* CAR fields */}
-          {listingType === "car" && (
+          {listingType === "car_sale" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">الشركة (Brand)</label>
@@ -503,7 +504,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           )}
 
           {/* MOTORCYCLE fields */}
-          {listingType === "motorcycle" && (
+          {listingType === "motorcycles" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">الشركة</label>
@@ -531,7 +532,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           )}
 
           {/* RENTAL fields */}
-          {listingType === "rental" && (
+          {listingType === "car_rent" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع السيارة</label>
@@ -566,7 +567,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           )}
 
           {/* CAR PARTS fields */}
-          {listingType === "parts" && (
+          {listingType === "car_parts" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع القطعة</label>
@@ -589,7 +590,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
 
           {/* Shared: Province / City / Sale Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
-            {listingType !== "rental" && (
+            {listingType !== "car_rent" && (
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-bold">المحافظة</label>
@@ -615,7 +616,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                 </div>
               </>
             )}
-            {(listingType === "car" || listingType === "motorcycle") && (
+            {(listingType === "car_sale" || listingType === "motorcycles") && (
               <div className="space-y-2">
                 <label className="text-sm font-bold">حالة السيارة</label>
                 <select name="condition" value={fields.condition} onChange={handleField} className={selectCls}>
@@ -624,7 +625,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                 </select>
               </div>
             )}
-            {listingType === "car" && (
+            {listingType === "car_sale" && (
               <div className="space-y-2">
                 <label className="text-sm font-bold">طريقة البيع</label>
                 <select name="saleType" value={fields.saleType} onChange={handleField} className={selectCls}>
@@ -653,7 +654,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                 <div className="space-y-2 flex-1">
                   <label className="text-sm font-bold text-white/90">
-                    {listingType === "rental" ? "السعر اليومي (USD $)" : "السعر المطلوب (USD $)"}
+                    {listingType === "car_rent" ? "السعر اليومي (USD $)" : "السعر المطلوب (USD $)"}
                   </label>
                   <input
                     type="number"
@@ -666,7 +667,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                     className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none font-bold text-lg placeholder:text-gray-400"
                   />
                 </div>
-                {(listingType === "car" || listingType === "motorcycle") && (
+                {(listingType === "car_sale" || listingType === "motorcycles") && (
                   <Button
                     type="button"
                     onClick={handleEstimatePrice}
@@ -705,7 +706,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="space-y-4 bg-white/10 backdrop-blur-sm p-5 rounded-2xl border border-white/10">
               <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                 <label className="text-sm font-bold text-white/90 flex-1">وصف الإعلان</label>
-                {(listingType === "car" || listingType === "motorcycle") && (
+                {(listingType === "car_sale" || listingType === "motorcycles") && (
                   <Button
                     type="button"
                     onClick={handleGenerateDesc}
@@ -713,7 +714,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                     className="rounded-xl h-10 px-5 gap-2 bg-accent hover:bg-accent/90 text-white font-bold border-0 text-sm shadow-lg shadow-accent/30 shrink-0"
                   >
                     {generateDescMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    {listingType === "motorcycle" ? "توليد وصف الدراجة" : "توليد وصف جذاب"}
+                    {listingType === "motorcycles" ? "توليد وصف الدراجة" : "توليد وصف جذاب"}
                   </Button>
                 )}
               </div>

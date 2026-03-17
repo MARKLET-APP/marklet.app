@@ -8,7 +8,15 @@ import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-type SaveType = "car" | "moto" | "rental" | "part" | "junk" | "plate";
+type SaveType =
+  | "car_sale"
+  | "car_rent"
+  | "car_parts"
+  | "junk"
+  | "plate_numbers"
+  | "motorcycles"
+  | "buy_request"
+  | "rent_request";
 
 interface SavedItem {
   id: number;
@@ -26,39 +34,47 @@ interface SavedItem {
 }
 
 const TYPE_LABELS: Record<SaveType, string> = {
-  car: "سيارة",
-  moto: "دراجة نارية",
-  rental: "للإيجار",
-  part: "قطعة غيار",
+  car_sale: "سيارة للبيع",
+  motorcycles: "دراجة نارية",
+  car_rent: "للإيجار",
+  car_parts: "قطعة غيار",
   junk: "خردة / معطوبة",
-  plate: "لوحة مرور",
+  plate_numbers: "لوحة مرور",
+  buy_request: "طلب شراء",
+  rent_request: "طلب استئجار",
 };
 
 const TYPE_COLORS: Record<SaveType, string> = {
-  car: "bg-green-100 text-green-700",
-  moto: "bg-rose-100 text-rose-700",
-  rental: "bg-blue-100 text-blue-700",
-  part: "bg-orange-100 text-orange-700",
+  car_sale: "bg-green-100 text-green-700",
+  motorcycles: "bg-rose-100 text-rose-700",
+  car_rent: "bg-blue-100 text-blue-700",
+  car_parts: "bg-orange-100 text-orange-700",
   junk: "bg-slate-100 text-slate-700",
-  plate: "bg-amber-100 text-amber-700",
+  plate_numbers: "bg-amber-100 text-amber-700",
+  buy_request: "bg-purple-100 text-purple-700",
+  rent_request: "bg-cyan-100 text-cyan-700",
 };
 
 const TYPE_ICONS: Record<SaveType, JSX.Element> = {
-  car: <Car className="w-8 h-8" />,
-  moto: <Bike className="w-8 h-8" />,
-  rental: <Car className="w-8 h-8" />,
-  part: <Wrench className="w-8 h-8" />,
+  car_sale: <Car className="w-8 h-8" />,
+  motorcycles: <Bike className="w-8 h-8" />,
+  car_rent: <Car className="w-8 h-8" />,
+  car_parts: <Wrench className="w-8 h-8" />,
   junk: <Package className="w-8 h-8" />,
-  plate: <Hash className="w-8 h-8" />,
+  plate_numbers: <Hash className="w-8 h-8" />,
+  buy_request: <Package className="w-8 h-8" />,
+  rent_request: <Package className="w-8 h-8" />,
 };
 
 const TYPE_LINKS: Record<SaveType, (id: number) => string> = {
-  car: (id) => `/cars/${id}`,
-  moto: (id) => `/motorcycles`,
-  rental: (id) => `/rental-cars`,
-  part: (id) => `/car-parts`,
-  junk: (id) => `/junk-cars`,
-  plate: (id) => `/plates`,
+  car_sale: (id) => `/cars/${id}`,
+  motorcycles: (_id) => `/buy-requests`,
+  car_rent: (_id) => `/rental-cars`,
+  car_parts: (_id) => `/car-parts`,
+  junk: (_id) => `/junk-cars`,
+  plate_numbers: (_id) => `/plates`,
+  buy_request: (_id) => `/buy-requests`,
+  rent_request: (_id) => `/rental-cars`,
 };
 
 export default function Favorites() {

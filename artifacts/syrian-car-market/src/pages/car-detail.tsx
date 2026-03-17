@@ -372,11 +372,11 @@ export default function CarDetail() {
               <Share2 className="w-4 h-4" /> مشاركة
             </button>
             <button
-              onClick={() => toggleSave("car", carId)}
-              className={`flex items-center gap-1.5 text-sm transition-colors px-3 py-1.5 rounded-xl ${isSaved("car", carId) ? "text-primary hover:text-primary/80 hover:bg-primary/5" : "text-muted-foreground hover:text-primary hover:bg-primary/5"}`}
+              onClick={() => toggleSave("car_sale", carId)}
+              className={`flex items-center gap-1.5 text-sm transition-colors px-3 py-1.5 rounded-xl ${isSaved("car_sale", carId) ? "text-primary hover:text-primary/80 hover:bg-primary/5" : "text-muted-foreground hover:text-primary hover:bg-primary/5"}`}
             >
-              <Heart className={`w-4 h-4 ${isSaved("car", carId) ? "fill-primary text-primary" : ""}`} />
-              {isSaved("car", carId) ? "محفوظ" : "حفظ"}
+              <Heart className={`w-4 h-4 ${isSaved("car_sale", carId) ? "fill-primary text-primary" : ""}`} />
+              {isSaved("car_sale", carId) ? "محفوظ" : "حفظ"}
             </button>
             <span className="text-xs text-muted-foreground ms-auto flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" /> {(car as any).viewCount ?? 0} مشاهدة

@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
-import { db, savedListingsTable, carsTable, carPartsTable, junkCarsTable, rentalCarsTable, usersTable } from "@workspace/db";
+import { db, savedListingsTable, carsTable, carPartsTable, junkCarsTable, rentalCarsTable, buyRequestsTable, usersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
 async function getListingData(type: string, id: number) {
-  if (type === "car" || type === "moto" || type === "plate") {
+  if (type === "car_sale" || type === "motorcycles" || type === "plate_numbers") {
     const [row] = await db.select({
       id: carsTable.id,
       brand: carsTable.brand,
@@ -20,7 +20,7 @@ async function getListingData(type: string, id: number) {
     const title = [row.brand, row.model, row.year].filter(Boolean).join(" ") || "سيارة";
     return { id: row.id, title, price: row.price ? Number(row.price) : null, city: row.city, sellerName: row.sellerName };
   }
-  if (type === "rental") {
+  if (type === "car_rent") {
     const [row] = await db.select({
       id: rentalCarsTable.id,
       brand: rentalCarsTable.brand,
@@ -33,7 +33,7 @@ async function getListingData(type: string, id: number) {
     if (!row) return null;
     return { id: row.id, title: [row.brand, row.model, row.year].filter(Boolean).join(" ") || "سيارة للإيجار", price: row.dailyPrice ? Number(row.dailyPrice) : null, city: row.city, images: row.images };
   }
-  if (type === "part") {
+  if (type === "car_parts") {
     const [row] = await db.select({
       id: carPartsTable.id,
       name: carPartsTable.name,
@@ -56,6 +56,32 @@ async function getListingData(type: string, id: number) {
     }).from(junkCarsTable).where(eq(junkCarsTable.id, id)).limit(1);
     if (!row) return null;
     return { id: row.id, title: [row.type, row.model, row.year].filter(Boolean).join(" ") || "سيارة معطوبة", price: row.price ? Number(row.price) : null, city: row.city, images: row.images };
+  }
+  if (type === "buy_request") {
+    const [row] = await db.select({
+      id: buyRequestsTable.id,
+      brand: buyRequestsTable.brand,
+      model: buyRequestsTable.model,
+      minYear: buyRequestsTable.minYear,
+      maxYear: buyRequestsTable.maxYear,
+      maxPrice: buyRequestsTable.maxPrice,
+      city: buyRequestsTable.city,
+    }).from(buyRequestsTable).where(eq(buyRequestsTable.id, id)).limit(1);
+    if (!row) return null;
+    const title = [row.brand, row.model].filter(Boolean).join(" ") || "طلب شراء";
+    return { id: row.id, title, price: row.maxPrice ? Number(row.maxPrice) : null, city: row.city };
+  }
+  if (type === "rent_request") {
+    const [row] = await db.select({
+      id: buyRequestsTable.id,
+      brand: buyRequestsTable.brand,
+      model: buyRequestsTable.model,
+      maxPrice: buyRequestsTable.maxPrice,
+      city: buyRequestsTable.city,
+    }).from(buyRequestsTable).where(eq(buyRequestsTable.id, id)).limit(1);
+    if (!row) return null;
+    const title = [row.brand, row.model].filter(Boolean).join(" ") || "طلب استئجار";
+    return { id: row.id, title, price: row.maxPrice ? Number(row.maxPrice) : null, city: row.city };
   }
   return null;
 }

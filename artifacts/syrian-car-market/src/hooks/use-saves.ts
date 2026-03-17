@@ -3,7 +3,15 @@ import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
-export type ListingSaveType = "car" | "moto" | "rental" | "part" | "junk" | "plate";
+export type ListingSaveType =
+  | "car_sale"
+  | "car_rent"
+  | "car_parts"
+  | "junk"
+  | "plate_numbers"
+  | "motorcycles"
+  | "buy_request"
+  | "rent_request";
 
 interface SavedId {
   listingType: string;
