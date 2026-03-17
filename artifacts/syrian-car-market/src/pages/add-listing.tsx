@@ -68,9 +68,9 @@ async function uploadImage(file: File): Promise<string> {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   });
-  const data = await res.json() as { url?: string; error?: string };
+  const data = await res.json() as { image?: string; url?: string; error?: string; success?: boolean; message?: string };
   if (!res.ok) throw new Error(data.error ?? "فشل رفع الصورة");
-  return data.url!;
+  return (data.image ?? data.url)!;
 }
 
 export default function AddListing() {

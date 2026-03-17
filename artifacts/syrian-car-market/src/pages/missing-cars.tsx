@@ -84,7 +84,7 @@ export default function MissingCarsPage() {
           body: fd,
         });
         const data = await res.json() as any;
-        if (data.url) uploaded.push(data.url);
+        if (data.image ?? data.url) uploaded.push(data.image ?? data.url);
       }
       setUploadedImages(prev => [...prev, ...uploaded]);
     } catch {

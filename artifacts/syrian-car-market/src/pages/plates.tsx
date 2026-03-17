@@ -43,8 +43,8 @@ async function uploadImage(file: File): Promise<string> {
     body: fd,
   });
   if (!res.ok) throw new Error("فشل رفع الصورة");
-  const data = await res.json() as { url: string };
-  return data.url;
+  const data = await res.json() as { image?: string; url?: string; success?: boolean };
+  return data.image ?? data.url;
 }
 
 export default function PlatesPage() {

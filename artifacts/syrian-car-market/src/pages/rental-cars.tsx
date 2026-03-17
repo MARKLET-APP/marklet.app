@@ -125,7 +125,7 @@ export default function RentalCarsPage() {
           body: fd,
         });
         const data = await resp.json();
-        if (data.url) uploaded.push(data.url);
+        if (data.image ?? data.url) uploaded.push(data.image ?? data.url);
       }
       setUploadedImages((prev) => [...prev, ...uploaded]);
     } catch {
