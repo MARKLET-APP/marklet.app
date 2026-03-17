@@ -1,0 +1,103 @@
+FEATURE: SHARE LISTING
+
+GOAL
+Add universal share button to all listings.
+
+Works for:
+- Sale listings
+- Buy requests
+- Rental listings
+- Parts
+- Scrap
+- Plates
+- Motorcycles
+
+--------------------------------------------------
+1 CREATE SHARE FUNCTION
+--------------------------------------------------
+
+Create file:
+
+/utils/shareListing.js
+
+Code:
+
+export function shareListing(listing){
+
+const title = listing.title || "إعلان على MARKLET"
+const price = listing.price ? listing.price + " $" : ""
+const location = listing.city || ""
+const url = window.location.origin + "/listing/" + listing.id
+
+const text =
+`${title}
+
+السعر: ${price}
+الموقع: ${location}
+
+شاهد الإعلان:
+${url}`
+
+if(navigator.share){
+
+navigator.share({
+title:title,
+text:text,
+url:url
+})
+
+}else{
+
+navigator.clipboard.writeText(text)
+
+alert("تم نسخ رابط الإعلان للمشاركة")
+
+}
+
+}
+
+--------------------------------------------------
+2 ADD SHARE BUTTON
+--------------------------------------------------
+
+Inside listing card UI add:
+
+<button onclick="shareListing(listing)">
+مشاركة
+</button>
+
+--------------------------------------------------
+3 ADD SHARE ICON
+--------------------------------------------------
+
+Optional icon:
+
+🔗 مشاركة
+
+--------------------------------------------------
+4 ENSURE PUBLIC LINK
+--------------------------------------------------
+
+Route must exist:
+
+/listing/:id
+
+Example:
+
+https://marklet.com/listing/48392
+
+When someone clicks the link from WhatsApp or Facebook,
+the page must open directly to that listing.
+
+--------------------------------------------------
+5 ADD META TAGS FOR SOCIAL MEDIA
+--------------------------------------------------
+
+Add in listing page header:
+
+<meta property="og:title" content="{listing.title}">
+<meta property="og:description" content="{listing.description}">
+<meta property="og:image" content="{listing.mainImage}">
+<meta property="og:url" content="https://marklet.com/listing/{listing.id}">
+
+This allows preview when sharing on social media.
