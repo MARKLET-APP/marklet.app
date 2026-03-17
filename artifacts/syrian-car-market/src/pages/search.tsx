@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { CarCard } from "@/components/CarCard";
-import { Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart } from "lucide-react";
+import { Car, Wrench, Trash2, CalendarDays, Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart, MapPin, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,40 +10,111 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
 
-type Car = any;
+type ListingType = "all" | "car" | "rental" | "part" | "junk";
 
-const SALE_TYPE_LABELS: Record<string, string> = {
-  rental: "سيارات للإيجار",
-  sale: "سيارات للبيع",
+type UnifiedResult = {
+  id: number;
+  _type: "car" | "motorcycle" | "plates" | "rental" | "part" | "junk";
+  title?: string;
+  brand?: string;
+  model?: string;
+  year?: number;
+  price?: number | null;
+  city?: string;
+  images?: string[];
+  description?: string;
+  condition?: string;
+  saleType?: string;
+  category?: string;
+  dailyPrice?: number | null;
+  name?: string;
+  sellerName?: string;
 };
 
-const CONDITION_LABELS: Record<string, string> = {
-  new: "سيارات جديدة",
-  used: "سيارات مستعملة",
+const TYPE_TABS: { key: ListingType; label: string; icon: any; color: string }[] = [
+  { key: "all",    label: "الكل",         icon: SearchIcon,   color: "bg-primary text-white" },
+  { key: "car",    label: "سيارات",       icon: Car,          color: "bg-blue-500 text-white" },
+  { key: "rental", label: "إيجار",        icon: CalendarDays, color: "bg-purple-500 text-white" },
+  { key: "part",   label: "قطع غيار",    icon: Wrench,       color: "bg-orange-500 text-white" },
+  { key: "junk",   label: "خردة",         icon: Trash2,       color: "bg-gray-500 text-white" },
+];
+
+const TYPE_BADGE: Record<string, { label: string; color: string }> = {
+  car:        { label: "سيارة للبيع",    color: "bg-blue-100 text-blue-700" },
+  motorcycle: { label: "دراجة نارية",   color: "bg-indigo-100 text-indigo-700" },
+  plates:     { label: "لوحة ترخيص",    color: "bg-pink-100 text-pink-700" },
+  rental:     { label: "إيجار",          color: "bg-purple-100 text-purple-700" },
+  part:       { label: "قطعة غيار",     color: "bg-orange-100 text-orange-700" },
+  junk:       { label: "خردة",           color: "bg-gray-100 text-gray-700" },
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  motorcycle: "دراجات نارية",
-  plates: "أرقام اللوحات",
-  cars: "سيارات",
-};
-
-function getPageTitle(saleType: string, category: string, condition: string) {
-  if (condition && CONDITION_LABELS[condition]) return CONDITION_LABELS[condition];
-  if (category && CATEGORY_LABELS[category]) return CATEGORY_LABELS[category];
-  if (saleType && SALE_TYPE_LABELS[saleType]) return SALE_TYPE_LABELS[saleType];
-  return "نتائج البحث";
+function getImage(item: UnifiedResult): string | null {
+  const imgs = item.images;
+  if (!imgs || imgs.length === 0) return null;
+  const first = imgs[0];
+  if (!first) return null;
+  if (first.startsWith("http") || first.startsWith("/")) return first;
+  return first;
 }
 
-function getResultLabel(category: string, condition: string) {
-  if (category === "motorcycle") return "دراجة";
-  return "سيارة";
+function getTitle(item: UnifiedResult): string {
+  if (item._type === "part") return item.name || item.title || "قطعة غيار";
+  if (item._type === "junk") return item.title || `${item.brand || ""} ${item.model || ""}`.trim() || "سيارة خردة";
+  if (item._type === "rental") return `${item.brand || ""} ${item.model || ""} ${item.year || ""}`.trim() || "سيارة للإيجار";
+  return item.title || `${item.brand || ""} ${item.model || ""} ${item.year || ""}`.trim() || "إعلان";
 }
 
-function getBuyRequestCategory(category: string, condition: string, saleType: string) {
-  if (category === "motorcycle") return "motorcycle";
-  if (saleType === "rental") return "rental";
-  return "cars";
+function getPrice(item: UnifiedResult): string {
+  if (item._type === "rental") {
+    return item.dailyPrice ? `${item.dailyPrice.toLocaleString()} $ / يوم` : "تواصل للسعر";
+  }
+  return item.price ? `${item.price.toLocaleString()} $` : "تواصل للسعر";
+}
+
+function UnifiedCard({ item, onClick }: { item: UnifiedResult; onClick?: () => void }) {
+  const badge = TYPE_BADGE[item._type] ?? { label: item._type, color: "bg-muted text-muted-foreground" };
+  const img = getImage(item);
+  const title = getTitle(item);
+  const price = getPrice(item);
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col"
+    >
+      <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+        {img ? (
+          <img src={img} alt={title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+            {item._type === "part" ? <Wrench className="w-12 h-12 opacity-30" /> :
+             item._type === "junk" ? <Trash2 className="w-12 h-12 opacity-30" /> :
+             item._type === "rental" ? <CalendarDays className="w-12 h-12 opacity-30" /> :
+             <Car className="w-12 h-12 opacity-30" />}
+          </div>
+        )}
+        <span className={`absolute top-2 end-2 text-xs font-bold px-2.5 py-1 rounded-full ${badge.color}`}>
+          {badge.label}
+        </span>
+      </div>
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        <h3 className="font-bold text-foreground text-sm line-clamp-2 leading-snug">{title}</h3>
+        <div className="flex items-center justify-between mt-auto pt-1">
+          <span className="font-extrabold text-primary text-base">{price}</span>
+          {item.city && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="w-3 h-3" />{item.city}
+            </span>
+          )}
+        </div>
+        {item.condition && (
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Tag className="w-3 h-3" />{item.condition === "new" ? "جديد" : item.condition === "used" ? "مستعمل" : item.condition}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function SearchPage() {
@@ -54,57 +125,67 @@ export default function SearchPage() {
   const getInitialFilters = () => {
     const params = new URLSearchParams(window.location.search);
     return {
-      brand: params.get("brand") ?? "",
-      minYear: params.get("minYear") ?? "",
-      maxYear: params.get("maxYear") ?? "",
-      minPrice: params.get("minPrice") ?? "",
-      maxPrice: params.get("maxPrice") ?? "",
-      province: params.get("province") ?? "",
-      saleType: params.get("saleType") ?? "",
-      category: params.get("category") ?? "",
+      brand:     params.get("brand")    ?? "",
+      minYear:   params.get("minYear")  ?? "",
+      maxYear:   params.get("maxYear")  ?? "",
+      minPrice:  params.get("minPrice") ?? "",
+      maxPrice:  params.get("maxPrice") ?? "",
+      province:  params.get("province") ?? "",
+      saleType:  params.get("saleType") ?? "",
+      category:  params.get("category") ?? "",
       condition: params.get("condition") ?? "",
     };
   };
 
-  const getInitialSearch = () => new URLSearchParams(window.location.search).get("q") ?? "";
-  const [searchText, setSearchText] = useState(getInitialSearch);
-  const [filters, setFilters] = useState(getInitialFilters);
-  const [cars, setCars] = useState<Car[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const getInitialSearch   = () => new URLSearchParams(window.location.search).get("q") ?? "";
+  const getInitialType     = (): ListingType => {
+    const t = new URLSearchParams(window.location.search).get("type") as ListingType;
+    return TYPE_TABS.some(tab => tab.key === t) ? t : "all";
+  };
 
-  const [buyOpen, setBuyOpen] = useState(false);
+  const [searchText, setSearchText]   = useState(getInitialSearch);
+  const [filters, setFilters]         = useState(getInitialFilters);
+  const [listingType, setListingType] = useState<ListingType>(getInitialType);
+  const [results, setResults]         = useState<UnifiedResult[]>([]);
+  const [isLoading, setIsLoading]     = useState(true);
+
+  const [buyOpen, setBuyOpen]             = useState(false);
   const [buySubmitting, setBuySubmitting] = useState(false);
-  const [buyForm, setBuyForm] = useState({ brand: "", model: "", year: "", maxPrice: "", city: "", description: "" });
+  const [buyForm, setBuyForm]             = useState({ brand: "", model: "", year: "", maxPrice: "", city: "", description: "" });
 
   useEffect(() => {
     setFilters(getInitialFilters());
     setSearchText(getInitialSearch());
+    setListingType(getInitialType());
   }, [location]);
 
   useEffect(() => {
     setIsLoading(true);
     const params = new URLSearchParams();
-    if (filters.brand) params.set("brand", filters.brand);
-    if (filters.minYear) params.set("minYear", filters.minYear);
-    if (filters.maxYear) params.set("maxYear", filters.maxYear);
-    if (filters.minPrice) params.set("minPrice", filters.minPrice);
-    if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
-    if (filters.province) params.set("province", filters.province);
-    if (filters.saleType) params.set("saleType", filters.saleType);
-    if (filters.category) params.set("category", filters.category);
-    if (filters.condition) params.set("condition", filters.condition);
-    params.set("limit", "100");
+    if (searchText.trim()) params.set("q", searchText.trim());
+    if (filters.brand)     params.set("brand",    filters.brand);
+    if (filters.minYear)   params.set("minYear",  filters.minYear);
+    if (filters.maxYear)   params.set("maxYear",  filters.maxYear);
+    if (filters.minPrice)  params.set("minPrice", filters.minPrice);
+    if (filters.maxPrice)  params.set("maxPrice", filters.maxPrice);
+    if (filters.province)  params.set("province", filters.province);
 
-    const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+    const typeForApi = listingType === "all"
+      ? (filters.category === "motorcycle" ? "motorcycle" : filters.category === "plates" ? "plates" : "all")
+      : listingType;
+    params.set("type", typeForApi);
+    params.set("limit", "120");
+
+    const BASE  = import.meta.env.BASE_URL.replace(/\/$/, "");
     const token = localStorage.getItem("scm_token");
-    fetch(`${BASE}/api/cars?${params.toString()}`, {
+    fetch(`${BASE}/api/search?${params.toString()}`, {
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     })
       .then(r => r.json())
-      .then((data: any) => setCars(data.cars ?? []))
-      .catch(() => setCars([]))
+      .then((data: any) => setResults(data.results ?? []))
+      .catch(() => setResults([]))
       .finally(() => setIsLoading(false));
-  }, [filters]);
+  }, [filters, listingType, searchText]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -112,6 +193,7 @@ export default function SearchPage() {
 
   const clearAll = () => {
     setSearchText("");
+    setListingType("all");
     setFilters({ brand: "", minYear: "", maxYear: "", minPrice: "", maxPrice: "", province: "", saleType: "", category: "", condition: "" });
   };
 
@@ -120,16 +202,14 @@ export default function SearchPage() {
     if (!user) { navigate("/login"); return; }
     setBuySubmitting(true);
     try {
-      const cat = getBuyRequestCategory(filters.category, filters.condition, filters.saleType);
       await api.post("/api/buy-requests", {
-        brand: buyForm.brand,
-        model: buyForm.model,
-        year: buyForm.year ? Number(buyForm.year) : undefined,
-        maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined,
-        city: buyForm.city,
+        brand:       buyForm.brand,
+        model:       buyForm.model,
+        year:        buyForm.year ? Number(buyForm.year) : undefined,
+        maxPrice:    buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined,
+        city:        buyForm.city,
         description: buyForm.description,
-        category: cat,
-        condition: filters.condition || undefined,
+        category:    listingType === "all" ? "cars" : listingType,
       });
       toast({ title: "تم إرسال طلب الشراء بنجاح" });
       setBuyOpen(false);
@@ -141,27 +221,18 @@ export default function SearchPage() {
     }
   };
 
-  const filteredCars = useMemo(() => {
-    const q = searchText.trim().toLowerCase();
-    if (!q) return cars;
-    return cars.filter((car: Car) =>
-      car.brand?.toLowerCase().includes(q) ||
-      car.model?.toLowerCase().includes(q) ||
-      car.title?.toLowerCase().includes(q) ||
-      car.description?.toLowerCase().includes(q)
-    );
-  }, [cars, searchText]);
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: results.length };
+    results.forEach(r => { c[r._type] = (c[r._type] ?? 0) + 1; });
+    c.car = (c.car ?? 0) + (c.motorcycle ?? 0) + (c.plates ?? 0);
+    return c;
+  }, [results]);
 
-  const condition = filters.condition ?? "";
-  const pageTitle = getPageTitle(filters.saleType, filters.category, condition);
-  const hasActiveFilter = filters.saleType || filters.category || condition;
-
-  const showActionButtons = condition === "new" || condition === "used" || filters.category === "motorcycle";
   const FilterContent = () => (
     <div className="space-y-6">
       <div className="space-y-3">
         <label className="text-sm font-bold text-foreground">الماركة</label>
-        <select name="brand" value={filters.brand} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none">
+        <select name="brand" value={filters.brand} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
           <option value="">الكل</option>
           <option value="تويوتا">تويوتا (Toyota)</option>
           <option value="هيونداي">هيونداي (Hyundai)</option>
@@ -232,67 +303,27 @@ export default function SearchPage() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
 
-        {/* Page title + action buttons */}
-        {hasActiveFilter && (
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-3">
-              <h1 className="text-2xl font-extrabold text-foreground">{pageTitle}</h1>
-              <Button variant="ghost" size="sm" onClick={clearAll} className="text-muted-foreground gap-1 rounded-xl">
-                <X className="w-4 h-4" /> مسح
-              </Button>
-            </div>
-
-            {/* Buy / Sell action buttons */}
-            {showActionButtons && (
-              <div className="flex gap-3">
-                {user && (
-                  <Button
-                    onClick={() => navigate("/add-listing")}
-                    className="flex-1 gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-md"
-                  >
-                    <Plus className="w-4 h-4" />
-                    نشر إعلان بيع
-                  </Button>
-                )}
-                <Button
-                  onClick={() => {
-                    if (!user) { navigate("/login"); return; }
-                    setBuyOpen(true);
-                  }}
-                  variant="outline"
-                  className="flex-1 gap-2 rounded-xl border-2 border-amber-400 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 font-bold"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  طلب شراء
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Search + filter toggle */}
-        <div className="flex items-center gap-4 mb-5">
+        {/* Search bar */}
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 relative">
-            <SearchIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+            <SearchIcon className="absolute end-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="ابحث بالماركة، الموديل، أو الوصف..."
-              className="w-full bg-card border-2 border-border rounded-xl py-3 pr-12 pl-4 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-foreground"
+              placeholder="ابحث في جميع الخدمات..."
+              className="w-full bg-card border-2 border-border rounded-xl py-3 pe-12 ps-4 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-foreground"
             />
             {searchText && (
-              <button onClick={() => setSearchText("")} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <button onClick={() => setSearchText("")} className="absolute start-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                 <X className="w-4 h-4" />
               </button>
             )}
           </div>
-
-          {/* Mobile Filter Toggle */}
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" className="lg:hidden shrink-0 h-12 px-4 rounded-xl border-2">
-                <SlidersHorizontal className="w-5 h-5 ml-2" />
+                <SlidersHorizontal className="w-5 h-5 ms-2" />
                 تصفية
               </Button>
             </SheetTrigger>
@@ -305,47 +336,86 @@ export default function SearchPage() {
           </Sheet>
         </div>
 
-        {/* Results count */}
-        <div className="mb-4 text-muted-foreground font-medium text-sm">
-          {isLoading ? "جاري البحث..." : `تم العثور على ${filteredCars.length} ${getResultLabel(filters.category, condition)}`}
+        {/* Type Tabs */}
+        <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-none">
+          {TYPE_TABS.map(tab => {
+            const Icon = tab.icon;
+            const isActive = listingType === tab.key;
+            const count = tab.key === "all" ? results.length : counts[tab.key] ?? 0;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setListingType(tab.key)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition-all shrink-0 ${
+                  isActive
+                    ? tab.color + " shadow-md"
+                    : "bg-card border border-border text-muted-foreground hover:border-primary/50"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+                {count > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${isActive ? "bg-white/20" : "bg-muted"}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Results header */}
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-muted-foreground text-sm font-medium">
+            {isLoading ? "جاري البحث..." : `${results.length} نتيجة`}
+          </p>
+          <div className="flex gap-2">
+            {user && (
+              <Button size="sm" onClick={() => navigate("/add-listing")} className="gap-1.5 rounded-xl text-xs h-8">
+                <Plus className="w-3.5 h-3.5" /> نشر إعلان
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { if (!user) { navigate("/login"); return; } setBuyOpen(true); }}
+              className="gap-1.5 rounded-xl text-xs h-8 border-amber-400 text-amber-600 hover:bg-amber-50"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" /> طلب شراء
+            </Button>
+          </div>
         </div>
 
         {/* Grid */}
         {isLoading ? (
-          <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>
-        ) : filteredCars.length === 0 ? (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+          </div>
+        ) : results.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-2xl border border-dashed">
-            <SearchIcon className="w-16 h-16 text-muted mb-4" />
+            <SearchIcon className="w-16 h-16 text-muted mb-4 opacity-30" />
             <h3 className="text-xl font-bold text-foreground mb-2">لم نجد نتائج مطابقة</h3>
-            <p className="text-muted-foreground mb-6">جرب تغيير خيارات البحث أو تقليل الفلاتر المستخدمة</p>
-            {showActionButtons && (
-              <div className="flex gap-3 flex-wrap justify-center">
-                {user && (
-                  <Button onClick={() => navigate("/add-listing")} className="gap-2 rounded-xl">
-                    <Plus className="w-4 h-4" /> أضف أول إعلان
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (!user) { navigate("/login"); return; }
-                    setBuyOpen(true);
-                  }}
-                  className="gap-2 rounded-xl border-2 border-amber-400 text-amber-600"
-                >
-                  <ShoppingCart className="w-4 h-4" /> اطلب شراء
-                </Button>
-              </div>
-            )}
-            {!showActionButtons && (
-              <Button variant="outline" onClick={clearAll} className="rounded-xl">مسح الفلاتر</Button>
-            )}
+            <p className="text-muted-foreground mb-6">جرب تغيير كلمة البحث أو تقليل الفلاتر</p>
+            <Button variant="outline" onClick={clearAll} className="rounded-xl">مسح الفلاتر</Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredCars.map((car: Car) => (
-              <CarCard key={car.id} car={car} />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            {results.map(item => {
+              if (item._type === "car" || item._type === "motorcycle" || item._type === "plates") {
+                return <CarCard key={`car-${item.id}`} car={item as any} />;
+              }
+              return (
+                <UnifiedCard
+                  key={`${item._type}-${item.id}`}
+                  item={item}
+                  onClick={() => {
+                    if (item._type === "rental") navigate(`/rental-cars`);
+                    else if (item._type === "part") navigate(`/car-parts`);
+                    else if (item._type === "junk") navigate(`/junk-cars`);
+                  }}
+                />
+              );
+            })}
           </div>
         )}
       </div>
@@ -354,56 +424,32 @@ export default function SearchPage() {
       <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              نشر طلب شراء – {pageTitle}
-            </DialogTitle>
+            <DialogTitle className="text-xl font-bold">نشر طلب شراء</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleBuySubmit} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">الماركة</label>
-                <Input
-                  value={buyForm.brand}
-                  onChange={e => setBuyForm(f => ({ ...f, brand: e.target.value }))}
-                  placeholder="مثال: تويوتا"
-                />
+                <Input value={buyForm.brand} onChange={e => setBuyForm(f => ({ ...f, brand: e.target.value }))} placeholder="مثال: تويوتا" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">الموديل</label>
-                <Input
-                  value={buyForm.model}
-                  onChange={e => setBuyForm(f => ({ ...f, model: e.target.value }))}
-                  placeholder="مثال: كورولا"
-                />
+                <Input value={buyForm.model} onChange={e => setBuyForm(f => ({ ...f, model: e.target.value }))} placeholder="مثال: كورولا" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">سنة الصنع</label>
-                <Input
-                  type="number"
-                  value={buyForm.year}
-                  onChange={e => setBuyForm(f => ({ ...f, year: e.target.value }))}
-                  placeholder="مثال: 2020"
-                />
+                <Input type="number" value={buyForm.year} onChange={e => setBuyForm(f => ({ ...f, year: e.target.value }))} placeholder="مثال: 2020" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">الحد الأقصى للسعر ($)</label>
-                <Input
-                  type="number"
-                  value={buyForm.maxPrice}
-                  onChange={e => setBuyForm(f => ({ ...f, maxPrice: e.target.value }))}
-                  placeholder="مثال: 15000"
-                />
+                <Input type="number" value={buyForm.maxPrice} onChange={e => setBuyForm(f => ({ ...f, maxPrice: e.target.value }))} placeholder="مثال: 15000" />
               </div>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">المدينة / المحافظة</label>
-              <Input
-                value={buyForm.city}
-                onChange={e => setBuyForm(f => ({ ...f, city: e.target.value }))}
-                placeholder="مثال: دمشق"
-              />
+              <Input value={buyForm.city} onChange={e => setBuyForm(f => ({ ...f, city: e.target.value }))} placeholder="مثال: دمشق" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">تفاصيل إضافية</label>
