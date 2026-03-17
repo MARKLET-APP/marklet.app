@@ -3,6 +3,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { db, conversationsTable, messagesTable, usersTable, carsTable, imagesTable, notificationsTable, blockedUsersTable } from "@workspace/db";
+import { sendPushToUser } from "../services/pushService.js";
 import { eq, and, or, desc, count, isNull } from "drizzle-orm";
 import { SendMessageBody, StartConversationBody } from "@workspace/api-zod";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -229,6 +230,13 @@ router.post("/chats/:conversationId/messages", authMiddleware, async (req: AuthR
     link: `/messages?conversationId=${convId}`,
   });
 
+  sendPushToUser(otherUserId, {
+    title: `MARKLET — رسالة من ${sender?.name ?? "شخص ما"}`,
+    body: filteredContent.length > 80 ? filteredContent.slice(0, 80) + "..." : filteredContent,
+    url: `/messages?conversationId=${convId}`,
+    tag: `msg-conv-${convId}`,
+  }).catch((e) => console.error("[Push] text message push error:", e));
+
   if (isFirstMessage) {
     const [autoMsg] = await db.insert(messagesTable).values({
       conversationId: convId,
@@ -271,9 +279,18 @@ router.post("/chats/:conversationId/messages/image", authMiddleware, upload.sing
   }).returning();
   await db.update(conversationsTable).set({ updatedAt: new Date() }).where(eq(conversationsTable.id, convId));
 
+  const otherUserIdImg = conv.buyerId === req.userId ? conv.sellerId : conv.buyerId;
   const fullMsg = { ...msg, senderName: sender?.name ?? "Unknown", senderPhoto: sender?.profilePhoto ?? null, reactions: {} };
   const io = getSocketServer();
   if (io) io.to(`conv:${convId}`).emit("new_message", { convId, message: fullMsg });
+
+  sendPushToUser(otherUserIdImg, {
+    title: `MARKLET — رسالة من ${sender?.name ?? "شخص ما"}`,
+    body: "📷 أرسل لك صورة",
+    url: `/messages?conversationId=${convId}`,
+    tag: `msg-conv-${convId}`,
+  }).catch((e) => console.error("[Push] image push error:", e));
+
   res.status(201).json(fullMsg);
 });
 
@@ -307,6 +324,14 @@ router.post("/chats/:conversationId/messages/audio", authMiddleware, audioUpload
       link: `/messages?conversationId=${convId}`,
     });
   }
+
+  sendPushToUser(otherUserId, {
+    title: `MARKLET — رسالة من ${sender?.name ?? "شخص ما"}`,
+    body: "🎤 أرسل لك رسالة صوتية",
+    url: `/messages?conversationId=${convId}`,
+    tag: `msg-conv-${convId}`,
+  }).catch((e) => console.error("[Push] audio push error:", e));
+
   res.status(201).json(fullMsg);
 });
 

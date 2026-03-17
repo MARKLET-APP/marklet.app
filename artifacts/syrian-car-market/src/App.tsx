@@ -33,6 +33,7 @@ import NotFound from "@/pages/not-found";
 import SystemAuditPage from "@/pages/system-audit";
 import ShowroomPage from "@/pages/showroom";
 import AppRatingPopup from "@/components/AppRatingPopup";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 function ListingRedirect() {
   const [, params] = useRoute("/listing/:id");
@@ -50,6 +51,11 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function GlobalHooks() {
+  usePushNotifications();
+  return null;
+}
 
 function Router() {
   return (
@@ -94,6 +100,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <GlobalHooks />
             <Router />
           </WouterRouter>
           <Toaster />

@@ -29,6 +29,7 @@ import showroomsRouter from "./showrooms";
 import savesRouter from "./saves";
 import systemAuditRouter from "./systemAudit";
 import searchRouter from "./search";
+import pushRouter from "./push";
 
 const router: IRouter = Router();
 
@@ -62,5 +63,6 @@ router.use(showroomsRouter);
 router.use(savesRouter);
 router.use(systemAuditRouter);
 router.use(searchRouter);
+router.use(pushRouter);
 
 export default router;

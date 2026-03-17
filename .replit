@@ -27,3 +27,10 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+VAPID_PUBLIC_KEY = "BH8dScFU0rsQtOAXv6tHTjqRXcJT0t6xu_JI-GN3eRjvBrNJ_ZAg36-E2lc9KPSCBEeCRS-o5C4qx5NBLn7cm2Q"
+VAPID_PRIVATE_KEY = "S3GKLxIQ4gzgkJhNQlj4S7YKLVc4v4RYIkHM2WDYXhE"
+VAPID_SUBJECT = "mailto:admin@marklet.sy"
