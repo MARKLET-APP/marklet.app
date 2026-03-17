@@ -131,6 +131,18 @@
     100% { transform: translateX(-3%) translateY(-3%) scale(1.05); }
   }
 
+  @keyframes carFloat {
+    0%   { transform: translateY(0px); }
+    50%  { transform: translateY(-12px); }
+    100% { transform: translateY(0px); }
+  }
+
+  @keyframes backgroundMove {
+    0%   { transform: translateX(-20px); }
+    50%  { transform: translateX(20px); }
+    100% { transform: translateX(-20px); }
+  }
+
   .header-watermark {
     position: absolute;
     inset: -10%;

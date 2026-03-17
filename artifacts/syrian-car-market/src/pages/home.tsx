@@ -104,15 +104,16 @@ export default function Home() {
           padding: "120px 20px",
         }}
       >
-        {/* Car outline watermark */}
+        {/* Car outline watermark — animated background */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage: `url("${import.meta.env.BASE_URL}assets/car-outline.svg")`,
-            backgroundSize: "600px",
+            backgroundSize: "650px",
             backgroundRepeat: "no-repeat",
             backgroundPosition: "center",
             opacity: 0.05,
+            animation: "backgroundMove 30s linear infinite",
           }}
         />
 
@@ -128,6 +129,21 @@ export default function Home() {
           style={{ bottom: "0%", left: "8%", background: "rgba(212,175,55,0.12)" }}
           animate={{ y: [0, -24, 0], x: [0, 18, 0], opacity: [0.4, 0.7, 0.4] }}
           transition={{ duration: 12, ease: "easeInOut", repeat: Infinity, delay: 3 }}
+        />
+
+        {/* Hero car image — floating animation */}
+        <img
+          src={`${import.meta.env.BASE_URL}assets/hero-car.png`}
+          alt="MARKLET"
+          className="absolute pointer-events-none hidden md:block"
+          style={{
+            bottom: "-40px",
+            right: "5%",
+            width: "520px",
+            opacity: 0.9,
+            animation: "carFloat 6s ease-in-out infinite",
+            zIndex: 1,
+          }}
         />
 
         <div className="relative z-10 max-w-3xl w-full space-y-5">
