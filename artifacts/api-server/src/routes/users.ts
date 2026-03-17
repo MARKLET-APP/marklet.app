@@ -9,14 +9,11 @@ import { authMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
-const uploadsDir = path.join(process.cwd(), "uploads", "avatars");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const avatarsDir = path.join(process.cwd(), "uploads", "avatars");
+if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
 
 const avatarUpload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadsDir),
-    filename: (_req, file, cb) => cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`),
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 3 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (/jpeg|jpg|png|gif|webp/.test(file.mimetype)) cb(null, true);
@@ -96,14 +93,18 @@ router.post("/users/:id/avatar", authMiddleware, avatarUpload.single("avatar"), 
   if (req.userId !== id) { res.status(403).json({ error: "Forbidden" }); return; }
   if (!req.file) { res.status(400).json({ error: "No file uploaded" }); return; }
 
-  const rawPath = req.file.path;
-  const compressedName = path.basename(rawPath) + ".jpg";
-  const compressedPath = path.join(path.dirname(rawPath), compressedName);
+  const compressedName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
+  const compressedPath = path.join(avatarsDir, compressedName);
   try {
-    await sharp(rawPath).rotate().resize(400, 400, { fit: "cover" }).jpeg({ quality: 85 }).toFile(compressedPath);
-    fs.unlinkSync(rawPath);
-  } catch {
-    fs.renameSync(rawPath, compressedPath);
+    await sharp(req.file.buffer)
+      .rotate()
+      .resize(400, 400, { fit: "cover" })
+      .jpeg({ quality: 85 })
+      .toFile(compressedPath);
+  } catch (err) {
+    console.error("[Avatar] Compression error:", err);
+    res.status(500).json({ error: "فشل معالجة الصورة" });
+    return;
   }
   const photoUrl = `/api/uploads/avatars/${compressedName}`;
   const [updated] = await db.update(usersTable).set({ profilePhoto: photoUrl }).where(eq(usersTable.id, id)).returning();
