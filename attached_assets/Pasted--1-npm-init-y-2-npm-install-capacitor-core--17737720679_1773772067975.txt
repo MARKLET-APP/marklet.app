@@ -1,0 +1,100 @@
+# ===== 1. تهيئة =====
+npm init -y
+
+# ===== 2. تثبيت الأدوات =====
+npm install @capacitor/core @capacitor/cli terser clean-css-cli html-minifier archiver
+
+# ===== 3. ضغط الملفات (تحسين الأداء) =====
+
+# JS
+if [ -f main.js ]; then
+  npx terser main.js -o main.min.js -c -m
+fi
+
+# CSS
+if [ -f style.css ]; then
+  npx cleancss -o style.min.css style.css
+fi
+
+# HTML
+if [ -f index.html ]; then
+  npx html-minifier index.html -o index.min.html --collapse-whitespace --remove-comments --minify-css true --minify-js true
+fi
+
+# ===== 4. تعديل HTML لاستخدام النسخ المضغوطة =====
+if [ -f index.min.html ]; then
+  sed -i 's/style.css/style.min.css/g' index.min.html
+  sed -i 's/main.js/main.min.js/g' index.min.html
+fi
+
+# ===== 5. إنشاء Service Worker احترافي =====
+cat > sw.js << 'EOF'
+const CACHE_NAME = "pro-cache-v2";
+const urlsToCache = [
+  "/",
+  "/index.min.html",
+  "/style.min.css",
+  "/main.min.js"
+];
+
+self.addEventListener("install", e => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener("fetch", e => {
+  e.respondWith(
+    caches.match(e.request).then(res => {
+      return res || fetch(e.request).then(response => {
+        return caches.open(CACHE_NAME).then(cache => {
+          cache.put(e.request, response.clone());
+          return response;
+        });
+      });
+    })
+  );
+});
+EOF
+
+# ===== 6. ربط Service Worker =====
+if ! grep -q "serviceWorker" main.js 2>/dev/null; then
+cat >> main.js << 'EOF'
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
+EOF
+fi
+
+# ===== 7. إعداد Capacitor =====
+npx cap init MyApp com.myapp.app --web-dir=.
+
+# ===== 8. Android =====
+npx cap add android
+
+# ===== 9. نسخ الملفات =====
+npx cap copy
+
+# ===== 10. تحسين Android =====
+mkdir -p android/app/src/main/res/xml
+
+cat > android/app/src/main/res/xml/network_security_config.xml << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+  <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
+EOF
+
+# ===== 11. رسالة نهائية =====
+echo "======================================"
+echo "🚀 تم إنشاء نسخة احترافية"
+echo "تشمل:"
+echo "✔️ تسريع + ضغط الملفات"
+echo "✔️ caching ذكي"
+echo "✔️ تحويل إلى APK"
+echo ""
+echo "الخطوة التالية:"
+echo "npx cap open android"
+echo "ثم Build APK من Android Studio"
+echo "======================================"
