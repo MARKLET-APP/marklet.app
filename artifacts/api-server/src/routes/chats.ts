@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { db, conversationsTable, messagesTable, usersTable, carsTable, imagesTable, notificationsTable, blockedUsersTable } from "@workspace/db";
 import { sendPushToUser } from "../services/pushService.js";
+import sharp from "sharp";
 import { eq, and, or, desc, count, isNull } from "drizzle-orm";
 import { SendMessageBody, StartConversationBody } from "@workspace/api-zod";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -267,7 +268,15 @@ router.post("/chats/:conversationId/messages/image", authMiddleware, upload.sing
   if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
   if (!req.file) { res.status(400).json({ error: "No image provided" }); return; }
 
-  const imageUrl = `/api/uploads/chat/${req.file.filename}`;
+  const rawPath = req.file.path;
+  const compressedPath = rawPath + ".jpg";
+  try {
+    await sharp(rawPath).rotate().resize(1280, 960, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 80, progressive: true }).toFile(compressedPath);
+    fs.unlinkSync(rawPath);
+  } catch {
+    fs.renameSync(rawPath, compressedPath);
+  }
+  const imageUrl = `/api/uploads/chat/${path.basename(compressedPath)}`;
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
   const [msg] = await db.insert(messagesTable).values({
     conversationId: convId,

@@ -14,6 +14,20 @@ A full-stack mobile-first Arabic RTL marketplace for buying and selling cars in 
 - **Scrap Centers tab**: full CRUD (add/edit/delete), verified/featured toggles
 - **New DB tables**: `scrap_centers`; users table has `whatsapp`, `is_featured_seller`; inspection_centers has `whatsapp`, `logo`, `description`, `is_verified`
 
+## Pre-Android Audit & Fixes (March 2026)
+- **Push Notifications**: Full Web Push implementation (sw.js, VAPID keys, pushService, push.ts routes, usePushNotifications hook)
+- **PWA Icons**: Generated PNG icons (96×96, 192×192, 512×512, maskable) from SVG via ImageMagick
+- **Manifest**: Updated with proper PNG icons, lang/dir attributes for Android
+- **Image Compression**: sharp library added to upload.ts (car images 1920×1080 @ q82), chats.ts (chat images 1280×960 @ q80), users.ts (avatars 400×400 @ q85)
+- **Lazy Loading**: All 25+ pages are now React.lazy() with Suspense fallback for faster initial load
+- **Code Splitting**: vite.config.ts uses manualChunks (vendor, router, query, ui, socket)
+- **BottomNav Fix**: `/chat` → `/messages` + live unread badge via polling
+- **ContactButtons Fix**: navigate("/chats") → navigate("/messages?conversationId=...") (x2)
+- **NaN km Fix**: CarCard shows "غير محدد" when mileage is null/undefined
+- **index.html**: Added lang="ar" dir="rtl", removed unused Inter font, added Cairo preload
+- **PageWrapper System**: Created `src/components/PageWrapper.tsx` with PageWrapper, SectionHeader, StatusBadge, InfoRow for universal design consistency
+- **staleTime**: Set to 30s globally in QueryClient for better performance
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

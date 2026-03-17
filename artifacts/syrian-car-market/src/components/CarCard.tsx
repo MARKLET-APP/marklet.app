@@ -140,7 +140,7 @@ export function CarCard({ car }: { car: Car }) {
           </div>
           <div className="flex items-center gap-1.5">
             <Gauge className="w-4 h-4 text-primary" />
-            <span>{Number(car.mileage).toLocaleString("en-US")} كم</span>
+            <span>{car.mileage ? Number(car.mileage).toLocaleString("en-US") + " كم" : "غير محدد"}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Settings className="w-4 h-4 text-primary" />

@@ -76,7 +76,10 @@ export function ContactButtons({
         },
         body: JSON.stringify({ sellerId, carId: listingId ?? null }),
       });
-      if (res.ok) navigate("/chats");
+      if (res.ok) {
+        const conv = await res.json().catch(() => null);
+        navigate(conv?.id ? `/messages?conversationId=${conv.id}` : "/messages");
+      }
     } catch {
     } finally {
       setStartingChat(false);
@@ -203,7 +206,10 @@ export function ContactButtonsFixed({
         },
         body: JSON.stringify({ sellerId, carId: listingId ?? null }),
       });
-      if (res.ok) navigate("/chats");
+      if (res.ok) {
+        const conv = await res.json().catch(() => null);
+        navigate(conv?.id ? `/messages?conversationId=${conv.id}` : "/messages");
+      }
     } catch {
     } finally {
       setStartingChat(false);

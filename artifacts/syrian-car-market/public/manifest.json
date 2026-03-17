@@ -1,7 +1,7 @@
 {
-  "name": "MARKLET",
+  "name": "MARKLET — سوق السيارات",
   "short_name": "MARKLET",
-  "description": "السوق الأول لتجارة السيارات في سوريا",
+  "description": "السوق الأول لتجارة السيارات والمركبات في سوريا",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -11,18 +11,37 @@
   "dir": "rtl",
   "icons": [
     {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/imagesopengraph.jpg",
-      "sizes": "512x512",
-      "type": "image/jpeg",
       "purpose": "any"
     }
   ],
   "screenshots": [],
-  "categories": ["shopping", "auto"]
+  "categories": ["shopping", "auto"],
+  "prefer_related_applications": false
 }

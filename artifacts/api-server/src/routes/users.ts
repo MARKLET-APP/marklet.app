@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import sharp from "sharp";
 import { db, usersTable, carsTable, reviewsTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -95,7 +96,16 @@ router.post("/users/:id/avatar", authMiddleware, avatarUpload.single("avatar"), 
   if (req.userId !== id) { res.status(403).json({ error: "Forbidden" }); return; }
   if (!req.file) { res.status(400).json({ error: "No file uploaded" }); return; }
 
-  const photoUrl = `/api/uploads/avatars/${req.file.filename}`;
+  const rawPath = req.file.path;
+  const compressedName = path.basename(rawPath) + ".jpg";
+  const compressedPath = path.join(path.dirname(rawPath), compressedName);
+  try {
+    await sharp(rawPath).rotate().resize(400, 400, { fit: "cover" }).jpeg({ quality: 85 }).toFile(compressedPath);
+    fs.unlinkSync(rawPath);
+  } catch {
+    fs.renameSync(rawPath, compressedPath);
+  }
+  const photoUrl = `/api/uploads/avatars/${compressedName}`;
   const [updated] = await db.update(usersTable).set({ profilePhoto: photoUrl }).where(eq(usersTable.id, id)).returning();
   res.json({ profilePhoto: updated.profilePhoto });
 });

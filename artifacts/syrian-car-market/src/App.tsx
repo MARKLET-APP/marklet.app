@@ -1,39 +1,47 @@
+import { lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, useRoute } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/lib/i18n";
-
 import { AppLayout } from "@/components/layout/AppLayout";
-import Home from "@/pages/home";
-import SearchPage from "@/pages/search";
-import CarDetail from "@/pages/car-detail";
-import AddListing from "@/pages/add-listing";
-import VehicleInfo from "@/pages/vehicle-info";
-import Login from "@/pages/login";
-import Register from "@/pages/register";
-import Profile from "@/pages/profile";
-import Chat from "@/pages/chat";
-import Messages from "@/pages/messages";
-import Admin from "@/pages/admin";
-import Favorites from "@/pages/favorites";
-import BuyRequests from "@/pages/buy-requests";
-import CarPartsPage from "@/pages/car-parts";
-import JunkCarsPage from "@/pages/junk-cars";
-import MissingCarsPage from "@/pages/missing-cars";
-import InspectionsPage from "@/pages/inspections";
-import SupportPage from "@/pages/support";
-import PlatesPage from "@/pages/plates";
-import AuctionsPage from "@/pages/auctions";
-import RentalCarsPage from "@/pages/rental-cars";
-import NewCarsPage from "@/pages/new-cars";
-import UsedCarsPage from "@/pages/used-cars";
-import MotorcyclesPage from "@/pages/motorcycles";
-import NotFound from "@/pages/not-found";
-import SystemAuditPage from "@/pages/system-audit";
-import ShowroomPage from "@/pages/showroom";
-import AppRatingPopup from "@/components/AppRatingPopup";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+
+const Home = lazy(() => import("@/pages/home"));
+const SearchPage = lazy(() => import("@/pages/search"));
+const CarDetail = lazy(() => import("@/pages/car-detail"));
+const AddListing = lazy(() => import("@/pages/add-listing"));
+const VehicleInfo = lazy(() => import("@/pages/vehicle-info"));
+const Login = lazy(() => import("@/pages/login"));
+const Register = lazy(() => import("@/pages/register"));
+const Profile = lazy(() => import("@/pages/profile"));
+const Messages = lazy(() => import("@/pages/messages"));
+const Admin = lazy(() => import("@/pages/admin"));
+const Favorites = lazy(() => import("@/pages/favorites"));
+const BuyRequests = lazy(() => import("@/pages/buy-requests"));
+const CarPartsPage = lazy(() => import("@/pages/car-parts"));
+const JunkCarsPage = lazy(() => import("@/pages/junk-cars"));
+const MissingCarsPage = lazy(() => import("@/pages/missing-cars"));
+const InspectionsPage = lazy(() => import("@/pages/inspections"));
+const SupportPage = lazy(() => import("@/pages/support"));
+const PlatesPage = lazy(() => import("@/pages/plates"));
+const AuctionsPage = lazy(() => import("@/pages/auctions"));
+const RentalCarsPage = lazy(() => import("@/pages/rental-cars"));
+const NewCarsPage = lazy(() => import("@/pages/new-cars"));
+const UsedCarsPage = lazy(() => import("@/pages/used-cars"));
+const MotorcyclesPage = lazy(() => import("@/pages/motorcycles"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const SystemAuditPage = lazy(() => import("@/pages/system-audit"));
+const ShowroomPage = lazy(() => import("@/pages/showroom"));
+import AppRatingPopup from "@/components/AppRatingPopup";
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function ListingRedirect() {
   const [, params] = useRoute("/listing/:id");
@@ -48,6 +56,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 30_000,
     },
   },
 });
@@ -60,36 +69,38 @@ function GlobalHooks() {
 function Router() {
   return (
     <AppLayout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/search" component={SearchPage} />
-        <Route path="/listing/:id" component={ListingRedirect} />
-        <Route path="/cars/:id" component={CarDetail} />
-        <Route path="/add-listing" component={AddListing} />
-        <Route path="/vehicle-info" component={VehicleInfo} />
-        <Route path="/login" component={Login} />
-        <Route path="/register" component={Register} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/chat" component={Messages} />
-        <Route path="/messages" component={Messages} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/admin/system-audit" component={SystemAuditPage} />
-        <Route path="/favorites" component={Favorites} />
-        <Route path="/buy-requests" component={BuyRequests} />
-        <Route path="/car-parts" component={CarPartsPage} />
-        <Route path="/junk-cars" component={JunkCarsPage} />
-        <Route path="/missing-cars" component={MissingCarsPage} />
-        <Route path="/inspections" component={InspectionsPage} />
-        <Route path="/support" component={SupportPage} />
-        <Route path="/plates" component={PlatesPage} />
-        <Route path="/auctions" component={AuctionsPage} />
-        <Route path="/rental-cars" component={RentalCarsPage} />
-        <Route path="/new-cars" component={NewCarsPage} />
-        <Route path="/used-cars" component={UsedCarsPage} />
-        <Route path="/motorcycles" component={MotorcyclesPage} />
-        <Route path="/showroom/:id" component={ShowroomPage} />
-        <Route component={NotFound} />
-      </Switch>
+      <Suspense fallback={<PageLoader />}>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/search" component={SearchPage} />
+          <Route path="/listing/:id" component={ListingRedirect} />
+          <Route path="/cars/:id" component={CarDetail} />
+          <Route path="/add-listing" component={AddListing} />
+          <Route path="/vehicle-info" component={VehicleInfo} />
+          <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/chat" component={Messages} />
+          <Route path="/messages" component={Messages} />
+          <Route path="/admin" component={Admin} />
+          <Route path="/admin/system-audit" component={SystemAuditPage} />
+          <Route path="/favorites" component={Favorites} />
+          <Route path="/buy-requests" component={BuyRequests} />
+          <Route path="/car-parts" component={CarPartsPage} />
+          <Route path="/junk-cars" component={JunkCarsPage} />
+          <Route path="/missing-cars" component={MissingCarsPage} />
+          <Route path="/inspections" component={InspectionsPage} />
+          <Route path="/support" component={SupportPage} />
+          <Route path="/plates" component={PlatesPage} />
+          <Route path="/auctions" component={AuctionsPage} />
+          <Route path="/rental-cars" component={RentalCarsPage} />
+          <Route path="/new-cars" component={NewCarsPage} />
+          <Route path="/used-cars" component={UsedCarsPage} />
+          <Route path="/motorcycles" component={MotorcyclesPage} />
+          <Route path="/showroom/:id" component={ShowroomPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </AppLayout>
   );
 }
