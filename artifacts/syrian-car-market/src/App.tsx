@@ -30,6 +30,7 @@ import NewCarsPage from "@/pages/new-cars";
 import UsedCarsPage from "@/pages/used-cars";
 import MotorcyclesPage from "@/pages/motorcycles";
 import NotFound from "@/pages/not-found";
+import SystemAuditPage from "@/pages/system-audit";
 import ShowroomPage from "@/pages/showroom";
 import AppRatingPopup from "@/components/AppRatingPopup";
 
@@ -66,6 +67,7 @@ function Router() {
         <Route path="/chat" component={Messages} />
         <Route path="/messages" component={Messages} />
         <Route path="/admin" component={Admin} />
+        <Route path="/admin/system-audit" component={SystemAuditPage} />
         <Route path="/favorites" component={Favorites} />
         <Route path="/buy-requests" component={BuyRequests} />
         <Route path="/car-parts" component={CarPartsPage} />

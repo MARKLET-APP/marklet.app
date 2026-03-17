@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "wouter";
 import { useAuthStore } from "@/lib/auth";
 import { 
   useAdminListUsers, useAdminUpdateUser, useAdminDeleteUser,
@@ -452,10 +453,15 @@ export default function AdminDashboard() {
         <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
           <Settings className="w-6 h-6" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold text-foreground">لوحة الإدارة</h1>
           <p className="text-muted-foreground mt-1">إدارة المستخدمين، الإعلانات، وإعدادات المنصة</p>
         </div>
+        <Link href="/admin/system-audit">
+          <Button variant="outline" className="gap-2 rounded-xl border-green-300 text-green-700 hover:bg-green-50 hidden sm:flex">
+            <ShieldCheck className="w-4 h-4" /> تدقيق النظام
+          </Button>
+        </Link>
       </div>
 
       {/* Dashboard stats */}

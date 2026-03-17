@@ -1,0 +1,175 @@
+MARKLET FINAL SYSTEM AUDIT
+
+IMPORTANT
+Create internal diagnostic tool.
+Do not modify existing logic.
+Only analyze and report system readiness.
+
+Goal:
+Verify that MARKLET is stable before converting to Android app.
+
+================================================
+1 CREATE SYSTEM AUDIT ROUTE
+================================================
+
+Create route:
+
+/admin/system-audit
+
+File:
+
+/server/systemAudit.js
+
+Code:
+
+export async function runSystemAudit(){
+
+const report = {
+server:false,
+database:false,
+listings:false,
+routes:false,
+share:false,
+pwa:false
+}
+
+try{
+
+report.server = true
+
+}catch(e){}
+
+try{
+
+const test = await Listings.findOne({})
+report.database = true
+
+}catch(e){}
+
+try{
+
+const listingsCount = await Listings.countDocuments({})
+report.listings = listingsCount >= 0
+
+}catch(e){}
+
+try{
+
+const routes = [
+"/listing/:id",
+"/api/listings",
+"/api/listings/save"
+]
+
+report.routes = true
+
+}catch(e){}
+
+try{
+
+if(typeof navigator !== "undefined"){
+report.share = true
+}
+
+}catch(e){}
+
+try{
+
+const fs = require("fs")
+
+report.pwa =
+fs.existsSync("./public/manifest.json") &&
+fs.existsSync("./public/sw.js")
+
+}catch(e){}
+
+return report
+
+}
+
+================================================
+2 CREATE ADMIN PAGE
+================================================
+
+Route:
+
+app.get("/admin/system-audit", async(req,res)=>{
+
+const report = await runSystemAudit()
+
+res.json(report)
+
+})
+
+================================================
+3 ADD HUMAN READABLE REPORT
+================================================
+
+If report returns:
+
+{
+server:true,
+database:true,
+listings:true,
+routes:true,
+share:true,
+pwa:true
+}
+
+Then system is READY.
+
+================================================
+4 CREATE SIMPLE STATUS PAGE
+================================================
+
+Create:
+
+/public/system-check.html
+
+Code:
+
+<script>
+
+fetch("/admin/system-audit")
+.then(res=>res.json())
+.then(data=>{
+
+document.body.innerHTML = "<pre>"+JSON.stringify(data,null,2)+"</pre>"
+
+})
+
+</script>
+
+================================================
+5 TEST REQUIRED SYSTEMS
+================================================
+
+Verify:
+
+Server running
+
+Database connected
+
+Listings can be saved
+
+Listings can be loaded
+
+Direct listing route works
+
+Share system available
+
+PWA files exist
+
+================================================
+6 FINAL RESULT
+================================================
+
+If all fields return true:
+
+MARKLET IS READY FOR MOBILE CONVERSION.
+
+================================================
+
+App Name:
+
+MARKLET
