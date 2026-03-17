@@ -1,9 +1,21 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import path from "path";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import router from "./routes";
 
 const app: Express = express();
+
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: "Too many requests from this IP",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
@@ -11,7 +23,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/api/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/uploads/chat", express.static(path.join(process.cwd(), "uploads", "chat")));
-app.use("/api", router);
+app.use("/api", limiter, router);
 
 app.get("/app-link", (req, res) => {
   const replSlug = process.env.REPL_SLUG;
