@@ -2,11 +2,11 @@ import { Capacitor } from "@capacitor/core";
 
 export const IS_NATIVE = Capacitor.isNativePlatform();
 
-export const API_BASE = IS_NATIVE ? "https://marklet.replit.app" : "";
+// On native, server.url in capacitor.config.ts loads the live Replit server,
+// so API calls use relative paths (empty base) just like on web.
+export const API_BASE = "";
 
-export const SOCKET_URL: string | undefined = IS_NATIVE
-  ? "https://marklet.replit.app"
-  : undefined;
+export const SOCKET_URL: string | undefined = undefined;
 
 export function withApi(path: string): string {
   if (!path.startsWith("/")) path = `/${path}`;

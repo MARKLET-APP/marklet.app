@@ -73,6 +73,7 @@ export default function Home() {
   };
 
   const handleCreateAd = () => {
+    if (!user) { navigate("/login"); return; }
     navigate("/add-listing");
   };
 
@@ -99,10 +100,11 @@ export default function Home() {
     <div className="flex flex-col w-full overflow-hidden">
       {/* Hero Section */}
       <section
-        className="relative w-full flex items-center justify-center overflow-hidden text-white text-center"
+        className="relative w-full flex items-center justify-center overflow-hidden text-white text-center py-10 sm:py-16 md:py-28"
         style={{
           background: "linear-gradient(135deg, #062f2f 0%, #0f5132 40%, #1c3d2b 100%)",
-          padding: "120px 20px",
+          paddingLeft: "20px",
+          paddingRight: "20px",
         }}
       >
         {/* Car outline watermark — animated background */}
@@ -302,43 +304,47 @@ export default function Home() {
       </section>
 
       {/* Categories */}
-      <section className="py-12 max-w-7xl mx-auto px-4 w-full">
-        <div className="flex justify-between items-end mb-8">
+      <section className="py-6 sm:py-12 max-w-7xl mx-auto px-3 sm:px-4 w-full">
+        <div className="flex justify-between items-end mb-4 sm:mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">{t("home.browse.title")}</h2>
-            <p className="text-muted-foreground mt-1">{isRTL ? "كل ما تحتاجه في عالم السيارات في مكان واحد" : "Everything you need for cars in one place"}</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t("home.browse.title")}</h2>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base hidden sm:block">{isRTL ? "كل ما تحتاجه في عالم السيارات في مكان واحد" : "Everything you need for cars in one place"}</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-4 md:grid-cols-6 gap-2 sm:gap-4">
           {categories.map((cat, i) => {
-            const iconMap: Record<string, React.ReactNode> = {
-              'car-new': <span className="relative inline-flex"><Car size={32} /><span className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-green-500 border-2 border-card" title="جديدة" /></span>,
-              'car-used': <span className="relative inline-flex opacity-80"><Car size={32} className="text-muted-foreground" /><span className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-amber-400 border-2 border-card" title="مستعملة" /></span>,
-              'key': <Key size={32} />,
-              'bike': <Bike size={32} />,
-              'plates': <Hash size={32} />,
-              'wrench': <Wrench size={32} />,
-              'package': <Package size={32} />,
-              'shield': <Shield size={32} />,
-              'search': <SearchIcon size={32} />,
-              'cart': <CartIcon size={32} />,
-              'auctions': <span className="relative inline-flex"><Flag size={32} className="text-primary" /><span className="absolute -top-1.5 -right-1.5 text-[14px] leading-none">🏁</span></span>,
+            const catMeta: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+              'car-new': { icon: <Car size={22} />, color: "text-green-600", bg: "bg-green-100" },
+              'car-used': { icon: <Car size={22} />, color: "text-amber-600", bg: "bg-amber-100" },
+              'key': { icon: <Key size={22} />, color: "text-blue-600", bg: "bg-blue-100" },
+              'bike': { icon: <Bike size={22} />, color: "text-purple-600", bg: "bg-purple-100" },
+              'plates': { icon: <Hash size={22} />, color: "text-indigo-600", bg: "bg-indigo-100" },
+              'wrench': { icon: <Wrench size={22} />, color: "text-orange-600", bg: "bg-orange-100" },
+              'package': { icon: <Package size={22} />, color: "text-red-600", bg: "bg-red-100" },
+              'shield': { icon: <Shield size={22} />, color: "text-teal-600", bg: "bg-teal-100" },
+              'search': { icon: <SearchIcon size={22} />, color: "text-pink-600", bg: "bg-pink-100" },
+              'cart': { icon: <CartIcon size={22} />, color: "text-primary", bg: "bg-primary/10" },
+              'auctions': { icon: <Flag size={22} />, color: "text-yellow-600", bg: "bg-yellow-100" },
             };
+            const meta = catMeta[cat.icon] ?? { icon: <Car size={22} />, color: "text-primary", bg: "bg-primary/10" };
             return (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
                 key={cat.id}
               >
                 <Link
                   href={cat.href}
-                  className="flex flex-col items-center justify-center p-6 bg-card border rounded-2xl hover-elevate group"
+                  className="flex flex-col items-center justify-center p-2 sm:p-5 bg-card border rounded-xl sm:rounded-2xl active:scale-95 transition-transform select-none touch-manipulation group"
+                  style={{ WebkitTapHighlightColor: "transparent" }}
                 >
-                  <span className="mb-3 text-primary group-hover:scale-110 group-hover:text-accent transition-all">
-                    {iconMap[cat.icon]}
+                  <span className={`mb-1 sm:mb-3 w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center ${meta.bg} ${meta.color} group-hover:scale-110 transition-transform`}>
+                    {meta.icon}
                   </span>
-                  <span className="font-bold text-foreground group-hover:text-primary transition-colors text-center text-sm">{cat.name}</span>
+                  <span className="font-semibold text-foreground text-center leading-tight" style={{ fontSize: "10px" }}>
+                    {cat.name.replace(/^🏁\s?/, "")}
+                  </span>
                 </Link>
               </motion.div>
             );

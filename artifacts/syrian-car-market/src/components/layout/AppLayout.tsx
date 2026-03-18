@@ -17,8 +17,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-16 sm:pb-0">
-      <DhikrBar />
       <Header />
+      <DhikrBar />
       <main className="flex-1 w-full max-w-7xl mx-auto">
         {children}
       </main>
