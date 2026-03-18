@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
+import { withApi } from "@/lib/runtimeConfig";
 import { api, apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -16,17 +17,15 @@ export default function ShowroomPage() {
   const { user } = useAuthStore();
   const { startChat, loading: chatLoading } = useStartChat();
   const { toast } = useToast();
-  const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
   const { data: showroom, isLoading } = useQuery<any>({
     queryKey: ["/showrooms", id],
-    queryFn: () => fetch(`${BASE}/api/showrooms/${id}`).then(r => r.json()),
+    queryFn: () => fetch(withApi(`/api/showrooms/${id}`)).then(r => r.json()),
     enabled: !isNaN(id),
   });
 
   const { data: cars = [], isLoading: loadingCars } = useQuery<any[]>({
     queryKey: ["/showrooms", id, "cars"],
-    queryFn: () => fetch(`${BASE}/api/showrooms/${id}/cars`).then(r => r.json()),
+    queryFn: () => fetch(withApi(`/api/showrooms/${id}/cars`)).then(r => r.json()),
     enabled: !isNaN(id),
   });
 

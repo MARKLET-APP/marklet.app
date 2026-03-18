@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { withApi } from "@/lib/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -72,13 +73,12 @@ export default function MissingCarsPage() {
     if (!files.length) return;
     setUploading(true);
     try {
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
       const token = localStorage.getItem("scm_token");
       const uploaded: string[] = [];
       for (const file of files) {
         const fd = new FormData();
         fd.append("image", file);
-        const res = await fetch(`${BASE}/api/upload`, {
+        const res = await fetch(withApi("/api/upload"), {
           method: "POST",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: fd,

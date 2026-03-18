@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
+import { withApi } from "@/lib/runtimeConfig";
 import { CarCard } from "@/components/CarCard";
 import { ContactButtons } from "@/components/ContactButtons";
 import { Car, Wrench, Trash2, CalendarDays, Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart, MapPin, Tag } from "lucide-react";
@@ -191,9 +192,8 @@ export default function SearchPage() {
     params.set("type", typeForApi);
     params.set("limit", "120");
 
-    const BASE  = import.meta.env.BASE_URL.replace(/\/$/, "");
     const token = localStorage.getItem("scm_token");
-    fetch(`${BASE}/api/search?${params.toString()}`, {
+    fetch(withApi(`/api/search?${params.toString()}`), {
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     })
       .then(r => r.json())

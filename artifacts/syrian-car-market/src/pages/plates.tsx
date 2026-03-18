@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
+import { withApi } from "@/lib/runtimeConfig";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,13 +32,12 @@ type BuyRequest = {
 const PLATES_QK = ["plates"];
 const BUY_QK = ["buy-requests-plates"];
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 async function uploadImage(file: File): Promise<string> {
   const token = localStorage.getItem("scm_token");
   const fd = new FormData();
   fd.append("image", file);
-  const res = await fetch(`${BASE}/api/upload`, {
+  const res = await fetch(withApi("/api/upload"), {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: fd,

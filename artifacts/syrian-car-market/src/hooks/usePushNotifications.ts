@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/lib/auth";
+import { withApi } from "@/lib/runtimeConfig";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -14,7 +15,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 async function getVapidPublicKey(): Promise<string | null> {
   try {
-    const res = await fetch("/api/push/vapid-public-key");
+    const res = await fetch(withApi("/api/push/vapid-public-key"));
     if (!res.ok) return null;
     const data = await res.json();
     return data.publicKey || null;
@@ -42,7 +43,7 @@ async function subscribeUser(
   const sub = subscription.toJSON();
   if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) return;
 
-  await fetch("/api/push/subscribe", {
+  await fetch(withApi("/api/push/subscribe"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

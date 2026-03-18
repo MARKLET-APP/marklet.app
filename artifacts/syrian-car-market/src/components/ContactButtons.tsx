@@ -3,6 +3,7 @@ import { Phone, MessageCircle, Lock, LogIn, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
 import { useLocation } from "wouter";
+import { withApi } from "@/lib/runtimeConfig";
 
 const WA_MSG = encodeURIComponent(
   "مرحباً، رأيت إعلانك على MARKLET. هل ما زال متوفراً؟"
@@ -68,7 +69,7 @@ export function ContactButtons({
     try {
       setStartingChat(true);
       const token = localStorage.getItem("scm_token");
-      const res = await fetch("/api/chats/start", {
+      const res = await fetch(withApi("/api/chats/start"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -198,7 +199,7 @@ export function ContactButtonsFixed({
     try {
       setStartingChat(true);
       const token = localStorage.getItem("scm_token");
-      const res = await fetch("/api/chats/start", {
+      const res = await fetch(withApi("/api/chats/start"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

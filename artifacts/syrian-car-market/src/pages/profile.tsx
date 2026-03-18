@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useAuthStore } from "@/lib/auth";
+import { API_BASE, withApi } from "@/lib/runtimeConfig";
 import {
   useGetUser,
   useListCars,
@@ -19,8 +20,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const API = `${BASE}/api`;
+const API = `${API_BASE}/api`;
 
 function getAvatarUrl(profilePhoto?: string | null, name?: string, email?: string) {
   if (profilePhoto) return profilePhoto;
@@ -66,8 +66,7 @@ export default function Profile() {
     queryKey: ["my-buy-requests", user?.id],
     queryFn: async () => {
       const token = localStorage.getItem("scm_token");
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const r = await fetch(`${BASE}/api/buy-requests`, {
+      const r = await fetch(withApi("/api/buy-requests"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!r.ok) return [];
@@ -636,8 +635,7 @@ function AccountModeSelector({ currentRole, userId, onRoleChanged }: {
     setSwitching(true);
     try {
       const token = localStorage.getItem("scm_token");
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const res = await fetch(`${BASE}/api/users/${userId}`, {
+      const res = await fetch(withApi(`/api/users/${userId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ role: newRole }),

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { useAuthStore } from "@/lib/auth";
+import { withApi } from "@/lib/runtimeConfig";
 import { 
   useAdminListUsers, useAdminUpdateUser, useAdminDeleteUser,
   useGetSettings, useUpdateSettings
@@ -27,9 +28,8 @@ export default function AdminDashboard() {
     if (!user) return;
     setReplyingTo(itemId);
     try {
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
       const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/chats/start`, {
+      const res = await fetch(withApi("/api/chats/start"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ sellerId: targetUserId, carId: null }),

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { withApi } from "@/lib/runtimeConfig";
 import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
@@ -679,10 +680,9 @@ export default function Home() {
 }
 
 function FeaturedShowrooms() {
-  const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
   const { data: showrooms = [], isLoading } = useQuery<any[]>({
     queryKey: ["/showrooms/featured"],
-    queryFn: () => fetch(`${BASE}/api/showrooms/featured`).then(r => r.json()),
+    queryFn: () => fetch(withApi("/api/showrooms/featured")).then(r => r.json()),
     staleTime: 60_000,
   });
 

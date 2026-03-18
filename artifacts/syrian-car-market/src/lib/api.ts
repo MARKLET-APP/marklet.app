@@ -1,3 +1,5 @@
+import { withApi } from "@/lib/runtimeConfig";
+
 function getToken(): string | null {
   return localStorage.getItem("scm_token");
 }
@@ -5,7 +7,7 @@ function getToken(): string | null {
 export async function apiRequest<T = unknown>(url: string, method = "GET", body?: unknown): Promise<T> {
   const token = getToken();
 
-  const res = await fetch(url, {
+  const res = await fetch(withApi(url), {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -149,7 +151,7 @@ export const api = {
       }>>("/api/feedback"),
   },
 
-  get: (url: string) => fetch(url, {
+  get: (url: string) => fetch(withApi(url), {
     headers: { "Content-Type": "application/json", ...(localStorage.getItem("scm_token") ? { Authorization: `Bearer ${localStorage.getItem("scm_token")}` } : {}) },
   }),
 

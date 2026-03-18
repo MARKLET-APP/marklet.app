@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { withApi } from "@/lib/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,6 @@ type BuyRequest = {
 const RENTAL_QK = ["rental-cars"];
 const REQ_QK = ["buy-requests-rental"];
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function RentalCarsPage() {
   const { user } = useAuthStore();
@@ -119,7 +119,7 @@ export default function RentalCarsPage() {
       for (const file of files) {
         const fd = new FormData();
         fd.append("image", file);
-        const resp = await fetch(`${BASE}/api/upload`, {
+        const resp = await fetch(withApi("/api/upload"), {
           method: "POST",
           headers: { Authorization: `Bearer ${localStorage.getItem("scm_token")}` },
           body: fd,

@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { useCreateCar, useGenerateCarDescription } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { withApi } from "@/lib/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ImagePlus, Loader2, CheckCircle2, X, ShieldCheck, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
@@ -62,8 +63,7 @@ async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("image", file);
   const token = localStorage.getItem("scm_token");
-  const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const res = await fetch(`${BASE}/api/upload`, {
+  const res = await fetch(withApi("/api/upload"), {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
@@ -284,9 +284,8 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     if (!user) { navigate("/login"); return; }
     setActivating(true);
     try {
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
       const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/users/${user.id}`, {
+      const res = await fetch(withApi(`/api/users/${user.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ role: newRole }),

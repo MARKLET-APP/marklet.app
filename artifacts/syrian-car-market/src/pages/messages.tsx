@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
+import { API_BASE, SOCKET_URL } from "@/lib/runtimeConfig";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const API = `${BASE}/api`;
+const API = `${API_BASE}/api`;
 
 interface ConvItem {
   id: number; carId: number; carBrand: string; carModel: string; carYear: number;
@@ -183,7 +183,7 @@ export default function Messages() {
 
   useEffect(() => {
     if (!user || !token) return;
-    const socket = io({ auth: { token }, transports: ["websocket", "polling"] });
+    const socket = io(SOCKET_URL, { auth: { token }, transports: ["websocket", "polling"] });
     socketRef.current = socket;
 
     socket.on("new_message", ({ message }: { convId: number; message: MessageItem }) => {

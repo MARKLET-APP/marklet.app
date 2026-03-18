@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { withApi } from "@/lib/runtimeConfig";
 
 export function useStartChat() {
   const { user } = useAuthStore();
@@ -20,9 +21,8 @@ export function useStartChat() {
     }
     setLoading(true);
     try {
-      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
       const token = localStorage.getItem("scm_token");
-      const res = await fetch(`${BASE}/api/chats/start`, {
+      const res = await fetch(withApi("/api/chats/start"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
