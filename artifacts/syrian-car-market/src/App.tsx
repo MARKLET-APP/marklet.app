@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/lib/i18n";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { Capacitor } from "@capacitor/core";
 
 const Home = lazy(() => import("@/pages/home"));
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -62,7 +63,9 @@ const queryClient = new QueryClient({
 });
 
 function GlobalHooks() {
-  usePushNotifications();
+  if (!Capacitor.isNativePlatform()) {
+    usePushNotifications();
+  }
   return null;
 }
 
