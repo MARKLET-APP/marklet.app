@@ -5,8 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/lib/i18n";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { Capacitor } from "@capacitor/core";
 
 const Home = lazy(() => import("@/pages/home"));
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -57,15 +55,12 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 30_000,
+      staleTime: 30000,
     },
   },
 });
 
 function GlobalHooks() {
-  if (!Capacitor.isNativePlatform()) {
-    usePushNotifications();
-  }
   return null;
 }
 
