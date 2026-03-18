@@ -234,3 +234,135 @@
     animation-name: fade-in, slide-in-from-bottom;
   }
 }
+
+/* =====================================================
+   MARKLET ANDROID APP UI OPTIMIZATION
+   تحسينات واجهة المستخدم داخل تطبيق الأندرويد (WebView)
+===================================================== */
+
+/* 1 — إصلاح عرض الصفحة داخل WebView */
+@media (max-width: 768px) {
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .container,
+  .main-container,
+  .content-wrapper,
+  .page-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    margin: auto;
+  }
+
+  /* 2 — تحسين قسم الواجهة الرئيسية HERO */
+  .hero-section {
+    padding-top: 70px !important;
+    padding-bottom: 40px !important;
+  }
+
+  .hero-section h1 {
+    font-size: 30px !important;
+    line-height: 1.3 !important;
+  }
+
+  .hero-section p {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+  }
+
+  /* 3 — تحسين صندوق البحث */
+  .search-box,
+  .search-container {
+    width: 100% !important;
+    border-radius: 18px !important;
+  }
+
+  .search-box input {
+    font-size: 14px !important;
+  }
+
+  /* 4 — تحسين الأزرار */
+  button,
+  .btn {
+    min-height: 46px !important;
+    font-size: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  /* 5 — شبكة الفئات (4 × 4) */
+  .categories-grid,
+  .categories-container {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .category-card {
+    padding: 16px 6px !important;
+    border-radius: 14px !important;
+  }
+
+  .category-card svg,
+  .category-card img {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .category-card span,
+  .category-card p {
+    font-size: 12px !important;
+  }
+
+  /* 6 — تحسين قسم الإعلانات */
+  .ads-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .ad-card {
+    border-radius: 16px !important;
+  }
+
+  /* 7 — تحسين قسم وسائل التواصل */
+  .social-links {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    justify-content: center !important;
+  }
+
+  .social-links a {
+    min-width: 100px !important;
+    text-align: center;
+    font-size: 13px;
+  }
+
+  /* 8 — تحسين البطاقات السفلية */
+  .feature-card,
+  .info-card {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* 9 — تحسين سرعة التطبيق داخل WebView */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+video {
+  max-width: 100%;
+}
+
+/* 10 — تحسين التفاعل باللمس للهاتف */
+button,
+a {
+  touch-action: manipulation;
+}
