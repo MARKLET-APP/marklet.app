@@ -2,10 +2,8 @@ package com.marklet.sy;
 
 import android.os.Bundle;
 import android.webkit.CookieManager;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -26,32 +24,28 @@ public class MainActivity extends BridgeActivity {
         WebView webView = this.bridge.getWebView();
         if (webView == null) return;
 
-        WebSettings webSettings = webView.getSettings();
+        WebSettings settings = webView.getSettings();
 
-        // تشغيل JavaScript وخصائص التطبيق
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-        webSettings.setDatabaseEnabled(true);
-        webSettings.setAllowFileAccess(true);
-        webSettings.setAllowContentAccess(true);
+        // JavaScript وخصائص الموقع
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
 
-        // عرض الصفحة بشكل صحيح داخل WebView
-        webSettings.setLoadWithOverviewMode(true);
-        webSettings.setUseWideViewPort(true);
+        // عرض صحيح للصفحة داخل WebView
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
 
         // إخفاء أدوات الزوم
-        webSettings.setBuiltInZoomControls(false);
-        webSettings.setDisplayZoomControls(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
 
-        // السماح بالكوكيز لحفظ تسجيل الدخول
+        // السماح بالكوكيز — لحفظ تسجيل الدخول
+        // ملاحظة: لا نُعيد setWebViewClient أو setWebChromeClient
+        // لأن Capacitor يتولى إدارتها داخلياً عبر BridgeActivity
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
-
-        // منع فتح الروابط خارج التطبيق
-        webView.setWebViewClient(new WebViewClient());
-
-        // تشغيل الفيديو والخصائص المتقدمة
-        webView.setWebChromeClient(new WebChromeClient());
     }
 }
