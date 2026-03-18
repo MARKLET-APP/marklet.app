@@ -365,7 +365,7 @@ export default function Home() {
             <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredCars?.slice(0, 3).map((car) => (
+              {(Array.isArray(featuredCars) ? featuredCars : []).slice(0, 3).map((car) => (
                 <CarCard key={car.id} car={car} />
               ))}
             </div>
@@ -392,7 +392,7 @@ export default function Home() {
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {latestCars?.cars.map((car) => (
+            {(Array.isArray(latestCars?.cars) ? latestCars!.cars : []).map((car) => (
               <CarCard key={car.id} car={car} />
             ))}
           </div>
@@ -686,7 +686,8 @@ function FeaturedShowrooms() {
     staleTime: 60_000,
   });
 
-  if (isLoading || showrooms.length === 0) return null;
+  const list = Array.isArray(showrooms) ? showrooms : [];
+  if (isLoading || list.length === 0) return null;
 
   return (
     <section className="py-12 w-full bg-gradient-to-br from-primary/5 to-primary/10" dir="rtl">
@@ -702,7 +703,7 @@ function FeaturedShowrooms() {
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {showrooms.map((showroom: any) => (
+          {list.map((showroom: any) => (
             <Link key={showroom.id} href={`/showroom/${showroom.id}`} className="group">
               <div className="bg-card border rounded-2xl p-4 text-center hover:shadow-md hover:border-primary/30 transition-all">
                 <div className="w-16 h-16 rounded-xl border bg-muted mx-auto mb-3 overflow-hidden flex items-center justify-center">
