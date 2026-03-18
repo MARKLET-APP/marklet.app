@@ -49,12 +49,10 @@ export function CarCard({ car }: { car: Car }) {
 
   return (
     <div
-      className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer"
+      className="group block bg-card rounded-2xl border shadow-sm hover-elevate overflow-hidden cursor-pointer"
       onClick={goToDetail}
-      style={{ transform: "translateZ(0)" }}
     >
-      {/* Image */}
-      <div className="relative aspect-[16/9] bg-gray-100 overflow-hidden">
+      <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {currentImage ? (
           <img
             src={currentImage}
@@ -62,93 +60,98 @@ export function CarCard({ car }: { car: Car }) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <img
-            src="https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80"
-            alt="Placeholder"
-            className="w-full h-full object-cover opacity-40 grayscale"
-          />
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
+            <img
+              src="https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80"
+              alt="Placeholder"
+              className="w-full h-full object-cover opacity-50 grayscale"
+            />
+          </div>
         )}
 
-        {/* Slider arrows */}
+        {/* Image slider arrows */}
         {hasMultiple && (
           <>
-            <button onClick={goPrev}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center z-10 backdrop-blur-sm"
-              aria-label="السابق">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <button
+              onClick={goPrev}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center z-10 backdrop-blur-sm sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity"
+              aria-label="الصورة السابقة"
+            >
+              <ChevronRight className="w-4 h-4" />
             </button>
-            <button onClick={goNext}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center z-10 backdrop-blur-sm"
-              aria-label="التالي">
-              <ChevronLeft className="w-3.5 h-3.5" />
+            <button
+              onClick={goNext}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center z-10 backdrop-blur-sm sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity"
+              aria-label="الصورة التالية"
+            >
+              <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+
+            {/* Dots indicator */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-1 z-10">
               {images.map((_, i) => (
-                <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === imgIndex ? "bg-white" : "bg-white/40"}`} />
+                <span
+                  key={i}
+                  className={`block w-1.5 h-1.5 rounded-full transition-colors ${i === imgIndex ? "bg-white" : "bg-white/40"}`}
+                />
               ))}
             </div>
           </>
         )}
 
-        {/* Badges top-right */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1">
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
           {tag && (
-            <Badge className="bg-orange-500 text-white border-none text-[10px] font-bold px-2 py-0.5 shadow-sm">
+            <Badge className="bg-orange-500 text-white border-none font-bold px-3 py-1 shadow-md">
               {tag === "Hot" ? "🔥 رائج" : "⭐ شائع"}
             </Badge>
           )}
           {car.isFeatured && (
-            <Badge className="bg-amber-500 text-white border-none text-[10px] font-bold px-2 py-0.5 shadow-sm">
+            <Badge className="bg-accent text-accent-foreground border-none font-bold px-3 py-1 shadow-md shadow-accent/20">
               مميز
             </Badge>
           )}
           {car.saleType === "installment" && (
-            <Badge className="bg-primary text-white border-none text-[10px] font-bold px-2 py-0.5 shadow-sm">
+            <Badge className="bg-primary text-primary-foreground border-none font-bold px-3 py-1 shadow-md shadow-primary/20">
               أقساط
             </Badge>
           )}
         </div>
 
-        {/* Price overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 to-transparent px-3 py-3 pt-8">
-          <p className="text-white font-extrabold text-base drop-shadow">{formatUSD(car.price)}</p>
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
+          <p className="text-white font-bold text-xl drop-shadow-md">{formatUSD(car.price)}</p>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-3 space-y-2.5">
-        {/* Title + Location */}
+      <div className="p-4 space-y-4">
         <div>
-          <h3 className="font-bold text-sm text-gray-800 line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors">
             {car.brand} {car.model}
           </h3>
-          <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-            <MapPin className="w-3 h-3" />
+          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+            <MapPin className="w-3.5 h-3.5" />
             {car.province}، {car.city}
           </p>
         </div>
 
-        {/* Specs row */}
-        <div className="flex items-center gap-2.5 text-[11px] text-gray-500 font-medium bg-gray-50 rounded-xl px-2.5 py-2">
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3 text-primary" />{car.year}
-          </span>
-          <span className="text-gray-200">|</span>
-          <span className="flex items-center gap-1">
-            <Gauge className="w-3 h-3 text-primary" />
-            {car.mileage ? Number(car.mileage).toLocaleString("en-US") + " km" : "—"}
-          </span>
-          <span className="text-gray-200">|</span>
-          <span className="flex items-center gap-1">
-            <Settings className="w-3 h-3 text-primary" />
-            {car.transmission === "automatic" ? "أوتو" : "يدوي"}
-          </span>
-          <span className="ms-auto flex items-center gap-0.5 text-gray-400">
-            <Eye className="w-3 h-3" />{views}
-          </span>
+        <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs font-medium text-foreground bg-secondary/50 p-3 rounded-xl">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-primary" />
+            <span>{car.year}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Gauge className="w-4 h-4 text-primary" />
+            <span>{car.mileage ? Number(car.mileage).toLocaleString("en-US") + " كم" : "غير محدد"}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Settings className="w-4 h-4 text-primary" />
+            <span>{car.transmission === "automatic" ? "أوتوماتيك" : "يدوي"}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Eye className="w-4 h-4 text-primary" />
+            <span>مشاهدات اليوم: {views}</span>
+          </div>
         </div>
 
-        {/* Share */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -160,13 +163,12 @@ export function CarCard({ car }: { car: Car }) {
               description: (car as any).description ?? null,
             });
           }}
-          className="w-full flex items-center justify-center gap-1.5 text-[11px] text-gray-400 hover:text-primary transition-colors py-1.5 border border-dashed border-gray-200 rounded-xl hover:border-primary/40 hover:bg-primary/5"
+          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors py-2 border border-dashed border-muted-foreground/30 rounded-xl hover:border-primary/40 hover:bg-primary/5"
         >
-          <Share2 className="w-3 h-3" />
-          مشاركة
+          <Share2 className="w-4 h-4" />
+          مشاركة الإعلان
         </button>
 
-        {/* Contact */}
         <div onClick={e => e.stopPropagation()}>
           <ContactButtons
             phone={null}
