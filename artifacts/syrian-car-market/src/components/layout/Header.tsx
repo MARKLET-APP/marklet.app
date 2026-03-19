@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight, Globe, Bookmark } from "lucide-react";
+import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight, Globe, Bookmark, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -120,7 +120,19 @@ export function Header() {
 
             {user ? (
               <>
-                {!isPremium && (
+                {user.role === "admin" && (
+                  <Link href="/admin">
+                    <Button
+                      size="sm"
+                      className="flex gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-full text-xs font-bold px-3 h-8 shadow-sm"
+                      title="لوحة التحكم"
+                    >
+                      <Settings2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">التحكم</span>
+                    </Button>
+                  </Link>
+                )}
+                {!isPremium && user.role !== "admin" && (
                   <Button
                     onClick={handleSubscribeClick}
                     size="sm"
