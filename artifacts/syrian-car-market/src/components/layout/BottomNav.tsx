@@ -1,5 +1,5 @@
 import { Link, useRoute } from "wouter";
-import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag } from "lucide-react";
+import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useGetConversations } from "@workspace/api-client-react";
 
@@ -13,6 +13,7 @@ export function BottomNav() {
   const [isMessages] = useRoute("/messages");
   const [isChat] = useRoute("/chat");
   const [isBuyRequests] = useRoute("/buy-requests");
+  const [isAdmin] = useRoute("/admin");
 
   const { data: conversations } = useGetConversations({
     query: {
@@ -24,6 +25,7 @@ export function BottomNav() {
 
   const totalUnread = conversations?.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0) ?? 0;
   const isChatActive = isMessages || isChat;
+  const isAdminUser = user?.role === "admin";
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t pb-safe sm:hidden">
@@ -41,7 +43,18 @@ export function BottomNav() {
           <span className="text-[10px] font-medium text-primary">نشر</span>
         </Link>
 
-        <NavItem href="/favorites" icon={<Bookmark className="w-5 h-5" />} label="المحفوظات" isActive={isFavorites} />
+        {/* Admin gets لوحة التحكم instead of المحفوظات */}
+        {isAdminUser ? (
+          <NavItem
+            href="/admin"
+            icon={<Settings className="w-5 h-5" />}
+            label="التحكم"
+            isActive={isAdmin}
+            accent
+          />
+        ) : (
+          <NavItem href="/favorites" icon={<Bookmark className="w-5 h-5" />} label="المحفوظات" isActive={isFavorites} />
+        )}
 
         {user ? (
           <NavItem
@@ -69,9 +82,14 @@ export function BottomNav() {
   );
 }
 
-function NavItem({ href, icon, label, isActive }: { href: string; icon: React.ReactNode; label: string; isActive: boolean | null }) {
+function NavItem({
+  href, icon, label, isActive, accent
+}: {
+  href: string; icon: React.ReactNode; label: string; isActive: boolean | null; accent?: boolean
+}) {
+  const activeColor = accent ? "text-amber-500" : "text-primary";
   return (
-    <Link href={href} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+    <Link href={href} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${isActive ? activeColor : "text-muted-foreground hover:text-foreground"}`}>
       {icon}
       <span className="text-[10px] font-medium">{label}</span>
     </Link>

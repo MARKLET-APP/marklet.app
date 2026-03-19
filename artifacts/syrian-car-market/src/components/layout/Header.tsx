@@ -49,8 +49,8 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full glass-panel border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 w-full glass-panel border-b" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
 
           <div className="flex items-center gap-2">
             {!isHome && (
