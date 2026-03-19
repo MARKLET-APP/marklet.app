@@ -118,12 +118,11 @@ export default function AddListing() {
   }, [fields, listingType, saveDraft]);
 
   const handleField = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFields(f => {
-      const updated = { ...f, [e.target.name]: e.target.value };
-      saveDraft(updated, listingType);
-      return updated;
-    });
-    if (e.target.name === "price") setPriceEval(null);
+    // Capture values immediately – e.target may change before the async setState callback runs on Android WebView
+    const name = e.target.name;
+    const value = e.target.value;
+    setFields(f => ({ ...f, [name]: value }));
+    if (name === "price") setPriceEval(null);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -420,7 +419,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8" autoComplete="off" data-form-type="other">
 
         {/* ── Step 0: Listing Type ── */}
         <div className="bg-card p-6 rounded-3xl border shadow-sm">
@@ -518,19 +517,19 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">الشركة (Brand)</label>
-                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا" required />
+                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">الموديل (Model)</label>
-                <input name="model" value={fields.model} onChange={handleField} className={inputCls} placeholder="مثال: كورولا" required />
+                <input name="model" value={fields.model} onChange={handleField} className={inputCls} placeholder="مثال: كورولا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">سنة الصنع</label>
-                <input type="number" name="year" value={fields.year} onChange={handleField} className={inputCls} min="1950" max="2025" required />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="year" value={fields.year} onChange={handleField} className={inputCls} placeholder="مثال: 2015" required autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">عدد الكيلومترات</label>
-                <input type="number" name="mileage" value={fields.mileage} onChange={handleField} className={inputCls} min="0" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="mileage" value={fields.mileage} onChange={handleField} className={inputCls} placeholder="0" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">ناقل الحركة</label>
@@ -556,15 +555,15 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">الشركة</label>
-                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: هوندا" required />
+                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: هوندا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">سعة المحرك (CC)</label>
-                <input type="number" name="engineCC" value={fields.engineCC} onChange={handleField} className={inputCls} placeholder="مثال: 125" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="engineCC" value={fields.engineCC} onChange={handleField} className={inputCls} placeholder="مثال: 125" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">سنة الصنع</label>
-                <input type="number" name="year" value={fields.year} onChange={handleField} className={inputCls} min="1950" max="2025" required />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="year" value={fields.year} onChange={handleField} className={inputCls} placeholder="مثال: 2015" required autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع الدراجة</label>
@@ -584,19 +583,19 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع السيارة</label>
-                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا كامري" required />
+                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا كامري" required autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">الموديل</label>
-                <input name="model" value={fields.model} onChange={handleField} className={inputCls} placeholder="مثال: 2022" />
+                <input name="model" value={fields.model} onChange={handleField} className={inputCls} placeholder="مثال: 2022" autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">السعر اليومي (USD)</label>
-                <input type="number" name="dailyPrice" value={fields.dailyPrice} onChange={handleField} className={inputCls} placeholder="مثال: 30" min="1" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="dailyPrice" value={fields.dailyPrice} onChange={handleField} className={inputCls} placeholder="مثال: 30" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">السعر الأسبوعي (USD)</label>
-                <input type="number" name="weeklyPrice" value={fields.weeklyPrice} onChange={handleField} className={inputCls} placeholder="مثال: 180" min="1" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="weeklyPrice" value={fields.weeklyPrice} onChange={handleField} className={inputCls} placeholder="مثال: 180" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">المدينة</label>
@@ -619,19 +618,19 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع القطعة</label>
-                <input name="partType" value={fields.partType} onChange={handleField} className={inputCls} placeholder="مثال: محرك، ناقل حركة، صدام..." required />
+                <input name="partType" value={fields.partType} onChange={handleField} className={inputCls} placeholder="مثال: محرك، ناقل حركة، صدام..." required autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع السيارة</label>
-                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا" />
+                <input name="brand" value={fields.brand} onChange={handleField} className={inputCls} placeholder="مثال: تويوتا" autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">موديل السيارة</label>
-                <input name="partCarModel" value={fields.partCarModel} onChange={handleField} className={inputCls} placeholder="مثال: كامري" />
+                <input name="partCarModel" value={fields.partCarModel} onChange={handleField} className={inputCls} placeholder="مثال: كامري" autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">سنة السيارة</label>
-                <input type="number" name="partCarYear" value={fields.partCarYear} onChange={handleField} className={inputCls} placeholder="مثال: 2015" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="partCarYear" value={fields.partCarYear} onChange={handleField} className={inputCls} placeholder="مثال: 2015" autoComplete="off" />
               </div>
             </div>
           )}
@@ -705,13 +704,15 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                     {listingType === "car_rent" ? "السعر اليومي (USD $)" : "السعر المطلوب (USD $)"}
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     name="price"
                     value={fields.price}
                     onChange={handleField}
                     placeholder="مثال: 8500"
-                    min="1"
                     required
+                    autoComplete="off"
                     className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none font-bold text-lg placeholder:text-gray-400"
                   />
                 </div>
