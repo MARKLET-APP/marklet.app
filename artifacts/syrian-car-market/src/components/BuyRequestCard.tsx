@@ -76,7 +76,7 @@ export function BuyRequestCard({
   const colors = colorMap[accentColor] ?? colorMap.emerald;
 
   return (
-    <div className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow space-y-3">
+    <div className="tap-card bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <ShoppingCart className="w-4 h-4 text-muted-foreground shrink-0" />

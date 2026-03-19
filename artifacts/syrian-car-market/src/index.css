@@ -368,6 +368,34 @@ a {
 }
 
 /* =====================================================
+   PRESS FEEDBACK — تأثير الضغط scale(0.97)
+   يطبق على الأزرار والبطاقات والإعلانات
+===================================================== */
+
+/* Base transition on interactive elements */
+button,
+[role="button"],
+.hover-elevate,
+.tap-card {
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease;
+}
+
+/* Press state */
+button:active,
+[role="button"]:active,
+.hover-elevate:active,
+.tap-card:active {
+  transform: scale(0.97) !important;
+}
+
+/* Override Tailwind active:scale-95 where present — unify to 0.97 */
+.active\:scale-95:active {
+  transform: scale(0.97) !important;
+}
+
+/* =====================================================
    HERO — حجم العنوان والعنوان الفرعي
    موبايل أصغر / ديسكتوب يبقى كما هو
 ===================================================== */

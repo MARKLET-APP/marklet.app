@@ -74,7 +74,7 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
 
   return (
     <div
-      className={`bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${onCardClick ? "cursor-pointer" : ""}`}
+      className={`tap-card bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${onCardClick ? "cursor-pointer" : ""}`}
       onClick={onCardClick}
     >
       {/* Image */}

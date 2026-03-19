@@ -353,7 +353,7 @@ export default function Home() {
               >
                 <Link
                   href={cat.href}
-                  className="flex flex-col items-center justify-center p-2 sm:p-5 bg-card border rounded-xl sm:rounded-2xl active:scale-95 transition-transform select-none touch-manipulation group"
+                  className="tap-card flex flex-col items-center justify-center p-2 sm:p-5 bg-card border rounded-xl sm:rounded-2xl select-none touch-manipulation group"
                   style={{ WebkitTapHighlightColor: "transparent" }}
                 >
                   <span className={`mb-1 sm:mb-3 w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center ${meta.bg} ${meta.color} group-hover:scale-110 transition-transform`}>
@@ -440,7 +440,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
               {(buyRequests as any[]).slice(0, 6).map((r: any) => (
-                <div key={r.id} className="bg-card border rounded-2xl p-3 sm:p-5 shadow-sm hover:shadow-md transition-shadow space-y-2 sm:space-y-3">
+                <div key={r.id} className="tap-card bg-card border rounded-2xl p-3 sm:p-5 shadow-sm hover:shadow-md transition-shadow space-y-2 sm:space-y-3">
                   <div className="flex items-start justify-between gap-1">
                     <div className="min-w-0">
                       <h3 className="font-bold text-foreground text-sm sm:text-lg leading-tight truncate">{r.brand || t("home.buyReqs.anyBrand")} {r.model || ""}</h3>
