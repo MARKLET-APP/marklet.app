@@ -187,13 +187,13 @@ export default function Home() {
             {t("home.hero.subtitle")}
           </motion.p>
 
-          {/* Description — hidden on mobile */}
+          {/* Description — small on mobile, larger on desktop */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            style={{ fontSize: "18px", opacity: 0.9, color: "#fff" }}
-            className="max-w-xl mx-auto whitespace-pre-line hidden sm:block"
+            className="max-w-xl mx-auto whitespace-pre-line text-xs sm:text-lg"
+            style={{ opacity: 0.85, color: "#fff" }}
           >
             {t("home.hero.description")}
           </motion.p>
@@ -209,38 +209,42 @@ export default function Home() {
               if (heroProvince) params.set("province", heroProvince);
               navigate(`/search${params.toString() ? `?${params.toString()}` : ""}`);
             }}
-            className="bg-white p-2 rounded-2xl shadow-2xl max-w-2xl mx-auto flex flex-col sm:flex-row items-stretch gap-2"
+            className="bg-white p-1.5 sm:p-2 rounded-2xl shadow-2xl max-w-2xl mx-auto flex flex-col gap-1.5 sm:gap-2 sm:flex-row sm:items-stretch"
           >
-            <div className="flex-1 flex items-center bg-muted/50 rounded-xl px-4 py-3 min-w-0">
-              <Search className="w-5 h-5 text-muted-foreground shrink-0 ms-2" />
-              <input
-                type="text"
-                value={heroSearch}
-                onChange={(e) => setHeroSearch(e.target.value)}
-                placeholder={isRTL ? "ابحث عن ماركة، موديل..." : "Brand, model..."}
-                className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground text-sm"
-              />
+            {/* Row 1 on mobile: search + province side by side | on sm+: inline with button */}
+            <div className="flex items-stretch gap-1.5 sm:contents">
+              <div className="flex-1 flex items-center bg-muted/50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 min-w-0">
+                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground shrink-0 ms-1 sm:ms-2" />
+                <input
+                  type="text"
+                  value={heroSearch}
+                  onChange={(e) => setHeroSearch(e.target.value)}
+                  placeholder={isRTL ? "ابحث عن ماركة، موديل..." : "Brand, model..."}
+                  className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground text-xs sm:text-sm"
+                />
+              </div>
+              <div className="hidden sm:block w-px bg-border/60 self-stretch my-1" />
+              <div className="flex items-center gap-1 sm:gap-2 bg-muted/50 rounded-xl px-2 sm:px-4 py-2 sm:py-3 w-28 sm:w-44">
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                <select
+                  value={heroProvince}
+                  onChange={(e) => setHeroProvince(e.target.value)}
+                  className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground text-xs sm:text-sm cursor-pointer"
+                >
+                  <option value="">{isRTL ? "كل المحافظات" : "All Regions"}</option>
+                  <option value="Damascus">{isRTL ? "دمشق" : "Damascus"}</option>
+                  <option value="Aleppo">{isRTL ? "حلب" : "Aleppo"}</option>
+                  <option value="Homs">{isRTL ? "حمص" : "Homs"}</option>
+                  <option value="Lattakia">{isRTL ? "اللاذقية" : "Lattakia"}</option>
+                  <option value="Hama">{isRTL ? "حماة" : "Hama"}</option>
+                  <option value="Deir ez-Zor">{isRTL ? "دير الزور" : "Deir ez-Zor"}</option>
+                  <option value="Tartus">{isRTL ? "طرطوس" : "Tartus"}</option>
+                  <option value="Idlib">{isRTL ? "إدلب" : "Idlib"}</option>
+                </select>
+              </div>
             </div>
-            <div className="hidden sm:block w-px bg-border/60 self-stretch my-1" />
-            <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-4 py-3 sm:w-44">
-              <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-              <select
-                value={heroProvince}
-                onChange={(e) => setHeroProvince(e.target.value)}
-                className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground text-sm cursor-pointer"
-              >
-                <option value="">{isRTL ? "كل المحافظات" : "All Regions"}</option>
-                <option value="Damascus">{isRTL ? "دمشق" : "Damascus"}</option>
-                <option value="Aleppo">{isRTL ? "حلب" : "Aleppo"}</option>
-                <option value="Homs">{isRTL ? "حمص" : "Homs"}</option>
-                <option value="Lattakia">{isRTL ? "اللاذقية" : "Lattakia"}</option>
-                <option value="Hama">{isRTL ? "حماة" : "Hama"}</option>
-                <option value="Deir ez-Zor">{isRTL ? "دير الزور" : "Deir ez-Zor"}</option>
-                <option value="Tartus">{isRTL ? "طرطوس" : "Tartus"}</option>
-                <option value="Idlib">{isRTL ? "إدلب" : "Idlib"}</option>
-              </select>
-            </div>
-            <Button type="submit" size="lg" className="rounded-xl px-6 font-bold text-base bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-all whitespace-nowrap">
+            {/* Row 2 on mobile: full-width button */}
+            <Button type="submit" className="w-full sm:w-auto rounded-xl px-4 sm:px-6 font-bold text-sm sm:text-base bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:-translate-y-0.5 transition-all whitespace-nowrap py-2.5 sm:py-3">
               {t("home.hero.searchBtn")}
             </Button>
           </motion.form>
@@ -383,7 +387,7 @@ export default function Home() {
           {loadingFeatured ? (
             <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {(Array.isArray(featuredCars) ? featuredCars : []).slice(0, 3).map((car) => (
                 <CarCard key={car.id} car={car} />
               ))}
@@ -410,7 +414,7 @@ export default function Home() {
         {loadingLatest ? (
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
             {(Array.isArray(latestCars?.cars) ? latestCars!.cars : []).map((car) => (
               <CarCard key={car.id} car={car} />
             ))}
@@ -434,18 +438,19 @@ export default function Home() {
                 {t("home.buyReqs.viewAll")} <ChevronLeft className="w-4 h-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
               {(buyRequests as any[]).slice(0, 6).map((r: any) => (
-                <div key={r.id} className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-foreground text-lg">{r.brand || t("home.buyReqs.anyBrand")} {r.model || ""}</h3>
+                <div key={r.id} className="bg-card border rounded-2xl p-3 sm:p-5 shadow-sm hover:shadow-md transition-shadow space-y-2 sm:space-y-3">
+                  <div className="flex items-start justify-between gap-1">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-foreground text-sm sm:text-lg leading-tight truncate">{r.brand || t("home.buyReqs.anyBrand")} {r.model || ""}</h3>
                       {(r.minYear || r.maxYear) && (
                         <p className="text-xs text-muted-foreground">{r.minYear ?? "—"} – {r.maxYear ?? "—"}</p>
                       )}
                     </div>
-                    <Badge className="bg-primary/10 text-primary border-0">
-                      <ShoppingCart className="w-3 h-3 ml-1" /> {t("nav.buyRequests")}
+                    <Badge className="bg-primary/10 text-primary border-0 shrink-0 text-xs px-1.5 py-0.5">
+                      <ShoppingCart className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-1" />
+                      <span className="hidden sm:inline">{t("nav.buyRequests")}</span>
                     </Badge>
                   </div>
 
