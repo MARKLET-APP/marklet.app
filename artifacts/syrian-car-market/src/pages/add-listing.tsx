@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { useCreateCar, useGenerateCarDescription } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -73,6 +73,24 @@ async function uploadImage(file: File): Promise<string> {
   return (data.image ?? data.url)!;
 }
 
+const DRAFT_KEY = "marklet_listing_draft";
+
+const DEFAULT_FIELDS = {
+  brand: "", model: "", year: "2015", price: "", mileage: "0",
+  fuelType: "petrol", transmission: "automatic", province: "Damascus",
+  city: "", saleType: "cash", condition: "used", category: "sedan", description: "",
+  engineCC: "", bikeType: "", dailyPrice: "", weeklyPrice: "",
+  rentalDuration: "", partType: "", partCarModel: "", partCarYear: "",
+};
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as { fields: typeof DEFAULT_FIELDS; listingType: ListingType };
+  } catch { return null; }
+}
+
 export default function AddListing() {
   const [, navigate] = useLocation();
   const { user } = useAuthStore();
@@ -81,19 +99,30 @@ export default function AddListing() {
   const [isUploading, setIsUploading] = useState(false);
   const [priceEval, setPriceEval] = useState<PriceEval>(null);
   const [estimating, setEstimating] = useState(false);
-  const [listingType, setListingType] = useState<ListingType>("car_sale");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [fields, setFields] = useState({
-    brand: "", model: "", year: "2015", price: "", mileage: "0",
-    fuelType: "petrol", transmission: "automatic", province: "Damascus",
-    city: "", saleType: "cash", condition: "used", category: "sedan", description: "",
-    engineCC: "", bikeType: "", dailyPrice: "", weeklyPrice: "",
-    rentalDuration: "", partType: "", partCarModel: "", partCarYear: "",
-  });
+  // Load draft on mount
+  const draft = loadDraft();
+  const [listingType, setListingType] = useState<ListingType>(draft?.listingType ?? "car_sale");
+  const [fields, setFields] = useState(draft?.fields ?? { ...DEFAULT_FIELDS });
+
+  // Auto-save draft to localStorage on every change
+  const saveDraft = useCallback((f: typeof DEFAULT_FIELDS, lt: ListingType) => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ fields: f, listingType: lt }));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    saveDraft(fields, listingType);
+  }, [fields, listingType, saveDraft]);
 
   const handleField = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFields(f => ({ ...f, [e.target.name]: e.target.value }));
+    setFields(f => {
+      const updated = { ...f, [e.target.name]: e.target.value };
+      saveDraft(updated, listingType);
+      return updated;
+    });
     if (e.target.name === "price") setPriceEval(null);
   };
 
@@ -271,6 +300,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
 
     createMutation.mutate({ data } as any, {
       onSuccess: (res) => {
+        localStorage.removeItem(DRAFT_KEY);
         toast({ title: "تم إرسال الإعلان للمراجعة", description: "سيظهر بعد موافقة الإدارة" });
         navigate(`/cars/${(res as any).id}`);
       },
@@ -314,7 +344,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     );
   }
 
-  if (user?.role !== 'seller' && user?.role !== 'dealer') {
+  if (user?.role !== 'seller' && user?.role !== 'dealer' && user?.role !== 'admin') {
     return (
       <div className="py-20 text-center px-4">
         <div className="max-w-md mx-auto bg-card p-8 rounded-3xl border shadow-lg space-y-6">
@@ -364,11 +394,30 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
   const inputCls = "w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none";
   const selectCls = `${inputCls}`;
 
+  const hasDraft = !!draft && (Object.values(draft.fields).some(v => v && v !== DEFAULT_FIELDS[v as keyof typeof DEFAULT_FIELDS]) || draft.listingType !== "car_sale");
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setFields({ ...DEFAULT_FIELDS });
+    setListingType("car_sale");
+    setImages([]);
+    setPriceEval(null);
+  };
+
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-foreground">نشر إعلان بيع</h1>
-        <p className="text-muted-foreground mt-2">اختر نوع الإعلان وأدخل التفاصيل لزيادة فرص البيع</p>
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-extrabold text-foreground">نشر إعلان بيع</h1>
+          <p className="text-muted-foreground mt-1 text-sm">اختر نوع الإعلان وأدخل التفاصيل لزيادة فرص البيع</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl px-3 py-2">
+          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+          <span>مسودة محفوظة تلقائياً</span>
+          {hasDraft && (
+            <button type="button" onClick={clearDraft} className="underline text-destructive hover:no-underline mr-1">مسح</button>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">

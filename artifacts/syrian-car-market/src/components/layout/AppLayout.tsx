@@ -12,7 +12,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
     if (!token) return;
     api.auth.me()
       .then((user) => { if (user) setAuth(user, token); })
-      .catch(() => { useAuthStore.getState().logout(); });
+      .catch((err: any) => {
+        // Only logout on definitive 401 (invalid/expired token)
+        // Do NOT logout on network errors or 429 — would wipe form data
+        if (err?.response?.status === 401 || err?.status === 401) {
+          useAuthStore.getState().logout();
+        }
+      });
   }, [token, setAuth]);
 
   return (
