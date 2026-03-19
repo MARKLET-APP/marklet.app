@@ -1,0 +1,61 @@
+/* =====================================================
+   MOBILE.CSS — تعديلات الموبايل فقط (max-width: 768px)
+   لا تؤثر على نسخة الكمبيوتر
+===================================================== */
+
+@media (max-width: 768px) {
+
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* حاوية الصفحات الرئيسية */
+  .main-container,
+  .container,
+  .page-container {
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin: auto;
+  }
+
+  /* قسم الهيرو */
+  .hero-section {
+    padding-top: 20px;
+    padding-bottom: 10px;
+  }
+
+  /* صورة الهيرو */
+  .hero-image {
+    max-height: 200px;
+    object-fit: cover;
+  }
+
+  /* شريط المميزات (موثوقية – ذكاء – سرعة) */
+  .features-bar {
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+  }
+
+  /* شبكة الإعلانات 2×2 */
+  .ads-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  /* تأثير الضغط — buttons وبطاقات الإعلانات */
+  button:active,
+  .card:active,
+  .ad-card:active,
+  .tap-card:active,
+  .hover-elevate:active {
+    transform: scale(0.97);
+    transition: transform 0.12s ease;
+  }
+
+}

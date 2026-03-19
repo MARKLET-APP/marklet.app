@@ -55,8 +55,14 @@ XMLEOF
 echo "✔ Network security config written"
 echo ""
 
-# ─── 4. Sync assets to Android ───────────────────────────────
-echo "▶ [4/4] Syncing web assets to Android..."
+# ─── 4. Remove APK files from dist (prevent APK-in-APK bloat) ────
+echo "▶ [4/5] Removing APK files from dist to avoid bloat..."
+rm -f dist/public/*.apk
+echo "✔ Cleaned dist/public"
+echo ""
+
+# ─── 5. Sync assets to Android ───────────────────────────────
+echo "▶ [5/5] Syncing web assets to Android..."
 npx cap sync android
 echo "✔ Sync complete"
 echo ""

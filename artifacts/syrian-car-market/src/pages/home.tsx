@@ -100,7 +100,7 @@ export default function Home() {
     <div className="flex flex-col w-full overflow-hidden">
       {/* Hero Section */}
       <section
-        className="relative w-full flex items-center justify-center overflow-hidden text-white text-center py-5 sm:py-16 md:py-28"
+        className="hero-section relative w-full flex items-center justify-center overflow-hidden text-white text-center py-5 sm:py-16 md:py-28"
         style={{
           background: "linear-gradient(135deg, #062f2f 0%, #0f5132 40%, #1c3d2b 100%)",
           paddingLeft: "20px",
@@ -276,7 +276,7 @@ export default function Home() {
 
       {/* Trust Badges */}
       <section className="py-3 sm:py-8 bg-secondary/20 border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 flex flex-nowrap sm:flex-wrap justify-around sm:justify-center gap-2 sm:gap-16">
+        <div className="features-bar max-w-7xl mx-auto px-4 flex flex-nowrap sm:flex-wrap justify-around sm:justify-center gap-2 sm:gap-16">
 
           {/* موثوقية — mobile: icon+text inline compact | desktop: full card */}
           <div className="flex items-center gap-1.5 sm:gap-3">
@@ -387,7 +387,7 @@ export default function Home() {
           {loadingFeatured ? (
             <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+            <div className="ads-grid grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {(Array.isArray(featuredCars) ? featuredCars : []).slice(0, 3).map((car) => (
                 <CarCard key={car.id} car={car} />
               ))}
@@ -414,7 +414,7 @@ export default function Home() {
         {loadingLatest ? (
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+          <div className="ads-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
             {(Array.isArray(latestCars?.cars) ? latestCars!.cars : []).map((car) => (
               <CarCard key={car.id} car={car} />
             ))}
