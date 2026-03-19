@@ -10,12 +10,20 @@ const app: Express = express();
 app.set("trust proxy", 1);
 app.use(helmet());
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
-  message: "Too many requests from this IP",
+// Light limiter for write operations only (POST/PUT/DELETE) — keyed by Authorization header
+// to avoid penalizing all users when behind Replit's shared proxy IP.
+const writeLimiter = rateLimit({
+  windowMs: 60 * 1000,        // 1 minute
+  max: 60,                    // 60 writes per minute per token
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS",
+  keyGenerator: (req) => {
+    const auth = req.headers["authorization"];
+    if (auth) return auth.slice(-32);       // last 32 chars of JWT (unique per user)
+    return req.ip ?? "anonymous";
+  },
+  message: { error: "Too many requests, please slow down." },
 });
 
 app.use(cors({ origin: true, credentials: true }));
@@ -24,7 +32,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/api/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/uploads/chat", express.static(path.join(process.cwd(), "uploads", "chat")));
-app.use("/api", limiter, router);
+app.use("/api", writeLimiter, router);
 
 app.get("/app-link", (req, res) => {
   const replSlug = process.env.REPL_SLUG;
