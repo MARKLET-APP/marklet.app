@@ -38,6 +38,16 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 // Setup initial hydration
 if (typeof window !== "undefined") {
+  // Dev-only: inject token from ?debug_token= URL param before store init
+  if (import.meta.env.DEV) {
+    const dt = new URLSearchParams(window.location.search).get("debug_token");
+    if (dt) {
+      localStorage.setItem("scm_token", dt);
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete("debug_token");
+      window.history.replaceState({}, "", clean.toString());
+    }
+  }
   const token = localStorage.getItem("scm_token");
   if (token) {
     // Optimistic hydration, rely on App layout to validate via /auth/me
