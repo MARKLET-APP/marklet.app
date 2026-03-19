@@ -1,5 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, useRoute } from "wouter";
+import { setGlobalNavigate } from "@/lib/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -61,6 +62,10 @@ const queryClient = new QueryClient({
 });
 
 function GlobalHooks() {
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    setGlobalNavigate(navigate);
+  }, [navigate]);
   return null;
 }
 

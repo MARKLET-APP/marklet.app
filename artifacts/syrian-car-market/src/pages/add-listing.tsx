@@ -106,6 +106,14 @@ export default function AddListing() {
   const [listingType, setListingType] = useState<ListingType>(draft?.listingType ?? "car_sale");
   const [fields, setFields] = useState(draft?.fields ?? { ...DEFAULT_FIELDS });
 
+  // ── Stable ref mirror ────────────────────────────────────────────────────
+  // WebView may re-render the component due to keyboard open/close events.
+  // fieldsRef always holds the latest fields so nothing is lost on re-render.
+  const fieldsRef = useRef(fields);
+  const listingTypeRef = useRef(listingType);
+  useEffect(() => { fieldsRef.current = fields; }, [fields]);
+  useEffect(() => { listingTypeRef.current = listingType; }, [listingType]);
+
   // Auto-save draft to localStorage on every change
   const saveDraft = useCallback((f: typeof DEFAULT_FIELDS, lt: ListingType) => {
     try {
@@ -118,7 +126,8 @@ export default function AddListing() {
   }, [fields, listingType, saveDraft]);
 
   const handleField = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    // Capture values immediately – e.target may change before the async setState callback runs on Android WebView
+    // Capture values immediately — e.target may be nulled by React's event
+    // pooling before the async setState callback runs on Android WebView.
     const name = e.target.name;
     const value = e.target.value;
     setFields(f => ({ ...f, [name]: value }));

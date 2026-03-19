@@ -58,7 +58,13 @@ export function Header() {
                 variant="ghost"
                 size="icon"
                 className="rounded-xl shrink-0"
-                onClick={() => window.history.back()}
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    window.history.back();
+                  } else {
+                    navigate("/");
+                  }
+                }}
                 title={t("nav.back")}
                 aria-label={t("nav.back")}
               >

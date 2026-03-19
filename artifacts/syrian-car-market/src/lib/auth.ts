@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { type User } from "@workspace/api-client-react";
+import { globalNavigate } from "./navigation";
 
 interface AuthState {
   user: User | null;
@@ -32,7 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("scm_token");
     set({ user: null, token: null, isHydrated: true });
-    window.location.href = "/login";
+    globalNavigate("/login");
   },
 }));
 

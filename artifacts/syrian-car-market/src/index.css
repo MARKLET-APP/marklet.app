@@ -492,3 +492,4 @@ button.bg-primary:active,
 button[class*="bg-primary"]:active {
   animation: tap-ripple 0.4s ease-out !important;
 }
+
