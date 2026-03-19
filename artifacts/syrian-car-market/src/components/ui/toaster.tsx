@@ -12,22 +12,36 @@ export function Toaster() {
   const { toasts } = useToast()
 
   return (
-    <ToastProvider>
+    <ToastProvider
+      duration={3000}
+      swipeDirection="up"
+      swipeThreshold={30}
+    >
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
-          <Toast key={id} {...props}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
+          <Toast
+            key={id}
+            {...props}
+            className="rounded-2xl border-0 shadow-xl backdrop-blur-sm bg-foreground/90 text-background px-4 py-3"
+          >
+            <div className="grid gap-0.5 flex-1">
+              {title && (
+                <ToastTitle className="text-sm font-bold text-background">
+                  {title}
+                </ToastTitle>
+              )}
               {description && (
-                <ToastDescription>{description}</ToastDescription>
+                <ToastDescription className="text-xs text-background/80">
+                  {description}
+                </ToastDescription>
               )}
             </div>
             {action}
-            <ToastClose />
+            <ToastClose className="text-background/60 hover:text-background" />
           </Toast>
         )
       })}
-      <ToastViewport />
+      <ToastViewport className="fixed bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 w-[92vw] max-w-sm p-0" />
     </ToastProvider>
   )
 }

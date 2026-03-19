@@ -249,19 +249,22 @@ export default function SearchPage() {
         <label className="text-sm font-bold text-foreground">الماركة</label>
         <select name="brand" value={filters.brand} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
           <option value="">الكل</option>
-          <option value="تويوتا">تويوتا (Toyota)</option>
-          <option value="هيونداي">هيونداي (Hyundai)</option>
-          <option value="كيا">كيا (Kia)</option>
+          <option value="Toyota">تويوتا (Toyota)</option>
+          <option value="Hyundai">هيونداي (Hyundai)</option>
+          <option value="Kia">كيا (Kia)</option>
           <option value="BMW">بي ام دبليو (BMW)</option>
-          <option value="مرسيدس">مرسيدس (Mercedes)</option>
-          <option value="هوندا">هوندا (Honda)</option>
-          <option value="نيسان">نيسان (Nissan)</option>
-          <option value="أودي">أودي (Audi)</option>
-          <option value="شيفروليه">شيفروليه (Chevrolet)</option>
-          <option value="ميتسوبيشي">ميتسوبيشي (Mitsubishi)</option>
-          <option value="مازدا">مازدا (Mazda)</option>
-          <option value="فولكسفاغن">فولكسفاغن (Volkswagen)</option>
-          <option value="لادا">لادا (Lada)</option>
+          <option value="Mercedes">مرسيدس (Mercedes)</option>
+          <option value="Honda">هوندا (Honda)</option>
+          <option value="Nissan">نيسان (Nissan)</option>
+          <option value="Audi">أودي (Audi)</option>
+          <option value="Chevrolet">شيفروليه (Chevrolet)</option>
+          <option value="Mitsubishi">ميتسوبيشي (Mitsubishi)</option>
+          <option value="Mazda">مازدا (Mazda)</option>
+          <option value="Volkswagen">فولكسفاغن (Volkswagen)</option>
+          <option value="Lada">لادا (Lada)</option>
+          <option value="Suzuki">سوزوكي (Suzuki)</option>
+          <option value="Renault">رينو (Renault)</option>
+          <option value="Peugeot">بيجو (Peugeot)</option>
         </select>
       </div>
 

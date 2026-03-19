@@ -366,3 +366,84 @@ button,
 a {
   touch-action: manipulation;
 }
+
+/* =====================================================
+   SAFE AREA — يمنع تداخل المحتوى مع شريط البطارية
+   وأزرار النظام (Android/iOS notch support)
+===================================================== */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+/* الهيدر يأخذ مساحة شريط البطارية */
+header,
+[data-safe-top] {
+  padding-top: var(--sat) !important;
+}
+
+/* الشريط السفلي يأخذ مساحة أزرار النظام */
+[data-safe-bottom],
+nav.fixed,
+.bottom-nav-bar {
+  padding-bottom: calc(var(--sab) + 0px) !important;
+}
+
+/* pb-safe utility class — يُستخدم في BottomNav */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px) !important;
+}
+
+/* تطبيق safe area على الجانبين فقط — الأعلى للهيدر، الأسفل للـ BottomNav */
+body {
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+}
+
+/* =====================================================
+   CLICK / TAP INTERACTION
+   تأثير احترافي عند الضغط على الأزرار والبطاقات
+===================================================== */
+
+/* Buttons — تقليص خفيف عند الضغط */
+button:active:not(:disabled),
+[role="button"]:active {
+  transform: scale(0.96) !important;
+  transition: transform 0.08s ease !important;
+}
+
+/* Links/Nav items */
+a:active {
+  opacity: 0.75;
+  transition: opacity 0.08s ease !important;
+}
+
+/* بطاقات السيارات والإعلانات */
+.bg-card:active,
+[class*="rounded-2xl"]:active,
+[class*="rounded-xl"]:active {
+  transform: scale(0.98) !important;
+  transition: transform 0.1s ease !important;
+}
+
+/* إلغاء التأثير على العناصر الثابتة */
+header:active,
+nav:active,
+header *:active,
+nav *:active {
+  transform: none !important;
+}
+
+/* Ripple-like feedback — حلقة خضراء */
+@keyframes tap-ripple {
+  0%   { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.35); }
+  70%  { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+button.bg-primary:active,
+button[class*="bg-primary"]:active {
+  animation: tap-ripple 0.4s ease-out !important;
+}
