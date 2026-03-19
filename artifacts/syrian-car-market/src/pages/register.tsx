@@ -4,12 +4,14 @@ import { useAuthStore } from "@/lib/auth";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Register() {
   const [, navigate] = useLocation();
   const { setAuth } = useAuthStore();
   const registerMutation = useRegister();
   const { t } = useLanguage();
+  const { toast } = useToast();
 
   const { register: formRegister, handleSubmit, formState: { errors } } = useForm({
     defaultValues: { name: "", identifier: "", password: "", role: "buyer" }
@@ -30,8 +32,9 @@ export default function Register() {
         setAuth(res.user, res.token);
         navigate("/");
       },
-      onError: () => {
-        alert(t("common.error"));
+      onError: (err: any) => {
+        const msg = err?.response?.data?.message || err?.message || t("common.error");
+        toast({ title: "خطأ في إنشاء الحساب", description: msg, variant: "destructive" });
       }
     });
   };
@@ -49,6 +52,7 @@ export default function Register() {
             <label className="text-sm font-bold">{t("auth.register.name")}</label>
             <input
               {...formRegister("name", { required: t("common.requiredField") })}
+              autoComplete="name"
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none"
             />
             {errors.name && <p className="text-destructive text-xs">{errors.name.message as string}</p>}

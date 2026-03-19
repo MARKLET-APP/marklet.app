@@ -17,11 +17,19 @@ const writeLimiter = rateLimit({
   max: 60,                    // 60 writes per minute per token
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS",
+  validate: false,                            // disable all validation warnings (Replit proxy)
+  skip: (req) => {
+    // Skip all read-only methods
+    if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return true;
+    // Skip view tracking — fires automatically on every car page, causes 429 cascades
+    if (req.path === "/api/ad/view" || req.path === "/ad/view") return true;
+    // Skip unauthenticated writes — they'll hit 401 in the route handler anyway
+    if (!req.headers["authorization"]) return true;
+    return false;
+  },
   keyGenerator: (req) => {
     const auth = req.headers["authorization"];
-    if (auth) return auth.slice(-32);       // last 32 chars of JWT (unique per user)
-    return req.ip ?? "anonymous";
+    return auth ? auth.slice(-32) : "anonymous"; // last 32 chars of JWT = unique per user
   },
   message: { error: "Too many requests, please slow down." },
 });

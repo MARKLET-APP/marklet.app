@@ -6,7 +6,7 @@ import {
   useSendMessage,
 } from "@workspace/api-client-react";
 import type { Conversation, Message } from "@workspace/api-client-react";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Loader2, MessageSquare, ChevronRight, User, Car } from "lucide-react";
@@ -48,11 +48,12 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const [location] = useLocation();
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("conversationId");
     if (id) setActiveChatId(Number(id));
-  }, [window.location.search]);
+  }, [location]);
 
   if (!isHydrated)
     return (

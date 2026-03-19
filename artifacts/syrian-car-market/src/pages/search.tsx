@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 import { CarCard } from "@/components/CarCard";
@@ -75,6 +75,75 @@ function getPrice(item: UnifiedResult): string {
   return item.price ? `${item.price.toLocaleString()} $` : "تواصل للسعر";
 }
 
+
+// ─── FilterPanel: MUST be outside SearchPage to avoid unmount on every render ───
+type Filters = {
+  brand: string; minYear: string; maxYear: string; minPrice: string;
+  maxPrice: string; province: string; saleType: string; category: string; condition: string;
+};
+function FilterPanel({ filters, onChange, onClear }: {
+  filters: Filters;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <label className="text-sm font-bold text-foreground">الماركة</label>
+        <select name="brand" value={filters.brand} onChange={onChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
+          <option value="">الكل</option>
+          <option value="Toyota">تويوتا (Toyota)</option>
+          <option value="Hyundai">هيونداي (Hyundai)</option>
+          <option value="Kia">كيا (Kia)</option>
+          <option value="BMW">بي ام دبليو (BMW)</option>
+          <option value="Mercedes">مرسيدس (Mercedes)</option>
+          <option value="Honda">هوندا (Honda)</option>
+          <option value="Nissan">نيسان (Nissan)</option>
+          <option value="Audi">أودي (Audi)</option>
+          <option value="Chevrolet">شيفروليه (Chevrolet)</option>
+          <option value="Mitsubishi">ميتسوبيشي (Mitsubishi)</option>
+          <option value="Mazda">مازدا (Mazda)</option>
+          <option value="Volkswagen">فولكسفاغن (Volkswagen)</option>
+          <option value="Lada">لادا (Lada)</option>
+          <option value="Suzuki">سوزوكي (Suzuki)</option>
+          <option value="Renault">رينو (Renault)</option>
+          <option value="Peugeot">بيجو (Peugeot)</option>
+        </select>
+      </div>
+      <div className="space-y-3">
+        <label className="text-sm font-bold text-foreground">سنة الصنع</label>
+        <div className="flex gap-2">
+          <input type="text" inputMode="numeric" pattern="[0-9]*" name="minYear" placeholder="من" value={filters.minYear} onChange={onChange} autoComplete="off" className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
+          <input type="text" inputMode="numeric" pattern="[0-9]*" name="maxYear" placeholder="إلى" value={filters.maxYear} onChange={onChange} autoComplete="off" className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <label className="text-sm font-bold text-foreground">السعر ($)</label>
+        <div className="flex gap-2">
+          <input type="text" inputMode="numeric" pattern="[0-9]*" name="minPrice" placeholder="من" value={filters.minPrice} onChange={onChange} autoComplete="off" className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
+          <input type="text" inputMode="numeric" pattern="[0-9]*" name="maxPrice" placeholder="إلى" value={filters.maxPrice} onChange={onChange} autoComplete="off" className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <label className="text-sm font-bold text-foreground">المحافظة</label>
+        <select name="province" value={filters.province} onChange={onChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
+          <option value="">الكل</option>
+          <option value="Damascus">دمشق</option>
+          <option value="Aleppo">حلب</option>
+          <option value="Homs">حمص</option>
+          <option value="Lattakia">اللاذقية</option>
+          <option value="Hama">حماة</option>
+          <option value="Deir ez-Zor">دير الزور</option>
+          <option value="Tartus">طرطوس</option>
+          <option value="Idlib">إدلب</option>
+        </select>
+      </div>
+      <Button variant="outline" onClick={onClear} className="w-full rounded-xl">
+        <X className="w-4 h-4 ml-2" /> مسح الفلاتر
+      </Button>
+    </div>
+  );
+}
 
 function UnifiedCard({ item, onClick }: { item: UnifiedResult; onClick?: () => void }) {
   const badge = TYPE_BADGE[item._type] ?? { label: item._type, color: "bg-muted text-muted-foreground" };
@@ -202,9 +271,10 @@ export default function SearchPage() {
       .finally(() => setIsLoading(false));
   }, [filters, listingType, searchText]);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target; // Capture before async setState
+    setFilters(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   const clearAll = () => {
     setSearchText("");
@@ -243,67 +313,6 @@ export default function SearchPage() {
     return c;
   }, [results]);
 
-  const FilterContent = () => (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <label className="text-sm font-bold text-foreground">الماركة</label>
-        <select name="brand" value={filters.brand} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
-          <option value="">الكل</option>
-          <option value="Toyota">تويوتا (Toyota)</option>
-          <option value="Hyundai">هيونداي (Hyundai)</option>
-          <option value="Kia">كيا (Kia)</option>
-          <option value="BMW">بي ام دبليو (BMW)</option>
-          <option value="Mercedes">مرسيدس (Mercedes)</option>
-          <option value="Honda">هوندا (Honda)</option>
-          <option value="Nissan">نيسان (Nissan)</option>
-          <option value="Audi">أودي (Audi)</option>
-          <option value="Chevrolet">شيفروليه (Chevrolet)</option>
-          <option value="Mitsubishi">ميتسوبيشي (Mitsubishi)</option>
-          <option value="Mazda">مازدا (Mazda)</option>
-          <option value="Volkswagen">فولكسفاغن (Volkswagen)</option>
-          <option value="Lada">لادا (Lada)</option>
-          <option value="Suzuki">سوزوكي (Suzuki)</option>
-          <option value="Renault">رينو (Renault)</option>
-          <option value="Peugeot">بيجو (Peugeot)</option>
-        </select>
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-sm font-bold text-foreground">سنة الصنع</label>
-        <div className="flex gap-2">
-          <input type="number" name="minYear" placeholder="من" value={filters.minYear} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
-          <input type="number" name="maxYear" placeholder="إلى" value={filters.maxYear} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-sm font-bold text-foreground">السعر ($)</label>
-        <div className="flex gap-2">
-          <input type="number" name="minPrice" placeholder="من" value={filters.minPrice} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
-          <input type="number" name="maxPrice" placeholder="إلى" value={filters.maxPrice} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary outline-none" />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-sm font-bold text-foreground">المحافظة</label>
-        <select name="province" value={filters.province} onChange={handleFilterChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
-          <option value="">الكل</option>
-          <option value="Damascus">دمشق</option>
-          <option value="Aleppo">حلب</option>
-          <option value="Homs">حمص</option>
-          <option value="Lattakia">اللاذقية</option>
-          <option value="Hama">حماة</option>
-          <option value="Deir ez-Zor">دير الزور</option>
-          <option value="Tartus">طرطوس</option>
-          <option value="Idlib">إدلب</option>
-        </select>
-      </div>
-
-      <Button variant="outline" onClick={clearAll} className="w-full rounded-xl">
-        <X className="w-4 h-4 ml-2" /> مسح الفلاتر
-      </Button>
-    </div>
-  );
 
   return (
     <div className="py-6 px-4 flex gap-8 max-w-7xl mx-auto w-full">
@@ -314,7 +323,7 @@ export default function SearchPage() {
             <Filter className="w-5 h-5" />
             <h2 className="text-xl font-bold">تصفية النتائج</h2>
           </div>
-          <FilterContent />
+          <FilterPanel filters={filters} onChange={handleFilterChange} onClear={clearAll} />
         </div>
       </aside>
 
@@ -349,7 +358,7 @@ export default function SearchPage() {
               <SheetHeader className="mb-6">
                 <SheetTitle className="text-right">تصفية النتائج</SheetTitle>
               </SheetHeader>
-              <FilterContent />
+              <FilterPanel filters={filters} onChange={handleFilterChange} onClear={clearAll} />
             </SheetContent>
           </Sheet>
         </div>
@@ -444,36 +453,36 @@ export default function SearchPage() {
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">نشر طلب شراء</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleBuySubmit} className="space-y-3 mt-2">
+          <form onSubmit={handleBuySubmit} className="space-y-3 mt-2" autoComplete="off">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">الماركة</label>
-                <Input value={buyForm.brand} onChange={e => setBuyForm(f => ({ ...f, brand: e.target.value }))} placeholder="مثال: تويوتا" />
+                <Input value={buyForm.brand} onChange={e => { const v = e.target.value; setBuyForm(f => ({ ...f, brand: v })); }} placeholder="مثال: تويوتا" autoComplete="off" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">الموديل</label>
-                <Input value={buyForm.model} onChange={e => setBuyForm(f => ({ ...f, model: e.target.value }))} placeholder="مثال: كورولا" />
+                <Input value={buyForm.model} onChange={e => { const v = e.target.value; setBuyForm(f => ({ ...f, model: v })); }} placeholder="مثال: كورولا" autoComplete="off" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">سنة الصنع</label>
-                <Input type="number" value={buyForm.year} onChange={e => setBuyForm(f => ({ ...f, year: e.target.value }))} placeholder="مثال: 2020" />
+                <Input type="text" inputMode="numeric" pattern="[0-9]*" value={buyForm.year} onChange={e => { const v = e.target.value; setBuyForm(f => ({ ...f, year: v })); }} placeholder="مثال: 2020" autoComplete="off" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">الحد الأقصى للسعر ($)</label>
-                <Input type="number" value={buyForm.maxPrice} onChange={e => setBuyForm(f => ({ ...f, maxPrice: e.target.value }))} placeholder="مثال: 15000" />
+                <Input type="text" inputMode="numeric" pattern="[0-9]*" value={buyForm.maxPrice} onChange={e => { const v = e.target.value; setBuyForm(f => ({ ...f, maxPrice: v })); }} placeholder="مثال: 15000" autoComplete="off" />
               </div>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">المدينة / المحافظة</label>
-              <Input value={buyForm.city} onChange={e => setBuyForm(f => ({ ...f, city: e.target.value }))} placeholder="مثال: دمشق" />
+              <Input value={buyForm.city} onChange={e => { const v = e.target.value; setBuyForm(f => ({ ...f, city: v })); }} placeholder="مثال: دمشق" autoComplete="off" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground">تفاصيل إضافية</label>
               <textarea
                 value={buyForm.description}
-                onChange={e => setBuyForm(f => ({ ...f, description: e.target.value }))}
+                onChange={e => { const v = e.target.value; setBuyForm(f => ({ ...f, description: v })); }}
                 placeholder="أي مواصفات أو متطلبات خاصة..."
                 rows={3}
                 className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 text-sm focus:border-primary outline-none resize-none"
