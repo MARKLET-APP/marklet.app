@@ -100,7 +100,7 @@ export default function Home() {
     <div className="flex flex-col w-full overflow-hidden">
       {/* Hero Section */}
       <section
-        className="relative w-full flex items-center justify-center overflow-hidden text-white text-center py-10 sm:py-16 md:py-28"
+        className="relative w-full flex items-center justify-center overflow-hidden text-white text-center py-5 sm:py-16 md:py-28"
         style={{
           background: "linear-gradient(135deg, #062f2f 0%, #0f5132 40%, #1c3d2b 100%)",
           paddingLeft: "20px",
@@ -149,7 +149,7 @@ export default function Home() {
           }}
         />
 
-        <div className="relative z-10 max-w-3xl w-full space-y-5">
+        <div className="relative z-10 max-w-3xl w-full space-y-3 sm:space-y-5">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -164,8 +164,8 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
+            className="hero-title"
             style={{
-              fontSize: "clamp(42px, 10vw, 64px)",
               fontWeight: 800,
               color: "#d4af37",
               letterSpacing: "2px",
@@ -181,19 +181,19 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12 }}
-            style={{ fontSize: "clamp(18px, 4vw, 28px)", marginTop: "10px", color: "#fff" }}
-            className="font-semibold drop-shadow-md"
+            className="hero-subtitle font-semibold drop-shadow-md"
+            style={{ color: "#fff" }}
           >
             {t("home.hero.subtitle")}
           </motion.p>
 
-          {/* Description */}
+          {/* Description — hidden on mobile */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            style={{ marginTop: "15px", fontSize: "18px", opacity: 0.9, color: "#fff" }}
-            className="max-w-xl mx-auto whitespace-pre-line"
+            style={{ fontSize: "18px", opacity: 0.9, color: "#fff" }}
+            className="max-w-xl mx-auto whitespace-pre-line hidden sm:block"
           >
             {t("home.hero.description")}
           </motion.p>
@@ -271,35 +271,48 @@ export default function Home() {
       </section>
 
       {/* Trust Badges */}
-      <section className="py-8 bg-secondary/20 border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-8 md:gap-16">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <ShieldCheck className="w-6 h-6" />
+      <section className="py-3 sm:py-8 bg-secondary/20 border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 flex flex-nowrap sm:flex-wrap justify-around sm:justify-center gap-2 sm:gap-16">
+
+          {/* موثوقية — mobile: icon+text inline compact | desktop: full card */}
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <ShieldCheck className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="font-bold text-foreground">{t("home.trust.verified")}</p>
-              <p className="text-sm text-muted-foreground">{t("home.trust.verifiedSub")}</p>
+              <p className="font-bold text-foreground text-xs sm:text-base leading-tight">{t("home.trust.verified")}</p>
+              <p className="text-muted-foreground hidden sm:block text-sm">{t("home.trust.verifiedSub")}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent">
-              <Sparkles className="w-6 h-6" />
+
+          {/* فاصل موبايل */}
+          <div className="w-px bg-border/60 self-stretch sm:hidden" />
+
+          {/* ذكاء اصطناعي */}
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="font-bold text-foreground">{t("home.trust.ai")}</p>
-              <p className="text-sm text-muted-foreground">{t("home.trust.aiSub")}</p>
+              <p className="font-bold text-foreground text-xs sm:text-base leading-tight">{t("home.trust.ai")}</p>
+              <p className="text-muted-foreground hidden sm:block text-sm">{t("home.trust.aiSub")}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-              <Zap className="w-6 h-6" />
+
+          {/* فاصل موبايل */}
+          <div className="w-px bg-border/60 self-stretch sm:hidden" />
+
+          {/* سرعة التواصل */}
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
+              <Zap className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="font-bold text-foreground">{t("home.trust.speed")}</p>
-              <p className="text-sm text-muted-foreground">{t("home.trust.speedSub")}</p>
+              <p className="font-bold text-foreground text-xs sm:text-base leading-tight">{t("home.trust.speed")}</p>
+              <p className="text-muted-foreground hidden sm:block text-sm">{t("home.trust.speedSub")}</p>
             </div>
           </div>
+
         </div>
       </section>
 

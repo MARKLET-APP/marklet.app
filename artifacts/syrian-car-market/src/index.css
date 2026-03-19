@@ -368,6 +368,23 @@ a {
 }
 
 /* =====================================================
+   HERO — حجم العنوان والعنوان الفرعي
+   موبايل أصغر / ديسكتوب يبقى كما هو
+===================================================== */
+.hero-title {
+  font-size: clamp(32px, 9vw, 64px); /* mobile: 32px, desktop: 64px */
+}
+.hero-subtitle {
+  font-size: clamp(15px, 3.5vw, 28px); /* mobile: 15px, desktop: 28px */
+  margin-top: 4px;
+}
+
+@media (min-width: 640px) {
+  .hero-title   { font-size: clamp(42px, 10vw, 64px); }
+  .hero-subtitle{ font-size: clamp(18px, 4vw, 28px); margin-top: 10px; }
+}
+
+/* =====================================================
    SAFE AREA — يمنع تداخل المحتوى مع شريط البطارية
    وأزرار النظام (Android/iOS notch support)
 ===================================================== */
