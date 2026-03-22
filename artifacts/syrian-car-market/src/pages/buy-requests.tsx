@@ -382,16 +382,25 @@ export default function BuyRequests() {
                       {city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{city}</span>}
                     </div>
                     {sellerName && <p className="text-xs text-muted-foreground">البائع: {sellerName}</p>}
-                    <div className="flex gap-2 pt-1">
+                    <div className="flex gap-1.5 pt-1">
                       {!isJunk && (
-                        <Button size="sm" variant="outline" className="flex-1 rounded-xl gap-1 text-xs" onClick={() => navigate(`/cars/${item.id}`)}>
-                          <Eye className="w-3.5 h-3.5" /> التفاصيل
-                        </Button>
+                        <button
+                          onClick={() => navigate(`/cars/${item.id}`)}
+                          className="flex items-center gap-1 border border-border rounded-xl px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted/60 active:scale-95 transition-all"
+                          style={{ width: "48%" }}
+                        >
+                          <Eye className="w-3 h-3 shrink-0" /> التفاصيل
+                        </button>
                       )}
                       {user && sellerId && user.id !== sellerId && (
-                        <Button size="sm" className="flex-1 rounded-xl gap-1 text-xs bg-primary hover:bg-primary/90 font-bold" onClick={() => startChat(sellerId, `مرحباً، أنا مهتم بـ ${title}. هل ما زال متوفراً؟`)} disabled={startingChat}>
-                          {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة
-                        </Button>
+                        <button
+                          onClick={() => startChat(sellerId, `مرحباً، أنا مهتم بـ ${title}. هل ما زال متوفراً؟`)}
+                          disabled={startingChat}
+                          className="flex items-center justify-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl px-2 py-1 text-[11px] font-bold active:scale-95 transition-all disabled:opacity-60"
+                          style={{ width: "48%" }}
+                        >
+                          {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3 shrink-0" />} مراسلة
+                        </button>
                       )}
                     </div>
                   </div>
