@@ -4,9 +4,11 @@ import { BottomNav } from "./BottomNav";
 import { DhikrBar } from "@/components/DhikrBar";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { useLocation } from "wouter";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { token, setAuth } = useAuthStore();
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     if (!token) return;
@@ -20,6 +22,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
         }
       });
   }, [token, setAuth]);
+
+  // ── Swipe-back / Android back-button guard ───────────────────────────────
+  // When the user is logged in, the Android edge-swipe or system back-button
+  // must not land them on /login or /register. If the popstate navigation
+  // goes to an auth page while a token exists, redirect to "/" instead.
+  useEffect(() => {
+    const guard = () => {
+      if (!useAuthStore.getState().token) return;
+      const path = window.location.pathname;
+      if (path.endsWith("/login") || path.endsWith("/register")) {
+        navigate("/");
+      }
+    };
+    window.addEventListener("popstate", guard);
+    return () => window.removeEventListener("popstate", guard);
+  }, [navigate]);
 
   // ── Mobile keyboard resize fix (WebView / Android only) ─────────────────
   // When the virtual keyboard opens, innerHeight shrinks and can trigger CSS

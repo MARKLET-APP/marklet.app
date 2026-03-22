@@ -84,7 +84,9 @@ export default function Chat() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] w-full max-w-7xl mx-auto overflow-hidden bg-background">
+    // Mobile: 100dvh - header(64) - DhikrBar(40) - BottomNav(64) = 168px gap
+    // Desktop: 100dvh - header(80px)
+    <div className="flex h-[calc(100dvh-168px)] sm:h-[calc(100dvh-80px)] w-full max-w-7xl mx-auto overflow-hidden bg-background">
       {/* ── Sidebar: conversation list ── */}
       <div
         className={cn(

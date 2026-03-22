@@ -28,7 +28,10 @@ export async function shareListing(
     try {
       await navigator.share({ title, text, url });
       return;
-    } catch {
+    } catch (err: any) {
+      // AbortError = user dismissed the share sheet — do NOT fall back to copy
+      if (err?.name === "AbortError" || err?.message?.includes("cancel")) return;
+      // Any other error (unsupported, permission denied) → fall through to copy
     }
   }
 

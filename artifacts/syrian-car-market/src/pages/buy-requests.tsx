@@ -355,7 +355,7 @@ export default function BuyRequests() {
             {user && <p className="text-sm">كن أول من ينشر!</p>}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sellings.map((item: any) => {
               const isJunk = activeCat === "junk";
               const title = isJunk
@@ -414,7 +414,7 @@ export default function BuyRequests() {
             <p className="text-lg font-bold mb-1">لا توجد طلبات شراء في هذا القسم</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredRequests.map((r) => (
               <div key={r.id} className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
                 <div className="flex items-start justify-between">
