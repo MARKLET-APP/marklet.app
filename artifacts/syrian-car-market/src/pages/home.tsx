@@ -490,20 +490,6 @@ export default function Home() {
                       }
                       {t("home.buyReqs.contact")}
                     </button>
-                    <button
-                      className="flex-1 inline-flex items-center justify-center gap-0.5 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
-                      onClick={() => {
-                        const url = window.location.origin + "/buy-requests";
-                        const title = `${r.brand || "سيارة"} ${r.model || ""}`.trim();
-                        if (navigator.share) {
-                          navigator.share({ title, text: `${title} — حتى $${r.maxPrice?.toLocaleString() ?? ""}`, url }).catch(() => {});
-                        } else {
-                          navigator.clipboard.writeText(url).catch(() => {});
-                        }
-                      }}
-                    >
-                      <Share2 className="w-2.5 h-2.5 shrink-0" /> مشاركة
-                    </button>
                   </div>
                 </div>
               ))}

@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2 } from "lucide-react";
+import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye, Share2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ShareSheet } from "@/components/ShareSheet";
 
 export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate";
 
@@ -203,13 +201,21 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
           <p className="text-sm text-muted-foreground line-clamp-2">{data.description}</p>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+        {/* Actions: التفاصيل | مراسلة/حذف | مشاركة */}
+        <div className="flex gap-1.5 pt-2 border-t" onClick={e => e.stopPropagation()}>
+          {onCardClick && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onCardClick(); }}
+              className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
+            >
+              <Eye className="w-2.5 h-2.5 shrink-0" /> التفاصيل
+            </button>
+          )}
           {!isOwner && onChat && (
             <button
               onClick={(e) => { e.stopPropagation(); onChat(); }}
               disabled={chatLoading}
-              className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-bold text-white bg-primary hover:bg-primary/85 rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+              className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-bold rounded-full bg-primary text-primary-foreground active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
             >
               {chatLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />}
               مراسلة
@@ -219,21 +225,23 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
               disabled={deleteLoading}
-              className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-medium text-destructive border border-destructive/30 rounded-full hover:bg-destructive/10 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+              className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg text-destructive border border-destructive/30 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
             >
               {deleteLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
               حذف
             </button>
           )}
-          <ShareSheet
-            options={{
-              title,
-              price: data.price ?? data.dailyPrice ?? null,
-              city: data.city ?? null,
-              url: `${window.location.origin}/listing/${data.id}`,
-              description: data.description ?? null,
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const url = `${window.location.origin}/listing/${data.id}`;
+              if (navigator.share) navigator.share({ title, url }).catch(() => {});
+              else navigator.clipboard.writeText(url).catch(() => {});
             }}
-          />
+            className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+          >
+            <Share2 className="w-2.5 h-2.5 shrink-0" /> مشاركة
+          </button>
         </div>
       </div>
     </div>

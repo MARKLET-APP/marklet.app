@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, MapPin, ShoppingCart, Car, MessageCircle, Loader2 } from "lucide-react";
+import { Plus, MapPin, ShoppingCart, Car, MessageCircle, Loader2, Eye, Share2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
@@ -145,13 +145,31 @@ export default function UsedCarsPage() {
                     </div>
                     {c.price && <p className="text-violet-700 font-bold text-lg">${c.price.toLocaleString()}</p>}
                     {c.city && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</p>}
-                    <button
-                      className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-bold rounded-full bg-primary text-primary-foreground disabled:opacity-50 whitespace-nowrap active:scale-95 transition-all mt-1"
-                      onClick={e => { e.stopPropagation(); startChat(c.sellerId, `مرحباً، أنا مهتم بـ ${[c.brand, c.model, c.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }}
-                      disabled={startingChat}
-                    >
-                      {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
-                    </button>
+                    <div className="flex gap-1.5 pt-1 border-t mt-1" onClick={e => e.stopPropagation()}>
+                      <button
+                        className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
+                        onClick={() => navigate(`/cars/${c.id}`)}
+                      >
+                        <Eye className="w-2.5 h-2.5 shrink-0" /> التفاصيل
+                      </button>
+                      <button
+                        className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-bold rounded-full bg-primary text-primary-foreground disabled:opacity-50 whitespace-nowrap active:scale-95 transition-all"
+                        onClick={e => { e.stopPropagation(); startChat(c.sellerId, `مرحباً، أنا مهتم بـ ${[c.brand, c.model, c.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }}
+                        disabled={startingChat}
+                      >
+                        {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
+                      </button>
+                      <button
+                        className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+                        onClick={() => {
+                          const url = `${window.location.origin}/listing/${c.id}`;
+                          if (navigator.share) navigator.share({ title: `${c.brand} ${c.model} ${c.year}`, url }).catch(() => {});
+                          else navigator.clipboard.writeText(url).catch(() => {});
+                        }}
+                      >
+                        <Share2 className="w-2.5 h-2.5 shrink-0" /> مشاركة
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

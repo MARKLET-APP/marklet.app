@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, MessageCircle, Share2, Loader2 } from "lucide-react";
+import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, MessageCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -72,23 +72,6 @@ export function CarCard({ car }: { car: Car }) {
       setChatLoading(false);
     }
   };
-
-  function handleShare(e: React.MouseEvent) {
-    e.stopPropagation();
-    const url = `${window.location.origin}/listing/${car.id}`;
-    const shareData = {
-      title: `${car.brand} ${car.model} ${car.year}`,
-      text: `${car.brand} ${car.model} ${car.year} — ${formatUSD(car.price)} — ${car.city}\n${url}`,
-      url,
-    };
-    if (navigator.share) {
-      navigator.share(shareData).catch((err: Error) => {
-        if (err.name !== "AbortError") navigator.clipboard.writeText(url).catch(() => {});
-      });
-    } else {
-      navigator.clipboard.writeText(url).catch(() => {});
-    }
-  }
 
   return (
     <div
@@ -195,7 +178,7 @@ export function CarCard({ car }: { car: Car }) {
           </div>
         </div>
 
-        {/* ─── 3 action buttons: التفاصيل | مراسلة | مشاركة ─── */}
+        {/* ─── action buttons: التفاصيل | مراسلة ─── */}
         <div className="flex gap-1.5 pt-2 border-t" onClick={e => e.stopPropagation()}>
           <button
             className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[11px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
@@ -212,12 +195,6 @@ export function CarCard({ car }: { car: Car }) {
               ? <Loader2 className="w-3 h-3 animate-spin shrink-0" />
               : <MessageCircle className="w-3 h-3 shrink-0" />}
             مراسلة
-          </button>
-          <button
-            className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[11px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
-            onClick={handleShare}
-          >
-            <Share2 className="w-3 h-3 shrink-0" /> مشاركة
           </button>
         </div>
       </div>
