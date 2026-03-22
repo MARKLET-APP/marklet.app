@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useRef, useCallback } from "react";
 import { useCreateCar, useGenerateCarDescription } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -7,7 +6,7 @@ import { withApi } from "@/lib/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ImagePlus, Loader2, CheckCircle2, X, ShieldCheck, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
-import { useToast } from "@/hooks/use-toast";
+import { showToast } from "@/lib/toast";
 import { api } from "@/lib/api";
 
 // ── Market base prices (USD) per car brand ──────────────────────────────────
@@ -94,7 +93,6 @@ function loadDraft() {
 export default function AddListing() {
   const [, navigate] = useLocation();
   const { user } = useAuthStore();
-  const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [priceEval, setPriceEval] = useState<PriceEval>(null);
@@ -106,39 +104,48 @@ export default function AddListing() {
   const [listingType, setListingType] = useState<ListingType>(draft?.listingType ?? "car_sale");
   const [fields, setFields] = useState(draft?.fields ?? { ...DEFAULT_FIELDS });
 
-  // ── Stable ref mirror ────────────────────────────────────────────────────
-  // WebView may re-render the component due to keyboard open/close events.
-  // fieldsRef always holds the latest fields so nothing is lost on re-render.
+  // ── Stable ref mirrors ──────────────────────────────────────────────────
+  // fieldsRef always holds the LATEST fields synchronously — used inside
+  // handleField so we can build the updated object and save to localStorage
+  // in the same call without waiting for the next render cycle.
+  // This prevents the "lost keystroke on remount" race on Android WebView.
   const fieldsRef = useRef(fields);
   const listingTypeRef = useRef(listingType);
-  useEffect(() => { fieldsRef.current = fields; }, [fields]);
-  useEffect(() => { listingTypeRef.current = listingType; }, [listingType]);
 
-  // Auto-save draft to localStorage on every change
+  // Auto-save helper — write to localStorage directly (no side-effects)
   const saveDraft = useCallback((f: typeof DEFAULT_FIELDS, lt: ListingType) => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ fields: f, listingType: lt }));
     } catch {}
   }, []);
 
-  useEffect(() => {
-    saveDraft(fields, listingType);
-  }, [fields, listingType, saveDraft]);
-
   const handleField = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    // Capture values immediately — e.target may be nulled by React's event
-    // pooling before the async setState callback runs on Android WebView.
+    // 1. Capture name/value BEFORE any async work (Android event pooling safety)
     const name = e.target.name;
     const value = e.target.value;
-    setFields(f => ({ ...f, [name]: value }));
+    // 2. Build the next state from the ref (always current, even mid-re-render)
+    const next = { ...fieldsRef.current, [name]: value };
+    // 3. Update the ref immediately so subsequent calls in the same tick are consistent
+    fieldsRef.current = next;
+    // 4. Update React state to trigger re-render
+    setFields(next);
+    // 5. Persist to localStorage immediately — no useEffect gap on WebView
+    saveDraft(next, listingTypeRef.current);
     if (name === "price") setPriceEval(null);
   };
+
+  // Keep listingTypeRef in sync and persist on type change
+  const handleListingType = useCallback((lt: ListingType) => {
+    listingTypeRef.current = lt;
+    setListingType(lt);
+    saveDraft(fieldsRef.current, lt);
+  }, [saveDraft]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     if (images.length + files.length > 10) {
-      toast({ title: "الحد الأقصى 10 صور", variant: "destructive" });
+      showToast("الحد الأقصى 10 صور", { variant: "destructive" });
       return;
     }
     setIsUploading(true);
@@ -147,7 +154,7 @@ export default function AddListing() {
         const url = await uploadImage(file);
         setImages(prev => [...prev, url]);
       } catch (err: any) {
-        toast({ title: err.message ?? "فشل رفع الصورة", variant: "destructive" });
+        showToast(err.message ?? "فشل رفع الصورة", { variant: "destructive" });
       }
     }
     setIsUploading(false);
@@ -168,7 +175,7 @@ export default function AddListing() {
 
   const handleGenerateDesc = () => {
     if (!fields.brand || !fields.model || !fields.year) {
-      toast({ title: "الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", variant: "destructive" });
+      showToast("الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", { variant: "destructive" });
       return;
     }
     const isMoto = listingType === "motorcycles";
@@ -207,7 +214,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
 
   const handleEstimatePrice = async () => {
     if (!fields.brand || !fields.year) {
-      toast({ title: "الرجاء إدخال الماركة وسنة الصنع أولاً", variant: "destructive" });
+      showToast("الرجاء إدخال الماركة وسنة الصنع أولاً", { variant: "destructive" });
       return;
     }
     setEstimating(true);
@@ -248,7 +255,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         setFields(f => ({ ...f, price: String(suggested) }));
       }
       if (similar.length > 0) {
-        toast({ title: `تم تحليل ${similar.length} إعلان مشابه`, description: "تم تحديث تقييم السعر" });
+        showToast(`تم تحليل ${similar.length} إعلان مشابه`, { description: "تم تحديث تقييم السعر" });
       }
     } finally {
       setEstimating(false);
@@ -258,13 +265,13 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (images.length < 1) {
-      toast({ title: "يجب إضافة صورة واحدة على الأقل", variant: "destructive" });
+      showToast("يجب إضافة صورة واحدة على الأقل", { variant: "destructive" });
       return;
     }
 
     const price = Number(fields.price);
     if (!price || price <= 0) {
-      toast({ title: "الرجاء إدخال سعر صحيح", variant: "destructive" });
+      showToast("الرجاء إدخال سعر صحيح", { variant: "destructive" });
       return;
     }
 
@@ -309,10 +316,10 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     createMutation.mutate({ data } as any, {
       onSuccess: (res) => {
         localStorage.removeItem(DRAFT_KEY);
-        toast({ title: "تم إرسال الإعلان للمراجعة", description: "سيظهر بعد موافقة الإدارة" });
+        showToast("تم إرسال الإعلان للمراجعة", { description: "سيظهر بعد موافقة الإدارة" });
         navigate(`/cars/${(res as any).id}`);
       },
-      onError: (err: any) => toast({ title: err.message ?? "حدث خطأ", variant: "destructive" }),
+      onError: (err: any) => showToast(err.message ?? "حدث خطأ", { variant: "destructive" }),
     });
   };
 
@@ -331,9 +338,9 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
       if (!res.ok) throw new Error();
       const updated = await res.json();
       useAuthStore.getState().setAuth(updated, token!);
-      toast({ title: "تم تفعيل وضع البائع", description: "يمكنك الآن نشر إعلاناتك" });
+      showToast("تم تفعيل وضع البائع", { description: "يمكنك الآن نشر إعلاناتك" });
     } catch {
-      toast({ title: "حدث خطأ أثناء تغيير الوضع", variant: "destructive" });
+      showToast("حدث خطأ أثناء تغيير الوضع", { variant: "destructive" });
     } finally {
       setActivating(false);
     }
@@ -402,11 +409,17 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
   const inputCls = "w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none";
   const selectCls = `${inputCls}`;
 
-  const hasDraft = !!draft && (Object.values(draft.fields).some(v => v && v !== DEFAULT_FIELDS[v as keyof typeof DEFAULT_FIELDS]) || draft.listingType !== "car_sale");
+  // Check against current state (not the stale draft snapshot from render start)
+  const hasDraft = Object.entries(fields).some(
+    ([k, v]) => v !== DEFAULT_FIELDS[k as keyof typeof DEFAULT_FIELDS]
+  ) || listingType !== "car_sale";
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY);
-    setFields({ ...DEFAULT_FIELDS });
+    const reset = { ...DEFAULT_FIELDS };
+    fieldsRef.current = reset;
+    listingTypeRef.current = "car_sale";
+    setFields(reset);
     setListingType("car_sale");
     setImages([]);
     setPriceEval(null);
@@ -446,7 +459,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => setListingType(opt.value)}
+                onClick={() => handleListingType(opt.value)}
                 className={`rounded-2xl border-2 py-3 px-4 font-bold text-sm transition-all
                   ${listingType === opt.value
                     ? "border-primary bg-primary/10 text-primary"

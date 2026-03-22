@@ -21,28 +21,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
       });
   }, [token, setAuth]);
 
-  // ── Mobile keyboard resize fix ───────────────────────────────────────────
-  // When the virtual keyboard opens/closes on Android WebView, the viewport
-  // shrinks which can cause layout reflows that trigger re-renders and wipe
-  // form state. Locking body height to visualViewport prevents this.
+  // ── Mobile keyboard resize fix (WebView / Android only) ─────────────────
+  // When the virtual keyboard opens, innerHeight shrinks and can trigger CSS
+  // layout reflows. Setting body height to the current innerHeight each time
+  // prevents the viewport "bounce" that causes spurious re-renders.
   useEffect(() => {
-    const isTouchDevice = () => window.matchMedia("(pointer: coarse)").matches;
-    if (!isTouchDevice()) return;
-
-    const applyHeight = () => {
-      const h = window.visualViewport?.height ?? window.innerHeight;
-      document.body.style.minHeight = h + "px";
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    const fix = () => {
+      document.body.style.height = window.innerHeight + "px";
     };
-
-    applyHeight();
-    const vv = window.visualViewport;
-    if (vv) {
-      vv.addEventListener("resize", applyHeight);
-      return () => vv.removeEventListener("resize", applyHeight);
-    } else {
-      window.addEventListener("resize", applyHeight);
-      return () => window.removeEventListener("resize", applyHeight);
-    }
+    fix();
+    window.addEventListener("resize", fix);
+    return () => window.removeEventListener("resize", fix);
   }, []);
 
   return (
