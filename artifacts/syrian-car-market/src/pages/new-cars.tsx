@@ -145,9 +145,9 @@ export default function NewCarsPage() {
                     </div>
                     {c.price && <p className="text-emerald-700 font-bold text-lg">${c.price.toLocaleString()}</p>}
                     {c.city && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</p>}
-                    <Button size="sm" variant="outline" className="w-full gap-1.5 border-emerald-300 text-emerald-700 mt-1" onClick={e => { e.stopPropagation(); startChat(c.sellerId, `مرحباً، أنا مهتم بـ ${[c.brand, c.model, c.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }} disabled={startingChat}>
-                      {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />} مراسلة البائع
-                    </Button>
+                    <button onClick={e => { e.stopPropagation(); startChat(c.sellerId, `مرحباً، أنا مهتم بـ ${[c.brand, c.model, c.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`); }} disabled={startingChat} className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap mt-1">
+                      {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
+                    </button>
                   </div>
                 </div>
               ))}
