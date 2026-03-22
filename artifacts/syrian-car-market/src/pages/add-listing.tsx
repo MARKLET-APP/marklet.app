@@ -161,6 +161,24 @@ export default function AddListing() {
     saveDraft(next, listingTypeRef.current);
   }, [saveDraft]);
 
+  // Safety net: some Android keyboards never fire compositionend when the user
+  // taps another field — blur is always fired so we use it to flush any pending
+  // IME composition into React state before the field loses focus.
+  const handleBlur = useCallback((
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    // Always flush — whether composing or not — so the latest DOM value is
+    // in React state even if compositionend was missed by the browser.
+    const name = e.target.name;
+    const value = e.target.value;
+    if (!name) return;
+    composingRef.current = false;
+    const next = { ...fieldsRef.current, [name]: value };
+    fieldsRef.current = next;
+    setFields(next);
+    saveDraft(next, listingTypeRef.current);
+  }, [saveDraft]);
+
   // Keep listingTypeRef in sync and persist on type change
   const handleListingType = useCallback((lt: ListingType) => {
     listingTypeRef.current = lt;
@@ -448,11 +466,14 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
   const selectCls = `${inputCls}`;
 
   // Spread these on every <input> and <textarea> that can receive Arabic text.
-  // onCompositionStart / onCompositionEnd bracket the IME composition window
-  // so React does NOT re-render mid-composition and break Arabic characters.
+  // onCompositionStart / onCompositionEnd bracket the IME composition window so
+  // React does NOT re-render mid-composition and break Arabic characters.
+  // onBlur is the safety net: if compositionend never fires (some Android keyboards),
+  // blur always fires and flushes the pending Arabic text into React state.
   const imeProps = {
     onCompositionStart: handleCompositionStart,
     onCompositionEnd: handleCompositionEnd as React.CompositionEventHandler<any>,
+    onBlur: handleBlur as React.FocusEventHandler<any>,
   };
 
   // Show the draft badge only when the user has typed meaningful data
@@ -841,6 +862,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                 onChange={handleField}
                 onCompositionStart={handleCompositionStart}
                 onCompositionEnd={handleCompositionEnd}
+                onBlur={handleBlur}
                 rows={6}
                 className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none resize-none leading-relaxed placeholder:text-gray-400"
                 placeholder="اكتب وصفاً مفصلاً..."
