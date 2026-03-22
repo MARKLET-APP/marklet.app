@@ -83,10 +83,19 @@ export default function Chat() {
     (c) => c.id === activeChatId
   );
 
+  // Disable the main element's vertical scroll while chat is open — the chat
+  // manages its own internal scroll (messages list). Without this, main would
+  // create a second scrollbar around the full-height chat container.
+  useEffect(() => {
+    const main = document.getElementById("app-main");
+    if (!main) return;
+    const prev = main.style.overflowY;
+    main.style.overflowY = "hidden";
+    return () => { main.style.overflowY = prev; };
+  }, []);
+
   return (
-    // Mobile: 100dvh - header(64) - DhikrBar(40) - BottomNav(64) = 168px gap
-    // Desktop: 100dvh - header(80px)
-    <div className="flex h-[calc(100dvh-168px)] sm:h-[calc(100dvh-80px)] w-full max-w-7xl mx-auto overflow-hidden bg-background">
+    <div className="flex h-full overflow-hidden w-full bg-background">
       {/* ── Sidebar: conversation list ── */}
       <div
         className={cn(

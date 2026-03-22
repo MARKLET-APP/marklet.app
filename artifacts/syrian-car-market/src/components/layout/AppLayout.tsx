@@ -15,18 +15,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
     api.auth.me()
       .then((user) => { if (user) setAuth(user, token); })
       .catch((err: any) => {
-        // Only logout on definitive 401 (invalid/expired token)
-        // Do NOT logout on network errors or 429 — would wipe form data
         if (err?.response?.status === 401 || err?.status === 401) {
           useAuthStore.getState().logout();
         }
       });
   }, [token, setAuth]);
 
-  // ── Swipe-back / Android back-button guard ───────────────────────────────
-  // When the user is logged in, the Android edge-swipe or system back-button
-  // must not land them on /login or /register. If the popstate navigation
-  // goes to an auth page while a token exists, redirect to "/" instead.
+  // ── Swipe-back / Android back-button guard ────────────────────────────────
   useEffect(() => {
     const guard = () => {
       if (!useAuthStore.getState().token) return;
@@ -39,14 +34,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("popstate", guard);
   }, [navigate]);
 
-  // ── Mobile keyboard resize fix (WebView / Android only) ─────────────────
-  // When the virtual keyboard opens, innerHeight shrinks and can trigger CSS
-  // layout reflows. Setting body height to the current innerHeight each time
-  // prevents the viewport "bounce" that causes spurious re-renders.
+  // ── Viewport height tracking ──────────────────────────────────────────────
+  // Keeps --vh in sync with the real visible height (accounts for Android
+  // status bar, virtual keyboard, browser chrome, etc.).
   useEffect(() => {
-    if (!window.matchMedia("(pointer: coarse)").matches) return;
     const fix = () => {
-      document.body.style.height = window.innerHeight + "px";
+      document.documentElement.style.setProperty("--vh", `${window.innerHeight}px`);
     };
     fix();
     window.addEventListener("resize", fix);
@@ -54,12 +47,36 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background pb-16 sm:pb-0">
+    /*
+     * KEY LAYOUT ARCHITECTURE
+     * ──────────────────────────────────────────────────────────────────────
+     * The outer div is exactly the visible viewport height (--vh).
+     * All four children (Header, DhikrBar, main, BottomNav) are flex items
+     * stacked vertically. BottomNav is NOT fixed — it is a real flex child
+     * at the bottom of the stack.
+     *
+     * This means:
+     *   • There is ZERO overlap between content and the bottom nav.
+     *   • main gets exactly the remaining space (flex-1 + min-h-0).
+     *   • Pages that need vertical scroll add overflow-y-auto on their root.
+     *   • Chat (and other full-height pages) use h-full and get the exact
+     *     available height with no arithmetic needed.
+     */
+    <div
+      className="flex flex-col bg-background overflow-hidden"
+      style={{ height: "var(--vh, 100dvh)" }}
+    >
       <Header />
       <DhikrBar />
-      <main className="flex-1 w-full max-w-7xl mx-auto">
+
+      <main
+        id="app-main"
+        className="flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto"
+      >
         {children}
       </main>
+
+      {/* BottomNav renders as a flex child — never overlaps content */}
       <BottomNav />
     </div>
   );

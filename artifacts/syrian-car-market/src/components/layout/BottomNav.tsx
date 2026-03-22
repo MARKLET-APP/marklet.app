@@ -28,7 +28,7 @@ export function BottomNav() {
   const isAdminUser = user?.role === "admin";
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t pb-safe sm:hidden">
+    <div className="glass-panel border-t pb-safe sm:hidden flex-shrink-0">
       <div className="flex items-center justify-around h-16 px-2">
         <NavItem href="/" icon={<Home className="w-5 h-5" />} label="الرئيسية" isActive={isHome} />
         <NavItem href="/search" icon={<Search className="w-5 h-5" />} label="البحث" isActive={isSearch} />

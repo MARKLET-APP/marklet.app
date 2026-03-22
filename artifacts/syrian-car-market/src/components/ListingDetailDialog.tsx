@@ -5,11 +5,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  MapPin, Phone, Share2, Clock, Calendar,
+  MapPin, Phone, Clock, Calendar,
   DollarSign, ChevronLeft, ChevronRight, Bike, Car, Wrench,
   Building2, Hash,
 } from "lucide-react";
-import { shareListing } from "@/utils/shareListing";
+import { ShareSheet } from "@/components/ShareSheet";
 import type { ListingCardType } from "./ListingCard";
 import { SaveButton } from "./SaveButton";
 import type { ListingSaveType } from "@/hooks/use-saves";
@@ -250,20 +250,15 @@ export function ListingDetailDialog({
           {/* Actions */}
           <div className="flex gap-2 pt-1 flex-wrap">
             <SaveButton type={type as ListingSaveType} id={data.id} />
-            <Button
-              variant="outline"
-              className="gap-2 rounded-xl"
-              onClick={() => shareListing({
+            <ShareSheet
+              options={{
                 title,
                 price: data.price ?? data.dailyPrice ?? null,
                 city: data.city ?? null,
                 url: `${window.location.origin}/listing/${data.id}`,
                 description: data.description ?? null,
-              })}
-            >
-              <Share2 className="w-4 h-4" />
-              مشاركة
-            </Button>
+              }}
+            />
           </div>
         </div>
       </DialogContent>

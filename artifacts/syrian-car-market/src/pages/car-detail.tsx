@@ -2,8 +2,8 @@ import { useRoute, useLocation } from "wouter";
 import { useGetCar } from "@workspace/api-client-react";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { MapPin, Settings, Calendar, Gauge, Fuel, Eye, EyeOff, Heart, Share2, Loader2, MessageCircle, CheckCircle, Pencil, Lock, Crown, Clock } from "lucide-react";
-import { shareListing } from "@/utils/shareListing";
+import { MapPin, Settings, Calendar, Gauge, Fuel, Eye, EyeOff, Heart, Loader2, MessageCircle, CheckCircle, Pencil, Lock, Crown, Clock, Share2 } from "lucide-react";
+import { ShareSheet } from "@/components/ShareSheet";
 import AppRatingPopup from "@/components/AppRatingPopup";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,18 +91,12 @@ export default function CarDetail() {
     }
   }, [car, showEditDialog]);
 
-  const shareCar = () => {
-    const url = `${window.location.origin}/listing/${carId}`;
-    shareListing(
-      {
-        title: [(car as any)?.brand, (car as any)?.model, (car as any)?.year].filter(Boolean).join(" ") || "إعلان على MARKLET",
-        price: (car as any)?.price,
-        city: (car as any)?.city,
-        url,
-        description: (car as any)?.description,
-      },
-      () => toast({ title: "تم نسخ رابط الإعلان", description: "يمكنك مشاركته على واتساب أو فيسبوك" })
-    );
+  const shareOptions = {
+    title: [(car as any)?.brand, (car as any)?.model, (car as any)?.year].filter(Boolean).join(" ") || "إعلان على MARKLET",
+    price: (car as any)?.price,
+    city: (car as any)?.city,
+    url: `${window.location.origin}/listing/${carId}`,
+    description: (car as any)?.description,
   };
 
 
@@ -368,9 +362,14 @@ export default function CarDetail() {
             {(car as any).category && <Badge variant="outline" className="rounded-xl text-xs">{({'sedan':'سيدان','suv':'SUV','truck':'شاحنة','motorcycle':'دراجة','van':'فان','pickup':'بيكب','other':'غير ذلك','parts':'قطع غيار','rental':'إيجار'} as any)[(car as any).category] ?? (car as any).category}</Badge>}
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={shareCar} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-xl hover:bg-primary/5">
-              <Share2 className="w-4 h-4" /> مشاركة
-            </button>
+            <ShareSheet
+              options={shareOptions}
+              trigger={
+                <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-xl hover:bg-primary/5">
+                  <Share2 className="w-4 h-4" /> مشاركة
+                </button>
+              }
+            />
             <button
               onClick={() => toggleSave("car_sale", carId)}
               className={`flex items-center gap-1.5 text-sm transition-colors px-3 py-1.5 rounded-xl ${isSaved("car_sale", carId) ? "text-primary hover:text-primary/80 hover:bg-primary/5" : "text-muted-foreground hover:text-primary hover:bg-primary/5"}`}
