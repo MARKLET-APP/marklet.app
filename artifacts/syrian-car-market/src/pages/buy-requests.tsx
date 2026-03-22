@@ -17,6 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Calendar, DollarSign, Plus, Trash2, User, CreditCard, MessageCircle, Eye, Loader2, Car, Hash, Wrench, Bike } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ShareSheet } from "@/components/ShareSheet";
 
 type BuyRequest = {
   id: number;
@@ -382,24 +383,28 @@ export default function BuyRequests() {
                       {city && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5 shrink-0"><MapPin className="w-3 h-3" />{city}</span>}
                     </div>
                     {sellerName && <p className="text-[11px] text-muted-foreground truncate">البائع: {sellerName}</p>}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                    <div className="flex gap-1.5 pt-1 border-t mt-1">
                       {!isJunk && (
                         <button
                           onClick={() => navigate(`/cars/${item.id}`)}
-                          className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-medium text-muted-foreground border border-border rounded-full hover:bg-muted/70 active:scale-95 transition-all whitespace-nowrap"
+                          className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
                         >
-                          <Eye className="w-2.5 h-2.5" /> التفاصيل
+                          <Eye className="w-2.5 h-2.5 shrink-0" /> التفاصيل
                         </button>
                       )}
                       {user && sellerId && user.id !== sellerId && (
                         <button
                           onClick={() => startChat(sellerId, `مرحباً، أنا مهتم بـ ${title}. هل ما زال متوفراً؟`)}
                           disabled={startingChat}
-                          className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-bold text-white bg-primary hover:bg-primary/85 rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+                          className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-bold rounded-full bg-primary text-primary-foreground active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
                         >
                           {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
                         </button>
                       )}
+                      <ShareSheet
+                        options={{ title, url: `${window.location.origin}/listing/${item.id}` }}
+                        className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+                      />
                     </div>
                   </div>
                 </div>
@@ -453,31 +458,39 @@ export default function BuyRequests() {
                   <p className="text-sm text-muted-foreground border-t pt-3 leading-relaxed line-clamp-2">{r.description}</p>
                 )}
 
-                <div className="flex items-center gap-2 pt-2 border-t">
-                  {r.userName && (
-                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground flex-1 min-w-0 truncate">
-                      <User className="w-3 h-3 shrink-0" />{r.userName}
-                    </span>
+                {r.userName && (
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1 truncate">
+                    <User className="w-3 h-3 shrink-0" />{r.userName}
+                  </p>
+                )}
+                <div className="flex gap-1.5 pt-2 border-t">
+                  {user && user.id !== r.userId && (
+                    <button
+                      onClick={() => startChat(r.userId, `مرحباً، رأيت طلبك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "مركبة"}. أنا لدي ما تبحث عنه، تواصل معي!`)}
+                      disabled={startingChat}
+                      className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-bold rounded-full bg-primary text-primary-foreground active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
+                    </button>
                   )}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {user && user.id !== r.userId && (
-                      <button
-                        onClick={() => startChat(r.userId, `مرحباً، رأيت طلبك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "مركبة"}. أنا لدي ما تبحث عنه، تواصل معي!`)}
-                        disabled={startingChat}
-                        className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-bold text-white bg-primary hover:bg-primary/85 rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
-                      </button>
-                    )}
-                    {user && user.id === r.userId && (
-                      <button
-                        onClick={() => deleteMutation.mutate(r.id)}
-                        className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-medium text-destructive border border-destructive/30 rounded-full hover:bg-destructive/10 active:scale-95 transition-all whitespace-nowrap"
-                      >
-                        <Trash2 className="w-2.5 h-2.5" /> حذف
-                      </button>
-                    )}
-                  </div>
+                  {user && user.id === r.userId && (
+                    <button
+                      onClick={() => deleteMutation.mutate(r.id)}
+                      className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg text-destructive border border-destructive/30 active:scale-95 transition-all whitespace-nowrap"
+                    >
+                      <Trash2 className="w-2.5 h-2.5" /> حذف
+                    </button>
+                  )}
+                  <ShareSheet
+                    options={{
+                      title: `${r.brand || "أي ماركة"} ${r.model || ""}`.trim(),
+                      price: r.maxPrice,
+                      city: r.city,
+                      url: `${window.location.origin}/buy-requests`,
+                      description: r.description,
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+                  />
                 </div>
               </div>
             ))}
