@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, MapPin, ShoppingCart, Car, MessageCircle, Loader2, Eye, Share2 } from "lucide-react";
+import { Plus, MapPin, ShoppingCart, Car, MessageCircle, Loader2, Eye } from "lucide-react";
+import { ShareSheet } from "@/components/ShareSheet";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
@@ -159,16 +160,10 @@ export default function UsedCarsPage() {
                       >
                         {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
                       </button>
-                      <button
+                      <ShareSheet
+                        options={{ title: `${[c.brand, c.model, c.year].filter(Boolean).join(" ")}`, price: c.price, city: c.city, url: `${window.location.origin}/listing/${c.id}` }}
                         className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
-                        onClick={() => {
-                          const url = `${window.location.origin}/listing/${c.id}`;
-                          if (navigator.share) navigator.share({ title: `${c.brand} ${c.model} ${c.year}`, url }).catch(() => {});
-                          else navigator.clipboard.writeText(url).catch(() => {});
-                        }}
-                      >
-                        <Share2 className="w-2.5 h-2.5 shrink-0" /> مشاركة
-                      </button>
+                      />
                     </div>
                   </div>
                 </div>

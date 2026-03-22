@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye, Share2 } from "lucide-react";
+import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye } from "lucide-react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { ShareSheet } from "@/components/ShareSheet";
 
 export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate";
 
@@ -231,17 +232,16 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
               حذف
             </button>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const url = `${window.location.origin}/listing/${data.id}`;
-              if (navigator.share) navigator.share({ title, url }).catch(() => {});
-              else navigator.clipboard.writeText(url).catch(() => {});
+          <ShareSheet
+            options={{
+              title,
+              price: data.price ?? data.dailyPrice ?? null,
+              city: data.city ?? null,
+              url: `${window.location.origin}/listing/${data.id}`,
+              description: data.description ?? null,
             }}
             className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
-          >
-            <Share2 className="w-2.5 h-2.5 shrink-0" /> مشاركة
-          </button>
+          />
         </div>
       </div>
     </div>
