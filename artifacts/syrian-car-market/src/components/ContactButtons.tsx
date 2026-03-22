@@ -62,8 +62,8 @@ export function ContactButtons({
     user?.subscriptionActive === true || user?.isFeaturedSeller === true;
 
   /* compact mode overrides size */
-  const btnH = compact ? "h-7 text-xs px-3" : size === "lg" ? "h-12 text-base" : "h-10 text-sm";
-  const iconSz = compact ? "w-3.5 h-3.5" : size === "lg" ? "w-5 h-5" : "w-4 h-4";
+  const btnH = compact ? "h-6 px-2 text-[10px]" : size === "lg" ? "h-12 text-base" : "h-10 text-sm";
+  const iconSz = compact ? "w-2.5 h-2.5" : size === "lg" ? "w-5 h-5" : "w-4 h-4";
   const btnRound = compact ? "rounded-full" : "rounded-xl";
 
   const handleInAppMessage = async () => {
