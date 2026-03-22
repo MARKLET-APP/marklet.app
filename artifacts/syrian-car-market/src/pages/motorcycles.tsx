@@ -167,14 +167,16 @@ export default function MotorcyclesPage() {
                     {r.maxPrice && <span className="font-semibold text-rose-700">حتى ${r.maxPrice.toLocaleString()}</span>}
                     {r.userName && <span className="font-medium">{r.userName}</span>}
                   </div>
-                  <button
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1.5 border-rose-300 text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-bold"
                     onClick={() => startChat(r.userId, `مرحباً، رأيت طلبك للدراجة النارية ${[r.brand, r.model].filter(Boolean).join(" ") || ""}. أنا لدي ما تبحث عنه، تواصل معي!`)}
                     disabled={startingChat}
-                    className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-bold text-rose-700 border border-rose-300 rounded-full hover:bg-rose-50 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
                   >
-                    {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />}
-                    مراسلة
-                  </button>
+                    {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}
+                    مراسلة صاحب الطلب
+                  </Button>
                 </div>
               ))}
             </div>

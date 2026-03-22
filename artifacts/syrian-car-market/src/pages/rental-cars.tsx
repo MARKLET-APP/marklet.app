@@ -307,14 +307,16 @@ export default function RentalCarsPage() {
                       <p className="text-xs text-muted-foreground mt-1 font-medium">{req.userName} · {new Date(req.createdAt).toLocaleDateString("ar-SY")}</p>
                     </div>
                   </div>
-                  <button
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1.5 border-blue-300 text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold"
                     onClick={() => startChat(req.userId, `مرحباً، رأيت طلبك لاستئجار ${[req.brand, req.model].filter(Boolean).join(" ") || "سيارة"}. أنا أملك ما تبحث عنه!`)}
                     disabled={startingChat}
-                    className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-bold text-blue-700 border border-blue-300 rounded-full hover:bg-blue-50 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
                   >
-                    {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />}
-                    مراسلة
-                  </button>
+                    {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}
+                    مراسلة صاحب الطلب
+                  </Button>
                 </div>
               ))
             )}
