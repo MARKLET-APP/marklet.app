@@ -1,13 +1,12 @@
 /**
- * ShareSheet — one-tap native share
+ * ShareSheet — one-tap share button
  *
- * @capacitor/share handles all environments automatically:
- *   • Android/iOS APK  → native system share sheet
- *   • Mobile browser   → navigator.share (Chrome / Samsung Browser)
- *   • Desktop browser  → throws "not available" → clipboard fallback
+ * Uses navigator.share() which works natively in:
+ *   • Android WebView (APK) — opens native Android share sheet
+ *   • Android / iOS Chrome & Safari — opens native share sheet
+ *   • Desktop browsers — NOT supported → clipboard fallback
  */
 import { Share2 } from "lucide-react";
-import { Share } from "@capacitor/share";
 import { useToast } from "@/hooks/use-toast";
 
 export interface ShareOptions {
@@ -20,7 +19,9 @@ export interface ShareOptions {
 
 interface ShareSheetProps {
   options: ShareOptions;
+  /** When provided, rendered inside a wrapper div instead of a default button. */
   trigger?: React.ReactNode;
+  /** Extra className for the wrapper (useful when trigger is provided). */
   className?: string;
 }
 
@@ -36,21 +37,10 @@ function buildText(o: ShareOptions): string {
     .join("\n");
 }
 
-function isUserCancel(err: unknown): boolean {
-  const msg = ((err as any)?.message ?? (err as any)?.errorMessage ?? "").toLowerCase();
-  return (
-    (err as any)?.name === "AbortError" ||
-    msg.includes("cancel") ||
-    msg.includes("dismiss") ||
-    msg.includes("abort")
-  );
-}
-
 async function clipboardWrite(text: string) {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
-    /* execCommand fallback */
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.style.cssText = "position:fixed;top:-9999px;opacity:0";
@@ -64,48 +54,52 @@ async function clipboardWrite(text: string) {
 export function ShareSheet({ options, trigger, className }: ShareSheetProps) {
   const { toast } = useToast();
 
-  /** Called on button tap — must stay synchronous up to the first await
-   *  so the browser's transient activation (user-gesture requirement)
-   *  is still valid when Share.share() / navigator.share() is invoked. */
-  const onTap = (e: React.MouseEvent) => {
+  /** Synchronous handler — MUST stay sync up to navigator.share()
+   *  so the browser's transient activation (user-gesture) remains valid. */
+  function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
-    doShare();
-  };
 
-  async function doShare() {
     const text = buildText(options);
-    try {
-      // Works on Android APK (native sheet), Android Chrome (system share),
-      // and iOS PWA. @capacitor/share routes internally to the right API.
-      await Share.share({
-        title: options.title || "MARKLET — إعلان",
-        text,
-        url: options.url,
-        dialogTitle: "شارك الإعلان عبر",
-      });
-    } catch (err: unknown) {
-      if (isUserCancel(err)) return; // user closed the sheet — do nothing
+    const shareData: ShareData = { title: options.title || "MARKLET", text, url: options.url };
 
-      // Share API not available (desktop browser) → copy as fallback
-      await clipboardWrite(text);
-      toast({
-        title: "تم نسخ الرابط",
-        description: "المشاركة المباشرة غير متاحة في هذا المتصفح — تم نسخ الرابط",
+    if (navigator.share) {
+      // Works in Android WebView (APK), Android Chrome, iOS Safari, Samsung Internet
+      navigator.share(shareData).catch((err: Error) => {
+        if (err.name !== "AbortError") {
+          void clipboardWrite(text);
+          toast({ title: "تم نسخ الرابط" });
+        }
+      });
+    } else {
+      // Desktop browsers: clipboard fallback
+      void clipboardWrite(text).then(() => {
+        toast({ title: "تم نسخ الرابط", description: "الصق الرابط في واتساب أو تيليغرام" });
       });
     }
   }
 
+  /* When a custom trigger is provided, wrap it in a div so we never nest
+     <button> inside <button> (invalid HTML). */
+  if (trigger) {
+    return (
+      <div onClick={handleClick} className={className} style={{ cursor: "pointer" }}>
+        {trigger}
+      </div>
+    );
+  }
+
+  /* Default: a compact pill button */
   return (
-    <div onClick={onTap} className={className} style={{ display: "contents" }}>
-      {trigger ?? (
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary border border-border/60 hover:border-primary/40 rounded-lg px-2 py-1 transition-all active:scale-95 whitespace-nowrap"
-        >
-          <Share2 className="w-3 h-3 shrink-0" />
-          مشاركة
-        </button>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={handleClick}
+      className={
+        className ??
+        "inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-medium text-muted-foreground border border-border/70 rounded-full hover:bg-muted/70 active:scale-95 transition-all whitespace-nowrap shrink-0"
+      }
+    >
+      <Share2 className="w-2.5 h-2.5 shrink-0" />
+      مشاركة
+    </button>
   );
 }

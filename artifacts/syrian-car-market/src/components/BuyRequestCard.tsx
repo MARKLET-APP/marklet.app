@@ -108,44 +108,33 @@ export function BuyRequestCard({
         )}
       </div>
 
-      <div className="flex gap-2 pt-1">
+      <div className="flex items-center gap-1.5 pt-1 flex-wrap">
         {canChat && (
-          <Button
-            size="sm"
-            className={`flex-1 gap-1.5 rounded-xl font-bold text-xs ${colors.btn}`}
+          <button
             onClick={onChat}
             disabled={chatLoading}
+            className={`inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-bold rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap ${colors.btn}`}
           >
-            {chatLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <MessageCircle className="w-3.5 h-3.5" />
-            )}
-            مراسلة المشتري
-          </Button>
+            {chatLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />}
+            مراسلة
+          </button>
         )}
         {isOwner && onDelete && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="flex-1 text-destructive hover:bg-destructive/10 gap-1.5 rounded-xl text-xs"
+          <button
             onClick={onDelete}
             disabled={deleteLoading}
+            className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-medium text-destructive border border-destructive/30 rounded-full hover:bg-destructive/10 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
           >
-            {deleteLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
-            حذف طلبي
-          </Button>
+            {deleteLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
+            حذف
+          </button>
         )}
         <ShareSheet
           options={{
             title,
             price: data.maxPrice,
             city: data.city,
-            url: `${window.location.origin}/listing/${data.id}`,
+            url: `${window.location.origin}/buy-requests`,
             description: data.description,
           }}
         />

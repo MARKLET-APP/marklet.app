@@ -204,45 +204,36 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 pt-1">
+        <div className="flex items-center gap-1.5 pt-1 flex-wrap">
           {!isOwner && onChat && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 gap-1.5 rounded-xl text-xs font-bold"
+            <button
               onClick={(e) => { e.stopPropagation(); onChat(); }}
               disabled={chatLoading}
+              className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-bold text-white bg-primary hover:bg-primary/85 rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
             >
-              {chatLoading
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <MessageCircle className="w-3.5 h-3.5" />
-              }
-              مراسلة البائع
-            </Button>
+              {chatLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />}
+              مراسلة
+            </button>
           )}
           {isOwner && onDelete && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="flex-1 text-destructive hover:bg-destructive/10 rounded-xl gap-1.5 text-xs"
+            <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
               disabled={deleteLoading}
+              className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-medium text-destructive border border-destructive/30 rounded-full hover:bg-destructive/10 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
             >
-              {deleteLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              {deleteLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
               حذف
-            </Button>
+            </button>
           )}
-          <div onClick={(e) => e.stopPropagation()}>
-            <ShareSheet
-              options={{
-                title,
-                price: data.price ?? data.dailyPrice ?? null,
-                city: data.city ?? null,
-                url: `${window.location.origin}/listing/${data.id}`,
-                description: data.description ?? null,
-              }}
-            />
-          </div>
+          <ShareSheet
+            options={{
+              title,
+              price: data.price ?? data.dailyPrice ?? null,
+              city: data.city ?? null,
+              url: `${window.location.origin}/listing/${data.id}`,
+              description: data.description ?? null,
+            }}
+          />
         </div>
       </div>
     </div>
