@@ -6,6 +6,7 @@
  *   • Android / iOS Chrome & Safari — opens native share sheet
  *   • Desktop browsers — NOT supported → clipboard fallback
  */
+import React from "react";
 import { Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -78,14 +79,19 @@ export function ShareSheet({ options, trigger, className }: ShareSheetProps) {
     }
   }
 
-  /* When a custom trigger is provided, wrap it in a div so we never nest
-     <button> inside <button> (invalid HTML). */
+  /* When a custom trigger is provided, clone it and inject onClick directly
+     onto the element — this preserves the browser's "transient activation"
+     (user-gesture) so navigator.share() works in Android WebView. */
   if (trigger) {
-    return (
-      <div onClick={handleClick} className={className} style={{ cursor: "pointer" }}>
-        {trigger}
-      </div>
-    );
+    return React.cloneElement(trigger as React.ReactElement<any>, {
+      onClick: handleClick,
+      className: [
+        (trigger as React.ReactElement<any>).props?.className ?? "",
+        className ?? "",
+      ]
+        .filter(Boolean)
+        .join(" ") || undefined,
+    });
   }
 
   /* Default: a compact pill button */

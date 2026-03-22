@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { ShareSheet } from "@/components/ShareSheet";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth";
@@ -122,37 +122,38 @@ export function CarCard({ car }: { car: Car }) {
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-3 space-y-2.5">
         <div>
           <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors">
             {car.brand} {car.model}
           </h3>
-          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
             <MapPin className="w-3.5 h-3.5" />
             {car.province}، {car.city}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs font-medium text-foreground bg-secondary/50 p-3 rounded-xl">
+        <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-xs font-medium text-foreground bg-secondary/50 p-2.5 rounded-xl">
           <div className="flex items-center gap-1.5">
-            <Calendar className="w-4 h-4 text-primary" />
+            <Calendar className="w-3.5 h-3.5 text-primary" />
             <span>{car.year}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Gauge className="w-4 h-4 text-primary" />
-            <span>{car.mileage ? Number(car.mileage).toLocaleString("en-US") + " كم" : "غير محدد"}</span>
+            <Gauge className="w-3.5 h-3.5 text-primary" />
+            <span>{car.mileage ? Number(car.mileage).toLocaleString("en-US") + " كم" : "—"}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Settings className="w-4 h-4 text-primary" />
+            <Settings className="w-3.5 h-3.5 text-primary" />
             <span>{car.transmission === "automatic" ? "أوتوماتيك" : "يدوي"}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Eye className="w-4 h-4 text-primary" />
-            <span>مشاهدات اليوم: {views}</span>
+            <Eye className="w-3.5 h-3.5 text-primary" />
+            <span>مشاهدات: {views}</span>
           </div>
         </div>
 
-        <div onClick={(e) => e.stopPropagation()}>
+        {/* Actions row — ShareSheet pill + ContactButton(s) */}
+        <div className="flex items-center gap-2 pt-0.5" onClick={e => e.stopPropagation()}>
           <ShareSheet
             options={{
               title: `${car.brand} ${car.model} ${car.year}`,
@@ -161,22 +162,15 @@ export function CarCard({ car }: { car: Car }) {
               url: `${window.location.origin}/listing/${car.id}`,
               description: (car as any).description ?? null,
             }}
-            trigger={
-              <button className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors py-2 border border-dashed border-muted-foreground/30 rounded-xl hover:border-primary/40 hover:bg-primary/5">
-                <Share2 className="w-4 h-4" />
-                مشاركة الإعلان
-              </button>
-            }
           />
-        </div>
-
-        <div onClick={e => e.stopPropagation()}>
           <ContactButtons
             phone={null}
             sellerId={(car as any).sellerId ?? null}
             listingId={car.id}
             size="sm"
+            compact
             eligibleNavigateUrl={`/cars/${car.id}`}
+            className="flex-1"
           />
         </div>
       </div>

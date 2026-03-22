@@ -31,6 +31,7 @@ interface ContactButtonsProps {
   listingId?: number | null;
   listingTitle?: string;
   size?: "sm" | "lg";
+  compact?: boolean;
   onInAppMessage?: () => void;
   chatLoading?: boolean;
   eligibleNavigateUrl?: string;
@@ -43,6 +44,7 @@ export function ContactButtons({
   listingId,
   listingTitle = "إعلان على MARKLET",
   size = "lg",
+  compact = false,
   onInAppMessage,
   chatLoading = false,
   eligibleNavigateUrl,
@@ -59,8 +61,10 @@ export function ContactButtons({
   const canDirectContact =
     user?.subscriptionActive === true || user?.isFeaturedSeller === true;
 
-  const btnH = size === "lg" ? "h-12 text-base" : "h-10 text-sm";
-  const iconSz = size === "lg" ? "w-5 h-5" : "w-4 h-4";
+  /* compact mode overrides size */
+  const btnH = compact ? "h-7 text-xs px-3" : size === "lg" ? "h-12 text-base" : "h-10 text-sm";
+  const iconSz = compact ? "w-3.5 h-3.5" : size === "lg" ? "w-5 h-5" : "w-4 h-4";
+  const btnRound = compact ? "rounded-full" : "rounded-xl";
 
   const handleInAppMessage = async () => {
     if (!user) { navigate("/login"); return; }
@@ -92,10 +96,10 @@ export function ContactButtons({
       <div className={`flex flex-col gap-2 ${className}`}>
         <Button
           onClick={() => navigate("/login")}
-          className={`w-full rounded-xl ${btnH} font-bold gap-2 bg-primary text-primary-foreground shadow-lg`}
+          className={`w-full ${btnRound} ${btnH} font-bold gap-2 bg-primary text-primary-foreground shadow-lg whitespace-nowrap`}
         >
           <LogIn className={iconSz} />
-          سجّل دخولك للتواصل مع البائع
+          {compact ? "دخول" : "سجّل دخولك للتواصل مع البائع"}
         </Button>
       </div>
     );
@@ -107,17 +111,19 @@ export function ContactButtons({
         <Button
           onClick={handleInAppMessage}
           disabled={chatLoading || startingChat}
-          className={`w-full rounded-xl ${btnH} font-bold gap-2 bg-primary text-primary-foreground shadow-lg`}
+          className={`w-full ${btnRound} ${btnH} font-bold gap-2 bg-primary text-primary-foreground shadow-lg whitespace-nowrap`}
         >
           {(chatLoading || startingChat)
             ? <Loader2 className={`${iconSz} animate-spin`} />
             : <MessageCircle className={iconSz} />}
-          مراسلة عبر التطبيق
+          {compact ? "مراسلة" : "مراسلة عبر التطبيق"}
         </Button>
-        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-          <Star className="w-3 h-3 text-amber-500" />
-          التواصل المباشر (واتساب / اتصال) للمشتركين والبائعين المميزين فقط
-        </p>
+        {!compact && (
+          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+            <Star className="w-3 h-3 text-amber-500" />
+            التواصل المباشر (واتساب / اتصال) للمشتركين والبائعين المميزين فقط
+          </p>
+        )}
       </div>
     );
   }
@@ -128,7 +134,7 @@ export function ContactButtons({
         <div className={`flex gap-2 ${className}`}>
           <Button
             onClick={() => navigate(eligibleNavigateUrl)}
-            className={`flex-1 rounded-xl ${btnH} font-bold gap-2 bg-green-600 hover:bg-green-700 text-white`}
+            className={`flex-1 ${btnRound} ${btnH} font-bold gap-2 bg-green-600 hover:bg-green-700 text-white`}
           >
             {WA_ICON}
             واتساب
@@ -136,7 +142,7 @@ export function ContactButtons({
           <Button
             onClick={() => navigate(eligibleNavigateUrl)}
             variant="outline"
-            className={`flex-1 rounded-xl ${btnH} font-bold gap-2 border-2 border-primary text-primary hover:bg-primary/5`}
+            className={`flex-1 ${btnRound} ${btnH} font-bold gap-2 border-2 border-primary text-primary hover:bg-primary/5`}
           >
             <Phone className={iconSz} />
             اتصال
@@ -153,7 +159,7 @@ export function ContactButtons({
         href={waLink!}
         target="_blank"
         rel="noopener noreferrer"
-        className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl ${btnH} font-bold bg-green-600 hover:bg-green-700 text-white shadow-md transition-colors no-underline`}
+        className={`flex-1 inline-flex items-center justify-center gap-2 ${btnRound} ${btnH} font-bold bg-green-600 hover:bg-green-700 text-white shadow-md transition-colors no-underline`}
         title={`تواصل عبر واتساب — ${listingTitle}`}
       >
         {WA_ICON}
@@ -161,7 +167,7 @@ export function ContactButtons({
       </a>
       <a
         href={callLink!}
-        className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl ${btnH} font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors no-underline`}
+        className={`flex-1 inline-flex items-center justify-center gap-2 ${btnRound} ${btnH} font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors no-underline`}
         title={`اتصل بالبائع — ${phoneClean}`}
       >
         <Phone className={iconSz} />
