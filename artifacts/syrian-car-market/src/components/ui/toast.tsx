@@ -10,15 +10,18 @@ const ToastProvider = ToastPrimitives.Provider
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      /* On mobile: appears just below the Header + DhikrBar (≈ 104px from top).
-         On desktop (sm+): standard bottom-right corner. */
-      "fixed top-[104px] left-1/2 -translate-x-1/2 z-[200] flex max-h-screen w-[92vw] max-w-sm flex-col gap-2 p-0 sm:top-auto sm:bottom-4 sm:right-4 sm:left-auto sm:translate-x-0 sm:w-auto sm:max-w-[420px]",
+      "fixed left-1/2 -translate-x-1/2 z-[200] flex max-h-screen w-[92vw] max-w-sm flex-col gap-2 p-0 sm:top-auto sm:bottom-4 sm:right-4 sm:left-auto sm:translate-x-0 sm:w-auto sm:max-w-[420px]",
       className
     )}
+    style={{
+      /* Mobile: appear just below Header + DhikrBar using measured --ptr-top */
+      top: "var(--ptr-top, 104px)",
+      ...style,
+    }}
     {...props}
   />
 ))

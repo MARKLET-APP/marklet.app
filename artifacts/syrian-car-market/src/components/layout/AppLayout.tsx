@@ -1,14 +1,16 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
 import { DhikrBar } from "@/components/DhikrBar";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { useLocation } from "wouter";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { token, setAuth } = useAuthStore();
   const [, navigate] = useLocation();
+  const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -34,12 +36,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("popstate", guard);
   }, [navigate]);
 
-  // ── Viewport height tracking ──────────────────────────────────────────────
-  // Keeps --vh in sync with the real visible height (accounts for Android
-  // status bar, virtual keyboard, browser chrome, etc.).
+  // ── Viewport height + pull-to-refresh top offset ─────────────────────────
   useEffect(() => {
     const fix = () => {
       document.documentElement.style.setProperty("--vh", `${window.innerHeight}px`);
+      // --ptr-top: distance from viewport top to the bottom of Header+DhikrBar
+      // Used by PullToRefresh to position the indicator correctly.
+      if (topRef.current) {
+        const h = topRef.current.getBoundingClientRect().bottom;
+        document.documentElement.style.setProperty("--ptr-top", `${h}px`);
+      }
     };
     fix();
     window.addEventListener("resize", fix);
@@ -66,8 +72,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
       className="flex flex-col bg-background overflow-hidden"
       style={{ height: "var(--vh, 100dvh)" }}
     >
-      <Header />
-      <DhikrBar />
+      {/* Wrap header + dhikrbar so we can measure their combined height */}
+      <div ref={topRef} className="flex-shrink-0">
+        <Header />
+        <DhikrBar />
+      </div>
+
+      {/* Pull-to-refresh indicator — positioned just below the header section */}
+      <PullToRefresh />
 
       <main
         id="app-main"
