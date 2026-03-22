@@ -472,23 +472,23 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground line-clamp-2">{r.description}</p>
                   )}
 
-                  <div className="flex gap-2 pt-2 border-t">
+                  <div className="flex gap-1.5 pt-2 border-t overflow-hidden">
                     <button
-                      className="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-bold rounded-full bg-primary text-primary-foreground disabled:opacity-60 transition-opacity shrink-0"
+                      className="inline-flex items-center gap-0.5 h-6 px-2 text-[10px] font-bold rounded-full bg-primary text-primary-foreground disabled:opacity-60 transition-opacity shrink-0 whitespace-nowrap"
                       disabled={startingChat}
                       onClick={() => startChatWithBuyer(r.userId, r.id, `مرحباً، رأيت طلب الشراء الخاص بك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "سيارة"}. أنا لدي ما تبحث عنه!`)}
                     >
                       {startingChat
-                        ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-                        : <MessageCircle className="w-3 h-3" />
+                        ? <span className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                        : <MessageCircle className="w-2.5 h-2.5" />
                       }
                       {t("home.buyReqs.contact")}
                     </button>
                     <button
-                      className="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium rounded-full border border-border bg-background hover:bg-muted/60 transition-colors shrink-0"
+                      className="inline-flex items-center gap-0.5 h-6 px-2 text-[10px] font-medium rounded-full border border-border bg-background hover:bg-muted/60 transition-colors shrink-0 whitespace-nowrap"
                       onClick={() => setDetailRequest(r)}
                     >
-                      <Eye className="w-3 h-3" /> {t("home.buyReqs.details")}
+                      <Eye className="w-2.5 h-2.5" /> {t("home.buyReqs.details")}
                     </button>
                   </div>
                 </div>
