@@ -1,18 +1,12 @@
 /**
- * ShareSheet
- * ----------
- * On native Android/iOS (Capacitor APK):
- *   → opens the system share sheet via @capacitor/share
- * On mobile browser / PWA (supports Web Share API):
- *   → opens the browser's native share dialog via navigator.share
- * On desktop browser (no share support):
- *   → copies link to clipboard with a toast notification
+ * ShareSheet — one-tap native share
  *
- * The user is NEVER shown a custom intermediate UI — the native dialog opens directly.
+ * @capacitor/share handles all environments automatically:
+ *   • Android/iOS APK  → native system share sheet
+ *   • Mobile browser   → navigator.share (Chrome / Samsung Browser)
+ *   • Desktop browser  → throws "not available" → clipboard fallback
  */
-
 import { Share2 } from "lucide-react";
-import { Capacitor } from "@capacitor/core";
 import { Share } from "@capacitor/share";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,88 +29,80 @@ function buildText(o: ShareOptions): string {
     o.title,
     o.price ? `السعر: $${Number(o.price).toLocaleString()}` : "",
     o.city ? `الموقع: ${o.city}` : "",
-    o.description ? o.description.slice(0, 120) : "",
+    o.description ? o.description.slice(0, 100) : "",
     `\nشاهد الإعلان:\n${o.url}`,
   ]
     .filter(Boolean)
     .join("\n");
 }
 
-function isCancelError(err: any): boolean {
-  const msg: string = (err?.message ?? err?.errorMessage ?? "").toLowerCase();
+function isUserCancel(err: unknown): boolean {
+  const msg = ((err as any)?.message ?? (err as any)?.errorMessage ?? "").toLowerCase();
   return (
-    err?.name === "AbortError" ||
+    (err as any)?.name === "AbortError" ||
     msg.includes("cancel") ||
     msg.includes("dismiss") ||
-    msg.includes("abort") ||
-    msg.includes("share canceled")
+    msg.includes("abort")
   );
 }
 
-async function clipboardCopy(text: string) {
+async function clipboardWrite(text: string) {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
-    const el = Object.assign(document.createElement("textarea"), {
-      value: text,
-    });
-    el.style.cssText = "position:fixed;opacity:0;pointer-events:none";
-    document.body.appendChild(el);
-    el.select();
+    /* execCommand fallback */
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;top:-9999px;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
     document.execCommand("copy");
-    document.body.removeChild(el);
+    document.body.removeChild(ta);
   }
 }
 
 export function ShareSheet({ options, trigger, className }: ShareSheetProps) {
   const { toast } = useToast();
 
-  const handleShare = async () => {
-    const text = buildText(options);
-    const isNative = Capacitor.isNativePlatform();
-
-    if (isNative) {
-      // ── Native Android / iOS ─────────────────────────────────────────────
-      try {
-        await Share.share({
-          title: options.title || "شارك الإعلان",
-          text,
-          url: options.url,
-          dialogTitle: "شارك الإعلان عبر التطبيقات",
-        });
-      } catch (err) {
-        if (!isCancelError(err)) {
-          console.error("[Share] native share failed:", err);
-        }
-      }
-      return;
-    }
-
-    // ── Web / PWA ────────────────────────────────────────────────────────
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({
-          title: options.title || "شارك الإعلان",
-          text,
-          url: options.url,
-        });
-        return;
-      } catch (err) {
-        if (isCancelError(err)) return;
-        // API exists but failed — fall through to clipboard
-      }
-    }
-
-    // ── Desktop / unsupported — clipboard fallback ───────────────────────
-    await clipboardCopy(text);
-    toast({ title: "تم نسخ الرابط", description: "شاركه على واتساب أو أي تطبيق آخر" });
+  /** Called on button tap — must stay synchronous up to the first await
+   *  so the browser's transient activation (user-gesture requirement)
+   *  is still valid when Share.share() / navigator.share() is invoked. */
+  const onTap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    doShare();
   };
 
+  async function doShare() {
+    const text = buildText(options);
+    try {
+      // Works on Android APK (native sheet), Android Chrome (system share),
+      // and iOS PWA. @capacitor/share routes internally to the right API.
+      await Share.share({
+        title: options.title || "MARKLET — إعلان",
+        text,
+        url: options.url,
+        dialogTitle: "شارك الإعلان عبر",
+      });
+    } catch (err: unknown) {
+      if (isUserCancel(err)) return; // user closed the sheet — do nothing
+
+      // Share API not available (desktop browser) → copy as fallback
+      await clipboardWrite(text);
+      toast({
+        title: "تم نسخ الرابط",
+        description: "المشاركة المباشرة غير متاحة في هذا المتصفح — تم نسخ الرابط",
+      });
+    }
+  }
+
   return (
-    <div onClick={handleShare} className={className}>
+    <div onClick={onTap} className={className} style={{ display: "contents" }}>
       {trigger ?? (
-        <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1.5 rounded-xl hover:bg-primary/5 whitespace-nowrap">
-          <Share2 className="w-3.5 h-3.5 shrink-0" />
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary border border-border/60 hover:border-primary/40 rounded-lg px-2 py-1 transition-all active:scale-95 whitespace-nowrap"
+        >
+          <Share2 className="w-3 h-3 shrink-0" />
           مشاركة
         </button>
       )}

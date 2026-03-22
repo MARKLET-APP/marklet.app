@@ -382,23 +382,22 @@ export default function BuyRequests() {
                       {city && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5 shrink-0"><MapPin className="w-3 h-3" />{city}</span>}
                     </div>
                     {sellerName && <p className="text-[11px] text-muted-foreground truncate">البائع: {sellerName}</p>}
-                    {/* Action buttons — compact, auto-width, right-aligned */}
-                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/50">
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
                       {!isJunk && (
                         <button
                           onClick={() => navigate(`/cars/${item.id}`)}
-                          className="inline-flex items-center gap-1 border border-border rounded-lg px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted/60 active:scale-95 transition-all whitespace-nowrap"
+                          className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-medium text-muted-foreground border border-border rounded-full hover:bg-muted/70 active:scale-95 transition-all whitespace-nowrap"
                         >
-                          <Eye className="w-3 h-3" /> التفاصيل
+                          <Eye className="w-2.5 h-2.5" /> التفاصيل
                         </button>
                       )}
                       {user && sellerId && user.id !== sellerId && (
                         <button
                           onClick={() => startChat(sellerId, `مرحباً، أنا مهتم بـ ${title}. هل ما زال متوفراً؟`)}
                           disabled={startingChat}
-                          className="inline-flex items-center gap-1 bg-primary hover:bg-primary/90 text-white rounded-lg px-2.5 py-1 text-[11px] font-bold active:scale-95 transition-all disabled:opacity-60 whitespace-nowrap"
+                          className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-bold text-white bg-primary hover:bg-primary/85 rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
                         >
-                          {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />} مراسلة
+                          {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
                         </button>
                       )}
                     </div>
@@ -454,22 +453,31 @@ export default function BuyRequests() {
                   <p className="text-sm text-muted-foreground border-t pt-3 leading-relaxed line-clamp-2">{r.description}</p>
                 )}
 
-                <div className="flex gap-2 pt-2 border-t flex-wrap">
+                <div className="flex items-center gap-2 pt-2 border-t">
                   {r.userName && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-1">
-                      <User className="w-3.5 h-3.5" />{r.userName}
-                    </div>
+                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground flex-1 min-w-0 truncate">
+                      <User className="w-3 h-3 shrink-0" />{r.userName}
+                    </span>
                   )}
-                  {user && user.id !== r.userId && (
-                    <Button size="sm" className="rounded-xl gap-1.5 bg-primary hover:bg-primary/90 font-bold text-xs" onClick={() => startChat(r.userId, `مرحباً، رأيت طلبك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "مركبة"}. أنا لدي ما تبحث عنه، تواصل معي!`)} disabled={startingChat}>
-                      {startingChat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />} مراسلة
-                    </Button>
-                  )}
-                  {user && user.id === r.userId && (
-                    <Button size="sm" variant="ghost" className="rounded-xl gap-1.5 text-destructive hover:bg-destructive/10 text-xs" onClick={() => deleteMutation.mutate(r.id)}>
-                      <Trash2 className="w-3.5 h-3.5" /> حذف
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {user && user.id !== r.userId && (
+                      <button
+                        onClick={() => startChat(r.userId, `مرحباً، رأيت طلبك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "مركبة"}. أنا لدي ما تبحث عنه، تواصل معي!`)}
+                        disabled={startingChat}
+                        className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-bold text-white bg-primary hover:bg-primary/85 rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {startingChat ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />} مراسلة
+                      </button>
+                    )}
+                    {user && user.id === r.userId && (
+                      <button
+                        onClick={() => deleteMutation.mutate(r.id)}
+                        className="inline-flex items-center gap-1 h-6 px-2 text-[10px] font-medium text-destructive border border-destructive/30 rounded-full hover:bg-destructive/10 active:scale-95 transition-all whitespace-nowrap"
+                      >
+                        <Trash2 className="w-2.5 h-2.5" /> حذف
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
