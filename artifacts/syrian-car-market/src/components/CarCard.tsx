@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight } from "lucide-react";
-import { ShareSheet } from "@/components/ShareSheet";
+import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, MessageCircle, Share2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { withApi } from "@/lib/runtimeConfig";
 import type { Car } from "@workspace/api-client-react";
-import { ContactButtons } from "@/components/ContactButtons";
 
 function formatUSD(price: number): string {
   return "$" + price.toLocaleString("en-US");
@@ -18,6 +17,7 @@ export function CarCard({ car }: { car: Car }) {
   const [views, setViews] = useState(0);
   const [tag, setTag] = useState("");
   const [imgIndex, setImgIndex] = useState(0);
+  const [chatLoading, setChatLoading] = useState(false);
 
   const images: string[] = (car as any).images?.length
     ? (car as any).images
@@ -46,6 +46,49 @@ export function CarCard({ car }: { car: Car }) {
   };
 
   const goToDetail = () => navigate(`/cars/${car.id}`);
+
+  const handleChat = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) { navigate("/login"); return; }
+    const sellerId = (car as any).sellerId;
+    if (!sellerId) { navigate(`/cars/${car.id}`); return; }
+    try {
+      setChatLoading(true);
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(withApi("/api/chats/start"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ sellerId, carId: car.id }),
+      });
+      if (res.ok) {
+        const conv = await res.json().catch(() => null);
+        navigate(conv?.id ? `/messages?conversationId=${conv.id}` : "/messages");
+      }
+    } catch {
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  function handleShare(e: React.MouseEvent) {
+    e.stopPropagation();
+    const url = `${window.location.origin}/listing/${car.id}`;
+    const shareData = {
+      title: `${car.brand} ${car.model} ${car.year}`,
+      text: `${car.brand} ${car.model} ${car.year} — ${formatUSD(car.price)} — ${car.city}\n${url}`,
+      url,
+    };
+    if (navigator.share) {
+      navigator.share(shareData).catch((err: Error) => {
+        if (err.name !== "AbortError") navigator.clipboard.writeText(url).catch(() => {});
+      });
+    } else {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+  }
 
   return (
     <div
@@ -152,26 +195,30 @@ export function CarCard({ car }: { car: Car }) {
           </div>
         </div>
 
-        {/* Actions row — ShareSheet pill + ContactButton(s) */}
-        <div className="flex items-center gap-2 pt-0.5" onClick={e => e.stopPropagation()}>
-          <ShareSheet
-            options={{
-              title: `${car.brand} ${car.model} ${car.year}`,
-              price: car.price,
-              city: car.city,
-              url: `${window.location.origin}/listing/${car.id}`,
-              description: (car as any).description ?? null,
-            }}
-          />
-          <ContactButtons
-            phone={null}
-            sellerId={(car as any).sellerId ?? null}
-            listingId={car.id}
-            size="sm"
-            compact
-            eligibleNavigateUrl={`/cars/${car.id}`}
-            className="flex-1"
-          />
+        {/* ─── 3 action buttons: التفاصيل | مراسلة | مشاركة ─── */}
+        <div className="flex gap-1.5 pt-2 border-t" onClick={e => e.stopPropagation()}>
+          <button
+            className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[11px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
+            onClick={goToDetail}
+          >
+            <Eye className="w-3 h-3 shrink-0" /> التفاصيل
+          </button>
+          <button
+            className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[11px] font-bold rounded-lg bg-primary text-primary-foreground whitespace-nowrap active:scale-95 transition-all disabled:opacity-50"
+            onClick={handleChat}
+            disabled={chatLoading}
+          >
+            {chatLoading
+              ? <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+              : <MessageCircle className="w-3 h-3 shrink-0" />}
+            مراسلة
+          </button>
+          <button
+            className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[11px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+            onClick={handleShare}
+          >
+            <Share2 className="w-3 h-3 shrink-0" /> مشاركة
+          </button>
         </div>
       </div>
     </div>

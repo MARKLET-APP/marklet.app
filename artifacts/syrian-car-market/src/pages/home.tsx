@@ -5,7 +5,7 @@ import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
   AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag,
-  Building2, Star
+  Building2, Star, Share2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -472,23 +472,37 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground line-clamp-2">{r.description}</p>
                   )}
 
-                  <div className="flex gap-1.5 pt-2 border-t overflow-hidden">
+                  <div className="flex gap-1.5 pt-2 border-t">
                     <button
-                      className="inline-flex items-center gap-0.5 h-6 px-2 text-[10px] font-bold rounded-full bg-primary text-primary-foreground disabled:opacity-60 transition-opacity shrink-0 whitespace-nowrap"
+                      className="flex-1 inline-flex items-center justify-center gap-0.5 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
+                      onClick={() => setDetailRequest(r)}
+                    >
+                      <Eye className="w-2.5 h-2.5 shrink-0" /> {t("home.buyReqs.details")}
+                    </button>
+                    <button
+                      className="flex-1 inline-flex items-center justify-center gap-0.5 py-[5px] px-1 text-[10px] font-bold rounded-lg bg-primary text-primary-foreground disabled:opacity-60 whitespace-nowrap active:scale-95 transition-all"
                       disabled={startingChat}
                       onClick={() => startChatWithBuyer(r.userId, r.id, `مرحباً، رأيت طلب الشراء الخاص بك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "سيارة"}. أنا لدي ما تبحث عنه!`)}
                     >
                       {startingChat
-                        ? <span className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-                        : <MessageCircle className="w-2.5 h-2.5" />
+                        ? <span className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0 inline-block" />
+                        : <MessageCircle className="w-2.5 h-2.5 shrink-0" />
                       }
                       {t("home.buyReqs.contact")}
                     </button>
                     <button
-                      className="inline-flex items-center gap-0.5 h-6 px-2 text-[10px] font-medium rounded-full border border-border bg-background hover:bg-muted/60 transition-colors shrink-0 whitespace-nowrap"
-                      onClick={() => setDetailRequest(r)}
+                      className="flex-1 inline-flex items-center justify-center gap-0.5 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+                      onClick={() => {
+                        const url = window.location.origin + "/buy-requests";
+                        const title = `${r.brand || "سيارة"} ${r.model || ""}`.trim();
+                        if (navigator.share) {
+                          navigator.share({ title, text: `${title} — حتى $${r.maxPrice?.toLocaleString() ?? ""}`, url }).catch(() => {});
+                        } else {
+                          navigator.clipboard.writeText(url).catch(() => {});
+                        }
+                      }}
                     >
-                      <Eye className="w-2.5 h-2.5" /> {t("home.buyReqs.details")}
+                      <Share2 className="w-2.5 h-2.5 shrink-0" /> مشاركة
                     </button>
                   </div>
                 </div>
