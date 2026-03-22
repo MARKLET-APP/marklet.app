@@ -1,10 +1,10 @@
 /**
  * ShareSheet — one-tap share button
  *
- * Uses navigator.share() which works natively in:
- *   • Android WebView (APK) — opens native Android share sheet
- *   • Android / iOS Chrome & Safari — opens native share sheet
- *   • Desktop browsers — NOT supported → clipboard fallback
+ * Priority:
+ *   1. window.AndroidNative.share() — native Android Intent (APK / Capacitor WebView)
+ *   2. navigator.share()            — Web Share API (mobile browsers)
+ *   3. clipboard fallback           — desktop browsers
  */
 import React from "react";
 import { Share2 } from "lucide-react";
@@ -20,9 +20,7 @@ export interface ShareOptions {
 
 interface ShareSheetProps {
   options: ShareOptions;
-  /** When provided, rendered inside a wrapper div instead of a default button. */
   trigger?: React.ReactNode;
-  /** Extra className for the wrapper (useful when trigger is provided). */
   className?: string;
 }
 
@@ -55,33 +53,42 @@ async function clipboardWrite(text: string) {
 export function ShareSheet({ options, trigger, className }: ShareSheetProps) {
   const { toast } = useToast();
 
-  /** Synchronous handler — MUST stay sync up to navigator.share()
-   *  so the browser's transient activation (user-gesture) remains valid. */
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
 
     const text = buildText(options);
-    const shareData: ShareData = { title: options.title || "MARKLET", text, url: options.url };
+    const title = options.title || "MARKLET";
 
-    if (navigator.share) {
-      // Works in Android WebView (APK), Android Chrome, iOS Safari, Samsung Internet
-      navigator.share(shareData).catch((err: Error) => {
-        if (err.name !== "AbortError") {
-          void clipboardWrite(text);
-          toast({ title: "تم نسخ الرابط" });
-        }
-      });
-    } else {
-      // Desktop browsers: clipboard fallback
-      void clipboardWrite(text).then(() => {
-        toast({ title: "تم نسخ الرابط", description: "الصق الرابط في واتساب أو تيليغرام" });
-      });
+    /* ── 1. Native Android bridge (Capacitor APK) ─────────────────── */
+    const native = (window as any).AndroidNative;
+    if (typeof native?.share === "function") {
+      native.share(text, title);
+      return;
     }
+
+    /* ── 2. Web Share API (mobile Chrome / Safari) ────────────────── */
+    if (navigator.share) {
+      navigator
+        .share({ title, text, url: options.url })
+        .catch((err: Error) => {
+          if (err.name !== "AbortError") {
+            void clipboardWrite(text);
+            toast({ title: "تم نسخ الرابط" });
+          }
+        });
+      return;
+    }
+
+    /* ── 3. Desktop fallback: clipboard ───────────────────────────── */
+    void clipboardWrite(text).then(() => {
+      toast({
+        title: "تم نسخ الرابط",
+        description: "الصق الرابط في واتساب أو تيليغرام",
+      });
+    });
   }
 
-  /* When a custom trigger is provided, clone it and inject onClick directly
-     onto the element — this preserves the browser's "transient activation"
-     (user-gesture) so navigator.share() works in Android WebView. */
+  /* When a custom trigger is provided, clone it and inject onClick directly. */
   if (trigger) {
     return React.cloneElement(trigger as React.ReactElement<any>, {
       onClick: handleClick,
@@ -94,7 +101,6 @@ export function ShareSheet({ options, trigger, className }: ShareSheetProps) {
     });
   }
 
-  /* Default: a compact pill button */
   return (
     <button
       type="button"
