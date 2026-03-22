@@ -375,31 +375,30 @@ export default function BuyRequests() {
                       <Car className="w-12 h-12 text-muted-foreground/30" />
                     </div>
                   )}
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-bold text-foreground line-clamp-1">{title}</h3>
-                    <div className="flex items-center justify-between">
+                  <div className="p-3 space-y-1.5">
+                    <h3 className="font-bold text-foreground text-sm line-clamp-1">{title}</h3>
+                    <div className="flex items-center justify-between gap-2">
                       <span className="font-bold text-primary text-sm" dir="ltr">{price}</span>
-                      {city && <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{city}</span>}
+                      {city && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5 shrink-0"><MapPin className="w-3 h-3" />{city}</span>}
                     </div>
-                    {sellerName && <p className="text-xs text-muted-foreground">البائع: {sellerName}</p>}
-                    <div className="flex gap-1.5 pt-1">
+                    {sellerName && <p className="text-[11px] text-muted-foreground truncate">البائع: {sellerName}</p>}
+                    {/* Action buttons — compact, auto-width, right-aligned */}
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/50">
                       {!isJunk && (
                         <button
                           onClick={() => navigate(`/cars/${item.id}`)}
-                          className="flex items-center gap-1 border border-border rounded-xl px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted/60 active:scale-95 transition-all"
-                          style={{ width: "48%" }}
+                          className="inline-flex items-center gap-1 border border-border rounded-lg px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted/60 active:scale-95 transition-all whitespace-nowrap"
                         >
-                          <Eye className="w-3 h-3 shrink-0" /> التفاصيل
+                          <Eye className="w-3 h-3" /> التفاصيل
                         </button>
                       )}
                       {user && sellerId && user.id !== sellerId && (
                         <button
                           onClick={() => startChat(sellerId, `مرحباً، أنا مهتم بـ ${title}. هل ما زال متوفراً؟`)}
                           disabled={startingChat}
-                          className="flex items-center justify-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl px-2 py-1 text-[11px] font-bold active:scale-95 transition-all disabled:opacity-60"
-                          style={{ width: "48%" }}
+                          className="inline-flex items-center gap-1 bg-primary hover:bg-primary/90 text-white rounded-lg px-2.5 py-1 text-[11px] font-bold active:scale-95 transition-all disabled:opacity-60 whitespace-nowrap"
                         >
-                          {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3 shrink-0" />} مراسلة
+                          {startingChat ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />} مراسلة
                         </button>
                       )}
                     </div>
