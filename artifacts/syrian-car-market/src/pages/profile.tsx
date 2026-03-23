@@ -266,6 +266,13 @@ export default function Profile() {
                       </Button>
                     </Link>
                   )}
+                  {cp.role === "dealer" && (
+                    <Link href="/showroom/manage">
+                      <Button className="w-full mt-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
+                        <Store className="w-4 h-4 ml-2" /> إدارة معرضي
+                      </Button>
+                    </Link>
+                  )}
 
                   {/* ── وضع الحساب (Role Switcher) ── */}
                   {cp.role !== "admin" && cp.role !== "inspector" && (

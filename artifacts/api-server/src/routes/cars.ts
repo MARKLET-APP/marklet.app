@@ -377,11 +377,27 @@ router.post("/cars", authMiddleware, async (req: AuthRequest, res): Promise<void
 
   const condition = (req.body as any).condition as string | undefined;
 
+  // Auto-link showroom and auto-approve for dealers
+  let showroomId: number | null = null;
+  let autoApprove = false;
+  if (req.userRole === "dealer") {
+    const [showroom] = await db.select({ id: showroomsTable.id, isFeatured: showroomsTable.isFeatured, isVerified: showroomsTable.isVerified })
+      .from(showroomsTable).where(eq(showroomsTable.ownerUserId, req.userId!)).limit(1);
+    if (showroom) {
+      showroomId = showroom.id;
+      autoApprove = showroom.isFeatured || showroom.isVerified;
+    }
+  } else if (req.userRole === "admin") {
+    autoApprove = true;
+  }
+
   const [car] = await db.insert(carsTable).values({
     ...carData,
     sellerId: req.userId!,
     price: String(carData.price),
     ...(condition ? { condition } : {}),
+    ...(showroomId ? { showroomId } : {}),
+    ...(autoApprove ? { status: "approved", isActive: true } : {}),
   }).returning();
 
   if (images && images.length > 0) {
@@ -447,7 +463,16 @@ router.patch("/cars/:id", authMiddleware, async (req: AuthRequest, res): Promise
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (updateData.price !== undefined) updateData.price = String(updateData.price);
 
-  if (req.userRole !== "admin") {
+  if (req.userRole === "admin") {
+    // Admin edits keep status as-is
+  } else if (req.userRole === "dealer") {
+    // Check if dealer's showroom auto-approves
+    const [showroom] = await db.select({ isFeatured: showroomsTable.isFeatured, isVerified: showroomsTable.isVerified })
+      .from(showroomsTable).where(eq(showroomsTable.ownerUserId, req.userId!)).limit(1);
+    const autoApprove = showroom && (showroom.isFeatured || showroom.isVerified);
+    updateData.status = autoApprove ? "approved" : "pending";
+    updateData.isActive = autoApprove ? true : false;
+  } else {
     updateData.status = "pending";
     updateData.isActive = false;
   }

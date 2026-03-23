@@ -33,6 +33,7 @@ const MotorcyclesPage = lazy(() => import("@/pages/motorcycles"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const SystemAuditPage = lazy(() => import("@/pages/system-audit"));
 const ShowroomPage = lazy(() => import("@/pages/showroom"));
+const ShowroomManagePage = lazy(() => import("@/pages/showroom-manage"));
 import AppRatingPopup from "@/components/AppRatingPopup";
 
 function PageLoader() {
@@ -100,6 +101,7 @@ function Router() {
           <Route path="/new-cars" component={NewCarsPage} />
           <Route path="/used-cars" component={UsedCarsPage} />
           <Route path="/motorcycles" component={MotorcyclesPage} />
+          <Route path="/showroom/manage" component={ShowroomManagePage} />
           <Route path="/showroom/:id" component={ShowroomPage} />
           <Route component={NotFound} />
         </Switch>
