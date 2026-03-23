@@ -495,20 +495,27 @@ button[class*="bg-primary"]:active {
 
 
 /* =============================================
-   MARKLET — Home Page Market Background
-   خلفية سوق السيارات — بيع وشراء
+   MARKLET PREMIUM SOFT BACKGROUND (HOME ONLY)
+   خلفية ناعمة احترافية للصفحة الرئيسية
    ============================================= */
 @media (max-width: 768px) {
   .home-page {
-    background-color: #f3f8f3;
+    background-color: #f6f8f6;
     background-image:
-      /* شريط ذهبي قطري علوي */
-      linear-gradient(135deg, rgba(212,175,55,0.08) 0%, transparent 40%),
-      /* شريط أخضر قطري سفلي */
-      linear-gradient(315deg, rgba(22,163,74,0.09) 0%, transparent 45%),
-      /* نمط سوق: سيارة صغيرة + علامة دولار متناوبة */
-      url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3C!-- سيارة صغيرة --%3E%3Cg transform='translate(8,28)' opacity='0.09'%3E%3Crect x='4' y='8' width='34' height='14' rx='4' fill='%2316a34a'/%3E%3Crect x='10' y='2' width='20' height='10' rx='3' fill='%2316a34a'/%3E%3Ccircle cx='10' cy='22' r='4' fill='%230f7a30'/%3E%3Ccircle cx='30' cy='22' r='4' fill='%230f7a30'/%3E%3C/g%3E%3C!-- علامة دولار --%3E%3Ctext x='54' y='52' font-size='16' font-family='Arial' fill='%23d4af37' opacity='0.13' font-weight='bold'%3E%24%3C%2Ftext%3E%3C/svg%3E");
-    background-repeat: no-repeat, no-repeat, repeat;
-    background-size: 100% 100%, 100% 100%, 80px 80px;
+      radial-gradient(circle at 15% 25%, rgba(0,150,80,0.08) 0%, transparent 40%),
+      radial-gradient(circle at 85% 75%, rgba(255,180,0,0.07) 0%, transparent 40%),
+      repeating-linear-gradient(
+        45deg,
+        rgba(0,0,0,0.015) 0px,
+        rgba(0,0,0,0.015) 1px,
+        transparent 1px,
+        transparent 12px
+      );
+    background-blend-mode: soft-light;
+  }
+
+  .home-page > * {
+    position: relative;
+    z-index: 1;
   }
 }
