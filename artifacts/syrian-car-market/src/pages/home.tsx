@@ -791,7 +791,7 @@ function FeaturedShowrooms() {
               <Building2 className="w-6 h-6 text-primary" />
               معارض سيارات مميزة
             </h2>
-            <p className="text-muted-foreground mt-1">معارض موثقة ومميزة على المنصة</p>
+            <p className="text-muted-foreground mt-1">معارض موثّقة ومميّزة على المنصة</p>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">

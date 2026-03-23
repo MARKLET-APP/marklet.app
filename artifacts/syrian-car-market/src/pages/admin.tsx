@@ -373,8 +373,8 @@ export default function AdminDashboard() {
     }
   }, [settings]);
 
-  if (!isHydrated) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  if (!user || user.role !== 'admin') return <Redirect to="/" />;
+  if (!isHydrated || !user) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (user.role !== 'admin') return <Redirect to="/" />;
 
   const handleUserAction = async (id: number, action: 'verify' | 'ban' | 'unban' | 'delete') => {
     try {

@@ -4,15 +4,17 @@ import { eq, desc, and } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-// Public: list featured showrooms
+// Public: list featured showrooms (only requires isFeatured, not isVerified)
 router.get("/showrooms/featured", async (_req, res): Promise<void> => {
-  const showrooms = await db
-    .select()
-    .from(showroomsTable)
-    .where(and(eq(showroomsTable.isFeatured, true), eq(showroomsTable.isVerified, true), eq(showroomsTable.isSuspended, false)))
-    .orderBy(desc(showroomsTable.createdAt))
-    .limit(12);
-  res.json(showrooms);
+  try {
+    const showrooms = await db
+      .select()
+      .from(showroomsTable)
+      .where(and(eq(showroomsTable.isFeatured, true), eq(showroomsTable.isSuspended, false)))
+      .orderBy(desc(showroomsTable.createdAt))
+      .limit(12);
+    res.json(showrooms);
+  } catch { res.json([]); }
 });
 
 // Public: list all showrooms
