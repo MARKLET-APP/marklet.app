@@ -381,19 +381,28 @@ export default function Home() {
                 {t("home.featured.title")}
               </h2>
             </div>
-            <Link href="/search?featured=true" className="text-primary font-semibold flex items-center gap-1 hover:underline">
-              {t("common.all")} <ChevronLeft className="w-4 h-4" />
-            </Link>
           </div>
 
           {loadingFeatured ? (
             <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
           ) : (
-            <div className="ads-grid grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-              {(Array.isArray(featuredCars) ? featuredCars : []).slice(0, 3).map((car) => (
-                <CarCard key={car.id} car={car} />
-              ))}
-            </div>
+            <>
+              <div className="ads-grid grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
+                {(Array.isArray(featuredCars) ? featuredCars : []).slice(0, 4).map((car) => (
+                  <CarCard key={car.id} car={car} />
+                ))}
+              </div>
+              {(Array.isArray(featuredCars) ? featuredCars : []).length > 0 && (
+                <div className="mt-6 text-center">
+                  <Link href="/search?featured=true">
+                    <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-200 text-sm">
+                      {t("common.all")}
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -408,19 +417,28 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-foreground">{t("home.recentCars.title")}</h2>
             <p className="text-muted-foreground mt-1">{isRTL ? "سيارات أضيفت مؤخراً للسوق" : "Cars recently added to the market"}</p>
           </div>
-          <Link href="/search" className="text-primary font-semibold flex items-center gap-1 hover:underline">
-            {isRTL ? "تصفح السوق" : "Browse Market"} <ChevronLeft className="w-4 h-4" />
-          </Link>
         </div>
 
         {loadingLatest ? (
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
         ) : (
-          <div className="ads-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-            {(Array.isArray(latestCars?.cars) ? latestCars!.cars : []).map((car) => (
-              <CarCard key={car.id} car={car} />
-            ))}
-          </div>
+          <>
+            <div className="ads-grid grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
+              {(Array.isArray(latestCars?.cars) ? latestCars!.cars : []).slice(0, 4).map((car) => (
+                <CarCard key={car.id} car={car} />
+              ))}
+            </div>
+            {(Array.isArray(latestCars?.cars) ? latestCars!.cars : []).length > 0 && (
+              <div className="mt-6 text-center">
+                <Link href="/search">
+                  <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-200 text-sm">
+                    {isRTL ? "تصفح السوق كاملاً" : "Browse All Market"}
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                </Link>
+              </div>
+            )}
+          </>
         )}
       </section>
 
@@ -436,12 +454,9 @@ export default function Home() {
                 </h2>
                 <p className="text-muted-foreground mt-1 text-sm">{t("home.buyReqs.subtitle")}</p>
               </div>
-              <Link href="/buy-requests" className="text-primary font-semibold flex items-center gap-1 hover:underline text-sm">
-                {t("home.buyReqs.viewAll")} <ChevronLeft className="w-4 h-4" />
-              </Link>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
-              {(buyRequests as any[]).slice(0, 6).map((r: any) => (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
+              {(buyRequests as any[]).slice(0, 4).map((r: any) => (
                 <div key={r.id} className="tap-card flex flex-col h-full bg-card border rounded-2xl p-3 sm:p-5 shadow-sm hover:shadow-md transition-shadow gap-2 sm:gap-3">
                   {/* ── Header ── */}
                   <div className="flex items-start justify-between gap-1">
@@ -499,6 +514,14 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="mt-6 text-center">
+              <Link href="/buy-requests">
+                <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-200 text-sm">
+                  {t("home.buyReqs.viewAll")}
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </Link>
             </div>
           </div>
         </section>
