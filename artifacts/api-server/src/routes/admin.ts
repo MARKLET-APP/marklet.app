@@ -626,10 +626,8 @@ router.post("/admin/showrooms/:id/link-user", ...guard, async (req: AuthRequest,
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   
   const [updated] = await db.update(showroomsTable).set({ ownerUserId: user.id }).where(eq(showroomsTable.id, id)).returning();
-  // Promote to dealer if showroom is verified
-  if (updated.isVerified) {
-    await db.update(usersTable).set({ role: "dealer", isVerified: true }).where(eq(usersTable.id, user.id));
-  }
+  // Always promote to dealer + verify when linked to a showroom
+  await db.update(usersTable).set({ role: "dealer", isVerified: true }).where(eq(usersTable.id, user.id));
   res.json({ showroom: updated, user: { id: user.id, name: user.name, email: user.email } });
 });
 

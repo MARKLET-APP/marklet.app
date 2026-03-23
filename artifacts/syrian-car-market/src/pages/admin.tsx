@@ -583,14 +583,17 @@ export default function AdminDashboard() {
   };
 
   const linkShowroomUser = async (showroomId: number) => {
-    if (!linkUserEmail.trim()) return;
+    const val = linkUserEmail.trim();
+    if (!val) return;
+    const isPhone = /^[+\d]/.test(val);
+    const payload = isPhone ? { phone: val } : { email: val };
     try {
-      const result = await apiRequest(`/api/admin/showrooms/${showroomId}/link-user`, "POST", { email: linkUserEmail });
-      toast({ title: `تم ربط المعرض بـ ${(result as any).user?.name}` });
+      const result = await apiRequest(`/api/admin/showrooms/${showroomId}/link-user`, "POST", payload);
+      toast({ title: `✅ تم ربط المعرض بـ ${(result as any).user?.name} وتفعيل صلاحية التاجر` });
       setLinkUserEmail("");
       setLinkingShowroomId(null);
       refetchShowrooms();
-    } catch { toast({ title: "لم يُعثر على مستخدم بهذا البريد", variant: "destructive" }); }
+    } catch { toast({ title: "لم يُعثر على مستخدم بهذا البريد أو الرقم", variant: "destructive" }); }
   };
 
   return (
@@ -1070,7 +1073,7 @@ export default function AdminDashboard() {
                       ) : (
                         linkingShowroomId === showroom.id ? (
                           <div className="flex gap-1">
-                            <Input className="h-7 text-xs w-32" placeholder="بريد إلكتروني" value={linkUserEmail} onChange={e => setLinkUserEmail(e.target.value)} dir="ltr" />
+                            <Input className="h-7 text-xs w-36" placeholder="إيميل أو رقم هاتف" value={linkUserEmail} onChange={e => setLinkUserEmail(e.target.value)} dir="ltr" />
                             <Button size="sm" className="h-7 text-xs" onClick={() => linkShowroomUser(showroom.id)}>ربط</Button>
                           </div>
                         ) : (
