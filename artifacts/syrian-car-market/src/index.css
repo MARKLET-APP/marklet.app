@@ -505,16 +505,33 @@ div[data-page="home"] {
     radial-gradient(circle at 85% 80%, rgba(212,175,55,0.18) 0%, transparent 55%),
     repeating-linear-gradient(
       45deg,
-      rgba(0,80,40,0.03) 0px,
-      rgba(0,80,40,0.03) 1px,
-      transparent 1px,
-      transparent 12px
+      rgba(0,100,50,0.12) 0px,
+      rgba(0,100,50,0.12) 1.5px,
+      transparent 1.5px,
+      transparent 14px
     ) !important;
 }
 
-/* --- الأقسام الداخلية: لون أخضر-أبيض ناعم --- */
+/* --- الأقسام الداخلية: لون + شبكة ظاهرة --- */
 div[data-page="home"] .bg-background,
-div[data-page="home"] .bg-card,
 div[data-page="home"] #app-main {
   background-color: hsl(138deg 22% 94%) !important;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0,100,50,0.10) 0px,
+    rgba(0,100,50,0.10) 1.5px,
+    transparent 1.5px,
+    transparent 14px
+  ) !important;
+}
+
+div[data-page="home"] .bg-card {
+  background-color: hsl(138deg 18% 96%) !important;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0,100,50,0.07) 0px,
+    rgba(0,100,50,0.07) 1.5px,
+    transparent 1.5px,
+    transparent 14px
+  ) !important;
 }
