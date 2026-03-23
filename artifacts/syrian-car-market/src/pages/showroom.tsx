@@ -324,25 +324,26 @@ export default function ShowroomPage() {
               </div>
 
               <div className="flex-1 min-w-0 pt-1">
-                <div className="flex items-start justify-between gap-2">
-                  <h1 className="text-xl font-bold text-foreground leading-tight">{showroom.name}</h1>
-                  {/* Owner edit + share row */}
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <ShareSheet
-                      options={{ title: showroom.name, city: showroom.city, url: `${baseUrl}/showroom/${id}`, description: showroom.description }}
-                      className="flex items-center gap-1 border rounded-full px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
-                    />
-                    {isOwner && (
-                      <button
-                        onClick={() => setEditOpen(true)}
-                        className="flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full px-2.5 py-1 text-xs font-bold transition-colors"
-                      >
-                        <PenLine className="w-3 h-3" /> تعديل
-                      </button>
-                    )}
-                  </div>
+                {/* Name — full width */}
+                <h1 className="text-xl font-bold text-foreground leading-tight">{showroom.name}</h1>
+
+                {/* Share + Edit row below name */}
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <ShareSheet
+                    options={{ title: showroom.name, city: showroom.city, url: `${baseUrl}/showroom/${id}`, description: showroom.description }}
+                    className="flex items-center gap-1 border rounded-full px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
+                  />
+                  {isOwner && (
+                    <button
+                      onClick={() => setEditOpen(true)}
+                      className="flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full px-2.5 py-1 text-xs font-bold transition-colors"
+                    >
+                      <PenLine className="w-3 h-3" /> تعديل
+                    </button>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
+
+                <div className="flex items-center gap-1 text-muted-foreground text-sm mt-2">
                   <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">{showroom.city}{showroom.address ? ` — ${showroom.address}` : ""}</span>
                 </div>

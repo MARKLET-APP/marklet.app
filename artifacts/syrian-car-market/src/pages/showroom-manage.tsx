@@ -180,8 +180,11 @@ export default function ShowroomManagePage() {
     } finally { setDeletingId(null); }
   };
 
-  // Navigate to public showroom page
-  const openPublicPage = () => navigate(`/showroom/${showroom?.id}`);
+  // Navigate to public showroom page — absolute URL works on Android/PWA too
+  const openPublicPage = () => {
+    const basePath = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+    window.location.assign(`${window.location.origin}${basePath}/showroom/${showroom?.id}`);
+  };
 
   // ── Guards (after hooks) ────────────────────────────────────────────────────
   if (!user) return (
