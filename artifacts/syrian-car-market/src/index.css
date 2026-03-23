@@ -508,12 +508,12 @@ button[class*="bg-primary"]:active {
    متغيرات الشبكة — عدّلها بسهولة:
    --home-grid-opacity  : نسبة ظهور شبكة الغلاف   (0.00 → 1.00) الحالية = 12.5%
    --home-grid-inner    : نسبة ظهور شبكة الداخل   (0.00 → 1.00) الحالية =  9%
-   --home-grid-speed    : مدة دورة الحركة بالثانية  (قيمة أقل = أسرع)   = 30s
+   --home-grid-speed    : مدة دورة الحركة بالثانية  (قيمة أقل = أسرع)   = 6s
    ───────────────────────────────────────────── */
 div[data-page="home"] {
   --home-grid-opacity : 0.125;
   --home-grid-inner   : 0.09;
-  --home-grid-speed   : 30s;
+  --home-grid-speed   : 6s;
 
   background-color: hsl(138deg 30% 90%) !important;
   background-image:
