@@ -549,7 +549,7 @@ div[data-page] [class*="bg-secondary"] {
   background-image: none !important;
 }
 
-/* ══ النوافذ والأدراج (Dialogs & Drawers) ══ */
+/* ══ النوافذ والأدراج (Dialogs & Drawers) — الشبكة على الخلفية فقط ══ */
 [role="dialog"] {
   background-color: hsl(138deg 22% 94%) !important;
   background-image:
@@ -564,6 +564,57 @@ div[data-page] [class*="bg-secondary"] {
     repeating-linear-gradient(45deg,  rgba(212,175,55, 0.09) 0px, rgba(212,175,55, 0.09) 1.5px, transparent 1.5px, transparent 22px),
     repeating-linear-gradient(-45deg, rgba(212,175,55, 0.09) 0px, rgba(212,175,55, 0.09) 1.5px, transparent 1.5px, transparent 22px) !important;
   animation: app-grid-drift 6s linear infinite !important;
+}
+
+/* ══ داخل النوافذ والأدراج — جميع العناصر التفاعلية تحصل على خلفية صلبة ══ */
+[role="dialog"] input,
+[role="dialog"] textarea,
+[role="dialog"] select,
+[data-vaul-drawer] input,
+[data-vaul-drawer] textarea,
+[data-vaul-drawer] select {
+  background-image: none !important;
+  background-color: hsl(0 0% 99%) !important;
+}
+
+[role="dialog"] [role="combobox"],
+[role="dialog"] [data-radix-select-trigger],
+[data-vaul-drawer] [role="combobox"],
+[data-vaul-drawer] [data-radix-select-trigger] {
+  background-image: none !important;
+  background-color: hsl(0 0% 99%) !important;
+}
+
+[role="dialog"] button,
+[role="dialog"] [role="button"],
+[data-vaul-drawer] button,
+[data-vaul-drawer] [role="button"] {
+  background-image: none !important;
+}
+
+[role="dialog"] .bg-background,
+[role="dialog"] .bg-card,
+[role="dialog"] .bg-muted,
+[data-vaul-drawer] .bg-background,
+[data-vaul-drawer] .bg-card,
+[data-vaul-drawer] .bg-muted {
+  background-image: none !important;
+  background-color: hsl(0 0% 99%) !important;
+}
+
+[role="dialog"] [class*="border-dashed"],
+[data-vaul-drawer] [class*="border-dashed"] {
+  background-image: none !important;
+  background-color: hsl(0 0% 97%) !important;
+}
+
+@layer base {
+  [role="dialog"] button,
+  [role="dialog"] [role="button"],
+  [data-vaul-drawer] button,
+  [data-vaul-drawer] [role="button"] {
+    background-color: hsl(0 0% 97%);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
