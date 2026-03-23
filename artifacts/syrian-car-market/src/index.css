@@ -561,3 +561,72 @@ div[data-page] .bg-card {
     repeating-linear-gradient(-45deg, rgba(212,175,55, 0.09) 0px, rgba(212,175,55, 0.09) 1.5px, transparent 1.5px, transparent 22px) !important;
   animation: app-grid-drift 6s linear infinite !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   إصلاح التداخل — العناصر التفاعلية: بدون شبكة + خلفية صلبة
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── حقول الإدخال والنصوص والقوائم ── */
+div[data-page] input,
+div[data-page] textarea,
+div[data-page] select {
+  background-image: none !important;
+  background-color: hsl(138deg 12% 97%) !important;
+}
+
+/* ── مكونات shadcn/ui: SelectTrigger, SelectContent, Combobox ── */
+div[data-page] [role="combobox"],
+div[data-page] [role="listbox"],
+div[data-page] [data-radix-select-trigger],
+div[data-page] [data-radix-select-content],
+div[data-page] [data-radix-popper-content-wrapper],
+div[data-page] [data-radix-dropdown-menu-content],
+div[data-page] [data-radix-popover-content] {
+  background-image: none !important;
+  background-color: hsl(138deg 12% 97%) !important;
+}
+
+/* ── منطقة رفع الصور والمناطق الفارغة الحدودية ── */
+div[data-page] [class*="border-dashed"],
+div[data-page] [class*="border-2"] {
+  background-image: none !important;
+  background-color: hsl(138deg 12% 97%) !important;
+}
+
+/* ── جميع الأزرار — الشبكة تظهر فقط على خلفية الصفحة لا على الأزرار ── */
+div[data-page] button,
+div[data-page] [role="button"] {
+  background-image: none !important;
+}
+
+/* ── أزرار outline/ghost بدون لون — تحتاج خلفية صلبة ── */
+div[data-page] button.border,
+div[data-page] button[class*="border-input"],
+div[data-page] button[class*="border-primary"],
+div[data-page] button[class*="variant-outline"],
+div[data-page] button:not([class*="bg-"]) {
+  background-color: hsl(138deg 12% 97%) !important;
+}
+
+/* ── البطاقات الداخلية في القوائم — خلفية أوضح ── */
+div[data-page] .bg-card {
+  background-image: none !important;
+  background-color: hsl(0 0% 99%) !important;
+}
+
+/* ── Header, BottomNav — بدون شبكة ── */
+div[data-page] header,
+div[data-page] nav,
+div[data-page] [class*="bottom-nav"],
+div[data-page] .flex-shrink-0 {
+  background-image: none !important;
+}
+
+/* ── منع تطبيق الشبكة على القوائم المنسدلة خارج الـ div ── */
+[data-radix-select-content],
+[data-radix-popper-content-wrapper],
+[data-radix-dropdown-menu-content],
+[data-radix-popover-content] {
+  background-image: none !important;
+  background-color: hsl(138deg 12% 97%) !important;
+}
