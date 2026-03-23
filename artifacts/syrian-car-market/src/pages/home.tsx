@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 import {
@@ -23,17 +23,17 @@ import { useLanguage } from "@/lib/i18n";
 import { useStartChat } from "@/hooks/use-start-chat";
 
 // ── خدمات التطبيق — تتناوب في الزر الحيوي بالـ Hero ──────────────────────────
-const SERVICE_TIPS = [
-  { icon: "🚗", text: "بيع سيارتك بسرعة وأمان مع آلاف المشترين في سوريا" },
-  { icon: "🛒", text: "انشر طلب شراء وانتظر العروض تأتيك مباشرةً" },
-  { icon: "🔑", text: "استأجر سيارتك ليوم أو أكثر بأفضل الأسعار في السوق" },
-  { icon: "🔍", text: "استعلم عن حال المركبة قبل شراءها عبر رقم الشاسيه VIN" },
-  { icon: "🔧", text: "قطع غيار أصلية وبديلة بأسعار تنافسية من بائعين موثوقين" },
-  { icon: "♻️", text: "تخلص من سيارتك المعطوبة واحصل على أفضل سعر للخردة" },
-  { icon: "🛡️", text: "احجز فحص مركبة من مراكز معتمدة قبل إتمام أي صفقة" },
-  { icon: "🏢", text: "تواصل مع معارض سيارات موثوقة ومعتمدة من جميع المحافظات" },
-  { icon: "🚨", text: "ساعد في استعادة السيارات المسروقة أو المفقودة" },
-  { icon: "🏍️", text: "دراجات نارية وأرقام اللوحات — كل ما تحتاجه في مكان واحد" },
+const SERVICE_TIPS: Array<{ icon: ReactNode; text: string }> = [
+  { icon: <Car size={13} />,           text: "بيع سيارتك بسرعة وأمان — آلاف المشترين ينتظرون عرضك الآن" },
+  { icon: <ShoppingCart size={13} />,  text: "انشر طلب شراء مجاناً وستصلك العروض مباشرةً من البائعين" },
+  { icon: <Key size={13} />,           text: "استأجر سيارتك ليوم أو شهر أو أكثر بأفضل الأسعار في سوريا" },
+  { icon: <FileSearch2 size={13} />,   text: "استعلم عن حالة أي مركبة قبل شراءها عبر رقم الشاسيه VIN" },
+  { icon: <Wrench size={13} />,        text: "قطع غيار أصلية وبديلة بأسعار تنافسية من بائعين موثوقين" },
+  { icon: <Package size={13} />,       text: "تخلص من سيارتك المعطوبة أو المصدومة واحصل على أفضل سعر" },
+  { icon: <ShieldCheck size={13} />,   text: "احجز فحص مركبة من مراكز معتمدة قبل إتمام أي صفقة شراء" },
+  { icon: <Building2 size={13} />,     text: "تواصل مع معارض سيارات موثوقة ومعتمدة من جميع المحافظات" },
+  { icon: <AlertTriangle size={13} />, text: "ساعد في استعادة السيارات المسروقة أو المفقودة وأبلغ فوراً" },
+  { icon: <Bike size={13} />,          text: "دراجات نارية وأرقام اللوحات — كل ما يتعلق بالآليات هنا" },
 ];
 
 export default function Home() {
@@ -185,34 +185,20 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm text-white/90 text-sm font-medium px-4 py-2 rounded-full shadow-lg max-w-xs sm:max-w-sm overflow-hidden"
+            className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm text-white/90 text-sm font-medium px-4 py-2 rounded-full shadow-lg"
           >
             <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse shrink-0" />
             <span
-              className="truncate transition-all duration-400"
+              className="inline-flex items-center gap-1.5"
               style={{
                 opacity: tipVisible ? 1 : 0,
                 transform: tipVisible ? "translateY(0)" : "translateY(6px)",
                 transition: "opacity 0.4s ease, transform 0.4s ease",
               }}
             >
-              <span className="me-1">{SERVICE_TIPS[tipIdx].icon}</span>
+              <span className="shrink-0 opacity-90">{SERVICE_TIPS[tipIdx].icon}</span>
               {SERVICE_TIPS[tipIdx].text}
             </span>
-            {/* نقاط التقدم */}
-            <div className="flex gap-1 shrink-0 ms-1">
-              {SERVICE_TIPS.map((_, i) => (
-                <span
-                  key={i}
-                  className="rounded-full transition-all duration-300"
-                  style={{
-                    width: i === tipIdx ? "14px" : "4px",
-                    height: "4px",
-                    background: i === tipIdx ? "#facc15" : "rgba(255,255,255,0.35)",
-                  }}
-                />
-              ))}
-            </div>
           </motion.div>
 
           {/* Title */}
