@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 import { useAuthStore } from "@/lib/auth";
 import { useStartChat } from "@/hooks/use-start-chat";
@@ -115,15 +115,10 @@ function ShowroomCard({ showroom }: { showroom: any }) {
         )}
       </div>
 
-      {/* Actions */}
+      {/* Actions — public card: call, chat, share only */}
       <div className="px-4 pb-4 flex gap-2 flex-wrap">
-        <Link href={`/showroom/${showroom.id}`} className="flex-1">
-          <button className="w-full flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-white rounded-xl py-2 text-xs font-bold transition-colors">
-            <Car className="w-3.5 h-3.5" /> عرض المعرض
-          </button>
-        </Link>
         {showroom.phone && (
-          <a href={`tel:${showroom.phone}`} className="flex items-center justify-center gap-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+          <a href={`tel:${showroom.phone}`} className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
             <Phone className="w-3.5 h-3.5" /> اتصال
           </a>
         )}
@@ -131,9 +126,9 @@ function ShowroomCard({ showroom }: { showroom: any }) {
           <button
             disabled={chatLoading}
             onClick={() => { if (!user) { navigate("/login"); return; } startChat(showroom.ownerUserId); }}
-            className="flex items-center justify-center gap-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
           >
-            {chatLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />}
+            {chatLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><MessageCircle className="w-3.5 h-3.5" /> مراسلة</>}
           </button>
         )}
         <ShareSheet
@@ -143,7 +138,7 @@ function ShowroomCard({ showroom }: { showroom: any }) {
             url: `${baseUrl}/showroom/${showroom.id}`,
             description: showroom.description,
           }}
-          className="flex items-center justify-center gap-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          className="flex items-center justify-center gap-1.5 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
         />
       </div>
     </div>

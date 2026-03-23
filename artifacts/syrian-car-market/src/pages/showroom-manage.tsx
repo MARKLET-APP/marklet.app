@@ -1,11 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Building2, PenLine, Trash2, Plus, CheckCircle2, Clock, XCircle, Car, ChevronLeft, Save, ImagePlus, Phone, MapPin, AlignLeft, ShieldCheck, Star, AlertCircle } from "lucide-react";
+import { Loader2, Building2, PenLine, Trash2, Plus, CheckCircle2, Clock, XCircle, Car, ChevronLeft, Save, ImagePlus, Phone, MapPin, AlignLeft, ShieldCheck, Star, AlertCircle, ExternalLink } from "lucide-react";
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -218,7 +218,7 @@ export default function ShowroomManagePage() {
       {/* Header */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate(-1 as any)} className="w-9 h-9 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80">
+          <button onClick={() => window.history.back()} className="w-9 h-9 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
@@ -252,6 +252,26 @@ export default function ShowroomManagePage() {
             <p className="text-xs text-amber-600 mt-0.5">قيد المراجعة</p>
           </div>
         </div>
+
+        {/* عرض المعرض banner */}
+        <Link
+          href={`/showroom/${showroom.id}`}
+          className="flex items-center justify-between bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-2xl px-4 py-3 mb-5 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              {showroom.logo
+                ? <img src={showroom.logo} alt="" className="w-full h-full object-cover rounded-xl" />
+                : <Building2 className="w-5 h-5 text-primary" />
+              }
+            </div>
+            <div>
+              <p className="font-bold text-sm text-primary">عرض صفحة المعرض العامة</p>
+              <p className="text-xs text-muted-foreground">شاهد كيف يظهر معرضك للمستخدمين</p>
+            </div>
+          </div>
+          <ExternalLink className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+        </Link>
 
         {/* Tabs */}
         <div className="flex bg-muted/50 rounded-xl p-1 mb-5">
