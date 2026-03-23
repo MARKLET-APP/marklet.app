@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 import {
@@ -7,6 +7,7 @@ import {
   AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag,
   Building2, Star, Share2, FileSearch2
 } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { VehicleReportWidget } from "@/components/VehicleReportWidget";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useLanguage } from "@/lib/i18n";
 import { useStartChat } from "@/hooks/use-start-chat";
 
+// ── خدمات التطبيق — تتناوب في الزر الحيوي بالـ Hero ──────────────────────────
+const SERVICE_TIPS = [
+  { icon: "🚗", text: "بيع سيارتك بسرعة وأمان مع آلاف المشترين في سوريا" },
+  { icon: "🛒", text: "انشر طلب شراء وانتظر العروض تأتيك مباشرةً" },
+  { icon: "🔑", text: "استأجر سيارتك ليوم أو أكثر بأفضل الأسعار في السوق" },
+  { icon: "🔍", text: "استعلم عن حال المركبة قبل شراءها عبر رقم الشاسيه VIN" },
+  { icon: "🔧", text: "قطع غيار أصلية وبديلة بأسعار تنافسية من بائعين موثوقين" },
+  { icon: "♻️", text: "تخلص من سيارتك المعطوبة واحصل على أفضل سعر للخردة" },
+  { icon: "🛡️", text: "احجز فحص مركبة من مراكز معتمدة قبل إتمام أي صفقة" },
+  { icon: "🏢", text: "تواصل مع معارض سيارات موثوقة ومعتمدة من جميع المحافظات" },
+  { icon: "🚨", text: "ساعد في استعادة السيارات المسروقة أو المفقودة" },
+  { icon: "🏍️", text: "دراجات نارية وأرقام اللوحات — كل ما تحتاجه في مكان واحد" },
+];
+
 export default function Home() {
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
   const { data: latestCars, isLoading: loadingLatest } = useListCars({ limit: 6, sortBy: 'createdAt:desc' });
@@ -31,6 +46,20 @@ export default function Home() {
 
   const [heroSearch, setHeroSearch] = useState("");
   const [heroProvince, setHeroProvince] = useState("");
+  const [tipIdx, setTipIdx] = useState(0);
+  const [tipVisible, setTipVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipVisible(false);
+      setTimeout(() => {
+        setTipIdx(i => (i + 1) % SERVICE_TIPS.length);
+        setTipVisible(true);
+      }, 400);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [missingInfoOpen, setMissingInfoOpen] = useState(false);
   const [missingInfoCarId, setMissingInfoCarId] = useState<number | null>(null);
   const [infoMsg, setInfoMsg] = useState("");
@@ -152,13 +181,38 @@ export default function Home() {
         />
 
         <div className="relative z-10 max-w-3xl w-full space-y-3 sm:space-y-5">
+          {/* ── شريط الخدمات الحيوي ── */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm text-white/90 text-sm font-semibold px-5 py-2 rounded-full shadow-lg"
+            className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm text-white/90 text-sm font-medium px-4 py-2 rounded-full shadow-lg max-w-xs sm:max-w-sm overflow-hidden"
           >
-            <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-            {t("home.hero.badge")}
+            <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse shrink-0" />
+            <span
+              className="truncate transition-all duration-400"
+              style={{
+                opacity: tipVisible ? 1 : 0,
+                transform: tipVisible ? "translateY(0)" : "translateY(6px)",
+                transition: "opacity 0.4s ease, transform 0.4s ease",
+              }}
+            >
+              <span className="me-1">{SERVICE_TIPS[tipIdx].icon}</span>
+              {SERVICE_TIPS[tipIdx].text}
+            </span>
+            {/* نقاط التقدم */}
+            <div className="flex gap-1 shrink-0 ms-1">
+              {SERVICE_TIPS.map((_, i) => (
+                <span
+                  key={i}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === tipIdx ? "14px" : "4px",
+                    height: "4px",
+                    background: i === tipIdx ? "#facc15" : "rgba(255,255,255,0.35)",
+                  }}
+                />
+              ))}
+            </div>
           </motion.div>
 
           {/* Title */}
