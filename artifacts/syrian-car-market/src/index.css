@@ -493,3 +493,20 @@ button[class*="bg-primary"]:active {
   animation: tap-ripple 0.4s ease-out !important;
 }
 
+
+/* =============================================
+   MARKLET — Home Page Soft Background
+   خلفية ناعمة للصفحة الرئيسية فقط
+   ============================================= */
+@media (max-width: 768px) {
+  .home-page {
+    background-color: #f9fbf9;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(0, 128, 0, 0.03) 0px, transparent 80px),
+      radial-gradient(circle at 80% 70%, rgba(255, 165, 0, 0.03) 0px, transparent 80px),
+      url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%23008000' stroke-opacity='0.03' stroke-width='1' fill='none'%3E%3Cpath d='M20 100 Q100 20 180 100'/%3E%3Cpath d='M20 120 Q100 180 180 120'/%3E%3Ccircle cx='100' cy='100' r='2' fill='%23ffa500' fill-opacity='0.05'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: cover, cover, 200px 200px;
+    background-attachment: local;
+  }
+}

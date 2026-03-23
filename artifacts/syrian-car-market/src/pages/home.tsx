@@ -97,7 +97,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex flex-col w-full overflow-hidden">
+    <div className="home-page flex flex-col w-full overflow-hidden">
       {/* Hero Section */}
       <section
         className="hero-section relative w-full flex items-center justify-center overflow-hidden text-white text-center py-5 sm:py-16 md:py-28"
