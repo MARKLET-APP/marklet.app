@@ -9,7 +9,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { token, setAuth } = useAuthStore();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,6 +70,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
      */
     <div
       className="flex flex-col bg-background overflow-hidden"
+      data-page={location === "/" || location === "" ? "home" : "other"}
       style={{ height: "var(--vh, 100dvh)" }}
     >
       {/* Wrap header + dhikrbar so we can measure their combined height */}

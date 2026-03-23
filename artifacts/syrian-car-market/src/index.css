@@ -495,22 +495,26 @@ button[class*="bg-primary"]:active {
 
 
 /* =============================================
-   MARKLET PREMIUM SOFT BACKGROUND (HOME ONLY)
-   خلفية ناعمة احترافية للصفحة الرئيسية
+   MARKLET — خلفية الصفحة الرئيسية الاحترافية
    ============================================= */
-@media (max-width: 768px) {
-  body.home-bg {
-    background-color: #f6f8f6 !important;
-    background-image:
-      radial-gradient(circle at 15% 25%, rgba(0,150,80,0.10) 0%, transparent 45%),
-      radial-gradient(circle at 85% 75%, rgba(255,180,0,0.09) 0%, transparent 45%),
-      repeating-linear-gradient(
-        45deg,
-        rgba(0,0,0,0.018) 0px,
-        rgba(0,0,0,0.018) 1px,
-        transparent 1px,
-        transparent 12px
-      ) !important;
-    background-attachment: fixed !important;
-  }
+/* --- الغلاف الخارجي: تدرج لوني واضح --- */
+div[data-page="home"] {
+  background-color: hsl(138deg 30% 90%) !important;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(0,140,70,0.22) 0%, transparent 55%),
+    radial-gradient(circle at 85% 80%, rgba(212,175,55,0.18) 0%, transparent 55%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(0,80,40,0.03) 0px,
+      rgba(0,80,40,0.03) 1px,
+      transparent 1px,
+      transparent 12px
+    ) !important;
+}
+
+/* --- الأقسام الداخلية: لون أخضر-أبيض ناعم --- */
+div[data-page="home"] .bg-background,
+div[data-page="home"] .bg-card,
+div[data-page="home"] #app-main {
+  background-color: hsl(138deg 22% 94%) !important;
 }
