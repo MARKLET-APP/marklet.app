@@ -281,6 +281,19 @@ router.delete("/admin/cars/:id", ...guard, async (req: AuthRequest, res): Promis
   res.sendStatus(204);
 });
 
+// Link / unlink a car to a showroom
+router.patch("/admin/cars/:id/showroom", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const showroomId = req.body.showroomId != null ? Number(req.body.showroomId) : null;
+  const [updated] = await db
+    .update(carsTable)
+    .set({ showroomId: showroomId || null })
+    .where(eq(carsTable.id, id))
+    .returning({ id: carsTable.id, showroomId: carsTable.showroomId });
+  res.json(updated);
+});
+
 router.get("/admin/settings", ...guard, async (_req, res): Promise<void> => {
   let [settings] = await db.select().from(settingsTable).limit(1);
   if (!settings) {

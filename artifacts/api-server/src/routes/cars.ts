@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, carsTable, usersTable, imagesTable, favoritesTable, buyRequestsTable } from "@workspace/db";
+import { db, carsTable, usersTable, imagesTable, favoritesTable, buyRequestsTable, showroomsTable } from "@workspace/db";
 import { eq, and, gte, lte, ilike, desc, asc, sql, count, or, inArray } from "drizzle-orm";
 import { CreateCarBody, UpdateCarBody, AddCarImageBody, ListCarsQueryParams } from "@workspace/api-zod";
 import { authMiddleware, optionalAuthMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -95,9 +95,12 @@ router.get("/cars", async (req, res): Promise<void> => {
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,
     sellerPhoto: usersTable.profilePhoto,
+    showroomId: carsTable.showroomId,
+    showroomName: showroomsTable.name,
   })
     .from(carsTable)
     .leftJoin(usersTable, eq(carsTable.sellerId, usersTable.id))
+    .leftJoin(showroomsTable, eq(carsTable.showroomId, showroomsTable.id))
     .where(and(...conditions))
     .orderBy(orderBy)
     .limit(limitNum)
@@ -164,9 +167,12 @@ router.get("/cars/featured", async (_req, res): Promise<void> => {
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,
     sellerPhoto: usersTable.profilePhoto,
+    showroomId: carsTable.showroomId,
+    showroomName: showroomsTable.name,
   })
     .from(carsTable)
     .leftJoin(usersTable, eq(carsTable.sellerId, usersTable.id))
+    .leftJoin(showroomsTable, eq(carsTable.showroomId, showroomsTable.id))
     .where(and(eq(carsTable.isFeatured, true), eq(carsTable.isActive, true)))
     .orderBy(desc(carsTable.createdAt))
     .limit(10);

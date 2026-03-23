@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, MessageCircle, Loader2 } from "lucide-react";
+import { useLocation, Link } from "wouter";
+import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, MessageCircle, Loader2, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -156,6 +156,17 @@ export function CarCard({ car }: { car: Car }) {
             <MapPin className="w-3 h-3 shrink-0" />
             <span className="truncate">{car.province}، {car.city}</span>
           </p>
+          {/* ── Showroom badge ── */}
+          {(car as any).showroomId && (car as any).showroomName && (
+            <Link
+              href={`/showroom/${(car as any).showroomId}`}
+              onClick={e => e.stopPropagation()}
+              className="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-primary bg-primary/8 hover:bg-primary/15 border border-primary/20 px-2 py-0.5 rounded-full transition-colors w-fit"
+            >
+              <Building2 className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate max-w-[120px]">{(car as any).showroomName}</span>
+            </Link>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-y-1 gap-x-2 text-xs font-medium text-foreground bg-secondary/50 p-2 rounded-xl">

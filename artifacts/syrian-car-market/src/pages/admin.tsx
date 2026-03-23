@@ -308,6 +308,26 @@ export default function AdminDashboard() {
     }
   };
 
+  // ─── Link / unlink car to showroom ──────────────────────────────────────────
+  const [carShowroomSelections, setCarShowroomSelections] = useState<Record<number, string>>({});
+  const [linkingCarId, setLinkingCarId] = useState<number | null>(null);
+
+  const linkCarToShowroom = async (carId: number, showroomId: string) => {
+    try {
+      setLinkingCarId(carId);
+      await apiRequest(`/api/admin/cars/${carId}/showroom`, "PATCH", {
+        showroomId: showroomId ? Number(showroomId) : null,
+      });
+      toast({ title: showroomId ? "✅ تم ربط الإعلان بالمعرض" : "✅ تم إلغاء ربط الإعلان بالمعرض" });
+      refetchPending();
+      refetchCars();
+    } catch {
+      toast({ title: "حدث خطأ أثناء ربط المعرض", variant: "destructive" });
+    } finally {
+      setLinkingCarId(null);
+    }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -1114,6 +1134,44 @@ export default function AdminDashboard() {
                               </div>
                             )}
                           </div>
+
+                          {/* ── ربط بمعرض ── */}
+                          {showrooms.length > 0 && (
+                            <div className="bg-primary/5 border border-primary/15 rounded-xl p-4">
+                              <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1">
+                                <Building2 className="w-3.5 h-3.5" /> ربط الإعلان بمعرض (اختياري)
+                              </p>
+                              <div className="flex gap-2">
+                                <select
+                                  className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm text-right"
+                                  value={carShowroomSelections[car.id] ?? (car.showroomId ? String(car.showroomId) : "")}
+                                  onChange={e => setCarShowroomSelections(prev => ({ ...prev, [car.id]: e.target.value }))}
+                                  dir="rtl"
+                                >
+                                  <option value="">— بدون معرض —</option>
+                                  {showrooms.map((sr: any) => (
+                                    <option key={sr.id} value={String(sr.id)}>{sr.name} ({sr.city})</option>
+                                  ))}
+                                </select>
+                                <Button
+                                  size="sm"
+                                  className="h-9 gap-1.5 shrink-0"
+                                  disabled={linkingCarId === car.id}
+                                  onClick={() => linkCarToShowroom(car.id, carShowroomSelections[car.id] ?? "")}
+                                >
+                                  {linkingCarId === car.id
+                                    ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                                    : <Building2 className="w-3.5 h-3.5" />}
+                                  ربط
+                                </Button>
+                              </div>
+                              {car.showroomId && (
+                                <p className="text-[10px] text-primary mt-1.5 flex items-center gap-1">
+                                  <Building2 className="w-3 h-3" /> مربوط بمعرض — اختر "بدون معرض" لإلغاء الربط
+                                </p>
+                              )}
+                            </div>
+                          )}
 
                           {/* Action buttons full-width */}
                           <div className="flex gap-3">
