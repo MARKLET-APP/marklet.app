@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
@@ -229,9 +229,17 @@ export default function ShowroomManagePage() {
               {autoApprove && <span className="text-xs text-primary font-medium">• نشر تلقائي</span>}
             </div>
           </div>
-          <button onClick={() => navigate("/add-listing")} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold">
-            <Plus className="w-4 h-4" /> إعلان جديد
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/showroom/${showroom.id}`)}
+              className="flex items-center gap-1 border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 px-3 py-2 rounded-xl text-sm font-bold transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" /> عرض المعرض
+            </button>
+            <button onClick={() => navigate("/add-listing")} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold">
+              <Plus className="w-4 h-4" /> إعلان جديد
+            </button>
+          </div>
         </div>
       </div>
 
@@ -252,26 +260,6 @@ export default function ShowroomManagePage() {
             <p className="text-xs text-amber-600 mt-0.5">قيد المراجعة</p>
           </div>
         </div>
-
-        {/* عرض المعرض banner */}
-        <Link
-          href={`/showroom/${showroom.id}`}
-          className="flex items-center justify-between bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-2xl px-4 py-3 mb-5 transition-colors group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              {showroom.logo
-                ? <img src={showroom.logo} alt="" className="w-full h-full object-cover rounded-xl" />
-                : <Building2 className="w-5 h-5 text-primary" />
-              }
-            </div>
-            <div>
-              <p className="font-bold text-sm text-primary">عرض صفحة المعرض العامة</p>
-              <p className="text-xs text-muted-foreground">شاهد كيف يظهر معرضك للمستخدمين</p>
-            </div>
-          </div>
-          <ExternalLink className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
-        </Link>
 
         {/* Tabs */}
         <div className="flex bg-muted/50 rounded-xl p-1 mb-5">
