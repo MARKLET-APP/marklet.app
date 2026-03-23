@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { useAuthStore } from "@/lib/auth";
 import { withApi } from "@/lib/runtimeConfig";
@@ -25,32 +25,36 @@ function ShowroomDialog({ open, onClose, editing, onSaved }: {
   onSaved: () => void;
 }) {
   const { toast } = useToast();
-  const empty = { name: "", city: "", address: "", phone: "", whatsapp: "", email: "", description: "" };
-  const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setForm(editing ? {
-        name: editing.name || "", city: editing.city || "", address: editing.address || "",
-        phone: editing.phone || "", whatsapp: editing.whatsapp || "",
-        email: editing.email || "", description: editing.description || "",
-      } : empty);
-    }
-  }, [open, editing?.id]);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLInputElement>(null);
+  const addressRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const whatsappRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
 
-  const upd = (field: keyof typeof empty) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setForm(prev => ({ ...prev, [field]: val }));
-  };
+  const dialogKey = open ? `srm-${editing?.id ?? "new"}` : "srm-closed";
 
   const save = async () => {
-    const name = form.name.trim();
-    const city = form.city.trim();
-    if (!name || !city) return;
+    const name = nameRef.current?.value?.trim() ?? "";
+    const city = cityRef.current?.value?.trim() ?? "";
+    if (!name || !city) {
+      toast({ title: "يرجى إدخال اسم المعرض والمدينة", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
-      const payload = { name, city, address: form.address, phone: form.phone, whatsapp: form.whatsapp, email: form.email, description: form.description };
+      const payload = {
+        name,
+        city,
+        address: addressRef.current?.value ?? "",
+        phone: phoneRef.current?.value ?? "",
+        whatsapp: whatsappRef.current?.value ?? "",
+        email: emailRef.current?.value ?? "",
+        description: descriptionRef.current?.value ?? "",
+      };
       if (editing) {
         await apiRequest(`/api/admin/showrooms/${editing.id}`, "PATCH", payload);
         toast({ title: "تم تحديث المعرض" });
@@ -67,9 +71,16 @@ function ShowroomDialog({ open, onClose, editing, onSaved }: {
     }
   };
 
+  const inputCls = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-lg" dir="rtl">
+    <Dialog key={dialogKey} open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent
+        className="max-w-lg"
+        dir="rtl"
+        onInteractOutside={e => e.preventDefault()}
+        onPointerDownOutside={e => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
@@ -80,45 +91,52 @@ function ShowroomDialog({ open, onClose, editing, onSaved }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium mb-1 block">اسم المعرض *</label>
-              <Input value={form.name} onChange={upd("name")} placeholder="معرض النجمة" />
+              <input ref={nameRef} defaultValue={editing?.name ?? ""} placeholder="معرض النجمة" className={inputCls} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">المدينة *</label>
-              <Input value={form.city} onChange={upd("city")} placeholder="دمشق" />
+              <input ref={cityRef} defaultValue={editing?.city ?? ""} placeholder="دمشق" className={inputCls} />
             </div>
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">العنوان</label>
-            <Input value={form.address} onChange={upd("address")} placeholder="شارع بغداد..." />
+            <input ref={addressRef} defaultValue={editing?.address ?? ""} placeholder="شارع بغداد..." className={inputCls} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium mb-1 block">الهاتف</label>
-              <Input value={form.phone} onChange={upd("phone")} placeholder="+963..." dir="ltr" />
+              <input ref={phoneRef} defaultValue={editing?.phone ?? ""} placeholder="+963..." dir="ltr" className={inputCls} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">واتساب</label>
-              <Input value={form.whatsapp} onChange={upd("whatsapp")} placeholder="+963..." dir="ltr" />
+              <input ref={whatsappRef} defaultValue={editing?.whatsapp ?? ""} placeholder="+963..." dir="ltr" className={inputCls} />
             </div>
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">البريد الإلكتروني</label>
-            <Input value={form.email} onChange={upd("email")} placeholder="info@showroom.sy" dir="ltr" />
+            <input ref={emailRef} defaultValue={editing?.email ?? ""} placeholder="info@showroom.sy" dir="ltr" className={inputCls} />
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">الوصف</label>
-            <Input value={form.description} onChange={upd("description")} placeholder="وصف المعرض..." />
+            <input ref={descriptionRef} defaultValue={editing?.description ?? ""} placeholder="وصف المعرض..." className={inputCls} />
           </div>
           <div className="flex gap-3 pt-2">
-            <Button
-              className="flex-1 bg-primary hover:bg-primary/90"
+            <button
+              type="button"
               onClick={save}
-              disabled={saving || !form.name.trim() || !form.city.trim()}
+              disabled={saving}
+              className="flex-1 h-10 flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {saving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <CheckCircle className="w-4 h-4 ml-2" />}
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
               {editing ? "حفظ التعديلات" : "إضافة المعرض"}
-            </Button>
-            <Button variant="outline" className="flex-1" onClick={onClose}>إلغاء</Button>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 h-10 flex items-center justify-center gap-2 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
+            >
+              إلغاء
+            </button>
           </div>
         </div>
       </DialogContent>
