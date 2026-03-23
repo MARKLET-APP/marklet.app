@@ -497,7 +497,14 @@ button[class*="bg-primary"]:active {
 /* =============================================
    MARKLET — خلفية الصفحة الرئيسية الاحترافية
    ============================================= */
-/* --- الغلاف الخارجي: تدرج لوني واضح --- */
+
+/* حركة الشبكة — slow motion */
+@keyframes home-grid-drift {
+  0%   { background-position: 15% 20%, 85% 80%, 0px 0px, 0px 0px; }
+  100% { background-position: 15% 20%, 85% 80%, 20px 20px, -20px 20px; }
+}
+
+/* --- الغلاف الخارجي: تدرج + شبكة متحركة --- */
 div[data-page="home"] {
   background-color: hsl(138deg 30% 90%) !important;
   background-image:
@@ -505,6 +512,7 @@ div[data-page="home"] {
     radial-gradient(circle at 85% 80%, rgba(212,175,55,0.18) 0%, transparent 55%),
     repeating-linear-gradient(45deg,  rgba(212,175,55,0.07) 0px, rgba(212,175,55,0.07) 1px, transparent 1px, transparent 20px),
     repeating-linear-gradient(-45deg, rgba(212,175,55,0.07) 0px, rgba(212,175,55,0.07) 1px, transparent 1px, transparent 20px) !important;
+  animation: home-grid-drift 14s linear infinite !important;
 }
 
 /* --- الأقسام الداخلية: شبكة ذهبية ناعمة --- */
