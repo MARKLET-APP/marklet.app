@@ -122,6 +122,7 @@ export default function Home() {
     { id: 'parts', name: t("home.browse.parts"), icon: 'wrench', href: '/car-parts' },
     { id: 'junk', name: t("home.browse.junk"), icon: 'package', href: '/junk-cars' },
     { id: 'inspect', name: t("home.browse.inspections"), icon: 'shield', href: '/inspections' },
+    { id: 'showrooms', name: isRTL ? 'معارض' : 'Showrooms', icon: 'showrooms', href: '/showrooms' },
     { id: 'missing', name: t("home.browse.missing"), icon: 'search', href: '/missing-cars' },
     { id: 'buy-request', name: t("nav.buyRequests"), icon: 'cart', href: '/buy-requests' },
     { id: 'auctions', name: isRTL ? '🏁 مزادات' : '🏁 Auctions', icon: 'auctions', href: '/auctions' },
@@ -384,6 +385,7 @@ export default function Home() {
               'search': { icon: <SearchIcon size={22} />, color: "text-pink-600", bg: "bg-pink-100" },
               'cart': { icon: <CartIcon size={22} />, color: "text-primary", bg: "bg-primary/10" },
               'auctions': { icon: <Flag size={22} />, color: "text-yellow-600", bg: "bg-yellow-100" },
+              'showrooms': { icon: <Building2 size={22} />, color: "text-emerald-600", bg: "bg-emerald-100" },
             };
             const meta = catMeta[cat.icon] ?? { icon: <Car size={22} />, color: "text-primary", bg: "bg-primary/10" };
             return (
@@ -782,36 +784,55 @@ function FeaturedShowrooms() {
   if (isLoading || list.length === 0) return null;
 
   return (
-    <section className="py-12 w-full bg-gradient-to-br from-primary/5 to-primary/10" dir="rtl">
+    <section className="py-10 w-full bg-gradient-to-br from-primary/5 to-primary/10" dir="rtl">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-end mb-8">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <span className="w-3 h-8 bg-primary rounded-full inline-block"></span>
-              <Building2 className="w-6 h-6 text-primary" />
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <span className="w-1 h-7 bg-primary rounded-full inline-block"></span>
+              <Building2 className="w-5 h-5 text-primary" />
               معارض سيارات مميزة
             </h2>
-            <p className="text-muted-foreground mt-1">معارض موثّقة ومميّزة على المنصة</p>
+            <p className="text-muted-foreground text-sm mt-0.5 mr-5">معارض موثّقة ومميّزة على المنصة</p>
           </div>
+          <Link href="/showrooms" className="flex items-center gap-1 text-primary text-sm font-bold hover:underline">
+            عرض الكل <ChevronLeft className="w-4 h-4" />
+          </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+
+        {/* Horizontal scroll on mobile, grid on desktop */}
+        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-4 lg:grid-cols-6 sm:overflow-x-visible" style={{ scrollbarWidth: "none" }}>
           {list.map((showroom: any) => (
-            <Link key={showroom.id} href={`/showroom/${showroom.id}`} className="group">
-              <div className="bg-card border rounded-2xl p-4 text-center hover:shadow-md hover:border-primary/30 transition-all">
-                <div className="w-16 h-16 rounded-xl border bg-muted mx-auto mb-3 overflow-hidden flex items-center justify-center">
+            <Link key={showroom.id} href={`/showroom/${showroom.id}`} className="group snap-start flex-shrink-0 w-36 sm:w-auto">
+              <div className="bg-card border rounded-2xl p-4 text-center hover:shadow-md hover:border-primary/30 transition-all h-full">
+                <div className="w-14 h-14 rounded-xl border bg-muted mx-auto mb-3 overflow-hidden flex items-center justify-center">
                   {showroom.logo ? (
                     <img src={showroom.logo} alt={showroom.name} className="w-full h-full object-cover" />
                   ) : (
-                    <Building2 className="w-8 h-8 text-primary/40" />
+                    <Building2 className="w-7 h-7 text-primary/40" />
                   )}
                 </div>
-                <p className="font-bold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">{showroom.name}</p>
-                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-0.5">
-                  <MapPin className="w-3 h-3" />{showroom.city}
+                <p className="font-bold text-xs text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">{showroom.name}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-0.5 mt-1.5">
+                  <MapPin className="w-2.5 h-2.5" />{showroom.city}
                 </p>
+                {showroom.isVerified && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] text-green-600 font-semibold mt-1">
+                    <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" /> مميز
+                  </span>
+                )}
               </div>
             </Link>
           ))}
+          {/* View all card */}
+          <Link href="/showrooms" className="snap-start flex-shrink-0 w-36 sm:w-auto">
+            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 text-center hover:bg-primary/20 transition-all h-full flex flex-col items-center justify-center gap-2">
+              <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+                <Building2 className="w-7 h-7 text-primary" />
+              </div>
+              <p className="font-bold text-xs text-primary">عرض كل المعارض</p>
+            </div>
+          </Link>
         </div>
       </div>
     </section>

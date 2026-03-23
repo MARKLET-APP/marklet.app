@@ -67,15 +67,30 @@ router.get("/showrooms/:id/cars", async (req, res): Promise<void> => {
   // Attach primary image for each car
   const carIds = cars.map(c => c.id);
   const images = carIds.length > 0
-    ? await db.select({ carId: imagesTable.carId, url: imagesTable.url })
+    ? await db.select({ carId: imagesTable.carId, imageUrl: imagesTable.imageUrl })
         .from(imagesTable)
-        .where(eq(imagesTable.isPrimary, true))
+        .where(and(inArray(imagesTable.carId, carIds), eq(imagesTable.isPrimary, true)))
     : [];
   
-  const imageMap = Object.fromEntries(images.map(img => [img.carId, img.url]));
+  const imageMap = Object.fromEntries(images.map(img => [img.carId, img.imageUrl]));
   const result = cars.map(c => ({ ...c, primaryImage: imageMap[c.id] || null }));
   
   res.json(result);
+});
+
+// POST /showrooms/:id/rate  — submit a rating (1-5)
+router.post("/showrooms/:id/rate", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const id = parseInt(String(req.params.id), 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const score = Number(req.body.rating);
+  if (!score || score < 1 || score > 5) { res.status(400).json({ error: "rating must be 1-5" }); return; }
+  const [showroom] = await db.select({ id: showroomsTable.id, rating: showroomsTable.rating }).from(showroomsTable).where(eq(showroomsTable.id, id));
+  if (!showroom) { res.status(404).json({ error: "Not found" }); return; }
+  // Simple weighted average: blend existing rating with new score (20% weight each new vote)
+  const current = Number(showroom.rating) || 0;
+  const newRating = current === 0 ? score : Math.round((current * 0.8 + score * 0.2) * 10) / 10;
+  const [updated] = await db.update(showroomsTable).set({ rating: String(newRating) }).where(eq(showroomsTable.id, id)).returning({ rating: showroomsTable.rating });
+  res.json({ rating: Number(updated.rating) });
 });
 
 // ─── Dealer: My Showroom Routes ───────────────────────────────────────────────
