@@ -1,5 +1,5 @@
 import { Link, useRoute } from "wouter";
-import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings } from "lucide-react";
+import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings, Building2 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useGetConversations } from "@workspace/api-client-react";
 
@@ -14,6 +14,7 @@ export function BottomNav() {
   const [isChat] = useRoute("/chat");
   const [isBuyRequests] = useRoute("/buy-requests");
   const [isAdmin] = useRoute("/admin");
+  const [isShowroomManage] = useRoute("/showroom/manage");
 
   const { data: conversations } = useGetConversations({
     query: {
@@ -26,12 +27,24 @@ export function BottomNav() {
   const totalUnread = conversations?.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0) ?? 0;
   const isChatActive = isMessages || isChat;
   const isAdminUser = user?.role === "admin";
+  const isDealerUser = user?.role === "dealer";
 
   return (
     <div className="glass-panel border-t pb-safe sm:hidden flex-shrink-0">
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="flex items-center justify-around h-16 px-1">
         <NavItem href="/" icon={<Home className="w-5 h-5" />} label="الرئيسية" isActive={isHome} />
         <NavItem href="/search" icon={<Search className="w-5 h-5" />} label="البحث" isActive={isSearch} />
+
+        {/* Dealer showroom control button — between search and add */}
+        {isDealerUser && (
+          <NavItem
+            href="/showroom/manage"
+            icon={<Building2 className="w-5 h-5" />}
+            label="معرضي"
+            isActive={isShowroomManage}
+            accent
+          />
+        )}
 
         <Link
           href="/add-listing"
@@ -43,7 +56,7 @@ export function BottomNav() {
           <span className="text-[10px] font-medium text-primary">نشر</span>
         </Link>
 
-        {/* Admin gets لوحة التحكم instead of المحفوظات */}
+        {/* Admin gets لوحة التحكم, dealer skips favorites to save space, others get المحفوظات */}
         {isAdminUser ? (
           <NavItem
             href="/admin"
@@ -52,9 +65,9 @@ export function BottomNav() {
             isActive={isAdmin}
             accent
           />
-        ) : (
+        ) : !isDealerUser ? (
           <NavItem href="/favorites" icon={<Bookmark className="w-5 h-5" />} label="المحفوظات" isActive={isFavorites} />
-        )}
+        ) : null}
 
         {user ? (
           <NavItem
@@ -87,7 +100,7 @@ function NavItem({
 }: {
   href: string; icon: React.ReactNode; label: string; isActive: boolean | null; accent?: boolean
 }) {
-  const activeColor = accent ? "text-amber-500" : "text-primary";
+  const activeColor = accent ? "text-emerald-600" : "text-primary";
   return (
     <Link href={href} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${isActive ? activeColor : "text-muted-foreground hover:text-foreground"}`}>
       {icon}

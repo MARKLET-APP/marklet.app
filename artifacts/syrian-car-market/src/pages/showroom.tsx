@@ -10,7 +10,7 @@ import { CarCard } from "@/components/CarCard";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, MapPin, Phone, MessageCircle, Car, Star, ShieldCheck,
-  Building2, ChevronRight, PenLine, Save, X, ImagePlus,
+  Building2, ChevronRight, PenLine, Save, X, Camera,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +41,58 @@ function StarRow({
   );
 }
 
+// ── Image Upload Button ────────────────────────────────────────────────────────
+function ImageUploadBtn({
+  onUploaded, className, children,
+}: {
+  onUploaded: (url: string) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(withApi("/api/showrooms/upload"), {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "فشل الرفع");
+      onUploaded(data.url);
+      toast({ title: "✅ تم رفع الصورة" });
+    } catch (err: any) {
+      toast({ title: err.message ?? "فشل رفع الصورة", variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        className={className}
+      >
+        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : children}
+      </button>
+    </>
+  );
+}
+
 // ── Edit Modal (owner only) ────────────────────────────────────────────────────
 function EditShowroomModal({
   showroom, onClose, onSaved,
@@ -53,7 +105,6 @@ function EditShowroomModal({
   const cityRef = useRef<HTMLInputElement>(null);
   const addressRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
-  const logoRef = useRef<HTMLInputElement>(null);
 
   const save = async () => {
     setSaving(true);
@@ -65,7 +116,6 @@ function EditShowroomModal({
       if (cityRef.current?.value) body.city = cityRef.current.value;
       if (addressRef.current?.value !== undefined) body.address = addressRef.current.value;
       if (descRef.current?.value !== undefined) body.description = descRef.current.value;
-      if (logoRef.current?.value !== undefined) body.logo = logoRef.current.value;
       await apiRequest("/api/showrooms/my", "PATCH", body);
       toast({ title: "✅ تم حفظ بيانات المعرض" });
       onSaved();
@@ -115,10 +165,6 @@ function EditShowroomModal({
             <label className="text-xs text-muted-foreground mb-1 block">نبذة عن المعرض</label>
             <textarea ref={descRef} defaultValue={showroom.description ?? ""} rows={3} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><ImagePlus className="w-3 h-3" /> رابط اللوجو (URL)</label>
-            <input ref={logoRef} type="url" defaultValue={showroom.logo ?? ""} className="w-full border rounded-xl px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" dir="ltr" placeholder="https://..." />
-          </div>
         </div>
 
         <button onClick={save} disabled={saving} className="mt-5 w-full flex items-center justify-center gap-2 bg-primary text-white rounded-xl py-3 font-bold text-sm disabled:opacity-60">
@@ -141,7 +187,6 @@ export default function ShowroomPage() {
   const qc = useQueryClient();
 
   const [localRating, setLocalRating] = useState<number | null>(null);
-  const [rated, setRated] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
   const { data: showroom, isLoading } = useQuery<any>({
@@ -175,9 +220,19 @@ export default function ShowroomPage() {
   const carsCount = Array.isArray(cars) ? cars.length : 0;
   const baseUrl = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, "");
 
+  // Upload image and immediately save to showroom
+  const handleImageUpload = async (field: "logo" | "coverImage", url: string) => {
+    try {
+      await apiRequest("/api/showrooms/my", "PATCH", { [field]: url });
+      qc.invalidateQueries({ queryKey: ["/showrooms", id] });
+    } catch {
+      toast({ title: "فشل حفظ الصورة", variant: "destructive" });
+    }
+  };
+
+  // Flexible rating — users can change their rating anytime
   const handleRate = async (score: number) => {
     if (!user) { navigate("/login"); return; }
-    if (rated) return;
     try {
       const res = await fetch(withApi(`/api/showrooms/${id}/rate`), {
         method: "POST",
@@ -186,11 +241,9 @@ export default function ShowroomPage() {
       });
       const data = await res.json();
       setLocalRating(data.rating ?? score);
-      setRated(true);
-      toast({ title: "✅ شكراً على تقييمك!" });
+      toast({ title: "✅ تم تسجيل تقييمك!" });
     } catch {
       setLocalRating(score);
-      setRated(true);
     }
   };
 
@@ -207,12 +260,12 @@ export default function ShowroomPage() {
       {/* ── Cover ── */}
       <div className="relative w-full h-52 bg-gradient-to-br from-primary via-primary/80 to-emerald-700 overflow-hidden">
         {showroom.coverImage && (
-          <img src={showroom.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-40" />
+          <img src={withApi(showroom.coverImage)} alt="" className="absolute inset-0 w-full h-full object-cover" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
-        {/* Nav buttons */}
-        <div className="absolute top-4 right-4 flex gap-2">
+        {/* Nav button */}
+        <div className="absolute top-4 right-4">
           <button onClick={() => navigate(-1 as any)} className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30">
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -231,6 +284,17 @@ export default function ShowroomPage() {
             </span>
           )}
         </div>
+
+        {/* Cover upload button (owner only) */}
+        {isOwner && (
+          <ImageUploadBtn
+            onUploaded={url => handleImageUpload("coverImage", url)}
+            className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            تغيير الغلاف
+          </ImageUploadBtn>
+        )}
       </div>
 
       <div className="max-w-4xl mx-auto px-4">
@@ -239,12 +303,25 @@ export default function ShowroomPage() {
           <div className="bg-card border rounded-2xl shadow-lg p-5">
             {/* Logo + name + actions row */}
             <div className="flex items-start gap-4 mb-4">
-              <div className="w-20 h-20 rounded-xl border-2 border-border bg-muted shadow-sm overflow-hidden flex-shrink-0">
-                {showroom.logo
-                  ? <img src={showroom.logo} alt={showroom.name} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full bg-primary/10 flex items-center justify-center"><Building2 className="w-9 h-9 text-primary/60" /></div>
-                }
+
+              {/* Logo with upload button (owner only) */}
+              <div className="relative flex-shrink-0 w-20 h-20">
+                <div className="w-20 h-20 rounded-xl border-2 border-border bg-muted shadow-sm overflow-hidden">
+                  {showroom.logo
+                    ? <img src={withApi(showroom.logo)} alt={showroom.name} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full bg-primary/10 flex items-center justify-center"><Building2 className="w-9 h-9 text-primary/60" /></div>
+                  }
+                </div>
+                {isOwner && (
+                  <ImageUploadBtn
+                    onUploaded={url => handleImageUpload("logo", url)}
+                    className="absolute -bottom-1.5 -left-1.5 w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors border-2 border-background"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-white" />
+                  </ImageUploadBtn>
+                )}
               </div>
+
               <div className="flex-1 min-w-0 pt-1">
                 <div className="flex items-start justify-between gap-2">
                   <h1 className="text-xl font-bold text-foreground leading-tight">{showroom.name}</h1>
@@ -268,11 +345,13 @@ export default function ShowroomPage() {
                   <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">{showroom.city}{showroom.address ? ` — ${showroom.address}` : ""}</span>
                 </div>
-                {/* Rating row */}
+                {/* Rating row — always interactive for logged-in users */}
                 <div className="flex items-center gap-2 mt-2">
-                  <StarRow rating={rating} interactive={!rated && !!user} onRate={handleRate} />
-                  {!rated && user && <span className="text-xs text-muted-foreground">(اضغط للتقييم)</span>}
-                  {!user && <span className="text-xs text-muted-foreground">سجّل الدخول للتقييم</span>}
+                  <StarRow rating={rating} interactive={!!user} onRate={handleRate} />
+                  {user
+                    ? <span className="text-xs text-muted-foreground">(اضغط للتقييم)</span>
+                    : <span className="text-xs text-muted-foreground">سجّل الدخول للتقييم</span>
+                  }
                 </div>
               </div>
             </div>
@@ -323,7 +402,7 @@ export default function ShowroomPage() {
           </div>
         </div>
 
-        {/* ── Cars Grid (4×4 like general system) ── */}
+        {/* ── Cars Grid ── */}
         <div className="pb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1 h-6 bg-primary rounded-full" />

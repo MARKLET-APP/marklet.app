@@ -2,6 +2,10 @@ import { Router, type IRouter } from "express";
 import { db, showroomsTable, carsTable, usersTable, imagesTable } from "@workspace/db";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { upload, processImage } from "../middlewares/upload.js";
+import { checkImageSafety } from "../lib/openai.js";
+import fs from "fs";
+import path from "path";
 
 const router: IRouter = Router();
 
@@ -125,6 +129,24 @@ router.patch("/showrooms/my", authMiddleware, async (req: AuthRequest, res): Pro
   }
   const [updated] = await db.update(showroomsTable).set(updates).where(eq(showroomsTable.id, showroom.id)).returning();
   res.json(updated);
+});
+
+// POST /api/showrooms/upload — upload logo or cover image (no car detection required)
+router.post("/showrooms/upload", authMiddleware, upload.single("image"), async (req: AuthRequest, res): Promise<void> => {
+  if (!req.file) { res.status(400).json({ error: "لم يتم رفع أي ملف" }); return; }
+  const tmpPath = path.join("uploads", `srm_tmp_${Date.now()}`);
+  fs.mkdirSync("uploads", { recursive: true });
+  fs.writeFileSync(tmpPath, req.file.buffer);
+  try {
+    const isSafe = await checkImageSafety(tmpPath);
+    fs.unlinkSync(tmpPath);
+    if (!isSafe) { res.status(400).json({ error: "الصورة غير مناسبة" }); return; }
+    const url = await processImage(req.file, "showrooms");
+    res.json({ url });
+  } catch {
+    if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    res.status(500).json({ error: "فشل رفع الصورة" });
+  }
 });
 
 // GET /api/showrooms/my/cars — all cars (all statuses)
