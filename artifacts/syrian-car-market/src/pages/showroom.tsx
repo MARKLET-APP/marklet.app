@@ -10,7 +10,7 @@ import { CarCard } from "@/components/CarCard";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, MapPin, Phone, MessageCircle, Car, Star, ShieldCheck,
-  Building2, ChevronRight, PenLine, Save, X, Camera,
+  Building2, ChevronRight, PenLine, Save, X, Camera, Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -397,6 +397,15 @@ export default function ShowroomPage() {
                   className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl py-2.5 font-bold text-sm transition-colors disabled:opacity-50"
                 >
                   {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageCircle className="w-4 h-4" /> مراسلة المعرض</>}
+                </button>
+              )}
+              {/* Owner: quick link to manage page */}
+              {isOwner && (
+                <button
+                  onClick={() => navigate("/showroom/manage")}
+                  className="w-full flex items-center justify-center gap-2 bg-primary text-white rounded-xl py-2.5 font-bold text-sm transition-colors hover:bg-primary/90 active:scale-[0.98]"
+                >
+                  <Settings2 className="w-4 h-4" /> إدارة معرضي
                 </button>
               )}
             </div>
