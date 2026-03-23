@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 import { CarCard } from "@/components/CarCard";
 import { ContactButtons } from "@/components/ContactButtons";
-import { Car, Wrench, Trash2, CalendarDays, Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart, MapPin, Tag } from "lucide-react";
+import { Car, Wrench, Trash2, CalendarDays, Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart, MapPin, Tag, History, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +11,42 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
+
+// ─── Search History ──────────────────────────────────────────────────────────
+const HISTORY_KEY = "marklet_search_history";
+const MAX_HISTORY = 12;
+
+function useSearchHistory() {
+  const [history, setHistory] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]"); }
+    catch { return []; }
+  });
+
+  const addSearch = useCallback((q: string) => {
+    const trimmed = q.trim();
+    if (trimmed.length < 2) return;
+    setHistory(prev => {
+      const next = [trimmed, ...prev.filter(h => h !== trimmed)].slice(0, MAX_HISTORY);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const removeSearch = useCallback((q: string) => {
+    setHistory(prev => {
+      const next = prev.filter(h => h !== q);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+    localStorage.removeItem(HISTORY_KEY);
+  }, []);
+
+  return { history, addSearch, removeSearch, clearHistory };
+}
 
 type ListingType = "all" | "car" | "rental" | "part" | "junk";
 
@@ -206,6 +242,10 @@ export default function SearchPage() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuthStore();
+  const { history, addSearch, removeSearch, clearHistory } = useSearchHistory();
+  const [showHistory, setShowHistory] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const historyDropdownRef = useRef<HTMLDivElement>(null);
 
   const getInitialFilters = () => {
     const params = new URLSearchParams(window.location.search);
@@ -243,6 +283,29 @@ export default function SearchPage() {
     setSearchText(getInitialSearch());
     setListingType(getInitialType());
   }, [location]);
+
+  // حفظ البحث تلقائياً بعد 1.5 ث من توقف الكتابة
+  useEffect(() => {
+    if (searchText.trim().length < 2) return;
+    const timer = setTimeout(() => addSearch(searchText), 1500);
+    return () => clearTimeout(timer);
+  }, [searchText, addSearch]);
+
+  // إغلاق الـ dropdown عند الضغط خارجه
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        historyDropdownRef.current &&
+        !historyDropdownRef.current.contains(e.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(e.target as Node)
+      ) {
+        setShowHistory(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   useEffect(() => {
     setIsLoading(true);
@@ -335,16 +398,72 @@ export default function SearchPage() {
           <div className="flex-1 relative">
             <SearchIcon className="absolute end-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
             <input
+              ref={searchInputRef}
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
+              onFocus={() => setShowHistory(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchText.trim().length >= 2) {
+                  addSearch(searchText);
+                  setShowHistory(false);
+                }
+                if (e.key === "Escape") setShowHistory(false);
+              }}
               placeholder="ابحث في جميع الخدمات..."
               className="w-full bg-card border-2 border-border rounded-xl py-3 pe-12 ps-4 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-foreground"
+              autoComplete="off"
             />
             {searchText && (
-              <button onClick={() => setSearchText("")} className="absolute start-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <button onClick={() => { setSearchText(""); searchInputRef.current?.focus(); }} className="absolute start-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                 <X className="w-4 h-4" />
               </button>
+            )}
+
+            {/* ── History Dropdown ─────────────────────────────────── */}
+            {showHistory && history.length > 0 && (
+              <div
+                ref={historyDropdownRef}
+                className="absolute top-full end-0 start-0 mt-1.5 bg-card border-2 border-border rounded-2xl shadow-2xl z-50 overflow-hidden"
+              >
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+                    <Clock className="w-3.5 h-3.5" />
+                    عمليات البحث السابقة
+                  </div>
+                  <button
+                    onMouseDown={(e) => { e.preventDefault(); clearHistory(); }}
+                    className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                  >
+                    مسح الكل
+                  </button>
+                </div>
+                <ul className="max-h-72 overflow-y-auto">
+                  {history.map((item, idx) => (
+                    <li key={idx} className="flex items-center group hover:bg-muted/40 transition-colors">
+                      <button
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSearchText(item);
+                          setShowHistory(false);
+                          addSearch(item);
+                        }}
+                        className="flex-1 flex items-center gap-3 px-4 py-2.5 text-right"
+                      >
+                        <History className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="text-sm text-foreground truncate">{item}</span>
+                      </button>
+                      <button
+                        onMouseDown={(e) => { e.preventDefault(); removeSearch(item); }}
+                        className="px-3 py-2.5 text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        title="حذف"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
           <Sheet>
