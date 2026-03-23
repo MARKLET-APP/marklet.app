@@ -5,8 +5,9 @@ import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
   AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag,
-  Building2, Star, Share2
+  Building2, Star, Share2, FileSearch2
 } from "lucide-react";
+import { VehicleReportWidget } from "@/components/VehicleReportWidget";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CarCard } from "@/components/CarCard";
@@ -619,21 +620,23 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
-      {/* Vehicle Report CTA */}
-      <section className="py-16 px-4">
-        <div className="max-w-5xl mx-auto bg-gradient-to-br from-primary to-primary/80 rounded-3xl p-8 md:p-12 text-center shadow-2xl shadow-primary/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">{t("home.ctaReport.title")}</h2>
-            <p className="text-primary-foreground/80 text-lg mb-8 max-w-2xl mx-auto">
-              {t("home.ctaReport.subtitle")}
+      {/* Vehicle Report — Full Widget */}
+      <section className="py-16 px-4 bg-gradient-to-b from-background to-secondary/10">
+        <div className="max-w-5xl mx-auto">
+          {/* Section header */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-bold px-4 py-2 rounded-full mb-4">
+              <FileSearch2 className="w-4 h-4" />
+              استعلام فوري عن أي مركبة
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black text-foreground mb-3">
+              تقرير تاريخ المركبة
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              أدخل رقم الشاسيه (VIN) للحصول على تقرير يتضمن مواصفات المركبة، الاستدعاءات الرسمية، وعدد الشكاوى المسجلة لدى NHTSA.
             </p>
-            <Link href="/vehicle-info">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-bold text-lg px-8 rounded-xl shadow-xl hover:-translate-y-1 transition-transform">
-                {t("home.ctaReport.btn")}
-              </Button>
-            </Link>
           </div>
+          <VehicleReportWidget />
         </div>
       </section>
 
