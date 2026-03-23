@@ -264,14 +264,26 @@ export default function ShowroomPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
-        {/* Nav button */}
-        <div className="absolute top-4 right-4">
-          <button onClick={() => navigate(-1 as any)} className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30">
+        {/* Top-right: back + cover upload stacked */}
+        <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+          <button
+            onClick={() => window.history.back()}
+            className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30"
+          >
             <ChevronRight className="w-5 h-5" />
           </button>
+          {isOwner && (
+            <ImageUploadBtn
+              onUploaded={url => handleImageUpload("coverImage", url)}
+              className="flex items-center gap-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              تغيير الغلاف
+            </ImageUploadBtn>
+          )}
         </div>
 
-        {/* Badges */}
+        {/* Badges top-left */}
         <div className="absolute top-4 left-4 flex gap-2">
           {showroom.isVerified && (
             <span className="flex items-center gap-1 bg-green-500/90 text-white text-xs font-bold px-2.5 py-1 rounded-full backdrop-blur-sm">
@@ -284,17 +296,6 @@ export default function ShowroomPage() {
             </span>
           )}
         </div>
-
-        {/* Cover upload button (owner only) */}
-        {isOwner && (
-          <ImageUploadBtn
-            onUploaded={url => handleImageUpload("coverImage", url)}
-            className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors"
-          >
-            <Camera className="w-3.5 h-3.5" />
-            تغيير الغلاف
-          </ImageUploadBtn>
-        )}
       </div>
 
       <div className="max-w-4xl mx-auto px-4">
