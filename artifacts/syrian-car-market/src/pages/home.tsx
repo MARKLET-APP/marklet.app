@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 import {
@@ -36,6 +36,11 @@ export default function Home() {
   const [sendingInfo, setSendingInfo] = useState(false);
   const { startChat, loading: startingChat } = useStartChat();
   const [detailRequest, setDetailRequest] = useState<any | null>(null);
+
+  useEffect(() => {
+    document.body.classList.add("home-bg");
+    return () => document.body.classList.remove("home-bg");
+  }, []);
 
   const startChatWithBuyer = (targetUserId: number, _requestId: number, initialMsg?: string) =>
     startChat(targetUserId, initialMsg);
