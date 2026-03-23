@@ -180,10 +180,9 @@ export default function ShowroomManagePage() {
     } finally { setDeletingId(null); }
   };
 
-  // Navigate to public showroom page — absolute URL works on Android/PWA too
+  // Navigate to public showroom page
   const openPublicPage = () => {
-    const basePath = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
-    window.location.assign(`${window.location.origin}${basePath}/showroom/${showroom?.id}`);
+    if (showroom?.id) navigate(`/showroom/${showroom.id}`);
   };
 
   // ── Guards (after hooks) ────────────────────────────────────────────────────
@@ -199,7 +198,7 @@ export default function ShowroomManagePage() {
   if (loadingShowroom) return (
     <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>
   );
-  if (!showroom || showroom?.error === "no_showroom") return (
+  if (!showroom || showroom?.error) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-6 text-center" dir="rtl">
       <Building2 className="w-16 h-16 text-muted-foreground/40" />
       <h2 className="text-xl font-bold">لا يوجد معرض مرتبط بحسابك</h2>
