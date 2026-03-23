@@ -1,7 +1,8 @@
-import { pgTable, serial, text, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const inspectionCentersTable = pgTable("inspection_centers", {
   id: serial("id").primaryKey(),
+  ownerUserId: integer("owner_user_id"),
   name: text("name").notNull(),
   city: text("city").notNull(),
   province: text("province"),
@@ -10,10 +11,13 @@ export const inspectionCentersTable = pgTable("inspection_centers", {
   whatsapp: text("whatsapp"),
   contact: text("contact"),
   logo: text("logo"),
+  coverImage: text("cover_image"),
   description: text("description"),
+  services: text("services"),
   rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
   isFeatured: boolean("is_featured").default(false),
   isVerified: boolean("is_verified").default(false),
+  isSuspended: boolean("is_suspended").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

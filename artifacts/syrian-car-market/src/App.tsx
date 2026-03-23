@@ -35,6 +35,12 @@ const SystemAuditPage = lazy(() => import("@/pages/system-audit"));
 const ShowroomPage = lazy(() => import("@/pages/showroom"));
 const ShowroomsPage = lazy(() => import("@/pages/showrooms"));
 const ShowroomManagePage = lazy(() => import("@/pages/showroom-manage"));
+const InspectionCentersPage = lazy(() => import("@/pages/inspection-centers"));
+const InspectionCenterPage = lazy(() => import("@/pages/inspection-center"));
+const InspectionCenterManagePage = lazy(() => import("@/pages/inspection-center-manage"));
+const ScrapCentersPage = lazy(() => import("@/pages/scrap-centers"));
+const ScrapCenterPage = lazy(() => import("@/pages/scrap-center"));
+const ScrapCenterManagePage = lazy(() => import("@/pages/scrap-center-manage"));
 import AppRatingPopup from "@/components/AppRatingPopup";
 
 function PageLoader() {
@@ -105,6 +111,12 @@ function Router() {
           <Route path="/showrooms" component={ShowroomsPage} />
           <Route path="/showroom/manage" component={ShowroomManagePage} />
           <Route path="/showroom/:id" component={ShowroomPage} />
+          <Route path="/inspection-centers" component={InspectionCentersPage} />
+          <Route path="/inspection-center/manage" component={InspectionCenterManagePage} />
+          <Route path="/inspection-center/:id" component={InspectionCenterPage} />
+          <Route path="/scrap-centers" component={ScrapCentersPage} />
+          <Route path="/scrap-center/manage" component={ScrapCenterManagePage} />
+          <Route path="/scrap-center/:id" component={ScrapCenterPage} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>
