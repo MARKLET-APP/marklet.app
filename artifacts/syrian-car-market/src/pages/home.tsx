@@ -19,7 +19,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
 import { useStartChat } from "@/hooks/use-start-chat";
-import { ShareSheet } from "@/components/ShareSheet";
 
 export default function Home() {
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
@@ -495,16 +494,6 @@ export default function Home() {
                       }
                       {t("home.buyReqs.contact")}
                     </button>
-                    <ShareSheet
-                      options={{
-                        title: `${r.brand || "طلب شراء"} ${r.model || ""}`.trim(),
-                        price: r.maxPrice,
-                        city: r.city,
-                        url: `${window.location.origin}/buy-requests`,
-                        description: r.description,
-                      }}
-                      className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
-                    />
                   </div>
                 </div>
               ))}
