@@ -495,26 +495,26 @@ button[class*="bg-primary"]:active {
 
 
 /* =============================================
-   MARKLET — خلفية الصفحة الرئيسية الاحترافية
+   MARKLET — خلفية جميع الصفحات والنوافذ
    ============================================= */
 
 /* ─────────────────────────────────────────────
-   متغيرات الشبكة — عدّلها بسهولة:
-   --home-grid-opacity  : نسبة ظهور شبكة الغلاف   (0.00 → 1.00) الحالية = 12.5%
-   --home-grid-inner    : نسبة ظهور شبكة الداخل   (0.00 → 1.00) الحالية =  9%
-   --home-grid-speed    : مدة دورة الحركة بالثانية  (قيمة أقل = أسرع)   = 6s
+   متغيرات الشبكة الذهبية — عدّلها بسهولة:
+   --app-grid-opacity  : نسبة ظهور شبكة الغلاف   (0.00 → 1.00) الحالية = 12.5%
+   --app-grid-inner    : نسبة ظهور شبكة الداخل   (0.00 → 1.00) الحالية =  9%
+   --app-grid-speed    : مدة دورة الحركة بالثانية  (قيمة أقل = أسرع)   = 6s
    ───────────────────────────────────────────── */
 
-/* حركة الشبكة — تُطبَّق على #app-main مباشرة لأنه يغطي الـ wrapper */
-@keyframes home-grid-drift {
+@keyframes app-grid-drift {
   0%   { background-position: 0px 0px,    0px 0px; }
   100% { background-position: 40px 40px, -40px 40px; }
 }
 
-div[data-page="home"] {
-  --home-grid-opacity : 0.125;
-  --home-grid-inner   : 0.09;
-  --home-grid-speed   : 6s;
+/* ══ الغلاف العام لجميع الصفحات ══ */
+div[data-page] {
+  --app-grid-opacity : 0.125;
+  --app-grid-inner   : 0.09;
+  --app-grid-speed   : 6s;
 
   background-color: hsl(138deg 30% 90%) !important;
   background-image:
@@ -522,23 +522,42 @@ div[data-page="home"] {
     radial-gradient(circle at 85% 80%, rgba(212,175,55,0.18) 0%, transparent 55%) !important;
 }
 
-/* --- #app-main: الشبكة المتحركة الفعلية التي يراها المستخدم --- */
-div[data-page="home"] #app-main {
+/* ══ منطقة المحتوى الرئيسية — شبكة متحركة ══ */
+div[data-page] #app-main {
   background-color: hsl(138deg 22% 94%) !important;
   background-image:
-    repeating-linear-gradient(45deg,  rgba(212,175,55, var(--home-grid-inner)) 0px, rgba(212,175,55, var(--home-grid-inner)) 1.5px, transparent 1.5px, transparent 22px),
-    repeating-linear-gradient(-45deg, rgba(212,175,55, var(--home-grid-inner)) 0px, rgba(212,175,55, var(--home-grid-inner)) 1.5px, transparent 1.5px, transparent 22px) !important;
-  animation: home-grid-drift var(--home-grid-speed) linear infinite !important;
+    repeating-linear-gradient(45deg,  rgba(212,175,55, var(--app-grid-inner)) 0px, rgba(212,175,55, var(--app-grid-inner)) 1.5px, transparent 1.5px, transparent 22px),
+    repeating-linear-gradient(-45deg, rgba(212,175,55, var(--app-grid-inner)) 0px, rgba(212,175,55, var(--app-grid-inner)) 1.5px, transparent 1.5px, transparent 22px) !important;
+  animation: app-grid-drift var(--app-grid-speed) linear infinite !important;
 }
 
-/* --- .bg-background: شبكة ثابتة خفيفة --- */
-div[data-page="home"] .bg-background {
+/* ══ .bg-background في كل الصفحات ══ */
+div[data-page] .bg-background {
   background-color: hsl(138deg 22% 94%) !important;
   background-image:
-    repeating-linear-gradient(45deg,  rgba(212,175,55, var(--home-grid-opacity)) 0px, rgba(212,175,55, var(--home-grid-opacity)) 1.5px, transparent 1.5px, transparent 22px),
-    repeating-linear-gradient(-45deg, rgba(212,175,55, var(--home-grid-opacity)) 0px, rgba(212,175,55, var(--home-grid-opacity)) 1.5px, transparent 1.5px, transparent 22px) !important;
+    repeating-linear-gradient(45deg,  rgba(212,175,55, var(--app-grid-opacity)) 0px, rgba(212,175,55, var(--app-grid-opacity)) 1.5px, transparent 1.5px, transparent 22px),
+    repeating-linear-gradient(-45deg, rgba(212,175,55, var(--app-grid-opacity)) 0px, rgba(212,175,55, var(--app-grid-opacity)) 1.5px, transparent 1.5px, transparent 22px) !important;
 }
 
-div[data-page="home"] .bg-card {
+/* ══ .bg-card في كل الصفحات ══ */
+div[data-page] .bg-card {
   background-color: hsl(138deg 18% 96%) !important;
+}
+
+/* ══ النوافذ والأدراج (Dialogs & Drawers) ══ */
+[role="dialog"] {
+  background-color: hsl(138deg 22% 94%) !important;
+  background-image:
+    repeating-linear-gradient(45deg,  rgba(212,175,55, 0.09) 0px, rgba(212,175,55, 0.09) 1.5px, transparent 1.5px, transparent 22px),
+    repeating-linear-gradient(-45deg, rgba(212,175,55, 0.09) 0px, rgba(212,175,55, 0.09) 1.5px, transparent 1.5px, transparent 22px) !important;
+  animation: app-grid-drift 6s linear infinite !important;
+}
+
+/* ══ Drawer من أسفل (vaul) ══ */
+[data-vaul-drawer] {
+  background-color: hsl(138deg 22% 94%) !important;
+  background-image:
+    repeating-linear-gradient(45deg,  rgba(212,175,55, 0.09) 0px, rgba(212,175,55, 0.09) 1.5px, transparent 1.5px, transparent 22px),
+    repeating-linear-gradient(-45deg, rgba(212,175,55, 0.09) 0px, rgba(212,175,55, 0.09) 1.5px, transparent 1.5px, transparent 22px) !important;
+  animation: app-grid-drift 6s linear infinite !important;
 }
