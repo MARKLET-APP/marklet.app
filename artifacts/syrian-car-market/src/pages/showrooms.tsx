@@ -7,7 +7,7 @@ import { useStartChat } from "@/hooks/use-start-chat";
 import { ShareSheet } from "@/components/ShareSheet";
 import {
   Building2, MapPin, Phone, MessageCircle, Star, ShieldCheck,
-  Loader2, Search, Car, ChevronLeft, Settings2,
+  Loader2, Search, Car, ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -117,13 +117,13 @@ function ShowroomCard({ showroom }: { showroom: any }) {
 
       {/* Actions */}
       <div className="px-4 pb-4 flex gap-2 flex-wrap">
-        {/* Owner sees their manage page button */}
+        {/* Owner: view profile button */}
         {user && showroom.ownerUserId && user.id === showroom.ownerUserId ? (
           <button
-            onClick={() => navigate("/showroom/manage")}
+            onClick={() => navigate(`/showroom/${showroom.id}`)}
             className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-white rounded-xl py-2 text-xs font-bold transition-colors hover:bg-primary/90"
           >
-            <Settings2 className="w-3.5 h-3.5" /> إدارة معرضي
+            <Building2 className="w-3.5 h-3.5" /> عرض صفحة معرضي
           </button>
         ) : (
           <>

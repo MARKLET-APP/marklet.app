@@ -180,12 +180,8 @@ export default function ShowroomManagePage() {
     } finally { setDeletingId(null); }
   };
 
-  // Navigate to public showroom page (works on web + Android)
-  const openPublicPage = () => {
-    if (!showroom?.id) return;
-    const base = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
-    window.location.href = `${base}/showroom/${showroom.id}`;
-  };
+  // Navigate to public showroom page
+  const openPublicPage = () => navigate(`/showroom/${showroom?.id}`);
 
   // ── Guards (after hooks) ────────────────────────────────────────────────────
   if (!user) return (
