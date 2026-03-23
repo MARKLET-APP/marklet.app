@@ -18,6 +18,114 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck } from "lucide-react";
 
+function ShowroomDialog({ open, onClose, editing, onSaved }: {
+  open: boolean;
+  onClose: () => void;
+  editing: any | null;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const empty = { name: "", city: "", address: "", phone: "", whatsapp: "", email: "", description: "" };
+  const [form, setForm] = useState(empty);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setForm(editing ? {
+        name: editing.name || "", city: editing.city || "", address: editing.address || "",
+        phone: editing.phone || "", whatsapp: editing.whatsapp || "",
+        email: editing.email || "", description: editing.description || "",
+      } : empty);
+    }
+  }, [open, editing?.id]);
+
+  const upd = (field: keyof typeof empty) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setForm(prev => ({ ...prev, [field]: val }));
+  };
+
+  const save = async () => {
+    const name = form.name.trim();
+    const city = form.city.trim();
+    if (!name || !city) return;
+    setSaving(true);
+    try {
+      const payload = { name, city, address: form.address, phone: form.phone, whatsapp: form.whatsapp, email: form.email, description: form.description };
+      if (editing) {
+        await apiRequest(`/api/admin/showrooms/${editing.id}`, "PATCH", payload);
+        toast({ title: "تم تحديث المعرض" });
+      } else {
+        await apiRequest("/api/admin/showrooms", "POST", payload);
+        toast({ title: "تم إضافة المعرض" });
+      }
+      onSaved();
+      onClose();
+    } catch {
+      toast({ title: "حدث خطأ أثناء الحفظ", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-lg" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-primary" />
+            {editing ? "تعديل المعرض" : "إضافة معرض جديد"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium mb-1 block">اسم المعرض *</label>
+              <Input value={form.name} onChange={upd("name")} placeholder="معرض النجمة" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">المدينة *</label>
+              <Input value={form.city} onChange={upd("city")} placeholder="دمشق" />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">العنوان</label>
+            <Input value={form.address} onChange={upd("address")} placeholder="شارع بغداد..." />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium mb-1 block">الهاتف</label>
+              <Input value={form.phone} onChange={upd("phone")} placeholder="+963..." dir="ltr" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">واتساب</label>
+              <Input value={form.whatsapp} onChange={upd("whatsapp")} placeholder="+963..." dir="ltr" />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">البريد الإلكتروني</label>
+            <Input value={form.email} onChange={upd("email")} placeholder="info@showroom.sy" dir="ltr" />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">الوصف</label>
+            <Input value={form.description} onChange={upd("description")} placeholder="وصف المعرض..." />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button
+              className="flex-1 bg-primary hover:bg-primary/90"
+              onClick={save}
+              disabled={saving || !form.name.trim() || !form.city.trim()}
+            >
+              {saving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <CheckCircle className="w-4 h-4 ml-2" />}
+              {editing ? "حفظ التعديلات" : "إضافة المعرض"}
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={onClose}>إلغاء</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdminDashboard() {
   const { user, isHydrated } = useAuthStore();
   const { toast } = useToast();
@@ -892,7 +1000,7 @@ export default function AdminDashboard() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => refetchShowrooms()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
-              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1" onClick={() => { setEditingShowroom(null); setShowroomForm(emptyShowroomForm); setShowShowroomDialog(true); }}>
+              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1" onClick={() => { setEditingShowroom(null); setShowShowroomDialog(true); }}>
                 <Plus className="w-4 h-4" /> إضافة معرض
               </Button>
             </div>
@@ -975,7 +1083,7 @@ export default function AdminDashboard() {
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-2">
-                        <Button size="sm" variant="outline" className="h-8" onClick={() => { setEditingShowroom(showroom); setShowroomForm({ name: showroom.name, city: showroom.city, address: showroom.address || "", phone: showroom.phone || "", whatsapp: showroom.whatsapp || "", email: showroom.email || "", description: showroom.description || "", ownerEmail: showroom.ownerEmail || "" }); setShowShowroomDialog(true); }}>
+                        <Button size="sm" variant="outline" className="h-8" onClick={() => { setEditingShowroom(showroom); setShowShowroomDialog(true); }}>
                           <Edit2 className="w-4 h-4" />
                         </Button>
                         <Button size="sm" variant="outline" className="h-8 border-red-400 text-red-600 hover:bg-red-50" onClick={() => deleteShowroom(showroom.id)}>
@@ -2258,56 +2366,12 @@ export default function AdminDashboard() {
       )}
 
       {/* Showroom Dialog */}
-      <Dialog open={showShowroomDialog} onOpenChange={setShowShowroomDialog}>
-        <DialogContent className="max-w-lg" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              {editingShowroom ? "تعديل المعرض" : "إضافة معرض جديد"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-medium mb-1 block">اسم المعرض *</label>
-                <Input value={showroomForm.name} onChange={e => setShowroomForm(f => ({ ...f, name: e.target.value }))} placeholder="معرض النجمة" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">المدينة *</label>
-                <Input value={showroomForm.city} onChange={e => setShowroomForm(f => ({ ...f, city: e.target.value }))} placeholder="دمشق" />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">العنوان</label>
-              <Input value={showroomForm.address} onChange={e => setShowroomForm(f => ({ ...f, address: e.target.value }))} placeholder="شارع..." />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-medium mb-1 block">الهاتف</label>
-                <Input value={showroomForm.phone} onChange={e => setShowroomForm(f => ({ ...f, phone: e.target.value }))} placeholder="+963..." dir="ltr" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">واتساب</label>
-                <Input value={showroomForm.whatsapp} onChange={e => setShowroomForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="+963..." dir="ltr" />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">البريد الإلكتروني</label>
-              <Input value={showroomForm.email} onChange={e => setShowroomForm(f => ({ ...f, email: e.target.value }))} placeholder="info@showroom.sy" dir="ltr" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">الوصف</label>
-              <Input value={showroomForm.description} onChange={e => setShowroomForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف المعرض..." />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={saveShowroom} disabled={!showroomForm.name || !showroomForm.city}>
-                <CheckCircle className="w-4 h-4 ml-2" /> {editingShowroom ? "حفظ التعديلات" : "إضافة المعرض"}
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={() => setShowShowroomDialog(false)}>إلغاء</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ShowroomDialog
+        open={showShowroomDialog}
+        onClose={() => { setShowShowroomDialog(false); setEditingShowroom(null); }}
+        editing={editingShowroom}
+        onSaved={() => refetchShowrooms()}
+      />
 
       {/* Inspection Center Dialog */}
       <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>
