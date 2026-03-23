@@ -1,6 +1,5 @@
 import { MessageCircle, Trash2, Loader2, MapPin, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ShareSheet } from "@/components/ShareSheet";
 
 export type BuyRequestData = {
@@ -76,21 +75,24 @@ export function BuyRequestCard({
   const colors = colorMap[accentColor] ?? colorMap.emerald;
 
   return (
-    <div className="tap-card bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow space-y-3">
+    <div className="tap-card flex flex-col h-full bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow gap-2.5">
+      {/* ── Header ── */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <ShoppingCart className="w-4 h-4 text-muted-foreground shrink-0" />
-          <h3 className="font-bold text-foreground">{title}</h3>
+          <h3 className="font-bold text-foreground text-sm line-clamp-1">{title}</h3>
         </div>
         <Badge variant="outline" className={`text-xs shrink-0 ${colors.badge}`}>
           {label}
         </Badge>
       </div>
 
+      {/* ── Description ── */}
       {data.description && (
-        <p className="text-sm text-muted-foreground line-clamp-2">{data.description}</p>
+        <p className="text-xs text-muted-foreground line-clamp-2">{data.description}</p>
       )}
 
+      {/* ── Price / city / buyer ── */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         {data.maxPrice && (
           <span className={`font-bold text-sm ${colors.price}`} dir="ltr">
@@ -99,23 +101,24 @@ export function BuyRequestCard({
         )}
         {data.city && (
           <span className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
+            <MapPin className="w-3 h-3 shrink-0" />
             {data.city}
           </span>
         )}
         {data.userName && (
-          <span className="text-muted-foreground/70">الطالب: {data.userName}</span>
+          <span className="text-muted-foreground/70 truncate">الطالب: {data.userName}</span>
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+      {/* ── Action buttons — always pinned to bottom ── */}
+      <div className="flex gap-1.5 pt-2 border-t mt-auto">
         {canChat && (
           <button
             onClick={onChat}
             disabled={chatLoading}
-            className={`inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-bold rounded-full active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap ${colors.btn}`}
+            className={`flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-bold rounded-lg active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap ${colors.btn}`}
           >
-            {chatLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />}
+            {chatLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}
             مراسلة
           </button>
         )}
@@ -123,9 +126,9 @@ export function BuyRequestCard({
           <button
             onClick={onDelete}
             disabled={deleteLoading}
-            className="inline-flex items-center gap-1 h-6 px-2.5 text-[10px] font-medium text-destructive border border-destructive/30 rounded-full hover:bg-destructive/10 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+            className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-medium text-destructive border border-destructive/30 rounded-lg hover:bg-destructive/10 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
           >
-            {deleteLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
+            {deleteLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
             حذف
           </button>
         )}
@@ -137,6 +140,7 @@ export function BuyRequestCard({
             url: `${window.location.origin}/buy-requests`,
             description: data.description,
           }}
+          className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
         />
       </div>
     </div>

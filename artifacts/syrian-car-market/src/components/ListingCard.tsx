@@ -73,11 +73,11 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
 
   return (
     <div
-      className={`tap-card bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${onCardClick ? "cursor-pointer" : ""}`}
+      className={`tap-card flex flex-col h-full bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${onCardClick ? "cursor-pointer" : ""}`}
       onClick={onCardClick}
     >
-      {/* Image */}
-      <div className="relative">
+      {/* ── Image ── */}
+      <div className="relative shrink-0">
         {type === "plate" && !currentImg ? (
           <div className="w-full h-36 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 flex flex-col items-center justify-center gap-2 border-b">
             <div className="bg-amber-400 text-amber-900 font-black text-2xl tracking-widest px-6 py-2 rounded-lg border-4 border-amber-600 shadow-md">
@@ -115,12 +115,11 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
             )}
           </div>
         ) : (
-          <div className="w-full h-40 bg-muted flex items-center justify-center">
+          <div className="w-full h-36 bg-muted flex items-center justify-center">
             {PLACEHOLDER_ICONS[type]}
           </div>
         )}
 
-        {/* Badge overlay */}
         <div className="absolute top-2 right-2">
           <Badge className={badge.className}>{badge.label}</Badge>
         </div>
@@ -138,13 +137,12 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-2">
-        <h3 className="font-bold text-foreground leading-tight">{title}</h3>
+      {/* ── Content ── */}
+      <div className="p-3 flex flex-col flex-1 gap-2">
+        <h3 className="font-bold text-sm text-foreground line-clamp-1">{title}</h3>
 
-        {/* Type-specific fields */}
         {type === "part" && (data.carType || data.model) && (
-          <p className="text-sm text-muted-foreground">{[data.carType, data.model, data.year].filter(Boolean).join(" • ")}</p>
+          <p className="text-xs text-muted-foreground line-clamp-1">{[data.carType, data.model, data.year].filter(Boolean).join(" • ")}</p>
         )}
 
         {type === "junk" && data.condition && (
@@ -154,60 +152,57 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
         )}
 
         {type === "part" && data.condition && (
-          <Badge variant="secondary" className="text-xs">{data.condition}</Badge>
+          <Badge variant="secondary" className="text-xs self-start">{data.condition}</Badge>
         )}
 
-        {/* Rental prices */}
         {type === "rental" && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {data.dailyPrice && (
               <div className="flex items-center gap-1 bg-green-50 text-green-700 rounded-lg px-2 py-0.5 text-xs font-semibold border border-green-100">
-                <Clock className="w-3 h-3" /> ${Number(data.dailyPrice).toLocaleString()}/يوم
+                <Clock className="w-3 h-3 shrink-0" /> ${Number(data.dailyPrice).toLocaleString()}/يوم
               </div>
             )}
             {data.weeklyPrice && (
               <div className="flex items-center gap-1 bg-green-50 text-green-700 rounded-lg px-2 py-0.5 text-xs font-semibold border border-green-100">
-                <Calendar className="w-3 h-3" /> ${Number(data.weeklyPrice).toLocaleString()}/أسبوع
+                <Calendar className="w-3 h-3 shrink-0" /> ${Number(data.weeklyPrice).toLocaleString()}/أسبوع
               </div>
             )}
             {data.monthlyPrice && (
               <div className="flex items-center gap-1 bg-green-50 text-green-700 rounded-lg px-2 py-0.5 text-xs font-semibold border border-green-100">
-                <DollarSign className="w-3 h-3" /> ${Number(data.monthlyPrice).toLocaleString()}/شهر
+                <DollarSign className="w-3 h-3 shrink-0" /> ${Number(data.monthlyPrice).toLocaleString()}/شهر
               </div>
             )}
           </div>
         )}
 
-        {/* Price (for non-rental) */}
         {type !== "rental" && (
-          <div className="flex items-center justify-between pt-0.5">
+          <div className="flex items-center gap-1">
             {data.price ? (
-              <span className="font-bold text-primary" dir="ltr">${Number(data.price).toLocaleString()}</span>
+              <span className="font-bold text-sm text-primary" dir="ltr">${Number(data.price).toLocaleString()}</span>
             ) : (
-              <span className="text-muted-foreground text-sm">السعر قابل للتفاوض</span>
+              <span className="text-muted-foreground text-xs">السعر قابل للتفاوض</span>
             )}
           </div>
         )}
 
-        {/* Meta */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-          {data.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{data.city}</span>}
-          {data.sellerName && <span>{data.sellerName}</span>}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+          {data.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{data.city}</span>}
+          {data.sellerName && <span className="truncate">{data.sellerName}</span>}
           {type === "rental" && data.sellerPhone && (
-            <span className="flex items-center gap-1" dir="ltr"><Phone className="w-3 h-3" />{data.sellerPhone}</span>
+            <span className="flex items-center gap-1" dir="ltr"><Phone className="w-3 h-3 shrink-0" />{data.sellerPhone}</span>
           )}
         </div>
 
         {data.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">{data.description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2">{data.description}</p>
         )}
 
-        {/* Actions: التفاصيل | مراسلة/حذف | مشاركة */}
-        <div className="flex gap-1.5 pt-2 border-t" onClick={e => e.stopPropagation()}>
+        {/* ── Actions — always pinned to bottom ── */}
+        <div className="flex gap-1.5 pt-2 border-t mt-auto" onClick={e => e.stopPropagation()}>
           {onCardClick && (
             <button
               onClick={(e) => { e.stopPropagation(); onCardClick(); }}
-              className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
+              className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
             >
               <Eye className="w-2.5 h-2.5 shrink-0" /> التفاصيل
             </button>
@@ -216,7 +211,7 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
             <button
               onClick={(e) => { e.stopPropagation(); onChat(); }}
               disabled={chatLoading}
-              className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-bold rounded-full bg-primary text-primary-foreground active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+              className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-bold rounded-lg bg-primary text-primary-foreground active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
             >
               {chatLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />}
               مراسلة
@@ -226,7 +221,7 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
               disabled={deleteLoading}
-              className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg text-destructive border border-destructive/30 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+              className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-medium rounded-lg text-destructive border border-destructive/30 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
             >
               {deleteLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
               حذف
@@ -240,7 +235,7 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
               url: `${window.location.origin}/listing/${data.id}`,
               description: data.description ?? null,
             }}
-            className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
           />
         </div>
       </div>

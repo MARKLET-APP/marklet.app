@@ -75,10 +75,11 @@ export function CarCard({ car }: { car: Car }) {
 
   return (
     <div
-      className="group block bg-card rounded-2xl border shadow-sm hover-elevate overflow-hidden cursor-pointer"
+      className="group flex flex-col h-full bg-card rounded-2xl border shadow-sm hover-elevate overflow-hidden cursor-pointer"
       onClick={goToDetail}
     >
-      <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+      {/* ── Image ── */}
+      <div className="relative aspect-[4/3] bg-muted overflow-hidden shrink-0">
         {currentImage ? (
           <img
             src={currentImage}
@@ -95,7 +96,6 @@ export function CarCard({ car }: { car: Car }) {
           </div>
         )}
 
-        {/* Image slider arrows */}
         {hasMultiple && (
           <>
             <button
@@ -112,8 +112,6 @@ export function CarCard({ car }: { car: Car }) {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-
-            {/* Dots indicator */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-1 z-10">
               {images.map((_, i) => (
                 <span
@@ -148,46 +146,47 @@ export function CarCard({ car }: { car: Car }) {
         </div>
       </div>
 
-      <div className="p-3 space-y-2.5">
+      {/* ── Content ── */}
+      <div className="p-3 flex flex-col flex-1 gap-2">
         <div>
-          <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="font-bold text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors">
             {car.brand} {car.model}
           </h3>
-          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-            <MapPin className="w-3.5 h-3.5" />
-            {car.province}، {car.city}
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <MapPin className="w-3 h-3 shrink-0" />
+            <span className="truncate">{car.province}، {car.city}</span>
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-xs font-medium text-foreground bg-secondary/50 p-2.5 rounded-xl">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-primary" />
+        <div className="grid grid-cols-2 gap-y-1 gap-x-2 text-xs font-medium text-foreground bg-secondary/50 p-2 rounded-xl">
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-primary shrink-0" />
             <span>{car.year}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Gauge className="w-3.5 h-3.5 text-primary" />
-            <span>{car.mileage ? Number(car.mileage).toLocaleString("en-US") + " كم" : "—"}</span>
+          <div className="flex items-center gap-1">
+            <Gauge className="w-3 h-3 text-primary shrink-0" />
+            <span className="truncate">{car.mileage ? Number(car.mileage).toLocaleString("en-US") + " كم" : "—"}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Settings className="w-3.5 h-3.5 text-primary" />
+          <div className="flex items-center gap-1">
+            <Settings className="w-3 h-3 text-primary shrink-0" />
             <span>{car.transmission === "automatic" ? "أوتوماتيك" : "يدوي"}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Eye className="w-3.5 h-3.5 text-primary" />
+          <div className="flex items-center gap-1">
+            <Eye className="w-3 h-3 text-primary shrink-0" />
             <span>مشاهدات: {views}</span>
           </div>
         </div>
 
-        {/* ─── action buttons: التفاصيل | مراسلة ─── */}
-        <div className="flex gap-1.5 pt-2 border-t" onClick={e => e.stopPropagation()}>
+        {/* ─── action buttons: always at bottom ─── */}
+        <div className="flex gap-1.5 pt-2 border-t mt-auto" onClick={e => e.stopPropagation()}>
           <button
-            className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[11px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
             onClick={goToDetail}
           >
             <Eye className="w-3 h-3 shrink-0" /> التفاصيل
           </button>
           <button
-            className="flex-1 inline-flex items-center justify-center gap-1 py-[5px] px-1 text-[11px] font-bold rounded-lg bg-primary text-primary-foreground whitespace-nowrap active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-bold rounded-lg bg-primary text-primary-foreground whitespace-nowrap active:scale-95 transition-all disabled:opacity-50"
             onClick={handleChat}
             disabled={chatLoading}
           >

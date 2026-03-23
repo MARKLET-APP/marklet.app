@@ -13,7 +13,14 @@ echo ""
 
 # ─── 0. Android SDK Setup ────────────────────────────────────
 echo "▶ [0/6] Checking Android SDK..."
-export JAVA_HOME=/nix/store/imqrk5lxp6fv2xndnz7wndxn4f1mzni2-openjdk-21.0.9+10
+if [ ! -f "/home/runner/jdk21/bin/java" ]; then
+  echo "  → Downloading Adoptium JDK 21 (Ubuntu-compatible)..."
+  curl -sL "https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jdk/hotspot/normal/eclipse" \
+    -o /tmp/jdk21.tar.gz --max-time 120
+  mkdir -p /home/runner/jdk21
+  tar -xzf /tmp/jdk21.tar.gz --strip-components=1 -C /home/runner/jdk21
+fi
+export JAVA_HOME=/home/runner/jdk21
 export ANDROID_HOME=/home/runner/android-sdk
 export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
@@ -23,11 +30,23 @@ if ! command -v sdkmanager &> /dev/null; then
   if [ ! -f "$CMDLINE_ZIP" ]; then
     curl -sL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o "$CMDLINE_ZIP"
   fi
-  mkdir -p /tmp/cmdline-extract && cd /tmp/cmdline-extract
-  $JAVA_HOME/bin/jar -xf "$CMDLINE_ZIP"
+  mkdir -p /tmp/cmdline-extract
+  # Use adm-zip (pure Node.js) to avoid system unzip/jar segfault issues
+  if [ ! -d /tmp/adm-zip-extract/node_modules/adm-zip ]; then
+    mkdir -p /tmp/adm-zip-extract
+    cd /tmp/adm-zip-extract
+    npm init -y > /dev/null 2>&1
+    npm install adm-zip > /dev/null 2>&1
+    cd -
+  fi
+  node -e "
+    const AdmZip = require('/tmp/adm-zip-extract/node_modules/adm-zip');
+    const zip = new AdmZip('$CMDLINE_ZIP');
+    zip.extractAllTo('/tmp/cmdline-extract', true);
+    console.log('  → ZIP extracted successfully via Node.js');
+  "
   mkdir -p $ANDROID_HOME/cmdline-tools/latest
   cp -r /tmp/cmdline-extract/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/
-  cd -
   chmod +x $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager
 fi
 
