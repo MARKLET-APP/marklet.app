@@ -531,17 +531,22 @@ div[data-page] #app-main {
   animation: app-grid-drift var(--app-grid-speed) linear infinite !important;
 }
 
-/* ══ .bg-background في كل الصفحات ══ */
+/* ══ .bg-background — تلوين خضري فقط، بدون شبكة ══ */
 div[data-page] .bg-background {
   background-color: hsl(138deg 22% 94%) !important;
-  background-image:
-    repeating-linear-gradient(45deg,  rgba(212,175,55, var(--app-grid-opacity)) 0px, rgba(212,175,55, var(--app-grid-opacity)) 1.5px, transparent 1.5px, transparent 22px),
-    repeating-linear-gradient(-45deg, rgba(212,175,55, var(--app-grid-opacity)) 0px, rgba(212,175,55, var(--app-grid-opacity)) 1.5px, transparent 1.5px, transparent 22px) !important;
+  background-image: none !important;
 }
 
-/* ══ .bg-card في كل الصفحات ══ */
+/* ══ .bg-card — أبيض نقي بدون شبكة ══ */
 div[data-page] .bg-card {
-  background-color: hsl(138deg 18% 96%) !important;
+  background-color: hsl(0 0% 99%) !important;
+  background-image: none !important;
+}
+
+/* ══ .bg-secondary — صلب بدون شبكة ══ */
+div[data-page] .bg-secondary,
+div[data-page] [class*="bg-secondary"] {
+  background-image: none !important;
 }
 
 /* ══ النوافذ والأدراج (Dialogs & Drawers) ══ */
@@ -553,7 +558,6 @@ div[data-page] .bg-card {
   animation: app-grid-drift 6s linear infinite !important;
 }
 
-/* ══ Drawer من أسفل (vaul) ══ */
 [data-vaul-drawer] {
   background-color: hsl(138deg 22% 94%) !important;
   background-image:
@@ -566,7 +570,7 @@ div[data-page] .bg-card {
    إصلاح التداخل — العناصر التفاعلية: بدون شبكة + خلفية صلبة
    ═══════════════════════════════════════════════════════════ */
 
-/* ── حقول الإدخال والنصوص والقوائم ── */
+/* ── حقول الإدخال ── */
 div[data-page] input,
 div[data-page] textarea,
 div[data-page] select {
@@ -574,55 +578,46 @@ div[data-page] select {
   background-color: hsl(138deg 12% 97%) !important;
 }
 
-/* ── مكونات shadcn/ui: SelectTrigger, SelectContent, Combobox ── */
+/* ── مكونات Radix UI المنسدلة ── */
 div[data-page] [role="combobox"],
 div[data-page] [role="listbox"],
-div[data-page] [data-radix-select-trigger],
 div[data-page] [data-radix-select-content],
-div[data-page] [data-radix-popper-content-wrapper],
-div[data-page] [data-radix-dropdown-menu-content],
-div[data-page] [data-radix-popover-content] {
+div[data-page] [data-radix-popper-content-wrapper] {
   background-image: none !important;
   background-color: hsl(138deg 12% 97%) !important;
 }
 
-/* ── منطقة رفع الصور والمناطق الفارغة الحدودية ── */
-div[data-page] [class*="border-dashed"],
-div[data-page] [class*="border-2"] {
+/* ── مناطق رفع الصور ── */
+div[data-page] [class*="border-dashed"] {
   background-image: none !important;
   background-color: hsl(138deg 12% 97%) !important;
 }
 
-/* ── جميع الأزرار — الشبكة تظهر فقط على خلفية الصفحة لا على الأزرار ── */
+/* ── جميع الأزرار: إزالة الشبكة — !important يضمن الأولوية دائماً ── */
 div[data-page] button,
 div[data-page] [role="button"] {
   background-image: none !important;
 }
 
-/* ── أزرار outline/ghost بدون لون — تحتاج خلفية صلبة ── */
-div[data-page] button.border,
-div[data-page] button[class*="border-input"],
-div[data-page] button[class*="border-primary"],
-div[data-page] button[class*="variant-outline"],
-div[data-page] button:not([class*="bg-"]) {
-  background-color: hsl(138deg 12% 97%) !important;
+/* ── خلفية احتياطية للأزرار الشفافة (outline/ghost) ──
+   داخل @layer base يملك أولوية أدنى من @layer utilities (Tailwind)
+   → bg-primary / bg-blue-500 / bg-card تتغلب تلقائياً
+   → الأزرار بدون لون محدد تحصل على الخلفية الاحتياطية الصلبة ── */
+@layer base {
+  div[data-page] button,
+  div[data-page] [role="button"] {
+    background-color: hsl(138deg 12% 97%);
+  }
 }
 
-/* ── البطاقات الداخلية في القوائم — خلفية أوضح ── */
-div[data-page] .bg-card {
-  background-image: none !important;
-  background-color: hsl(0 0% 99%) !important;
-}
-
-/* ── Header, BottomNav — بدون شبكة ── */
+/* ── Header, DhikrBar, BottomNav — بدون شبكة ── */
 div[data-page] header,
 div[data-page] nav,
-div[data-page] [class*="bottom-nav"],
 div[data-page] .flex-shrink-0 {
   background-image: none !important;
 }
 
-/* ── منع تطبيق الشبكة على القوائم المنسدلة خارج الـ div ── */
+/* ── القوائم المنسدلة خارج الـ div (portals) ── */
 [data-radix-select-content],
 [data-radix-popper-content-wrapper],
 [data-radix-dropdown-menu-content],
