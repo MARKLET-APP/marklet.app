@@ -500,28 +500,37 @@ button[class*="bg-primary"]:active {
 
 /* حركة الشبكة — slow motion */
 @keyframes home-grid-drift {
-  0%   { background-position: 15% 20%, 85% 80%, 0px 0px, 0px 0px; }
-  100% { background-position: 15% 20%, 85% 80%, 20px 20px, -20px 20px; }
+  0%   { background-position: 15% 20%, 85% 80%, 0px 0px,   0px 0px; }
+  100% { background-position: 15% 20%, 85% 80%, 40px 40px, -40px 40px; }
 }
 
-/* --- الغلاف الخارجي: تدرج + شبكة متحركة --- */
+/* ─────────────────────────────────────────────
+   متغيرات الشبكة — عدّلها بسهولة:
+   --home-grid-opacity  : نسبة ظهور شبكة الغلاف   (0.00 → 1.00) الحالية = 25%
+   --home-grid-inner    : نسبة ظهور شبكة الداخل   (0.00 → 1.00) الحالية = 18%
+   --home-grid-speed    : مدة دورة الحركة بالثانية  (قيمة أقل = أسرع)   = 12s
+   ───────────────────────────────────────────── */
 div[data-page="home"] {
+  --home-grid-opacity : 0.25;
+  --home-grid-inner   : 0.18;
+  --home-grid-speed   : 12s;
+
   background-color: hsl(138deg 30% 90%) !important;
   background-image:
     radial-gradient(circle at 15% 20%, rgba(0,140,70,0.22) 0%, transparent 55%),
     radial-gradient(circle at 85% 80%, rgba(212,175,55,0.18) 0%, transparent 55%),
-    repeating-linear-gradient(45deg,  rgba(212,175,55,0.07) 0px, rgba(212,175,55,0.07) 1px, transparent 1px, transparent 20px),
-    repeating-linear-gradient(-45deg, rgba(212,175,55,0.07) 0px, rgba(212,175,55,0.07) 1px, transparent 1px, transparent 20px) !important;
-  animation: home-grid-drift 14s linear infinite !important;
+    repeating-linear-gradient(45deg,  rgba(212,175,55, var(--home-grid-opacity)) 0px, rgba(212,175,55, var(--home-grid-opacity)) 1.5px, transparent 1.5px, transparent 22px),
+    repeating-linear-gradient(-45deg, rgba(212,175,55, var(--home-grid-opacity)) 0px, rgba(212,175,55, var(--home-grid-opacity)) 1.5px, transparent 1.5px, transparent 22px) !important;
+  animation: home-grid-drift var(--home-grid-speed) linear infinite !important;
 }
 
-/* --- الأقسام الداخلية: شبكة ذهبية ناعمة --- */
+/* --- الأقسام الداخلية: شبكة ذهبية ثابتة --- */
 div[data-page="home"] .bg-background,
 div[data-page="home"] #app-main,
 div[data-page="home"] .bg-card {
   background-image:
-    repeating-linear-gradient(45deg,  rgba(212,175,55,0.06) 0px, rgba(212,175,55,0.06) 1px, transparent 1px, transparent 20px),
-    repeating-linear-gradient(-45deg, rgba(212,175,55,0.06) 0px, rgba(212,175,55,0.06) 1px, transparent 1px, transparent 20px) !important;
+    repeating-linear-gradient(45deg,  rgba(212,175,55, var(--home-grid-inner, 0.18)) 0px, rgba(212,175,55, var(--home-grid-inner, 0.18)) 1.5px, transparent 1.5px, transparent 22px),
+    repeating-linear-gradient(-45deg, rgba(212,175,55, var(--home-grid-inner, 0.18)) 0px, rgba(212,175,55, var(--home-grid-inner, 0.18)) 1.5px, transparent 1.5px, transparent 22px) !important;
 }
 
 div[data-page="home"] .bg-background,
