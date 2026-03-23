@@ -131,22 +131,15 @@ export default function ShowroomManagePage() {
   const descRef = useRef<HTMLTextAreaElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
 
-  // Guard: dealer only
-  if (!user) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4" dir="rtl">
-      <Loader2 className="w-10 h-10 animate-spin text-primary" />
-    </div>
-  );
-  if (user.role !== "dealer" && user.role !== "admin") {
-    navigate("/");
-    return null;
-  }
+  const isDealer = !!user && (user.role === "dealer" || user.role === "admin");
 
+  // ── ALL hooks before any conditional returns ────────────────────────────────
   const { data: showroom, isLoading: loadingShowroom } = useQuery<any>({
     queryKey: ["/showrooms/my"],
     queryFn: () => fetch(withApi("/api/showrooms/my"), {
       headers: { Authorization: `Bearer ${localStorage.getItem("scm_token")}` }
     }).then(r => r.json()),
+    enabled: isDealer,
   });
 
   const { data: cars = [], isLoading: loadingCars, refetch: refetchCars } = useQuery<any[]>({
@@ -154,7 +147,7 @@ export default function ShowroomManagePage() {
     queryFn: () => fetch(withApi("/api/showrooms/my/cars"), {
       headers: { Authorization: `Bearer ${localStorage.getItem("scm_token")}` }
     }).then(r => r.json()),
-    enabled: !!showroom && !showroom?.error,
+    enabled: isDealer && !!showroom && !showroom?.error,
   });
 
   const saveProfile = async () => {
@@ -187,10 +180,26 @@ export default function ShowroomManagePage() {
     } finally { setDeletingId(null); }
   };
 
+  // Navigate to public showroom page (works on web + Android)
+  const openPublicPage = () => {
+    if (!showroom?.id) return;
+    const base = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+    window.location.href = `${base}/showroom/${showroom.id}`;
+  };
+
+  // ── Guards (after hooks) ────────────────────────────────────────────────────
+  if (!user) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4" dir="rtl">
+      <Loader2 className="w-10 h-10 animate-spin text-primary" />
+    </div>
+  );
+  if (!isDealer) {
+    navigate("/");
+    return null;
+  }
   if (loadingShowroom) return (
     <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>
   );
-
   if (!showroom || showroom?.error === "no_showroom") return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-6 text-center" dir="rtl">
       <Building2 className="w-16 h-16 text-muted-foreground/40" />
@@ -231,7 +240,7 @@ export default function ShowroomManagePage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate(`/showroom/${showroom.id}`)}
+              onClick={openPublicPage}
               className="flex items-center gap-1 border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 px-3 py-2 rounded-xl text-sm font-bold transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5" /> عرض المعرض

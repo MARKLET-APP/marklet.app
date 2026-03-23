@@ -7,7 +7,7 @@ import { useStartChat } from "@/hooks/use-start-chat";
 import { ShareSheet } from "@/components/ShareSheet";
 import {
   Building2, MapPin, Phone, MessageCircle, Star, ShieldCheck,
-  Loader2, Search, Car, ChevronLeft,
+  Loader2, Search, Car, ChevronLeft, Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -115,21 +115,33 @@ function ShowroomCard({ showroom }: { showroom: any }) {
         )}
       </div>
 
-      {/* Actions — public card: call, chat, share only */}
+      {/* Actions */}
       <div className="px-4 pb-4 flex gap-2 flex-wrap">
-        {showroom.phone && (
-          <a href={`tel:${showroom.phone}`} className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-            <Phone className="w-3.5 h-3.5" /> اتصال
-          </a>
-        )}
-        {showroom.ownerUserId && (
+        {/* Owner sees their manage page button */}
+        {user && showroom.ownerUserId && user.id === showroom.ownerUserId ? (
           <button
-            disabled={chatLoading}
-            onClick={() => { if (!user) { navigate("/login"); return; } startChat(showroom.ownerUserId); }}
-            className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+            onClick={() => navigate("/showroom/manage")}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-white rounded-xl py-2 text-xs font-bold transition-colors hover:bg-primary/90"
           >
-            {chatLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><MessageCircle className="w-3.5 h-3.5" /> مراسلة</>}
+            <Settings2 className="w-3.5 h-3.5" /> إدارة معرضي
           </button>
+        ) : (
+          <>
+            {showroom.phone && (
+              <a href={`tel:${showroom.phone}`} className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                <Phone className="w-3.5 h-3.5" /> اتصال
+              </a>
+            )}
+            {showroom.ownerUserId && (
+              <button
+                disabled={chatLoading}
+                onClick={() => { if (!user) { navigate("/login"); return; } startChat(showroom.ownerUserId); }}
+                className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                {chatLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><MessageCircle className="w-3.5 h-3.5" /> مراسلة</>}
+              </button>
+            )}
+          </>
         )}
         <ShareSheet
           options={{
