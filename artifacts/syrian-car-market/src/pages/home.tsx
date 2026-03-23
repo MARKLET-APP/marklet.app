@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { ShareSheet } from "@/components/ShareSheet";
 
 export default function Home() {
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
@@ -440,10 +441,11 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
               {(buyRequests as any[]).slice(0, 6).map((r: any) => (
-                <div key={r.id} className="tap-card bg-card border rounded-2xl p-3 sm:p-5 shadow-sm hover:shadow-md transition-shadow space-y-2 sm:space-y-3">
+                <div key={r.id} className="tap-card flex flex-col h-full bg-card border rounded-2xl p-3 sm:p-5 shadow-sm hover:shadow-md transition-shadow gap-2 sm:gap-3">
+                  {/* ── Header ── */}
                   <div className="flex items-start justify-between gap-1">
                     <div className="min-w-0">
-                      <h3 className="font-bold text-foreground text-sm sm:text-lg leading-tight truncate">{r.brand || t("home.buyReqs.anyBrand")} {r.model || ""}</h3>
+                      <h3 className="font-bold text-foreground text-sm leading-tight line-clamp-1">{r.brand || t("home.buyReqs.anyBrand")} {r.model || ""}</h3>
                       {(r.minYear || r.maxYear) && (
                         <p className="text-xs text-muted-foreground">{r.minYear ?? "—"} – {r.maxYear ?? "—"}</p>
                       )}
@@ -454,33 +456,36 @@ export default function Home() {
                     </Badge>
                   </div>
 
-                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                  {/* ── Price / City ── */}
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     {r.maxPrice && (
                       <span className="flex items-center gap-1 text-primary font-bold">
-                        <DollarSign className="w-4 h-4" />
+                        <DollarSign className="w-3.5 h-3.5 shrink-0" />
                         {isRTL ? "حتى" : "Up to"} {Number(r.maxPrice).toLocaleString()} {r.currency ?? "USD"}
                       </span>
                     )}
                     {r.city && (
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />{r.city}
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />{r.city}
                       </span>
                     )}
                   </div>
 
+                  {/* ── Description ── */}
                   {r.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{r.description}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{r.description}</p>
                   )}
 
-                  <div className="flex gap-1.5 pt-2 border-t">
+                  {/* ── Buttons — pinned to bottom ── */}
+                  <div className="flex gap-1.5 pt-2 border-t mt-auto">
                     <button
-                      className="flex-1 inline-flex items-center justify-center gap-0.5 py-[5px] px-1 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
+                      className="flex-1 inline-flex items-center justify-center gap-0.5 h-8 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
                       onClick={() => setDetailRequest(r)}
                     >
                       <Eye className="w-2.5 h-2.5 shrink-0" /> {t("home.buyReqs.details")}
                     </button>
                     <button
-                      className="flex-1 inline-flex items-center justify-center gap-0.5 py-[5px] px-1 text-[10px] font-bold rounded-lg bg-primary text-primary-foreground disabled:opacity-60 whitespace-nowrap active:scale-95 transition-all"
+                      className="flex-1 inline-flex items-center justify-center gap-0.5 h-8 text-[10px] font-bold rounded-lg bg-primary text-primary-foreground disabled:opacity-60 whitespace-nowrap active:scale-95 transition-all"
                       disabled={startingChat}
                       onClick={() => startChatWithBuyer(r.userId, r.id, `مرحباً، رأيت طلب الشراء الخاص بك لـ ${[r.brand, r.model].filter(Boolean).join(" ") || "سيارة"}. أنا لدي ما تبحث عنه!`)}
                     >
@@ -490,6 +495,16 @@ export default function Home() {
                       }
                       {t("home.buyReqs.contact")}
                     </button>
+                    <ShareSheet
+                      options={{
+                        title: `${r.brand || "طلب شراء"} ${r.model || ""}`.trim(),
+                        price: r.maxPrice,
+                        city: r.city,
+                        url: `${window.location.origin}/buy-requests`,
+                        description: r.description,
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+                    />
                   </div>
                 </div>
               ))}
