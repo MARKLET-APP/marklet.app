@@ -385,22 +385,35 @@ async function lookupNHTSARecalls(make: string, model: string, year: number): Pr
   }
 }
 
-// ── Risk score calculation ───────────────────────────────────────────────────
+// ── NHTSA Complaints API (free, no API key) ──────────────────────────────────
+async function lookupNHTSAComplaints(make: string, model: string, year: number): Promise<number> {
+  try {
+    const url = `https://api.nhtsa.gov/complaints/complaintsByVehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${year}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return -1; // -1 = API error, not "0 complaints"
+    const json = await res.json() as { count?: number; results?: unknown[] };
+    if (typeof json.count === "number") return json.count;
+    if (Array.isArray(json.results)) return json.results.length;
+    return -1;
+  } catch {
+    return -1;
+  }
+}
+
+// ── Risk score calculation (real data only) ──────────────────────────────────
 function calcRiskScore({
   recallCount,
+  complaintCount,
   year,
-  hasAccident,
-  hasStructural,
 }: {
   recallCount: number;
+  complaintCount: number;
   year: number;
-  hasAccident: boolean;
-  hasStructural: boolean;
 }): { score: number; level: "good" | "check" | "serious" } {
   let score = 0;
-  if (recallCount > 0)                             score += 2;
-  if (new Date().getFullYear() - year > 10)        score += 1;
-  if (hasAccident || hasStructural)                score += 1;
+  if (recallCount > 0)                            score += 2;
+  if (new Date().getFullYear() - year > 10)       score += 1;
+  if (complaintCount > 50)                        score += 1;
   const level = score === 0 ? "good" : score <= 2 ? "check" : "serious";
   return { score, level };
 }
@@ -453,18 +466,19 @@ router.post("/vehicle-reports/lookup", async (req, res): Promise<void> => {
     const fuelType     = nhtsa?.fuelType     ?? est.fuelType;
     isRealData         = nhtsa?.isReal ?? false;
 
-    // ── 2. Fetch recalls in parallel with AI summary ──────────────────────
-    const [aiSummary, recallsResult] = await Promise.all([
+    // ── 2. Fetch recalls + complaints in parallel with AI summary ────────
+    const [aiSummary, recallsResult, complaintCount] = await Promise.all([
       generateVehicleAISummary({
         brand, model, year,
-        accidentCount:       est.hasAccident ? 1 : 0,
-        hasMajorRepairs:     est.hasAccident,
-        hasStructuralDamage: est.hasStructural,
-        airbagDeployed:      est.hasStructural,
+        accidentCount:       0,
+        hasMajorRepairs:     false,
+        hasStructuralDamage: false,
+        airbagDeployed:      false,
         ownershipCount:      est.ownershipCount,
-        mileageHistory:      est.mileageHistory,
+        mileageHistory:      [],
       }).catch(() => null),
       lookupNHTSARecalls(brand, model, year),
+      lookupNHTSAComplaints(brand, model, year),
     ]);
     recalls = recallsResult;
 
@@ -481,38 +495,69 @@ router.post("/vehicle-reports/lookup", async (req, res): Promise<void> => {
       horsepower:       horsepower ?? est.horsepower,
       fuelConsumption:  null,
       driveType:        null,
-      accidentCount:    est.hasAccident ? 1 : 0,
-      hasMajorRepairs:  est.hasAccident,
-      hasStructuralDamage: est.hasStructural,
-      airbagDeployed:   est.hasStructural,
-      mileageHistory:   est.mileageHistory,
+      // حقول الحوادث: null لأن البيانات غير متاحة مجاناً عبر VIN
+      accidentCount:    null,
+      hasMajorRepairs:  null,
+      hasStructuralDamage: null,
+      airbagDeployed:   null,
+      mileageHistory:   null,
       ownershipCount:   est.ownershipCount,
-      registrationRegion: "دمشق",
-      damageStatus:     est.damageStatus,
+      registrationRegion: null,
+      damageStatus:     null,
       aiSummary,
     }).returning();
 
     report = inserted;
-  } else {
-    // For cached reports, still fetch fresh recalls (fast, no DB cost)
-    recalls = await lookupNHTSARecalls(report.brand, report.model, report.year);
-    isRealData = true; // cached = previously verified
+
+    const risk = calcRiskScore({
+      recallCount:    recalls.length,
+      complaintCount: complaintCount,
+      year:           report.year,
+    });
+
+    res.json({
+      ...report,
+      isRealData,
+      recalls,
+      complaintCount,
+      riskScore: risk.score,
+      riskLevel: risk.level,
+      // بيانات الحوادث: دائماً null — غير متاحة مجاناً
+      hasMajorRepairs:     null,
+      hasStructuralDamage: null,
+      airbagDeployed:      null,
+      damageStatus:        null,
+      mileageHistory:      [],
+    });
+    return;
   }
 
+  // ── Cached report path ─────────────────────────────────────────────────────
+  const [recallsResult, complaintCount] = await Promise.all([
+    lookupNHTSARecalls(report.brand, report.model, report.year),
+    lookupNHTSAComplaints(report.brand, report.model, report.year),
+  ]);
+  recalls = recallsResult;
+  isRealData = true; // cached = previously verified
+
   const risk = calcRiskScore({
-    recallCount:   recalls.length,
-    year:          report.year,
-    hasAccident:   !!report.hasMajorRepairs,
-    hasStructural: !!report.hasStructuralDamage,
+    recallCount:    recalls.length,
+    complaintCount: complaintCount,
+    year:           report.year,
   });
 
   res.json({
     ...report,
     isRealData,
     recalls,
+    complaintCount,
     riskScore: risk.score,
     riskLevel: risk.level,
-    mileageHistory: Array.isArray(report.mileageHistory) ? report.mileageHistory : [],
+    hasMajorRepairs:     null,
+    hasStructuralDamage: null,
+    airbagDeployed:      null,
+    damageStatus:        null,
+    mileageHistory:      [],
   });
 });
 

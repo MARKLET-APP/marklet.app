@@ -4,8 +4,8 @@ import { useLocation } from "wouter";
 import { useLookupVehicle } from "@workspace/api-client-react";
 import {
   FileSearch, ShieldAlert, AlertTriangle, CheckCircle, Activity,
-  History, Info, X, BadgeCheck, Bell, Gauge, CalendarClock, Wrench,
-  ClipboardCheck,
+  Info, BadgeCheck, Bell, Gauge, CalendarClock, Wrench,
+  ClipboardCheck, MessageSquareWarning, CalendarDays, ShieldQuestion,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +24,7 @@ export default function VehicleInfo() {
   const lookupMutation = useLookupVehicle();
   const [, navigate] = useLocation();
 
-  const [showNotes, setShowNotes] = useState(false);
-  const [notesContent, setNotesContent] = useState("");
   const [expandedRecall, setExpandedRecall] = useState<number | null>(null);
-
-  const openNotes = (text: string) => { setNotesContent(text); setShowNotes(true); };
-  const closeNotes = () => setShowNotes(false);
 
   const onSubmit = (data: { vin: string }) => {
     if (!data.vin) return;
@@ -41,12 +36,15 @@ export default function VehicleInfo() {
     recalls?: RecallItem[];
     riskScore?: number;
     riskLevel?: "good" | "check" | "serious";
+    complaintCount?: number; // من NHTSA Complaints API — حقيقي
   }) | undefined;
 
   const recalls: RecallItem[] = report?.recalls ?? [];
   const riskLevel = report?.riskLevel ?? "good";
   const riskScore = report?.riskScore ?? 0;
-  const hasIssues = recalls.length > 0 || report?.hasStructuralDamage || report?.hasMajorRepairs;
+  const complaintCount: number = report?.complaintCount ?? -1; // -1 = لم يُجلب / خطأ API
+  // hasIssues يعتمد فقط على بيانات حقيقية (استدعاءات وشكاوى)
+  const hasIssues = recalls.length > 0 || complaintCount > 50;
 
   const riskConfig = {
     good:    { label: "جيدة",                  color: "text-green-700",  bg: "bg-green-50 border-green-200",  bar: "bg-green-500" },
@@ -60,7 +58,7 @@ export default function VehicleInfo() {
       <div className="text-center mb-12">
         <h1 className="text-3xl md:text-5xl font-black text-foreground mb-4">تقرير تاريخ المركبة</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          أدخل رقم الشاسيه (VIN) للحصول على تقرير مفصل يتضمن الحوادث السابقة، قراءات العداد، والاستدعاءات الرسمية.
+          أدخل رقم الشاسيه (VIN) للحصول على تقرير يتضمن مواصفات المركبة، الاستدعاءات الرسمية، وعدد الشكاوى المسجلة لدى NHTSA.
         </p>
       </div>
 
@@ -135,11 +133,11 @@ export default function VehicleInfo() {
               />
             </div>
 
-            {/* Score breakdown pills */}
+            {/* Score breakdown pills — بيانات حقيقية فقط */}
             <div className="flex flex-wrap gap-2 text-xs">
-              <ScorePill active={recalls.length > 0} label={`استدعاءات (${recalls.length})`} icon="🔔" />
+              <ScorePill active={recalls.length > 0} label={`استدعاءات NHTSA (${recalls.length})`} icon="🔔" />
               <ScorePill active={new Date().getFullYear() - report.year > 10} label="عمر أكثر من ١٠ سنوات" icon="📅" />
-              <ScorePill active={!!(report.hasMajorRepairs || report.hasStructuralDamage)} label="حوادث مسجلة" icon="⚠️" />
+              <ScorePill active={complaintCount > 50} label={complaintCount >= 0 ? `شكاوى (${complaintCount})` : "شكاوى (غير متاح)"} icon="⚠️" />
             </div>
           </div>
 
@@ -214,79 +212,85 @@ export default function VehicleInfo() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            {/* ── Condition Overview ─────────────────────────────────────── */}
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-card rounded-3xl p-6 border shadow-lg h-full">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            {/* ── Condition Overview — بيانات حقيقية فقط ───────────────── */}
+            <div className="lg:col-span-1">
+              <div className="bg-card rounded-3xl p-6 border shadow-lg h-full flex flex-col gap-4">
+                <h3 className="text-xl font-bold flex items-center gap-2">
                   <Activity className="text-primary" /> حالة المركبة
                 </h3>
-                <div className="space-y-4">
-                  <ConditionRow label="حالة الهيكل" isGood={!report.hasStructuralDamage}
-                    notes="تم رصد ضرر هيكلي في سجلات المركبة. يُنصح بفحص شاصي السيارة لدى متخصص قبل الشراء."
-                    onNotesClick={openNotes} />
-                  <ConditionRow label="إصلاحات كبرى" isGood={!report.hasMajorRepairs}
-                    notes="سُجِّلت إصلاحات كبرى على المركبة. تحقق من طبيعة هذه الإصلاحات ومدى تأثيرها على قيمتها."
-                    onNotesClick={openNotes} />
-                  <ConditionRow label="نظام الوسائد الهوائية (Airbags)" isGood={!report.airbagDeployed}
-                    notes="تم تفعيل الوسائد الهوائية في حادثة سابقة. تأكد من استبدالها بشكل صحيح وإعادة برمجة النظام."
-                    onNotesClick={openNotes} />
 
-                  <div className="pt-6 mt-6 border-t">
-                    <p className="text-sm text-muted-foreground mb-2">تقييم الأضرار العام</p>
-                    {report.damageStatus === "clean" && (
-                      <div className="bg-green-100 text-green-800 border border-green-200 p-4 rounded-xl font-bold text-center flex flex-col items-center gap-2">
-                        <CheckCircle className="w-8 h-8" /> سجل نظيف وممتاز
-                      </div>
-                    )}
-                    {report.damageStatus === "minor" && (
-                      <div className="bg-yellow-100 text-yellow-800 border border-yellow-200 p-4 rounded-xl font-bold text-center flex flex-col items-center gap-2">
-                        <AlertTriangle className="w-8 h-8" /> أضرار طفيفة مسجلة
-                      </div>
-                    )}
-                    {report.damageStatus === "serious" && (
-                      <div className="bg-red-100 text-red-800 border border-red-200 p-4 rounded-xl font-bold text-center flex flex-col items-center gap-2">
-                        <ShieldAlert className="w-8 h-8" /> حوادث جسيمة مسجلة
-                      </div>
-                    )}
+                {/* استدعاءات NHTSA — حقيقي */}
+                <div className={`flex items-center justify-between p-3 rounded-xl ${recalls.length > 0 ? "bg-red-50" : "bg-green-50"}`}>
+                  <div className="flex items-center gap-2">
+                    <Bell className={`w-4 h-4 ${recalls.length > 0 ? "text-red-500" : "text-green-600"}`} />
+                    <span className="text-sm font-medium">استدعاءات NHTSA</span>
+                  </div>
+                  <Badge className={recalls.length > 0
+                    ? "bg-red-100 text-red-700 border-red-200"
+                    : "bg-green-100 text-green-700 border-green-200"}>
+                    {recalls.length > 0 ? `${recalls.length} استدعاء` : "لا يوجد"}
+                  </Badge>
+                </div>
+
+                {/* شكاوى NHTSA — حقيقي */}
+                <div className={`flex items-center justify-between p-3 rounded-xl ${
+                  complaintCount > 50 ? "bg-amber-50" : complaintCount >= 0 ? "bg-green-50" : "bg-muted/30"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <MessageSquareWarning className={`w-4 h-4 ${
+                      complaintCount > 50 ? "text-amber-600" : complaintCount >= 0 ? "text-green-600" : "text-muted-foreground"
+                    }`} />
+                    <span className="text-sm font-medium">شكاوى مسجلة</span>
+                  </div>
+                  {complaintCount >= 0 ? (
+                    <Badge className={complaintCount > 50
+                      ? "bg-amber-100 text-amber-700 border-amber-200"
+                      : "bg-green-100 text-green-700 border-green-200"}>
+                      {complaintCount} شكوى
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">تعذّر الجلب</span>
+                  )}
+                </div>
+
+                {/* عمر المركبة — مشتق من البيانات الحقيقية */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">عمر المركبة</span>
+                  </div>
+                  <Badge variant="outline">
+                    {new Date().getFullYear() - report.year} سنة
+                  </Badge>
+                </div>
+
+                {/* تنبيه صريح عن بيانات الحوادث */}
+                <div className="mt-auto pt-4 border-t">
+                  <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl p-3">
+                    <ShieldQuestion className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700 leading-relaxed">
+                      <span className="font-bold block mb-0.5">سجل الحوادث غير متاح مجاناً</span>
+                      بيانات الحوادث والإصلاحات الكبرى تتطلب خدمات مدفوعة (Carfax, AutoCheck).
+                      للتحقق الميداني، احجز فحصاً متخصصاً.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* ── Details & Specs ────────────────────────────────────────── */}
-            <div className="lg:col-span-2 space-y-8">
-
-              <div className="bg-card rounded-3xl p-6 md:p-8 border shadow-sm">
+            <div className="lg:col-span-2">
+              <div className="bg-card rounded-3xl p-6 md:p-8 border shadow-sm h-full">
                 <h2 className="text-2xl font-bold mb-6 text-foreground">{report.brand} {report.model} {report.year}</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                  <SpecBox label="بلد المنشأ" value={report.countryOfOrigin || "غير محدد"} />
-                  <SpecBox label="سعة المحرك" value={report.engineCapacity || "غير محدد"} />
-                  <SpecBox label="الأحصنة" value={report.horsepower ? `${report.horsepower} HP` : "غير محدد"} />
-                  <SpecBox label="ناقل الحركة" value={report.transmission === "automatic" ? "أوتوماتيك" : "يدوي"} />
+                  <SpecBox label="بلد المنشأ"   value={report.countryOfOrigin || "غير محدد"} />
+                  <SpecBox label="سعة المحرك"   value={report.engineCapacity || "غير محدد"} />
+                  <SpecBox label="الأحصنة"      value={report.horsepower ? `${report.horsepower} HP` : "غير محدد"} />
+                  <SpecBox label="ناقل الحركة"  value={report.transmission === "automatic" ? "أوتوماتيك" : "يدوي"} />
                 </div>
               </div>
-
-              <div className="bg-card rounded-3xl p-6 md:p-8 border shadow-sm">
-                <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-                  <History className="text-primary" /> تسلسل قراءات العداد
-                </h3>
-                <div className="relative pl-4 space-y-8 border-r-2 border-primary/20 mr-4">
-                  {report.mileageHistory.map((record, idx) => (
-                    <div key={idx} className="relative pr-8">
-                      <div className="absolute top-1 -right-[9px] w-4 h-4 rounded-full bg-primary ring-4 ring-card" />
-                      <div className="bg-secondary/30 p-4 rounded-2xl inline-block min-w-[200px]">
-                        <p className="font-bold text-foreground text-lg">{record.year}</p>
-                        <p className="text-muted-foreground font-mono mt-1">{record.mileage.toLocaleString("ar-EG")} كم</p>
-                      </div>
-                    </div>
-                  ))}
-                  {report.mileageHistory.length === 0 && (
-                    <p className="text-muted-foreground pr-4">لا توجد سجلات سابقة للمسافة المقطوعة.</p>
-                  )}
-                </div>
-              </div>
-
             </div>
+
           </div>
 
           {/* ── Motivational CTA ───────────────────────────────────────────── */}
@@ -333,30 +337,6 @@ export default function VehicleInfo() {
         </div>
       )}
 
-      {/* ── Notes Modal ──────────────────────────────────────────────────── */}
-      {showNotes && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          onClick={closeNotes}
-        >
-          <div
-            className="bg-card rounded-2xl shadow-2xl w-full max-w-md p-6 relative animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button onClick={closeNotes} className="absolute top-4 left-4 text-muted-foreground hover:text-foreground transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-red-100 p-2 rounded-xl">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground">تفاصيل الملاحظات</h3>
-            </div>
-            <p className="text-foreground/80 leading-relaxed mb-6">{notesContent}</p>
-            <Button onClick={closeNotes} className="w-full rounded-xl">إغلاق</Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -382,27 +362,6 @@ function RecallDetail({ icon, label, text }: { icon: React.ReactNode; label: str
   );
 }
 
-function ConditionRow({
-  label, isGood, notes, onNotesClick,
-}: { label: string; isGood: boolean; notes: string; onNotesClick: (text: string) => void }) {
-  return (
-    <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
-      <span className="font-medium text-sm text-foreground">{label}</span>
-      {isGood ? (
-        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 gap-1 pr-2">
-          <CheckCircle className="w-3 h-3" /> سليم
-        </Badge>
-      ) : (
-        <button
-          onClick={() => onNotesClick(notes)}
-          className="inline-flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-red-100 transition-colors cursor-pointer"
-        >
-          <AlertTriangle className="w-3 h-3" /> يوجد ملاحظات
-        </button>
-      )}
-    </div>
-  );
-}
 
 function SpecBox({ label, value }: { label: string; value: string }) {
   return (

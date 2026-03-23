@@ -52,10 +52,13 @@ function extractVinField(results: any[], variable: string): string {
 }
 
 async function fetchVinData(vin: string): Promise<VinResult> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
   const res = await fetch(
     `https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${encodeURIComponent(vin)}?format=json`,
-    { signal: AbortSignal.timeout(10000) }
+    { signal: controller.signal }
   );
+  clearTimeout(timer);
   if (!res.ok) throw new Error("فشل الاتصال بخادم NHTSA");
   const data = await res.json();
   const r = data.Results ?? [];
