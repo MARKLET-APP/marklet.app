@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import {
   ChevronLeft, ChevronRight, Share2, MessageCircle,
-  Store, Eye, BadgeCheck, Play, Volume2, VolumeX, Building2, Copy, Check,
+  Store, Eye, BadgeCheck, Play, Volume2, VolumeX, Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth";
@@ -54,6 +54,20 @@ const DEMO_REELS: Reel[] = [
 
 const viewedSet = new Set<number>();
 
+// ─── Admin ID cache ───────────────────────────────────────────────────────────
+
+let _adminIdCache: number | null = null;
+let _adminIdFetched = false;
+async function fetchAdminId(): Promise<number | null> {
+  if (_adminIdFetched) return _adminIdCache;
+  _adminIdFetched = true;
+  try {
+    const d = await apiRequest<{ adminId: number | null }>("/api/system/admin-id");
+    _adminIdCache = d?.adminId ?? null;
+  } catch {}
+  return _adminIdCache;
+}
+
 // ─── Video Player (autoplay muted, square) ────────────────────────────────────
 
 function VideoPlayer({ reel, muted, onMuteToggle }: {
@@ -76,7 +90,6 @@ function VideoPlayer({ reel, muted, onMuteToggle }: {
 
   return (
     <div className="relative w-full" style={{ aspectRatio: "1 / 1" }}>
-      {/* Poster / thumbnail */}
       {!videoReady && reel.thumbnailUrl && (
         <img
           src={reel.thumbnailUrl}
@@ -88,14 +101,12 @@ function VideoPlayer({ reel, muted, onMuteToggle }: {
         <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900" />
       )}
 
-      {/* Loading spinner */}
       {!videoReady && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
         </div>
       )}
 
-      {/* Video */}
       <video
         ref={videoRef}
         src={reel.videoUrl}
@@ -112,15 +123,12 @@ function VideoPlayer({ reel, muted, onMuteToggle }: {
         }}
       />
 
-      {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
 
-      {/* Play icon hint (very subtle, shows only when paused) */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <Play className="w-12 h-12 text-white/0 transition-opacity" />
       </div>
 
-      {/* Sponsored badge */}
       {reel.sponsored === "true" && (
         <div className="absolute top-3 right-3 z-10">
           <span className="flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
@@ -129,7 +137,6 @@ function VideoPlayer({ reel, muted, onMuteToggle }: {
         </div>
       )}
 
-      {/* Mute toggle */}
       <button
         onClick={onMuteToggle}
         className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
@@ -149,7 +156,6 @@ export function VideoCarousel() {
   const [reels, setReels] = useState<Reel[]>([]);
   const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState(true);
-  const [copied, setCopied] = useState(false);
   const { user } = useAuthStore();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -157,11 +163,8 @@ export function VideoCarousel() {
   useEffect(() => {
     apiRequest<Reel[]>("/api/reels")
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setReels(data);
-        } else {
-          setReels(DEMO_REELS);
-        }
+        if (Array.isArray(data) && data.length > 0) setReels(data);
+        else setReels(DEMO_REELS);
       })
       .catch(() => setReels(DEMO_REELS));
   }, []);
@@ -181,25 +184,28 @@ export function VideoCarousel() {
   const prev = () => setIdx(i => (i - 1 + reels.length) % reels.length);
   const next = () => setIdx(i => (i + 1) % reels.length);
 
-  // Share: always copy link (no native share dialog)
+  // Share: open native share dialog, fallback to clipboard
   const handleShare = async () => {
     const url = `${window.location.origin}?video=${current.id}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast({ title: "✅ تم نسخ رابط الفيديو" });
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast({ title: "تعذّر نسخ الرابط", variant: "destructive" });
+    if (navigator.share) {
+      try { await navigator.share({ title: current.title, url }); } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "✅ تم نسخ رابط الفيديو" });
+      } catch {
+        toast({ title: "تعذّر مشاركة الرابط", variant: "destructive" });
+      }
     }
   };
 
-  const handleContact = () => {
+  const handleContact = async () => {
     if (!user) { navigate("/login"); return; }
     if (current.dealerId && current.dealerId > 0) {
       navigate(`/messages?userId=${current.dealerId}`);
     } else {
-      navigate("/messages");
+      const adminId = await fetchAdminId();
+      navigate(adminId ? `/messages?userId=${adminId}` : "/messages");
     }
   };
 
@@ -221,11 +227,9 @@ export function VideoCarousel() {
         </div>
 
         <div className="relative bg-card border rounded-2xl overflow-hidden shadow-sm">
-          {/* Video player */}
           <div className="relative">
             <VideoPlayer reel={current} muted={muted} onMuteToggle={() => setMuted(m => !m)} />
 
-            {/* Prev / Next arrows */}
             {reels.length > 1 && (
               <>
                 <button onClick={prev} className="absolute top-1/2 right-3 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white active:scale-90 transition-all">
@@ -237,7 +241,6 @@ export function VideoCarousel() {
               </>
             )}
 
-            {/* Dots */}
             {reels.length > 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                 {reels.map((_, i) => (
@@ -247,7 +250,6 @@ export function VideoCarousel() {
             )}
           </div>
 
-          {/* Info */}
           <div className="p-3 sm:p-4 space-y-2">
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
@@ -262,7 +264,6 @@ export function VideoCarousel() {
               </div>
             </div>
 
-            {/* Dealer name */}
             {current.dealerName && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Building2 className="w-3.5 h-3.5 shrink-0 text-primary/60" />
@@ -272,21 +273,14 @@ export function VideoCarousel() {
 
             {current.desc && <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{current.desc}</p>}
 
-            {/* Actions */}
             <div className="flex gap-2 pt-0.5">
-              {/* Share = copy link */}
               <button
                 onClick={handleShare}
-                className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl py-2 text-xs font-bold transition-colors"
-                style={{ color: copied ? "#16a34a" : undefined }}
+                className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl py-2 text-xs font-bold transition-colors hover:bg-muted"
               >
-                {copied
-                  ? <><Check className="w-3.5 h-3.5" /> تم النسخ</>
-                  : <><Copy className="w-3.5 h-3.5" /> نسخ الرابط</>
-                }
+                <Share2 className="w-3.5 h-3.5" /> مشاركة
               </button>
 
-              {/* Contact dealer */}
               <button
                 onClick={handleContact}
                 className="flex items-center justify-center gap-1.5 flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm"
@@ -294,7 +288,6 @@ export function VideoCarousel() {
                 <MessageCircle className="w-3.5 h-3.5" /> مراسلة
               </button>
 
-              {/* Showroom page button — only when dealerId is set */}
               {current.dealerId && current.dealerId > 0 && (
                 <button
                   onClick={handleDealer}

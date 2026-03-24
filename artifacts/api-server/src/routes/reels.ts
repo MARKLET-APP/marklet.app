@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, reelsTable, usersTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -89,9 +89,10 @@ router.post("/reels/upload", authMiddleware, videoUpload.single("video"), async 
 
     if (!title?.trim()) { res.status(400).json({ error: "العنوان مطلوب" }); return; }
 
+    const uid = req.user!.id;
     const status = role === "admin" ? "approved" : "pending";
     const [reel] = await db.insert(reelsTable).values({
-      uploaderId: req.user!.userId,
+      uploaderId: uid,
       videoUrl,
       thumbnailUrl: null,
       title: title.trim(),
@@ -99,7 +100,7 @@ router.post("/reels/upload", authMiddleware, videoUpload.single("video"), async 
       price: price?.trim() || null,
       city: city?.trim() || null,
       dealerName: dealerName?.trim() || null,
-      dealerId: dealerId ? parseInt(dealerId) : (req.user!.userId ?? null),
+      dealerId: dealerId ? parseInt(dealerId) : null,
       sponsored: "false",
       status,
     }).returning();
@@ -128,10 +129,34 @@ router.post("/reels/:id/view", async (req, res): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
     await db.update(reelsTable)
-      .set({ views: (await db.select({ v: reelsTable.views }).from(reelsTable).where(eq(reelsTable.id, id)))[0]?.v + 1 || 1 })
+      .set({ views: sql`${reelsTable.views} + 1` })
       .where(eq(reelsTable.id, id));
     res.json({ ok: true });
   } catch { res.json({ ok: false }); }
+});
+
+// ── Like / Unlike reel ────────────────────────────────────────────────────────
+router.post("/reels/:id/like", optionalAuth, async (req, res): Promise<void> => {
+  try {
+    const id = parseInt(req.params.id);
+    const action = (req.body?.action as string) || "like";
+    await db.update(reelsTable)
+      .set({ likes: sql`${reelsTable.likes} + ${action === "unlike" ? -1 : 1}` })
+      .where(eq(reelsTable.id, id));
+    const [row] = await db.select({ likes: reelsTable.likes }).from(reelsTable).where(eq(reelsTable.id, id));
+    res.json({ ok: true, likes: row?.likes ?? 0 });
+  } catch { res.json({ ok: false, likes: 0 }); }
+});
+
+// ── Get admin contact ID ───────────────────────────────────────────────────────
+router.get("/system/admin-id", async (_req, res): Promise<void> => {
+  try {
+    const [admin] = await db.select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.role, "admin"))
+      .limit(1);
+    res.json({ adminId: admin?.id ?? null });
+  } catch { res.json({ adminId: null }); }
 });
 
 // ── Admin: list all reels ────────────────────────────────────────────────────

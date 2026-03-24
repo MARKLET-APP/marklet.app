@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
-  Heart, Copy, Check, Play, Upload, ChevronUp, ChevronDown,
+  Heart, Share2, Play, Upload, ChevronUp, ChevronDown,
   BadgeCheck, Eye, Phone, Loader2, Store,
   ShieldCheck, X, Building2, CheckCircle2, RefreshCw,
 } from "lucide-react";
@@ -48,6 +48,20 @@ const DEMO_REELS: Reel[] = [
     dealerId: null, dealerName: "معرض الشمال",
   },
 ];
+
+// ─── Admin ID cache ────────────────────────────────────────────────────────────
+
+let _adminIdCache: number | null = null;
+let _adminIdFetched = false;
+async function fetchAdminId(): Promise<number | null> {
+  if (_adminIdFetched) return _adminIdCache;
+  _adminIdFetched = true;
+  try {
+    const d = await apiRequest<{ adminId: number | null }>("/api/system/admin-id");
+    _adminIdCache = d?.adminId ?? null;
+  } catch {}
+  return _adminIdCache;
+}
 
 // ─── Admin Panel ──────────────────────────────────────────────────────────────
 
@@ -127,9 +141,9 @@ function AdminPanel({ onApprove, onReject, onClose }: {
 
 // ─── Reel Card ────────────────────────────────────────────────────────────────
 
-function ReelCard({ reel, isActive, onLike, safeBottom }: {
+function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
   reel: Reel; isActive: boolean; safeBottom: number;
-  onLike: (id: number) => void;
+  onLikeUpdate: (id: number, likes: number) => void;
 }) {
   const { user } = useAuthStore();
   const [, navigate] = useLocation();
@@ -139,7 +153,8 @@ function ReelCard({ reel, isActive, onLike, safeBottom }: {
   const [localLikes, setLocalLikes] = useState(reel.likes);
   const [playing, setPlaying] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [copied, setCopied] = useState(false);
+
+  useEffect(() => { setLocalLikes(reel.likes); }, [reel.likes]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -159,37 +174,54 @@ function ReelCard({ reel, isActive, onLike, safeBottom }: {
     else { v.pause(); setPlaying(false); }
   };
 
-  const handleLike = () => {
+  const handleLike = async () => {
     if (!user) { navigate("/login"); return; }
-    setLiked(l => !l);
-    setLocalLikes(c => liked ? c - 1 : c + 1);
-    if (!liked) onLike(reel.id);
-  };
-
-  // Always copy link — never open native share dialog
-  const handleShare = async () => {
-    const url = `${window.location.origin}?video=${reel.id}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast({ title: "✅ تم نسخ رابط الفيديو" });
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast({ title: "تعذّر نسخ الرابط", variant: "destructive" });
+    const newLiked = !liked;
+    setLiked(newLiked);
+    const optimistic = newLiked ? localLikes + 1 : localLikes - 1;
+    setLocalLikes(optimistic);
+    if (reel.id > 0) {
+      try {
+        const data = await apiRequest<{ ok: boolean; likes: number }>(
+          `/api/reels/${reel.id}/like`, "POST", { action: newLiked ? "like" : "unlike" }
+        );
+        if (data?.likes !== undefined) {
+          setLocalLikes(data.likes);
+          onLikeUpdate(reel.id, data.likes);
+        }
+      } catch {}
     }
   };
 
-  const handleContact = () => {
+  // Share: open native share dialog, fallback to clipboard
+  const handleShare = async () => {
+    const url = `${window.location.origin}?video=${reel.id}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: reel.title, url }); } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "✅ تم نسخ رابط الفيديو" });
+      } catch {
+        toast({ title: "تعذّر مشاركة الرابط", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleContact = async () => {
     if (!user) { navigate("/login"); return; }
-    if (reel.dealerId && reel.dealerId > 0) navigate(`/messages?userId=${reel.dealerId}`);
-    else navigate("/messages");
+    if (reel.dealerId && reel.dealerId > 0) {
+      navigate(`/messages?userId=${reel.dealerId}`);
+    } else {
+      const adminId = await fetchAdminId();
+      navigate(adminId ? `/messages?userId=${adminId}` : "/messages");
+    }
   };
 
   const infoPb = safeBottom + 8;
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* Video */}
       <video
         ref={videoRef}
         src={reel.videoUrl}
@@ -202,7 +234,6 @@ function ReelCard({ reel, isActive, onLike, safeBottom }: {
         poster={reel.thumbnailUrl || undefined}
       />
 
-      {/* Loading */}
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           {reel.thumbnailUrl && <img src={reel.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />}
@@ -210,11 +241,9 @@ function ReelCard({ reel, isActive, onLike, safeBottom }: {
         </div>
       )}
 
-      {/* Gradients */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none" />
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
 
-      {/* Pause indicator */}
       {!playing && loaded && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-sm">
@@ -223,7 +252,6 @@ function ReelCard({ reel, isActive, onLike, safeBottom }: {
         </div>
       )}
 
-      {/* Sponsored badge */}
       {reel.sponsored === "true" && (
         <div className="absolute top-16 left-4 z-10">
           <span className="flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
@@ -253,7 +281,6 @@ function ReelCard({ reel, isActive, onLike, safeBottom }: {
               <Eye className="w-3 h-3" /> {reel.views.toLocaleString("ar-EG")}
             </span>
           </div>
-          {/* Always show action buttons */}
           <div className="flex gap-2 mt-3">
             <button
               onClick={handleContact}
@@ -279,6 +306,7 @@ function ReelCard({ reel, isActive, onLike, safeBottom }: {
         style={{ bottom: infoPb + 80 }}
         dir="ltr"
       >
+        {/* Like button */}
         <button onClick={handleLike} className="flex flex-col items-center gap-1">
           <div className={cn(
             "w-11 h-11 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all",
@@ -289,12 +317,12 @@ function ReelCard({ reel, isActive, onLike, safeBottom }: {
           <span className="text-white text-xs font-bold drop-shadow">{localLikes}</span>
         </button>
 
-        {/* Copy link */}
+        {/* Share button — opens native share dialog */}
         <button onClick={handleShare} className="flex flex-col items-center gap-1">
           <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-lg active:scale-90">
-            {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-white" />}
+            <Share2 className="w-5 h-5 text-white" />
           </div>
-          <span className="text-white text-xs font-bold drop-shadow">{copied ? "نُسخ" : "نسخ"}</span>
+          <span className="text-white text-xs font-bold drop-shadow">مشاركة</span>
         </button>
       </div>
     </div>
@@ -336,7 +364,6 @@ export default function ReelsPage() {
     apiRequest<Reel[]>("/api/reels")
       .then(data => {
         const list = Array.isArray(data) && data.length > 0 ? data : DEMO_REELS;
-        // sponsored first
         setFeed([...list].sort((a, b) => {
           if (a.sponsored === "true" && b.sponsored !== "true") return -1;
           if (a.sponsored !== "true" && b.sponsored === "true") return 1;
@@ -378,8 +405,8 @@ export default function ReelsPage() {
     if (c) c.scrollTo({ top: c.clientHeight * idx, behavior: "smooth" });
   };
 
-  const handleLike = (id: number) => {
-    setFeed(prev => prev.map(r => r.id === id ? { ...r, likes: r.likes + 1 } : r));
+  const handleLikeUpdate = (id: number, likes: number) => {
+    setFeed(prev => prev.map(r => r.id === id ? { ...r, likes } : r));
   };
 
   const handleApprove = async (id: number) => {
@@ -486,7 +513,7 @@ export default function ReelsPage() {
             <ReelCard
               reel={reel}
               isActive={i === activeIndex}
-              onLike={handleLike}
+              onLikeUpdate={handleLikeUpdate}
               safeBottom={safeBottom}
             />
           </div>
