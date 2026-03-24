@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
-  Heart, Share2, Play, Upload, ChevronUp, ChevronDown,
+  Heart, Share2, Play, Upload,
   BadgeCheck, Eye, Phone, Loader2, Store,
-  ShieldCheck, X, Building2, CheckCircle2, RefreshCw, Video,
+  ShieldCheck, X, Building2, CheckCircle2, RefreshCw,
+  Video, Volume2, VolumeX, MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -65,75 +66,7 @@ async function fetchAdminId(): Promise<number | null> {
   return _adminIdCache;
 }
 
-// ─── Video Preview Modal (for Admin) ─────────────────────────────────────────
-
-function VideoPreviewModal({ reel, onClose, onApprove, onReject }: {
-  reel: Reel;
-  onClose: () => void;
-  onApprove: (id: number) => void;
-  onReject: (id: number) => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-[60] flex flex-col bg-black"
-      onClick={onClose}
-    >
-      <div onClick={e => e.stopPropagation()} className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center active:scale-90"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
-          <div className="text-right">
-            <p className="text-white font-bold text-sm">{reel.title}</p>
-            {reel.dealerName && <p className="text-white/50 text-xs">{reel.dealerName}</p>}
-          </div>
-        </div>
-
-        {/* Video */}
-        <div className="flex-1 flex items-center justify-center bg-black overflow-hidden">
-          <video
-            src={reel.videoUrl}
-            className="w-full h-full object-contain"
-            controls
-            autoPlay
-            playsInline
-            loop
-          />
-        </div>
-
-        {/* Info + Actions */}
-        <div className="flex-shrink-0 bg-[#111] border-t border-white/10 p-4 space-y-3"
-          style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          <div className="flex flex-wrap gap-2 text-xs text-white/60">
-            {reel.price && <span className="text-amber-400 font-bold text-sm">{reel.price}</span>}
-            {reel.city && <span>{reel.city}</span>}
-          </div>
-          {reel.desc && <p className="text-white/70 text-sm leading-relaxed">{reel.desc}</p>}
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={() => { onApprove(reel.id); onClose(); }}
-              className="flex-1 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-xl py-3 text-sm transition-all"
-            >
-              ✅ نشر الفيديو
-            </button>
-            <button
-              onClick={() => { onReject(reel.id); onClose(); }}
-              className="flex-1 bg-red-500/80 hover:bg-red-600 active:scale-95 text-white font-bold rounded-xl py-3 text-sm transition-all"
-            >
-              ❌ رفض
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Admin Panel ──────────────────────────────────────────────────────────────
+// ─── Admin Panel (bottom sheet) ───────────────────────────────────────────────
 
 function AdminPanel({ onApprove, onReject, onClose }: {
   onApprove: (id: number) => void;
@@ -154,22 +87,27 @@ function AdminPanel({ onApprove, onReject, onClose }: {
   const doApprove = (id: number) => {
     onApprove(id);
     setPending(p => p.filter(x => x.id !== id));
+    setPreviewReel(null);
   };
   const doReject = (id: number) => {
     onReject(id);
     setPending(p => p.filter(x => x.id !== id));
+    setPreviewReel(null);
   };
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      >
         <div
-          className="bg-[#111] text-white rounded-t-3xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto"
+          className="bg-[#111] text-white rounded-t-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto"
           style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}
           onClick={e => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold flex items-center gap-2">
+          <div className="sticky top-0 bg-[#111] border-b border-white/10 px-6 py-4 flex items-center justify-between z-10">
+            <h2 className="text-base font-bold flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-400" /> مراجعة الفيديوهات
             </h2>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
@@ -177,96 +115,137 @@ function AdminPanel({ onApprove, onReject, onClose }: {
             </button>
           </div>
 
-          {loading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-8 h-8 animate-spin text-white/40" />
-            </div>
-          ) : pending.length === 0 ? (
-            <div className="text-center py-10">
-              <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-400/50" />
-              <p className="text-white/50">لا توجد فيديوهات بانتظار المراجعة</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {pending.map(r => (
-                <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                  <div className="flex items-start gap-3">
-                    {/* Thumbnail — tap to preview */}
-                    <button
-                      onClick={() => setPreviewReel(r)}
-                      className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-white/10 active:scale-95 transition-transform group"
-                    >
-                      {r.thumbnailUrl
-                        ? <img src={r.thumbnailUrl} alt={r.title} className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center">
-                            <Video className="w-7 h-7 text-white/30" />
-                          </div>
-                      }
-                      {/* play overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 transition-colors">
-                        <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                          <Play className="w-4 h-4 text-white fill-white ml-0.5" />
-                        </div>
-                      </div>
-                    </button>
-
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm">{r.title}</p>
-                      {r.dealerName && <p className="text-white/50 text-xs mt-0.5">{r.dealerName}</p>}
-                      {r.price && <p className="text-amber-400 text-xs font-bold mt-0.5">{r.price}</p>}
-                      {r.city && <p className="text-white/40 text-xs">{r.city}</p>}
+          <div className="p-4">
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-8 h-8 animate-spin text-white/40" />
+              </div>
+            ) : pending.length === 0 ? (
+              <div className="text-center py-10">
+                <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-400/50" />
+                <p className="text-white/50">لا توجد فيديوهات بانتظار المراجعة</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pending.map(r => (
+                  <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                    {/* Thumbnail row */}
+                    <div className="flex items-center gap-3 p-3">
                       <button
                         onClick={() => setPreviewReel(r)}
-                        className="mt-2 text-xs text-emerald-400/80 underline"
+                        className="relative flex-shrink-0 rounded-xl overflow-hidden bg-white/10 active:scale-95 transition-transform group"
+                        style={{ width: 80, height: 60 }}
                       >
-                        معاينة الفيديو
+                        {r.thumbnailUrl
+                          ? <img src={r.thumbnailUrl} alt={r.title} className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center">
+                              <Video className="w-6 h-6 text-white/30" />
+                            </div>
+                        }
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <Play className="w-4 h-4 text-white fill-white" />
+                        </div>
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm leading-snug line-clamp-1">{r.title}</p>
+                        {r.dealerName && <p className="text-white/50 text-xs mt-0.5">{r.dealerName}</p>}
+                        <div className="flex gap-3 mt-0.5">
+                          {r.price && <span className="text-amber-400 text-xs font-bold">{r.price}</span>}
+                          {r.city && <span className="text-white/40 text-xs">{r.city}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex gap-2 px-3 pb-3">
+                      <button
+                        onClick={() => setPreviewReel(r)}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
+                      >
+                        <Play className="w-4 h-4" /> معاينة
+                      </button>
+                      <button
+                        onClick={() => doApprove(r.id)}
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
+                      >
+                        ✅ قبول
+                      </button>
+                      <button
+                        onClick={() => doReject(r.id)}
+                        className="flex-1 bg-red-500/80 hover:bg-red-600 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
+                      >
+                        ❌ رفض
                       </button>
                     </div>
                   </div>
-
-                  <div className="flex gap-2 mt-3">
-                    <button
-                      onClick={() => doApprove(r.id)}
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
-                    >
-                      ✅ قبول
-                    </button>
-                    <button
-                      onClick={() => setPreviewReel(r)}
-                      className="px-4 bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
-                    >
-                      <Play className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => doReject(r.id)}
-                      className="flex-1 bg-red-500/80 hover:bg-red-600 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
-                    >
-                      ❌ رفض
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Video preview full screen */}
       {previewReel && (
-        <VideoPreviewModal
-          reel={previewReel}
-          onClose={() => setPreviewReel(null)}
-          onApprove={doApprove}
-          onReject={doReject}
-        />
+        <div className="fixed inset-0 z-[60] bg-black flex flex-col" onClick={() => setPreviewReel(null)}>
+          <div className="flex-1 flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+              <button
+                onClick={() => setPreviewReel(null)}
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+              <div className="text-right">
+                <p className="text-white font-bold text-sm">{previewReel.title}</p>
+                {previewReel.dealerName && <p className="text-white/50 text-xs">{previewReel.dealerName}</p>}
+              </div>
+            </div>
+            <div className="flex-1 flex items-center justify-center bg-black">
+              <video
+                key={previewReel.id}
+                src={previewReel.videoUrl}
+                className="w-full h-full object-contain"
+                controls autoPlay playsInline loop
+              />
+            </div>
+            <div
+              className="flex-shrink-0 bg-[#111] border-t border-white/10 p-4 space-y-2"
+              style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}
+            >
+              <div className="flex flex-wrap gap-2 text-sm">
+                {previewReel.price && <span className="text-amber-400 font-bold">{previewReel.price}</span>}
+                {previewReel.city && <span className="text-white/60">{previewReel.city}</span>}
+              </div>
+              {previewReel.desc && <p className="text-white/70 text-sm">{previewReel.desc}</p>}
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => doApprove(previewReel.id)}
+                  className="flex-1 bg-emerald-500 active:scale-95 text-white font-bold rounded-xl py-3 text-sm"
+                >
+                  ✅ نشر الفيديو
+                </button>
+                <button
+                  onClick={() => doReject(previewReel.id)}
+                  className="flex-1 bg-red-500/80 active:scale-95 text-white font-bold rounded-xl py-3 text-sm"
+                >
+                  ❌ رفض
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
 }
 
-// ─── Reel Card ────────────────────────────────────────────────────────────────
+// ─── Reel Card (square video + info below) ────────────────────────────────────
 
-function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
-  reel: Reel; isActive: boolean; safeBottom: number;
+const viewedSet = new Set<number>();
+
+function ReelCard({ reel, isActive, onLikeUpdate }: {
+  reel: Reel;
+  isActive: boolean;
   onLikeUpdate: (id: number, likes: number) => void;
 }) {
   const { user } = useAuthStore();
@@ -276,20 +255,28 @@ function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
   const [liked, setLiked] = useState(false);
   const [localLikes, setLocalLikes] = useState(reel.likes);
   const [playing, setPlaying] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const [muted, setMuted] = useState(true);
 
   useEffect(() => { setLocalLikes(reel.likes); }, [reel.likes]);
 
+  // Autoplay when active, pause when not
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     if (isActive) {
       v.currentTime = 0;
       v.play().then(() => setPlaying(true)).catch(() => {});
+      // track view
+      if (reel.id > 0 && !viewedSet.has(reel.id)) {
+        viewedSet.add(reel.id);
+        fetch(`/api/reels/${reel.id}/view`, { method: "POST" }).catch(() => {});
+      }
     } else {
-      v.pause(); setPlaying(false);
+      v.pause();
+      setPlaying(false);
     }
-  }, [isActive]);
+  }, [isActive, reel.id]);
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -299,7 +286,7 @@ function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
   };
 
   const handleLike = async () => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { toast({ title: "يجب تسجيل الدخول أولاً" }); navigate("/login"); return; }
     const newLiked = !liked;
     setLiked(newLiked);
     const optimistic = newLiked ? localLikes + 1 : localLikes - 1;
@@ -317,8 +304,6 @@ function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
     }
   };
 
-
-  // Contact: message the showroom owner directly; fallback to admin
   const handleContact = async () => {
     if (!user) { navigate("/login"); return; }
     const ownerId = reel.showroomOwnerId;
@@ -330,123 +315,154 @@ function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
     }
   };
 
-  const infoPb = safeBottom + 8;
-
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden">
-      <video
-        ref={videoRef}
-        src={reel.videoUrl}
-        className="absolute inset-0 w-full h-full object-cover"
-        loop muted playsInline preload="auto"
-        onCanPlay={() => setLoaded(true)}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onClick={togglePlay}
-        poster={reel.thumbnailUrl || undefined}
-      />
-
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black">
-          {reel.thumbnailUrl && <img src={reel.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />}
-          <Loader2 className="w-10 h-10 text-white/50 animate-spin relative z-10" />
-        </div>
-      )}
-
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
-
-      {!playing && loaded && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-sm">
-            <Play className="w-8 h-8 text-white ml-1" />
+    <div className="bg-card border-b" dir="rtl">
+      {/* ── Video area (natural/square dimensions) ─────────────────────────── */}
+      <div className="relative w-full bg-black" style={{ aspectRatio: "1 / 1" }}>
+        {/* Thumbnail placeholder while loading */}
+        {!videoReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
+            {reel.thumbnailUrl
+              ? <img src={reel.thumbnailUrl} alt={reel.title} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+              : null
+            }
+            <Loader2 className="w-8 h-8 text-white/40 animate-spin relative z-10" />
           </div>
-        </div>
-      )}
+        )}
 
-      {reel.sponsored === "true" && (
-        <div className="absolute top-16 left-4 z-10">
-          <span className="flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
-            <BadgeCheck className="w-3 h-3" /> ممول
-          </span>
-        </div>
-      )}
+        <video
+          ref={videoRef}
+          src={reel.videoUrl}
+          className="absolute inset-0 w-full h-full object-contain bg-black"
+          loop
+          muted={muted}
+          playsInline
+          preload="auto"
+          poster={reel.thumbnailUrl || undefined}
+          onCanPlay={() => setVideoReady(true)}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onClick={togglePlay}
+        />
 
-      {/* Bottom info */}
-      <div
-        className="absolute bottom-0 right-0 left-16 pointer-events-none"
-        style={{ paddingBottom: infoPb }}
-        dir="rtl"
-      >
-        <div className="px-4 pb-2 pointer-events-auto">
-          <h3 className="text-white font-bold text-lg leading-tight drop-shadow-lg">{reel.title}</h3>
-          {reel.price && <p className="text-amber-400 font-bold text-base mt-0.5">{reel.price}</p>}
-          {reel.dealerName && (
-            <p className="flex items-center gap-1 text-white/70 text-xs mt-0.5 font-medium">
-              <Building2 className="w-3 h-3" /> {reel.dealerName}
-            </p>
-          )}
-          {reel.desc && <p className="text-white/80 text-sm mt-1 line-clamp-2 drop-shadow">{reel.desc}</p>}
-          <div className="flex items-center gap-3 mt-1.5">
-            {reel.city && <span className="text-white/60 text-xs">{reel.city}</span>}
-            <span className="flex items-center gap-1 text-white/60 text-xs">
-              <Eye className="w-3 h-3" /> {reel.views.toLocaleString("ar-EG")}
+        {/* Gradient overlay at bottom */}
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+
+        {/* Play/Pause indicator */}
+        {!playing && videoReady && (
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            onClick={togglePlay}
+          >
+            <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+              <Play className="w-7 h-7 text-white fill-white ml-1" />
+            </div>
+          </div>
+        )}
+
+        {/* Sponsored badge */}
+        {reel.sponsored === "true" && (
+          <div className="absolute top-3 right-3 z-10">
+            <span className="flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
+              <BadgeCheck className="w-3 h-3" /> ممول
             </span>
           </div>
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={handleContact}
-              className="flex items-center gap-1.5 bg-white text-black font-bold rounded-full px-4 py-2 text-xs shadow-lg active:scale-95 transition-transform"
-            >
-              <Phone className="w-3.5 h-3.5" /> تواصل الآن
-            </button>
-            {reel.dealerId && reel.dealerId > 0 && (
-              <button
-                onClick={() => navigate(`/showroom/${reel.dealerId}`)}
-                className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm border border-white/20 text-white font-bold rounded-full px-4 py-2 text-xs active:scale-95 transition-transform"
-              >
-                <Store className="w-3.5 h-3.5" /> المعرض
+        )}
+
+        {/* Mute toggle */}
+        <button
+          onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
+          className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+        >
+          {muted
+            ? <VolumeX className="w-4 h-4 text-white" />
+            : <Volume2 className="w-4 h-4 text-white" />
+          }
+        </button>
+
+        {/* Side action buttons — over the video */}
+        <div className="absolute left-3 bottom-3 z-10 flex flex-col items-center gap-3">
+          {/* Like */}
+          <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all",
+              liked ? "bg-red-500" : "bg-black/50 backdrop-blur-sm border border-white/20"
+            )}>
+              <Heart className={cn("w-5 h-5", liked ? "fill-white text-white" : "text-white")} />
+            </div>
+            <span className="text-white text-[10px] font-bold drop-shadow">{localLikes}</span>
+          </button>
+
+          {/* Share */}
+          <ShareSheet
+            options={{
+              title: reel.title,
+              price: reel.price,
+              city: reel.city,
+              url: `${window.location.origin}?video=${reel.id}`,
+              description: reel.desc,
+            }}
+            trigger={
+              <button className="flex flex-col items-center gap-0.5">
+                <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                  <Share2 className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white text-[10px] font-bold drop-shadow">مشاركة</span>
               </button>
-            )}
-          </div>
+            }
+          />
+        </div>
+
+        {/* Views — bottom right over video */}
+        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 text-white/70 text-xs">
+          <Eye className="w-3 h-3" />
+          <span>{reel.views.toLocaleString("ar-EG")}</span>
         </div>
       </div>
 
-      {/* Side actions */}
-      <div
-        className="absolute left-3 flex flex-col items-center gap-5"
-        style={{ bottom: infoPb + 80 }}
-        dir="ltr"
-      >
-        {/* Like button */}
-        <button onClick={handleLike} className="flex flex-col items-center gap-1">
-          <div className={cn(
-            "w-11 h-11 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all",
-            liked ? "bg-red-500" : "bg-black/40 backdrop-blur-sm border border-white/10"
-          )}>
-            <Heart className={cn("w-5 h-5", liked ? "fill-white text-white" : "text-white")} />
-          </div>
-          <span className="text-white text-xs font-bold drop-shadow">{localLikes}</span>
-        </button>
+      {/* ── Info section below video ───────────────────────────────────────── */}
+      <div className="px-4 py-3 space-y-2">
+        {/* Title + price */}
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-bold text-base leading-snug flex-1 line-clamp-2">{reel.title}</h3>
+          {reel.price && (
+            <span className="text-amber-500 font-bold text-base flex-shrink-0 leading-snug">{reel.price}</span>
+          )}
+        </div>
 
-        {/* Share button — uses the app's standard ShareSheet (Android Native → Web Share → Clipboard) */}
-        <ShareSheet
-          options={{
-            title: reel.title,
-            price: reel.price,
-            city: reel.city,
-            url: `${window.location.origin}?video=${reel.id}`,
-            description: reel.desc,
-          }}
-          trigger={
-            <button className="flex flex-col items-center gap-1">
-              <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-lg active:scale-90">
-                <Share2 className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-white text-xs font-bold drop-shadow">مشاركة</span>
+        {/* Dealer + city */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
+          {reel.dealerName && (
+            <span className="flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-primary/60" />
+              <span className="font-medium text-foreground/80">{reel.dealerName}</span>
+            </span>
+          )}
+          {reel.city && <span>{reel.city}</span>}
+        </div>
+
+        {/* Description */}
+        {reel.desc && (
+          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{reel.desc}</p>
+        )}
+
+        {/* CTA buttons */}
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={handleContact}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground font-bold rounded-xl py-2.5 text-sm hover:bg-primary/90 active:scale-95 transition-all shadow-sm"
+          >
+            <Phone className="w-4 h-4" /> تواصل الآن
+          </button>
+          {reel.dealerId && reel.dealerId > 0 && (
+            <button
+              onClick={() => navigate(`/showroom/${reel.dealerId}`)}
+              className="flex items-center justify-center gap-1.5 px-4 border-2 rounded-xl py-2.5 text-sm font-bold text-muted-foreground hover:bg-muted active:scale-95 transition-all"
+            >
+              <Store className="w-4 h-4" /> المعرض
             </button>
-          }
-        />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -462,25 +478,9 @@ export default function ReelsPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showAdmin, setShowAdmin] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-
-  const [safeBottom, setSafeBottom] = useState(20);
-  const [safeTop, setSafeTop] = useState(0);
-
-  useEffect(() => {
-    const el = document.createElement("div");
-    el.style.cssText = "position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);width:1px;pointer-events:none;";
-    document.body.appendChild(el);
-    setSafeBottom(Math.max(el.getBoundingClientRect().height || 0, 20));
-    document.body.removeChild(el);
-
-    const el2 = document.createElement("div");
-    el2.style.cssText = "position:fixed;top:0;height:env(safe-area-inset-top,0px);width:1px;pointer-events:none;";
-    document.body.appendChild(el2);
-    setSafeTop(el2.getBoundingClientRect().height || 0);
-    document.body.removeChild(el2);
-  }, []);
 
   const loadFeed = useCallback(() => {
     setLoading(true);
@@ -505,16 +505,23 @@ export default function ReelsPage() {
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
+  // IntersectionObserver to track which card is active
   const setupObserver = useCallback(() => {
     if (observerRef.current) observerRef.current.disconnect();
     const container = containerRef.current;
     if (!container) return;
     const cards = container.querySelectorAll("[data-reel-index]");
     observerRef.current = new IntersectionObserver(entries => {
+      let maxRatio = 0;
+      let maxIdx = activeIndex;
       entries.forEach(e => {
-        if (e.isIntersecting) setActiveIndex(Number((e.target as HTMLElement).dataset.reelIndex ?? 0));
+        if (e.intersectionRatio > maxRatio) {
+          maxRatio = e.intersectionRatio;
+          maxIdx = Number((e.target as HTMLElement).dataset.reelIndex ?? 0);
+        }
       });
-    }, { threshold: 0.6, root: container });
+      if (maxRatio > 0.4) setActiveIndex(maxIdx);
+    }, { threshold: [0.4, 0.6, 0.8] });
     cards.forEach(c => observerRef.current?.observe(c));
   }, []);
 
@@ -522,11 +529,6 @@ export default function ReelsPage() {
     setupObserver();
     return () => observerRef.current?.disconnect();
   }, [feed.length, setupObserver]);
-
-  const scrollTo = (idx: number) => {
-    const c = containerRef.current;
-    if (c) c.scrollTo({ top: c.clientHeight * idx, behavior: "smooth" });
-  };
 
   const handleLikeUpdate = (id: number, likes: number) => {
     setFeed(prev => prev.map(r => r.id === id ? { ...r, likes } : r));
@@ -536,118 +538,99 @@ export default function ReelsPage() {
     await apiRequest(`/api/admin/reels/${id}/approve`, "PATCH").catch(() => {});
     loadFeed();
   };
-
   const handleReject = async (id: number) => {
     await apiRequest(`/api/admin/reels/${id}/reject`, "PATCH").catch(() => {});
     loadFeed();
   };
 
-  const btnTop = safeTop + 12;
-
   return (
-    <div className="fixed inset-0 bg-black z-10 overflow-hidden">
-      {/* Upload button */}
-      {(user?.role === "admin" || user?.role === "dealer") && (
-        <button
-          onClick={() => navigate("/reels/upload")}
-          className="absolute right-4 z-30 flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/20 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg hover:bg-white/25 active:scale-95 transition-all"
-          style={{ top: btnTop }}
-        >
-          <Upload className="w-4 h-4" /> رفع فيديو
-        </button>
-      )}
-
-      {/* Refresh */}
-      <button
-        onClick={loadFeed}
-        className="absolute right-4 z-30 w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center active:scale-95 transition-all"
-        style={{ top: btnTop + (user?.role === "admin" || user?.role === "dealer" ? 52 : 0) }}
-      >
-        <RefreshCw className={cn("w-4 h-4 text-white", loading && "animate-spin")} />
-      </button>
-
-      {/* Admin review button */}
-      {user?.role === "admin" && (
-        <button
-          onClick={() => setShowAdmin(true)}
-          className="absolute left-4 z-30 flex items-center gap-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-300 text-sm font-bold px-4 py-2.5 rounded-full shadow-lg hover:bg-emerald-500/30 active:scale-95 transition-all"
-          style={{ top: btnTop }}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          {pendingCount > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center">
-              {pendingCount}
-            </span>
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* ── Sticky header ─────────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold">ريلز السيارات</h1>
+          {feed.length > 0 && (
+            <span className="text-xs text-muted-foreground font-medium">{feed.length} فيديو</span>
           )}
-          مراجعة
-        </button>
-      )}
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Refresh */}
+          <button
+            onClick={loadFeed}
+            className="w-9 h-9 rounded-full border flex items-center justify-center hover:bg-muted active:scale-90 transition-all"
+            title="تحديث"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
 
-      {/* Nav arrows */}
-      {activeIndex > 0 && (
-        <button
-          onClick={() => scrollTo(activeIndex - 1)}
-          className="absolute right-4 z-30 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white"
-          style={{ top: btnTop + 100 }}
-        >
-          <ChevronUp className="w-5 h-5" />
-        </button>
-      )}
-      {activeIndex < feed.length - 1 && (
-        <button
-          onClick={() => scrollTo(activeIndex + 1)}
-          className="absolute right-4 z-30 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white"
-          style={{ bottom: safeBottom + 12 }}
-        >
-          <ChevronDown className="w-5 h-5" />
-        </button>
-      )}
+          {/* Admin review button */}
+          {user?.role === "admin" && (
+            <button
+              onClick={() => setShowAdmin(true)}
+              className="relative flex items-center gap-1.5 bg-primary text-primary-foreground font-bold px-3 py-2 rounded-full text-xs active:scale-95 transition-all shadow-sm"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              مراجعة
+              {pendingCount > 0 && (
+                <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )}
 
-      {/* Progress dots */}
-      {feed.length > 1 && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-30 flex gap-1.5" style={{ top: btnTop + 6 }}>
-          {feed.map((_, i) => (
-            <button key={i} onClick={() => scrollTo(i)}
-              className={cn("rounded-full transition-all", i === activeIndex ? "bg-white w-4 h-2" : "bg-white/30 w-2 h-2")} />
+          {/* Upload button */}
+          {(user?.role === "admin" || user?.role === "dealer") && (
+            <button
+              onClick={() => navigate("/reels/upload")}
+              className="flex items-center gap-1.5 border font-bold px-3 py-2 rounded-full text-xs hover:bg-muted active:scale-95 transition-all"
+            >
+              <Upload className="w-4 h-4" /> رفع
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Feed ──────────────────────────────────────────────────────────── */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <p className="text-muted-foreground text-sm">جارٍ تحميل الفيديوهات…</p>
+        </div>
+      ) : feed.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center px-6">
+          <Video className="w-16 h-16 text-muted-foreground/30" />
+          <p className="font-bold text-lg">لا توجد فيديوهات بعد</p>
+          <p className="text-muted-foreground text-sm">كن أول من ينشر فيديو للسيارات</p>
+          {(user?.role === "admin" || user?.role === "dealer") && (
+            <button
+              onClick={() => navigate("/reels/upload")}
+              className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-5 py-2.5 rounded-full text-sm mt-2"
+            >
+              <Upload className="w-4 h-4" /> رفع فيديو
+            </button>
+          )}
+        </div>
+      ) : (
+        <div ref={containerRef} className="divide-y">
+          {feed.map((reel, i) => (
+            <div key={reel.id} data-reel-index={i}>
+              <ReelCard
+                reel={reel}
+                isActive={i === activeIndex}
+                onLikeUpdate={handleLikeUpdate}
+              />
+            </div>
           ))}
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && feed.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="w-12 h-12 text-white/40 animate-spin" />
-        </div>
-      )}
-
-      {/* Feed */}
-      <div
-        ref={containerRef}
-        className="absolute inset-0 overflow-y-scroll snap-y snap-mandatory"
-        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-      >
-        {feed.map((reel, i) => (
-          <div
-            key={reel.id}
-            data-reel-index={i}
-            className="w-full snap-center snap-always flex-shrink-0"
-            style={{ height: "100dvh" }}
-          >
-            <ReelCard
-              reel={reel}
-              isActive={i === activeIndex}
-              onLikeUpdate={handleLikeUpdate}
-              safeBottom={safeBottom}
-            />
-          </div>
-        ))}
-      </div>
-
+      {/* Admin panel */}
       {showAdmin && (
         <AdminPanel
           onApprove={handleApprove}
           onReject={handleReject}
-          onClose={() => { setShowAdmin(false); loadFeed(); }}
+          onClose={() => setShowAdmin(false)}
         />
       )}
     </div>
