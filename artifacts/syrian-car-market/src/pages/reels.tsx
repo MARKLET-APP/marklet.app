@@ -334,16 +334,11 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
           {muted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
         </button>
 
-        {/* Side action buttons (bottom-left over video) */}
+        {/* Side action buttons — transparent, icons only */}
         <div className="absolute left-3 bottom-3 z-10 flex flex-col items-center gap-3">
-          <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
-            <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all",
-              liked ? "bg-red-500" : "bg-black/50 backdrop-blur-sm border border-white/20"
-            )}>
-              <Heart className={cn("w-5 h-5", liked ? "fill-white text-white" : "text-white")} />
-            </div>
-            <span className="text-white text-[10px] font-bold drop-shadow">{localLikes}</span>
+          <button onClick={handleLike} className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform">
+            <Heart className={cn("w-6 h-6 drop-shadow-lg filter", liked ? "fill-red-500 text-red-500" : "text-white [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.8))]")} />
+            <span className="text-white text-[10px] font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">{localLikes}</span>
           </button>
 
           <ShareSheet
@@ -352,11 +347,9 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
               url: `${window.location.origin}?video=${reel.id}`, description: reel.desc,
             }}
             trigger={
-              <button className="flex flex-col items-center gap-0.5">
-                <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg active:scale-90 transition-transform">
-                  <Share2 className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-white text-[10px] font-bold drop-shadow">مشاركة</span>
+              <button className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform">
+                <Share2 className="w-6 h-6 text-white [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.8))]" />
+                <span className="text-white text-[10px] font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">مشاركة</span>
               </button>
             }
           />
@@ -506,30 +499,15 @@ export default function ReelsPage() {
   };
 
   return (
-    /* No custom height/fixed — flows naturally within AppLayout's flex-1 main */
     <div dir="rtl">
 
-      {/* ── Page header — sticky, glass-panel, same system as app Header ──── */}
-      <div className="sticky top-0 z-20 glass-panel border-b px-4 flex items-center justify-between" style={{ height: 52 }}>
-        <div className="flex items-center gap-2">
-          <h1 className="text-base font-bold">ريلز السيارات</h1>
-          {!loading && feed.length > 0 && (
-            <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full font-medium leading-none">
-              {feed.length}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={loadFeed}
-            className="w-8 h-8 rounded-full hover:bg-muted active:scale-90 transition-all flex items-center justify-center"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
+      {/* ── Toolbar row (admin/dealer actions only, no custom header) ─────── */}
+      {(user?.role === "admin" || user?.role === "dealer") && (
+        <div className="flex items-center justify-end gap-2 px-4 py-2 border-b">
           {user?.role === "admin" && (
             <button
               onClick={() => setShowAdmin(true)}
-              className="relative flex items-center gap-1 bg-primary text-primary-foreground font-bold px-2.5 py-1.5 rounded-full text-[11px] active:scale-95 transition-all"
+              className="relative flex items-center gap-1 bg-primary text-primary-foreground font-bold px-3 py-1.5 rounded-full text-xs active:scale-95 transition-all"
             >
               <ShieldCheck className="w-3.5 h-3.5" /> مراجعة
               {pendingCount > 0 && (
@@ -539,16 +517,20 @@ export default function ReelsPage() {
               )}
             </button>
           )}
-          {(user?.role === "admin" || user?.role === "dealer") && (
-            <button
-              onClick={() => navigate("/reels/upload")}
-              className="flex items-center gap-1 border font-bold px-2.5 py-1.5 rounded-full text-[11px] hover:bg-muted active:scale-95 transition-all"
-            >
-              <Upload className="w-3.5 h-3.5" /> رفع
-            </button>
-          )}
+          <button
+            onClick={loadFeed}
+            className="w-8 h-8 rounded-full hover:bg-muted active:scale-90 transition-all flex items-center justify-center"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => navigate("/reels/upload")}
+            className="flex items-center gap-1 border font-bold px-3 py-1.5 rounded-full text-xs hover:bg-muted active:scale-95 transition-all"
+          >
+            <Upload className="w-3.5 h-3.5" /> رفع
+          </button>
         </div>
-      </div>
+      )}
 
       {/* ── Feed ──────────────────────────────────────────────────────────── */}
       {loading ? (
