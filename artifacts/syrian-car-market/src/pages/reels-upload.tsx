@@ -7,25 +7,17 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type ReelStatus = "approved" | "pending" | "rejected";
-interface Reel {
-  id: number; video: string; thumbnail?: string; title: string;
-  desc?: string; views: number; likes: number; sponsored?: boolean;
-  city?: string; price?: string; dealerName?: string; status: ReelStatus;
-  dealerId?: number | null;
-}
 interface Showroom { id: number; name: string; city?: string; }
 
-const STORAGE_KEY = "marklet_reels_v2";
 const CITIES = ["دمشق", "حلب", "حمص", "حماه", "اللاذقية", "طرطوس", "دير الزور", "الرقة", "السويداء", "درعا", "إدلب", "القامشلي"];
 
 // ─── Thumbnail generator ────────────────────────────────────────────────────────
 
-function generateThumbnail(file: File): Promise<string> {
+function generateThumbnail(file: File): Promise<Blob | null> {
   return new Promise(resolve => {
     const video = document.createElement("video");
     const url = URL.createObjectURL(file);
@@ -36,10 +28,10 @@ function generateThumbnail(file: File): Promise<string> {
         const c = document.createElement("canvas");
         c.width = video.videoWidth || 640; c.height = video.videoHeight || 640;
         c.getContext("2d")?.drawImage(video, 0, 0, c.width, c.height);
-        resolve(c.toDataURL("image/jpeg", 0.8));
-      } catch { resolve(""); } finally { cleanup(); }
+        c.toBlob(blob => { cleanup(); resolve(blob); }, "image/jpeg", 0.8);
+      } catch { cleanup(); resolve(null); }
     };
-    video.onerror = () => { cleanup(); resolve(""); };
+    video.onerror = () => { cleanup(); resolve(null); };
     video.load();
   });
 }
@@ -57,7 +49,6 @@ function FilePicker({ onFile }: { onFile: (f: File) => void }) {
         <p className="text-white/40 text-sm mt-1">اختر طريقة إضافة الفيديو</p>
       </div>
 
-      {/* Camera */}
       <button
         onClick={() => cameraRef.current?.click()}
         className="w-full max-w-xs flex flex-col items-center justify-center gap-4 bg-white/10 border-2 border-white/20 rounded-3xl py-10 active:scale-95 transition-transform hover:bg-white/15"
@@ -71,7 +62,6 @@ function FilePicker({ onFile }: { onFile: (f: File) => void }) {
         </div>
       </button>
 
-      {/* Gallery */}
       <button
         onClick={() => galleryRef.current?.click()}
         className="w-full max-w-xs flex flex-col items-center justify-center gap-4 bg-white/10 border-2 border-white/20 rounded-3xl py-10 active:scale-95 transition-transform hover:bg-white/15"
@@ -85,7 +75,6 @@ function FilePicker({ onFile }: { onFile: (f: File) => void }) {
         </div>
       </button>
 
-      {/* Hidden inputs */}
       <input ref={cameraRef} type="file" accept="video/*" capture="environment" className="hidden"
         onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
       <input ref={galleryRef} type="file" accept="video/*" className="hidden"
@@ -96,36 +85,40 @@ function FilePicker({ onFile }: { onFile: (f: File) => void }) {
 
 // ─── Step 2: Form ───────────────────────────────────────────────────────────────
 
-function UploadForm({ file, previewUrl, onBack, onDone }: {
+function UploadForm({ file, previewUrl, onDone }: {
   file: File; previewUrl: string;
-  onBack: () => void; onDone: (r: Reel) => void;
+  onDone: (status: string) => void;
 }) {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [price, setPrice] = useState("");
   const [city, setCity] = useState("");
   const [dealerName, setDealerName] = useState("");
+  const [dealerId, setDealerId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  // Dealer name autocomplete
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [suggestions, setSuggestions] = useState<Showroom[]>([]);
   const [showSugg, setShowSugg] = useState(false);
-
-  // City dropdown
   const [showCities, setShowCities] = useState(false);
 
   useEffect(() => {
-    api.get("/showrooms").then(res => setShowrooms(res.data || [])).catch(() => {});
+    apiRequest<Showroom[]>("/api/showrooms")
+      .then(data => setShowrooms(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, []);
 
   const handleDealerChange = (val: string) => {
     setDealerName(val);
+    setDealerId(null);
     if (val.length >= 1) {
       const q = val.toLowerCase();
-      const matches = showrooms.filter(s => s.name.toLowerCase().includes(q) || (s.city || "").toLowerCase().includes(q));
+      const matches = showrooms.filter(s =>
+        s.name.toLowerCase().includes(q) || (s.city || "").toLowerCase().includes(q)
+      );
       setSuggestions(matches.slice(0, 5));
       setShowSugg(matches.length > 0);
     } else {
@@ -136,32 +129,64 @@ function UploadForm({ file, previewUrl, onBack, onDone }: {
   const submit = async () => {
     if (!title.trim()) { toast({ title: "أضف عنواناً للفيديو", variant: "destructive" }); return; }
     setSubmitting(true);
+    setProgress(10);
     try {
-      const thumbnail = await generateThumbnail(file);
-      const isAdmin = user?.role === "admin";
-      const newReel: Reel = {
-        id: Date.now(),
-        video: URL.createObjectURL(file),
-        thumbnail: thumbnail || undefined,
-        title: title.trim(),
-        desc: desc.trim() || undefined,
-        price: price.trim() || undefined,
-        city: city.trim() || undefined,
-        dealerName: dealerName.trim() || undefined,
-        views: 0, likes: 0, sponsored: true,
-        status: isAdmin ? "approved" : "pending",
-        dealerId: user?.id ?? null,
+      // 1. Upload video
+      const formData = new FormData();
+      formData.append("video", file);
+      formData.append("title", title.trim());
+      if (desc.trim()) formData.append("desc", desc.trim());
+      if (price.trim()) formData.append("price", price.trim());
+      if (city) formData.append("city", city);
+      if (dealerName.trim()) formData.append("dealerName", dealerName.trim());
+      if (dealerId) formData.append("dealerId", String(dealerId));
+
+      const xhr = new XMLHttpRequest();
+      const apiBase = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+      xhr.open("POST", `${apiBase}/api/reels/upload`);
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 80));
       };
-      // Save to localStorage
+
+      const result = await new Promise<any>((resolve, reject) => {
+        xhr.onload = () => {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { reject(new Error("فشل معالجة الاستجابة")); }
+        };
+        xhr.onerror = () => reject(new Error("خطأ في الشبكة"));
+        xhr.send(formData);
+      });
+
+      if (xhr.status !== 200 || result.error) {
+        throw new Error(result.error || `خطأ ${xhr.status}`);
+      }
+
+      setProgress(85);
+
+      // 2. Upload thumbnail
       try {
-        const stored: Reel[] = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        stored.unshift(newReel);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-      } catch { }
-      onDone(newReel);
-    } catch {
-      toast({ title: "فشل معالجة الفيديو", variant: "destructive" });
-    } finally { setSubmitting(false); }
+        const thumbBlob = await generateThumbnail(file);
+        if (thumbBlob && result.id) {
+          const thumbForm = new FormData();
+          thumbForm.append("thumbnail", thumbBlob, "thumb.jpg");
+          await fetch(`${apiBase}/api/reels/${result.id}/thumbnail`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: thumbForm,
+          });
+        }
+      } catch { /* thumbnail is optional */ }
+
+      setProgress(100);
+      onDone(result.status);
+    } catch (e: any) {
+      toast({ title: e.message || "فشل رفع الفيديو", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+      setProgress(0);
+    }
   };
 
   return (
@@ -175,9 +200,9 @@ function UploadForm({ file, previewUrl, onBack, onDone }: {
           </div>
         )}
 
-        {/* Preview */}
+        {/* Video preview */}
         <div className="rounded-2xl overflow-hidden border border-white/10 bg-black">
-          <video src={previewUrl} className="w-full max-h-56 object-contain bg-black" controls playsInline />
+          <video src={previewUrl} className="w-full aspect-square object-cover bg-black" controls playsInline />
         </div>
 
         {/* Title */}
@@ -200,7 +225,13 @@ function UploadForm({ file, previewUrl, onBack, onDone }: {
           {showSugg && suggestions.length > 0 && (
             <div className="absolute top-full right-0 left-0 z-50 mt-1 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl">
               {suggestions.map(s => (
-                <button key={s.id} onMouseDown={() => { setDealerName(s.name); if (s.city) setCity(s.city); setShowSugg(false); }}
+                <button key={s.id}
+                  onMouseDown={() => {
+                    setDealerName(s.name);
+                    setDealerId(s.id);
+                    if (s.city) setCity(s.city);
+                    setShowSugg(false);
+                  }}
                   className="w-full text-right px-4 py-3 text-sm text-white hover:bg-white/10 flex items-center justify-between border-b border-white/5 last:border-0">
                   <span className="text-white/40 text-xs">{s.city || ""}</span>
                   <span className="font-medium">{s.name}</span>
@@ -220,7 +251,6 @@ function UploadForm({ file, previewUrl, onBack, onDone }: {
           <input value={price} onChange={e => setPrice(e.target.value)} placeholder="السعر $"
             className="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20" />
 
-          {/* City dropdown */}
           <div className="relative">
             <button onClick={() => setShowCities(v => !v)}
               className="w-full flex items-center justify-between bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-white/20">
@@ -231,7 +261,8 @@ function UploadForm({ file, previewUrl, onBack, onDone }: {
               <div className="absolute top-full right-0 left-0 z-50 mt-1 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-44 overflow-y-auto">
                 {CITIES.map(c => (
                   <button key={c} onMouseDown={() => { setCity(c); setShowCities(false); }}
-                    className={cn("w-full text-right px-4 py-2.5 text-sm hover:bg-white/10 border-b border-white/5 last:border-0", city === c ? "text-amber-400 font-bold" : "text-white")}>
+                    className={cn("w-full text-right px-4 py-2.5 text-sm hover:bg-white/10 border-b border-white/5 last:border-0",
+                      city === c ? "text-amber-400 font-bold" : "text-white")}>
                     {c}
                   </button>
                 ))}
@@ -240,11 +271,24 @@ function UploadForm({ file, previewUrl, onBack, onDone }: {
           </div>
         </div>
 
+        {/* Upload progress */}
+        {submitting && progress > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs text-white/60">
+              <span>{progress < 85 ? "جاري رفع الفيديو..." : progress < 100 ? "جاري معالجة الصورة..." : "تم بنجاح!"}</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-white rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        )}
+
         {/* Submit */}
         <button onClick={submit} disabled={submitting || !title.trim()}
           className="w-full flex items-center justify-center gap-2 bg-white text-black font-bold rounded-xl py-3.5 text-sm hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50">
           {submitting
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري المعالجة...</>
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري الرفع...</>
             : <><CheckCircle2 className="w-4 h-4" /> {user?.role === "admin" ? "نشر الآن" : "إرسال للمراجعة"}</>
           }
         </button>
@@ -264,7 +308,6 @@ export default function ReelsUploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Permission check
   const canUpload = user?.role === "admin" || user?.role === "dealer";
 
   const handleFile = (f: File) => {
@@ -273,8 +316,8 @@ export default function ReelsUploadPage() {
     setPreviewUrl(URL.createObjectURL(f));
   };
 
-  const handleDone = (reel: { status: string }) => {
-    toast({ title: reel.status === "approved" ? "✅ تم نشر الفيديو" : "📋 تم إرساله للمراجعة" });
+  const handleDone = (status: string) => {
+    toast({ title: status === "approved" ? "✅ تم نشر الفيديو" : "📋 تم إرساله للمراجعة" });
     navigate("/reels");
   };
 
@@ -298,14 +341,15 @@ export default function ReelsUploadPage() {
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 flex-shrink-0"
-        style={{ minHeight: 56 }}>
-        <button onClick={() => navigate("/reels")} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 flex-shrink-0" style={{ minHeight: 56 }}>
+        <button onClick={() => navigate("/reels")}
+          className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
           <ChevronRight className="w-5 h-5 text-white" />
         </button>
         <h1 className="text-white font-bold text-lg flex-1">{file ? "تفاصيل الإعلان" : "رفع فيديو جديد"}</h1>
         {file && (
-          <button onClick={() => { setFile(null); if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }}
+          <button
+            onClick={() => { setFile(null); if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }}
             className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
             <X className="w-4 h-4 text-white" />
           </button>
@@ -314,7 +358,7 @@ export default function ReelsUploadPage() {
 
       {/* Content */}
       {file && previewUrl
-        ? <UploadForm file={file} previewUrl={previewUrl} onBack={() => { setFile(null); setPreviewUrl(null); }} onDone={handleDone} />
+        ? <UploadForm file={file} previewUrl={previewUrl} onDone={handleDone} />
         : <FilePicker onFile={handleFile} />
       }
     </div>

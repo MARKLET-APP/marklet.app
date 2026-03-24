@@ -1,85 +1,71 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
-  Heart, Share2, Play, Upload, ChevronUp, ChevronDown,
-  BadgeCheck, Eye, Phone, Loader2, Download, Store,
-  ShieldCheck, X, Building2, CheckCircle2,
+  Heart, Copy, Check, Play, Upload, ChevronUp, ChevronDown,
+  BadgeCheck, Eye, Phone, Loader2, Store,
+  ShieldCheck, X, Building2, CheckCircle2, RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
+import { apiRequest } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ReelStatus = "approved" | "pending" | "rejected";
-
 interface Reel {
   id: number;
-  video: string;
-  thumbnail?: string;
+  videoUrl: string;
+  thumbnailUrl?: string | null;
   title: string;
-  desc?: string;
+  desc?: string | null;
   views: number;
   likes: number;
-  sponsored?: boolean;
-  city?: string;
-  price?: string;
-  dealerName?: string;
-  status: ReelStatus;
+  sponsored?: string | null;
+  city?: string | null;
+  price?: string | null;
+  dealerName?: string | null;
+  status: string;
   dealerId?: number | null;
 }
 
-// ─── Demo reels ───────────────────────────────────────────────────────────────
+// ─── Demo reels (fallback) ────────────────────────────────────────────────────
 
 const DEMO_REELS: Reel[] = [
   {
-    id: 1,
-    video: "https://www.w3schools.com/html/mov_bbb.mp4",
-    title: "تويوتا كامري 2022",
+    id: -1, videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    thumbnailUrl: null, title: "تويوتا كامري 2022",
     desc: "حالة ممتازة · فحص كامل · سعر مميز",
-    views: 3241, likes: 128, sponsored: true,
+    views: 3241, likes: 128, sponsored: "true",
     city: "دمشق", price: "12,500 $", status: "approved",
     dealerId: null, dealerName: "معرض الأمانة",
   },
   {
-    id: 2,
-    video: "https://www.w3schools.com/html/movie.mp4",
-    title: "هيونداي سوناتا 2021",
+    id: -2, videoUrl: "https://www.w3schools.com/html/movie.mp4",
+    thumbnailUrl: null, title: "هيونداي سوناتا 2021",
     desc: "لون لؤلؤي · كيلو منخفض · نظيفة جداً",
-    views: 1870, likes: 64, sponsored: false,
+    views: 1870, likes: 64, sponsored: "false",
     city: "حلب", price: "9,800 $", status: "approved",
     dealerId: null, dealerName: "معرض الشمال",
   },
 ];
 
-const STORAGE_KEY = "marklet_reels_v2";
-
-function loadAll(): Reel[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as Reel[]; } catch { return []; }
-}
-function saveAll(reels: Reel[]) {
-  const demoIds = new Set(DEMO_REELS.map(d => d.id));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reels.filter(r => !demoIds.has(r.id))));
-}
-function mergeWithDemos(stored: Reel[]): Reel[] {
-  const demoIds = new Set(DEMO_REELS.map(d => d.id));
-  return [...DEMO_REELS, ...stored.filter(r => !demoIds.has(r.id))];
-}
-function sortReels(list: Reel[]): Reel[] {
-  return [...list].sort((a, b) => {
-    if (a.sponsored && !b.sponsored) return -1;
-    if (!a.sponsored && b.sponsored) return 1;
-    return b.views - a.views;
-  });
-}
-
 // ─── Admin Panel ──────────────────────────────────────────────────────────────
 
-function AdminPanel({ allReels, onApprove, onReject, onClose }: {
-  allReels: Reel[]; onApprove: (id: number) => void;
-  onReject: (id: number) => void; onClose: () => void;
+function AdminPanel({ onApprove, onReject, onClose }: {
+  onApprove: (id: number) => void;
+  onReject: (id: number) => void;
+  onClose: () => void;
 }) {
-  const pending = allReels.filter(r => r.status === "pending");
+  const [pending, setPending] = useState<Reel[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiRequest<Reel[]>("/api/admin/reels/pending")
+      .then(data => setPending(Array.isArray(data) ? data : []))
+      .catch(() => setPending([]))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -88,10 +74,16 @@ function AdminPanel({ allReels, onApprove, onReject, onClose }: {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-400" /> مراجعة الفيديوهات</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><X className="w-4 h-4" /></button>
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-400" /> مراجعة الفيديوهات
+          </h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        {pending.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-white/40" /></div>
+        ) : pending.length === 0 ? (
           <div className="text-center py-10">
             <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-400/50" />
             <p className="text-white/50">لا توجد فيديوهات بانتظار المراجعة</p>
@@ -101,9 +93,11 @@ function AdminPanel({ allReels, onApprove, onReject, onClose }: {
             {pending.map(r => (
               <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl p-4">
                 <div className="flex items-start gap-3">
-                  {r.thumbnail
-                    ? <img src={r.thumbnail} alt={r.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
-                    : <div className="w-16 h-16 rounded-xl bg-white/10 flex-shrink-0 flex items-center justify-center"><Play className="w-6 h-6 text-white/30" /></div>
+                  {r.thumbnailUrl
+                    ? <img src={r.thumbnailUrl} alt={r.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                    : <div className="w-16 h-16 rounded-xl bg-white/10 flex-shrink-0 flex items-center justify-center">
+                        <Play className="w-6 h-6 text-white/30" />
+                      </div>
                   }
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm">{r.title}</p>
@@ -113,8 +107,14 @@ function AdminPanel({ allReels, onApprove, onReject, onClose }: {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <button onClick={() => onApprove(r.id)} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl py-2 text-sm">✅ قبول</button>
-                  <button onClick={() => onReject(r.id)} className="flex-1 bg-red-500/80 hover:bg-red-600 text-white font-bold rounded-xl py-2 text-sm">❌ رفض</button>
+                  <button
+                    onClick={() => { onApprove(r.id); setPending(p => p.filter(x => x.id !== r.id)); }}
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl py-2 text-sm"
+                  >✅ قبول</button>
+                  <button
+                    onClick={() => { onReject(r.id); setPending(p => p.filter(x => x.id !== r.id)); }}
+                    className="flex-1 bg-red-500/80 hover:bg-red-600 text-white font-bold rounded-xl py-2 text-sm"
+                  >❌ رفض</button>
                 </div>
               </div>
             ))}
@@ -127,9 +127,9 @@ function AdminPanel({ allReels, onApprove, onReject, onClose }: {
 
 // ─── Reel Card ────────────────────────────────────────────────────────────────
 
-function ReelCard({ reel, isActive, onLike, onView, safeBottom }: {
+function ReelCard({ reel, isActive, onLike, safeBottom }: {
   reel: Reel; isActive: boolean; safeBottom: number;
-  onLike: (id: number) => void; onView: (id: number) => void;
+  onLike: (id: number) => void;
 }) {
   const { user } = useAuthStore();
   const [, navigate] = useLocation();
@@ -139,7 +139,7 @@ function ReelCard({ reel, isActive, onLike, onView, safeBottom }: {
   const [localLikes, setLocalLikes] = useState(reel.likes);
   const [playing, setPlaying] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const viewedRef = useRef(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -147,7 +147,6 @@ function ReelCard({ reel, isActive, onLike, onView, safeBottom }: {
     if (isActive) {
       v.currentTime = 0;
       v.play().then(() => setPlaying(true)).catch(() => {});
-      if (!viewedRef.current) { viewedRef.current = true; onView(reel.id); }
     } else {
       v.pause(); setPlaying(false);
     }
@@ -167,47 +166,46 @@ function ReelCard({ reel, isActive, onLike, onView, safeBottom }: {
     if (!liked) onLike(reel.id);
   };
 
+  // Always copy link — never open native share dialog
   const handleShare = async () => {
-    const url = `${location.origin}?video=${reel.id}`;
+    const url = `${window.location.origin}?video=${reel.id}`;
     try {
-      if (navigator.share) await navigator.share({ title: reel.title, text: reel.desc, url });
-      else { await navigator.clipboard.writeText(url); toast({ title: "✅ تم نسخ الرابط" }); }
-    } catch { }
-  };
-
-  const handleDownload = () => {
-    const a = document.createElement("a");
-    a.href = reel.video; a.download = `${reel.title}.mp4`; a.click();
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast({ title: "✅ تم نسخ رابط الفيديو" });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: "تعذّر نسخ الرابط", variant: "destructive" });
+    }
   };
 
   const handleContact = () => {
     if (!user) { navigate("/login"); return; }
-    if (reel.dealerId) navigate(`/messages?userId=${reel.dealerId}`);
+    if (reel.dealerId && reel.dealerId > 0) navigate(`/messages?userId=${reel.dealerId}`);
     else navigate("/messages");
   };
 
-  // Bottom safe offset for info panel
   const infoPb = safeBottom + 8;
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* ── VIDEO ── */}
+      {/* Video */}
       <video
         ref={videoRef}
-        src={reel.video}
+        src={reel.videoUrl}
         className="absolute inset-0 w-full h-full object-cover"
         loop muted playsInline preload="auto"
         onCanPlay={() => setLoaded(true)}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onClick={togglePlay}
-        poster={reel.thumbnail}
+        poster={reel.thumbnailUrl || undefined}
       />
 
       {/* Loading */}
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
-          {reel.thumbnail && <img src={reel.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />}
+          {reel.thumbnailUrl && <img src={reel.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />}
           <Loader2 className="w-10 h-10 text-white/50 animate-spin relative z-10" />
         </div>
       )}
@@ -226,7 +224,7 @@ function ReelCard({ reel, isActive, onLike, onView, safeBottom }: {
       )}
 
       {/* Sponsored badge */}
-      {reel.sponsored && (
+      {reel.sponsored === "true" && (
         <div className="absolute top-16 left-4 z-10">
           <span className="flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
             <BadgeCheck className="w-3 h-3" /> ممول
@@ -234,7 +232,7 @@ function ReelCard({ reel, isActive, onLike, onView, safeBottom }: {
         </div>
       )}
 
-      {/* ── BOTTOM INFO ── */}
+      {/* Bottom info */}
       <div
         className="absolute bottom-0 right-0 left-16 pointer-events-none"
         style={{ paddingBottom: infoPb }}
@@ -251,44 +249,52 @@ function ReelCard({ reel, isActive, onLike, onView, safeBottom }: {
           {reel.desc && <p className="text-white/80 text-sm mt-1 line-clamp-2 drop-shadow">{reel.desc}</p>}
           <div className="flex items-center gap-3 mt-1.5">
             {reel.city && <span className="text-white/60 text-xs">{reel.city}</span>}
-            <span className="flex items-center gap-1 text-white/60 text-xs"><Eye className="w-3 h-3" /> {reel.views.toLocaleString()}</span>
+            <span className="flex items-center gap-1 text-white/60 text-xs">
+              <Eye className="w-3 h-3" /> {reel.views.toLocaleString("ar-EG")}
+            </span>
           </div>
-          {reel.dealerId && (
-            <div className="flex gap-2 mt-3">
-              <button onClick={handleContact} className="flex items-center gap-1.5 bg-white text-black font-bold rounded-full px-4 py-2 text-xs shadow-lg active:scale-95 transition-transform">
-                <Phone className="w-3.5 h-3.5" /> تواصل الآن
-              </button>
-              <button onClick={() => navigate(`/showroom/${reel.dealerId}`)} className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm border border-white/20 text-white font-bold rounded-full px-4 py-2 text-xs active:scale-95 transition-transform">
+          {/* Always show action buttons */}
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={handleContact}
+              className="flex items-center gap-1.5 bg-white text-black font-bold rounded-full px-4 py-2 text-xs shadow-lg active:scale-95 transition-transform"
+            >
+              <Phone className="w-3.5 h-3.5" /> تواصل الآن
+            </button>
+            {reel.dealerId && reel.dealerId > 0 && (
+              <button
+                onClick={() => navigate(`/showroom/${reel.dealerId}`)}
+                className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm border border-white/20 text-white font-bold rounded-full px-4 py-2 text-xs active:scale-95 transition-transform"
+              >
                 <Store className="w-3.5 h-3.5" /> المعرض
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── SIDE ACTIONS ── */}
+      {/* Side actions */}
       <div
         className="absolute left-3 flex flex-col items-center gap-5"
         style={{ bottom: infoPb + 80 }}
         dir="ltr"
       >
         <button onClick={handleLike} className="flex flex-col items-center gap-1">
-          <div className={cn("w-11 h-11 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all", liked ? "bg-red-500" : "bg-black/40 backdrop-blur-sm border border-white/10")}>
+          <div className={cn(
+            "w-11 h-11 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all",
+            liked ? "bg-red-500" : "bg-black/40 backdrop-blur-sm border border-white/10"
+          )}>
             <Heart className={cn("w-5 h-5", liked ? "fill-white text-white" : "text-white")} />
           </div>
           <span className="text-white text-xs font-bold drop-shadow">{localLikes}</span>
         </button>
+
+        {/* Copy link */}
         <button onClick={handleShare} className="flex flex-col items-center gap-1">
           <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-lg active:scale-90">
-            <Share2 className="w-5 h-5 text-white" />
+            {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5 text-white" />}
           </div>
-          <span className="text-white text-xs font-bold drop-shadow">مشاركة</span>
-        </button>
-        <button onClick={handleDownload} className="flex flex-col items-center gap-1">
-          <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-lg active:scale-90">
-            <Download className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-white text-xs font-bold drop-shadow">تحميل</span>
+          <span className="text-white text-xs font-bold drop-shadow">{copied ? "نُسخ" : "نسخ"}</span>
         </button>
       </div>
     </div>
@@ -300,35 +306,54 @@ function ReelCard({ reel, isActive, onLike, onView, safeBottom }: {
 export default function ReelsPage() {
   const { user } = useAuthStore();
   const [, navigate] = useLocation();
-  const [allReels, setAllReels] = useState<Reel[]>(() => mergeWithDemos(loadAll()));
+  const [feed, setFeed] = useState<Reel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showAdmin, setShowAdmin] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Detect safe-area-inset-bottom
   const [safeBottom, setSafeBottom] = useState(20);
+  const [safeTop, setSafeTop] = useState(0);
+
   useEffect(() => {
     const el = document.createElement("div");
     el.style.cssText = "position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);width:1px;pointer-events:none;";
     document.body.appendChild(el);
-    const h = el.getBoundingClientRect().height || 20;
-    setSafeBottom(Math.max(h, 20));
+    setSafeBottom(Math.max(el.getBoundingClientRect().height || 0, 20));
     document.body.removeChild(el);
+
+    const el2 = document.createElement("div");
+    el2.style.cssText = "position:fixed;top:0;height:env(safe-area-inset-top,0px);width:1px;pointer-events:none;";
+    document.body.appendChild(el2);
+    setSafeTop(el2.getBoundingClientRect().height || 0);
+    document.body.removeChild(el2);
   }, []);
 
-  // Safe-area-inset-top
-  const [safeTop, setSafeTop] = useState(0);
-  useEffect(() => {
-    const el = document.createElement("div");
-    el.style.cssText = "position:fixed;top:0;height:env(safe-area-inset-top,0px);width:1px;pointer-events:none;";
-    document.body.appendChild(el);
-    setSafeTop(el.getBoundingClientRect().height || 0);
-    document.body.removeChild(el);
-  }, []);
+  const loadFeed = useCallback(() => {
+    setLoading(true);
+    apiRequest<Reel[]>("/api/reels")
+      .then(data => {
+        const list = Array.isArray(data) && data.length > 0 ? data : DEMO_REELS;
+        // sponsored first
+        setFeed([...list].sort((a, b) => {
+          if (a.sponsored === "true" && b.sponsored !== "true") return -1;
+          if (a.sponsored !== "true" && b.sponsored === "true") return 1;
+          return (b.views || 0) - (a.views || 0);
+        }));
+      })
+      .catch(() => setFeed(DEMO_REELS))
+      .finally(() => setLoading(false));
 
-  const feed = sortReels(allReels.filter(r => r.status === "approved"));
-  const pendingCount = allReels.filter(r => r.status === "pending").length;
+    if (user?.role === "admin") {
+      apiRequest<Reel[]>("/api/admin/reels/pending")
+        .then(p => setPendingCount(Array.isArray(p) ? p.length : 0))
+        .catch(() => {});
+    }
+  }, [user?.role]);
+
+  useEffect(() => { loadFeed(); }, [loadFeed]);
 
   const setupObserver = useCallback(() => {
     if (observerRef.current) observerRef.current.disconnect();
@@ -353,30 +378,45 @@ export default function ReelsPage() {
     if (c) c.scrollTo({ top: c.clientHeight * idx, behavior: "smooth" });
   };
 
-  const mutate = (updater: (prev: Reel[]) => Reel[]) => {
-    setAllReels(prev => { const next = updater(prev); saveAll(next); return next; });
+  const handleLike = (id: number) => {
+    setFeed(prev => prev.map(r => r.id === id ? { ...r, likes: r.likes + 1 } : r));
   };
 
-  const handleLike = (id: number) => mutate(prev => prev.map(r => r.id === id ? { ...r, likes: r.likes + 1 } : r));
-  const handleView = (id: number) => mutate(prev => prev.map(r => r.id === id ? { ...r, views: r.views + 1 } : r));
-  const handleApprove = (id: number) => mutate(prev => prev.map(r => r.id === id ? { ...r, status: "approved" as ReelStatus } : r));
-  const handleReject = (id: number) => mutate(prev => prev.map(r => r.id === id ? { ...r, status: "rejected" as ReelStatus } : r));
+  const handleApprove = async (id: number) => {
+    await apiRequest(`/api/admin/reels/${id}/approve`, "PATCH").catch(() => {});
+    loadFeed();
+  };
 
-  // Header button top offset
+  const handleReject = async (id: number) => {
+    await apiRequest(`/api/admin/reels/${id}/reject`, "PATCH").catch(() => {});
+    loadFeed();
+  };
+
   const btnTop = safeTop + 12;
 
   return (
     <div className="fixed inset-0 bg-black z-10 overflow-hidden">
-      {/* ── Upload button ── */}
+      {/* Upload button */}
+      {(user?.role === "admin" || user?.role === "dealer") && (
+        <button
+          onClick={() => navigate("/reels/upload")}
+          className="absolute right-4 z-30 flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/20 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg hover:bg-white/25 active:scale-95 transition-all"
+          style={{ top: btnTop }}
+        >
+          <Upload className="w-4 h-4" /> رفع فيديو
+        </button>
+      )}
+
+      {/* Refresh */}
       <button
-        onClick={() => navigate("/reels/upload")}
-        className="absolute right-4 z-30 flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/20 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg hover:bg-white/25 active:scale-95 transition-all"
-        style={{ top: btnTop }}
+        onClick={loadFeed}
+        className="absolute right-4 z-30 w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center active:scale-95 transition-all"
+        style={{ top: btnTop + (user?.role === "admin" || user?.role === "dealer" ? 52 : 0) }}
       >
-        <Upload className="w-4 h-4" /> رفع فيديو
+        <RefreshCw className={cn("w-4 h-4 text-white", loading && "animate-spin")} />
       </button>
 
-      {/* ── Admin button ── */}
+      {/* Admin review button */}
       {user?.role === "admin" && (
         <button
           onClick={() => setShowAdmin(true)}
@@ -384,26 +424,36 @@ export default function ReelsPage() {
           style={{ top: btnTop }}
         >
           <ShieldCheck className="w-4 h-4" />
-          {pendingCount > 0 && <span className="bg-red-500 text-white text-xs font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center">{pendingCount}</span>}
+          {pendingCount > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center">
+              {pendingCount}
+            </span>
+          )}
           مراجعة
         </button>
       )}
 
-      {/* ── Nav arrows ── */}
+      {/* Nav arrows */}
       {activeIndex > 0 && (
-        <button onClick={() => scrollTo(activeIndex - 1)} className="absolute right-4 z-30 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white"
-          style={{ top: btnTop + 52 }}>
+        <button
+          onClick={() => scrollTo(activeIndex - 1)}
+          className="absolute right-4 z-30 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white"
+          style={{ top: btnTop + 100 }}
+        >
           <ChevronUp className="w-5 h-5" />
         </button>
       )}
       {activeIndex < feed.length - 1 && (
-        <button onClick={() => scrollTo(activeIndex + 1)} className="absolute right-4 z-30 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white"
-          style={{ bottom: safeBottom + 12 }}>
+        <button
+          onClick={() => scrollTo(activeIndex + 1)}
+          className="absolute right-4 z-30 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white"
+          style={{ bottom: safeBottom + 12 }}
+        >
           <ChevronDown className="w-5 h-5" />
         </button>
       )}
 
-      {/* ── Progress dots ── */}
+      {/* Progress dots */}
       {feed.length > 1 && (
         <div className="absolute left-1/2 -translate-x-1/2 z-30 flex gap-1.5" style={{ top: btnTop + 6 }}>
           {feed.map((_, i) => (
@@ -413,7 +463,14 @@ export default function ReelsPage() {
         </div>
       )}
 
-      {/* ── Feed ── */}
+      {/* Loading state */}
+      {loading && feed.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="w-12 h-12 text-white/40 animate-spin" />
+        </div>
+      )}
+
+      {/* Feed */}
       <div
         ref={containerRef}
         className="absolute inset-0 overflow-y-scroll snap-y snap-mandatory"
@@ -430,7 +487,6 @@ export default function ReelsPage() {
               reel={reel}
               isActive={i === activeIndex}
               onLike={handleLike}
-              onView={handleView}
               safeBottom={safeBottom}
             />
           </div>
@@ -439,10 +495,9 @@ export default function ReelsPage() {
 
       {showAdmin && (
         <AdminPanel
-          allReels={allReels}
           onApprove={handleApprove}
           onReject={handleReject}
-          onClose={() => setShowAdmin(false)}
+          onClose={() => { setShowAdmin(false); loadFeed(); }}
         />
       )}
     </div>

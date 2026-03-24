@@ -31,6 +31,7 @@ import savesRouter from "./saves";
 import systemAuditRouter from "./systemAudit";
 import searchRouter from "./search";
 import pushRouter from "./push";
+import reelsRouter from "./reels";
 
 const router: IRouter = Router();
 
@@ -66,5 +67,6 @@ router.use(savesRouter);
 router.use(systemAuditRouter);
 router.use(searchRouter);
 router.use(pushRouter);
+router.use(reelsRouter);
 
 export default router;

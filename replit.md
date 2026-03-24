@@ -4,6 +4,16 @@
 
 A full-stack mobile-first Arabic RTL marketplace for buying and selling cars in Syria.
 
+## Reels / Video Carousel
+- **DB table**: `reels` — stores video URL, thumbnail URL, title, desc, price, city, dealerName, dealerId, sponsored, views, likes, status
+- **API routes**: `GET /api/reels` (public), `POST /api/reels/upload` (dealer/admin multipart), `POST /api/reels/:id/thumbnail`, `POST /api/reels/:id/view`, `GET /api/admin/reels`, `GET /api/admin/reels/pending`, `PATCH /api/admin/reels/:id/approve`, `PATCH /api/admin/reels/:id/reject`, `DELETE /api/admin/reels/:id`
+- **Video storage**: disk storage at `uploads/reels/`, thumbnails at `uploads/reels-thumbs/`, served at `/api/uploads/reels/...`
+- **Frontend**: VideoCarousel (home page) and ReelsPage fetch from API, fall back to demo reels when empty
+- **Share**: always copies link to clipboard (no native share dialog)
+- **Contact**: "تواصل الآن" always visible; navigates to `/messages?userId=dealerId` when dealerId is set
+- **Autoplay**: VideoCarousel autoplays muted on mount; ReelCard plays when active (scroll-based)
+- **Format**: VideoCarousel uses `aspect-ratio: 1/1` square display
+
 ## Admin Panel
 - **URL**: `/admin` — requires login as `admin@carmarket.sy` / `Admin@123`
 - **Tabs (row 1)**: Users, Dealers, Inspection Centers, Scrap Centers

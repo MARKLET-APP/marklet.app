@@ -2,162 +2,126 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import {
   ChevronLeft, ChevronRight, Share2, MessageCircle,
-  Store, Eye, BadgeCheck, Play, Volume2, VolumeX, Building2,
+  Store, Eye, BadgeCheck, Play, Volume2, VolumeX, Building2, Copy, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Reel {
   id: number;
-  video: string;
-  thumbnail?: string;
+  videoUrl: string;
+  thumbnailUrl?: string | null;
   title: string;
-  desc?: string;
+  desc?: string | null;
   views: number;
   likes: number;
-  sponsored?: boolean;
-  city?: string;
-  price?: string;
-  dealerName?: string;
-  status: "approved" | "pending" | "rejected";
+  sponsored?: string | null;
+  city?: string | null;
+  price?: string | null;
+  dealerName?: string | null;
+  status: string;
   dealerId?: number | null;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const STORAGE_KEY = "marklet_reels_v2";
+// ─── Demo reels (shown when API has no content) ───────────────────────────────
 
 const DEMO_REELS: Reel[] = [
   {
-    id: 1,
-    video: "https://www.w3schools.com/html/mov_bbb.mp4",
+    id: -1,
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    thumbnailUrl: null,
     title: "تويوتا كامري 2022",
     desc: "حالة ممتازة · فحص كامل · سعر مميز",
-    views: 3241, likes: 128, sponsored: true,
+    views: 3241, likes: 128, sponsored: "true",
     city: "دمشق", price: "12,500 $", status: "approved",
     dealerId: null, dealerName: "معرض الأمانة",
   },
   {
-    id: 2,
-    video: "https://www.w3schools.com/html/movie.mp4",
+    id: -2,
+    videoUrl: "https://www.w3schools.com/html/movie.mp4",
+    thumbnailUrl: null,
     title: "هيونداي سوناتا 2021",
     desc: "لون لؤلؤي · كيلو منخفض · نظيفة جداً",
-    views: 1870, likes: 64, sponsored: false,
+    views: 1870, likes: 64, sponsored: "false",
     city: "حلب", price: "9,800 $", status: "approved",
     dealerId: null, dealerName: "معرض الشمال",
   },
 ];
 
-function getApproved(): Reel[] {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as Reel[];
-    const demoIds = new Set(DEMO_REELS.map(d => d.id));
-    const merged = [...DEMO_REELS, ...stored.filter(r => !demoIds.has(r.id))];
-    return merged
-      .filter(r => r.status === "approved")
-      .sort((a, b) => {
-        if (a.sponsored && !b.sponsored) return -1;
-        if (!a.sponsored && b.sponsored) return 1;
-        return (b.views || 0) - (a.views || 0);
-      });
-  } catch { return DEMO_REELS; }
-}
-
 const viewedSet = new Set<number>();
 
-function trackView(id: number) {
-  if (viewedSet.has(id)) return;
-  viewedSet.add(id);
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as Reel[];
-    const updated = stored.map(r => r.id === id ? { ...r, views: (r.views || 0) + 1 } : r);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  } catch { }
-}
+// ─── Video Player (autoplay muted, square) ────────────────────────────────────
 
-function preloadVideo(src: string) {
-  const v = document.createElement("video");
-  v.src = src;
-  v.preload = "auto";
-}
-
-// ─── Thumbnail Player ─────────────────────────────────────────────────────────
-
-function ThumbnailPlayer({ reel, muted, onMuteToggle }: {
+function VideoPlayer({ reel, muted, onMuteToggle }: {
   reel: Reel;
   muted: boolean;
   onMuteToggle: () => void;
 }) {
-  const [playing, setPlaying] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoReady, setVideoReady] = useState(false);
 
-  // reset when reel changes
   useEffect(() => {
-    setPlaying(false);
     setVideoReady(false);
+    const v = videoRef.current;
+    if (!v) return;
+    v.load();
+    const tryPlay = () => v.play().catch(() => {});
+    v.addEventListener("canplay", tryPlay, { once: true });
+    return () => v.removeEventListener("canplay", tryPlay);
   }, [reel.id]);
-
-  const handlePlay = () => {
-    setPlaying(true);
-    // wait a tick for video to mount
-    setTimeout(() => {
-      videoRef.current?.play().catch(() => {});
-    }, 50);
-  };
 
   return (
     <div className="relative w-full" style={{ aspectRatio: "1 / 1" }}>
-      {/* Thumbnail or playing video */}
-      {!playing ? (
-        <>
-          {reel.thumbnail
-            ? <img src={reel.thumbnail} alt={reel.title} className="absolute inset-0 w-full h-full object-cover" />
-            : <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
-                <Play className="w-10 h-10 text-white/30" />
-              </div>
-          }
-          <div className="absolute inset-0 bg-black/30" />
-          <button
-            onClick={handlePlay}
-            className="absolute inset-0 flex items-center justify-center group"
-            aria-label="تشغيل"
-          >
-            <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center shadow-xl group-active:scale-90 transition-transform">
-              <Play className="w-7 h-7 text-white ml-0.5" />
-            </div>
-          </button>
-        </>
-      ) : (
-        <>
-          <video
-            ref={videoRef}
-            src={reel.video}
-            className="absolute inset-0 w-full h-full object-cover"
-            loop muted={muted} playsInline autoPlay
-            onCanPlay={() => setVideoReady(true)}
-            onClick={() => {
-              const v = videoRef.current;
-              if (!v) return;
-              if (v.paused) v.play(); else v.pause();
-            }}
-          />
-          {!videoReady && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-              <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-            </div>
-          )}
-        </>
+      {/* Poster / thumbnail */}
+      {!videoReady && reel.thumbnailUrl && (
+        <img
+          src={reel.thumbnailUrl}
+          alt={reel.title}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
+      {!videoReady && !reel.thumbnailUrl && (
+        <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900" />
       )}
 
-      {/* Overlays */}
+      {/* Loading spinner */}
+      {!videoReady && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* Video */}
+      <video
+        ref={videoRef}
+        src={reel.videoUrl}
+        className="absolute inset-0 w-full h-full object-cover"
+        loop
+        muted={muted}
+        playsInline
+        autoPlay
+        onCanPlay={() => setVideoReady(true)}
+        onClick={() => {
+          const v = videoRef.current;
+          if (!v) return;
+          if (v.paused) v.play(); else v.pause();
+        }}
+      />
+
+      {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
 
+      {/* Play icon hint (very subtle, shows only when paused) */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <Play className="w-12 h-12 text-white/0 transition-opacity" />
+      </div>
+
       {/* Sponsored badge */}
-      {reel.sponsored && (
+      {reel.sponsored === "true" && (
         <div className="absolute top-3 right-3 z-10">
           <span className="flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
             <BadgeCheck className="w-3 h-3" /> ممول
@@ -165,18 +129,16 @@ function ThumbnailPlayer({ reel, muted, onMuteToggle }: {
         </div>
       )}
 
-      {/* Mute toggle (only when playing) */}
-      {playing && (
-        <button
-          onClick={onMuteToggle}
-          className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
-        >
-          {muted
-            ? <VolumeX className="w-4 h-4 text-white" />
-            : <Volume2 className="w-4 h-4 text-white" />
-          }
-        </button>
-      )}
+      {/* Mute toggle */}
+      <button
+        onClick={onMuteToggle}
+        className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+      >
+        {muted
+          ? <VolumeX className="w-4 h-4 text-white" />
+          : <Volume2 className="w-4 h-4 text-white" />
+        }
+      </button>
     </div>
   );
 }
@@ -187,20 +149,31 @@ export function VideoCarousel() {
   const [reels, setReels] = useState<Reel[]>([]);
   const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [copied, setCopied] = useState(false);
   const { user } = useAuthStore();
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  useEffect(() => { setReels(getApproved()); }, []);
+  useEffect(() => {
+    apiRequest<Reel[]>("/api/reels")
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setReels(data);
+        } else {
+          setReels(DEMO_REELS);
+        }
+      })
+      .catch(() => setReels(DEMO_REELS));
+  }, []);
 
   const current = reels[idx];
 
   useEffect(() => {
-    if (!current) return;
-    trackView(current.id);
+    if (!current || current.id < 0) return;
+    if (viewedSet.has(current.id)) return;
+    viewedSet.add(current.id);
+    fetch(`/api/reels/${current.id}/view`, { method: "POST" }).catch(() => {});
     setReels(prev => prev.map(r => r.id === current.id ? { ...r, views: r.views + 1 } : r));
-    const next = reels[idx + 1];
-    if (next) preloadVideo(next.video);
   }, [idx]);
 
   if (!current) return null;
@@ -208,26 +181,30 @@ export function VideoCarousel() {
   const prev = () => setIdx(i => (i - 1 + reels.length) % reels.length);
   const next = () => setIdx(i => (i + 1) % reels.length);
 
+  // Share: always copy link (no native share dialog)
   const handleShare = async () => {
-    const url = `${location.origin}?video=${current.id}`;
+    const url = `${window.location.origin}?video=${current.id}`;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: current.title, text: current.desc || "MARKLET", url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        toast({ title: "✅ تم نسخ رابط الفيديو" });
-      }
-    } catch { }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast({ title: "✅ تم نسخ رابط الفيديو" });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: "تعذّر نسخ الرابط", variant: "destructive" });
+    }
   };
 
   const handleContact = () => {
     if (!user) { navigate("/login"); return; }
-    if (current.dealerId) navigate(`/messages?userId=${current.dealerId}`);
-    else navigate("/messages");
+    if (current.dealerId && current.dealerId > 0) {
+      navigate(`/messages?userId=${current.dealerId}`);
+    } else {
+      navigate("/messages");
+    }
   };
 
   const handleDealer = () => {
-    if (current.dealerId) navigate(`/showroom/${current.dealerId}`);
+    if (current.dealerId && current.dealerId > 0) navigate(`/showroom/${current.dealerId}`);
   };
 
   return (
@@ -244,9 +221,9 @@ export function VideoCarousel() {
         </div>
 
         <div className="relative bg-card border rounded-2xl overflow-hidden shadow-sm">
-          {/* Thumbnail → Video player */}
+          {/* Video player */}
           <div className="relative">
-            <ThumbnailPlayer reel={current} muted={muted} onMuteToggle={() => setMuted(m => !m)} />
+            <VideoPlayer reel={current} muted={muted} onMuteToggle={() => setMuted(m => !m)} />
 
             {/* Prev / Next arrows */}
             {reels.length > 1 && (
@@ -278,7 +255,9 @@ export function VideoCarousel() {
                 <div className="flex items-center flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                   {current.price && <span className="text-amber-600 font-bold text-sm">{current.price}</span>}
                   {current.city && <span className="text-muted-foreground text-xs">{current.city}</span>}
-                  <span className="flex items-center gap-1 text-muted-foreground text-xs"><Eye className="w-3 h-3" /> {current.views.toLocaleString()}</span>
+                  <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                    <Eye className="w-3 h-3" /> {current.views.toLocaleString("ar-EG")}
+                  </span>
                 </div>
               </div>
             </div>
@@ -295,14 +274,32 @@ export function VideoCarousel() {
 
             {/* Actions */}
             <div className="flex gap-2 pt-0.5">
-              <button onClick={handleShare} className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl py-2 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                <Share2 className="w-3.5 h-3.5" /> مشاركة
+              {/* Share = copy link */}
+              <button
+                onClick={handleShare}
+                className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl py-2 text-xs font-bold transition-colors"
+                style={{ color: copied ? "#16a34a" : undefined }}
+              >
+                {copied
+                  ? <><Check className="w-3.5 h-3.5" /> تم النسخ</>
+                  : <><Copy className="w-3.5 h-3.5" /> نسخ الرابط</>
+                }
               </button>
-              <button onClick={handleContact} className="flex items-center justify-center gap-1.5 flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm">
+
+              {/* Contact dealer */}
+              <button
+                onClick={handleContact}
+                className="flex items-center justify-center gap-1.5 flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm"
+              >
                 <MessageCircle className="w-3.5 h-3.5" /> مراسلة
               </button>
-              {current.dealerId && (
-                <button onClick={handleDealer} className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl py-2 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+
+              {/* Showroom page button — only when dealerId is set */}
+              {current.dealerId && current.dealerId > 0 && (
+                <button
+                  onClick={handleDealer}
+                  className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl py-2 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
                   <Store className="w-3.5 h-3.5" /> المعرض
                 </button>
               )}
