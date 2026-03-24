@@ -4,13 +4,13 @@ import {
   Heart, Share2, Play, Upload,
   BadgeCheck, Eye, Phone, Loader2, Store,
   ShieldCheck, X, Building2, CheckCircle2, RefreshCw,
-  Video, Volume2, VolumeX, MessageCircle,
+  Video, Volume2, VolumeX, Bookmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
 import { ShareSheet } from "@/components/ShareSheet";
+import { useSaves } from "@/hooks/use-saves";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -129,18 +129,15 @@ function AdminPanel({ onApprove, onReject, onClose }: {
               <div className="space-y-3">
                 {pending.map(r => (
                   <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                    {/* Thumbnail row */}
                     <div className="flex items-center gap-3 p-3">
                       <button
                         onClick={() => setPreviewReel(r)}
-                        className="relative flex-shrink-0 rounded-xl overflow-hidden bg-white/10 active:scale-95 transition-transform group"
+                        className="relative flex-shrink-0 rounded-xl overflow-hidden bg-white/10 active:scale-95 transition-transform"
                         style={{ width: 80, height: 60 }}
                       >
                         {r.thumbnailUrl
                           ? <img src={r.thumbnailUrl} alt={r.title} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center">
-                              <Video className="w-6 h-6 text-white/30" />
-                            </div>
+                          : <div className="w-full h-full flex items-center justify-center"><Video className="w-6 h-6 text-white/30" /></div>
                         }
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                           <Play className="w-4 h-4 text-white fill-white" />
@@ -155,7 +152,6 @@ function AdminPanel({ onApprove, onReject, onClose }: {
                         </div>
                       </div>
                     </div>
-                    {/* Action buttons */}
                     <div className="flex gap-2 px-3 pb-3">
                       <button
                         onClick={() => setPreviewReel(r)}
@@ -184,15 +180,11 @@ function AdminPanel({ onApprove, onReject, onClose }: {
         </div>
       </div>
 
-      {/* Video preview full screen */}
       {previewReel && (
         <div className="fixed inset-0 z-[60] bg-black flex flex-col" onClick={() => setPreviewReel(null)}>
           <div className="flex-1 flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
-              <button
-                onClick={() => setPreviewReel(null)}
-                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
-              >
+              <button onClick={() => setPreviewReel(null)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
                 <X className="w-5 h-5 text-white" />
               </button>
               <div className="text-right">
@@ -201,35 +193,17 @@ function AdminPanel({ onApprove, onReject, onClose }: {
               </div>
             </div>
             <div className="flex-1 flex items-center justify-center bg-black">
-              <video
-                key={previewReel.id}
-                src={previewReel.videoUrl}
-                className="w-full h-full object-contain"
-                controls autoPlay playsInline loop
-              />
+              <video key={previewReel.id} src={previewReel.videoUrl} className="w-full h-full object-contain" controls autoPlay playsInline loop />
             </div>
-            <div
-              className="flex-shrink-0 bg-[#111] border-t border-white/10 p-4 space-y-2"
-              style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}
-            >
+            <div className="flex-shrink-0 bg-[#111] border-t border-white/10 p-4 space-y-2" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
               <div className="flex flex-wrap gap-2 text-sm">
                 {previewReel.price && <span className="text-amber-400 font-bold">{previewReel.price}</span>}
                 {previewReel.city && <span className="text-white/60">{previewReel.city}</span>}
               </div>
               {previewReel.desc && <p className="text-white/70 text-sm">{previewReel.desc}</p>}
               <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => doApprove(previewReel.id)}
-                  className="flex-1 bg-emerald-500 active:scale-95 text-white font-bold rounded-xl py-3 text-sm"
-                >
-                  ✅ نشر الفيديو
-                </button>
-                <button
-                  onClick={() => doReject(previewReel.id)}
-                  className="flex-1 bg-red-500/80 active:scale-95 text-white font-bold rounded-xl py-3 text-sm"
-                >
-                  ❌ رفض
-                </button>
+                <button onClick={() => doApprove(previewReel.id)} className="flex-1 bg-emerald-500 active:scale-95 text-white font-bold rounded-xl py-3 text-sm">✅ نشر</button>
+                <button onClick={() => doReject(previewReel.id)} className="flex-1 bg-red-500/80 active:scale-95 text-white font-bold rounded-xl py-3 text-sm">❌ رفض</button>
               </div>
             </div>
           </div>
@@ -239,7 +213,7 @@ function AdminPanel({ onApprove, onReject, onClose }: {
   );
 }
 
-// ─── Reel Card (square video + info below) ────────────────────────────────────
+// ─── Reel Card ────────────────────────────────────────────────────────────────
 
 const viewedSet = new Set<number>();
 
@@ -250,24 +224,24 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
 }) {
   const { user } = useAuthStore();
   const [, navigate] = useLocation();
-  const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [liked, setLiked] = useState(false);
   const [localLikes, setLocalLikes] = useState(reel.likes);
   const [playing, setPlaying] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [muted, setMuted] = useState(true);
+  const { isSaved, toggleSave } = useSaves();
+
+  const saved = reel.id > 0 && isSaved("car_sale" as any, reel.id);
 
   useEffect(() => { setLocalLikes(reel.likes); }, [reel.likes]);
 
-  // Autoplay when active, pause when not
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     if (isActive) {
       v.currentTime = 0;
       v.play().then(() => setPlaying(true)).catch(() => {});
-      // track view
       if (reel.id > 0 && !viewedSet.has(reel.id)) {
         viewedSet.add(reel.id);
         fetch(`/api/reels/${reel.id}/view`, { method: "POST" }).catch(() => {});
@@ -286,20 +260,14 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
   };
 
   const handleLike = async () => {
-    if (!user) { toast({ title: "يجب تسجيل الدخول أولاً" }); navigate("/login"); return; }
+    if (!user) { navigate("/login"); return; }
     const newLiked = !liked;
     setLiked(newLiked);
-    const optimistic = newLiked ? localLikes + 1 : localLikes - 1;
-    setLocalLikes(optimistic);
+    setLocalLikes(n => newLiked ? n + 1 : n - 1);
     if (reel.id > 0) {
       try {
-        const data = await apiRequest<{ ok: boolean; likes: number }>(
-          `/api/reels/${reel.id}/like`, "POST", { action: newLiked ? "like" : "unlike" }
-        );
-        if (data?.likes !== undefined) {
-          setLocalLikes(data.likes);
-          onLikeUpdate(reel.id, data.likes);
-        }
+        const data = await apiRequest<{ likes: number }>(`/api/reels/${reel.id}/like`, "POST", { action: newLiked ? "like" : "unlike" });
+        if (data?.likes !== undefined) { setLocalLikes(data.likes); onLikeUpdate(reel.id, data.likes); }
       } catch {}
     }
   };
@@ -307,25 +275,20 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
   const handleContact = async () => {
     if (!user) { navigate("/login"); return; }
     const ownerId = reel.showroomOwnerId;
-    if (ownerId && ownerId > 0) {
-      navigate(`/messages?userId=${ownerId}`);
-    } else {
-      const adminId = await fetchAdminId();
-      navigate(adminId ? `/messages?userId=${adminId}` : "/messages");
-    }
+    if (ownerId && ownerId > 0) { navigate(`/messages?userId=${ownerId}`); return; }
+    const adminId = await fetchAdminId();
+    navigate(adminId ? `/messages?userId=${adminId}` : "/messages");
   };
 
   return (
-    <div className="bg-card border-b" dir="rtl">
-      {/* ── Video area (natural/square dimensions) ─────────────────────────── */}
+    <div className="border-b" dir="rtl">
+      {/* ── Video (square 1:1) ─────────────────────────────────────────────── */}
       <div className="relative w-full bg-black" style={{ aspectRatio: "1 / 1" }}>
-        {/* Thumbnail placeholder while loading */}
         {!videoReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
-            {reel.thumbnailUrl
-              ? <img src={reel.thumbnailUrl} alt={reel.title} className="absolute inset-0 w-full h-full object-cover opacity-60" />
-              : null
-            }
+            {reel.thumbnailUrl && (
+              <img src={reel.thumbnailUrl} alt={reel.title} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+            )}
             <Loader2 className="w-8 h-8 text-white/40 animate-spin relative z-10" />
           </div>
         )}
@@ -334,10 +297,7 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
           ref={videoRef}
           src={reel.videoUrl}
           className="absolute inset-0 w-full h-full object-contain bg-black"
-          loop
-          muted={muted}
-          playsInline
-          preload="auto"
+          loop muted={muted} playsInline preload="auto"
           poster={reel.thumbnailUrl || undefined}
           onCanPlay={() => setVideoReady(true)}
           onPlay={() => setPlaying(true)}
@@ -345,15 +305,12 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
           onClick={togglePlay}
         />
 
-        {/* Gradient overlay at bottom */}
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+        {/* Bottom gradient */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
 
-        {/* Play/Pause indicator */}
+        {/* Paused overlay */}
         {!playing && videoReady && (
-          <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            onClick={togglePlay}
-          >
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
               <Play className="w-7 h-7 text-white fill-white ml-1" />
             </div>
@@ -369,20 +326,16 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
           </div>
         )}
 
-        {/* Mute toggle */}
+        {/* Mute toggle (top-left) */}
         <button
           onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
           className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
         >
-          {muted
-            ? <VolumeX className="w-4 h-4 text-white" />
-            : <Volume2 className="w-4 h-4 text-white" />
-          }
+          {muted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
         </button>
 
-        {/* Side action buttons — over the video */}
+        {/* Side action buttons (bottom-left over video) */}
         <div className="absolute left-3 bottom-3 z-10 flex flex-col items-center gap-3">
-          {/* Like */}
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
             <div className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all",
@@ -393,14 +346,10 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
             <span className="text-white text-[10px] font-bold drop-shadow">{localLikes}</span>
           </button>
 
-          {/* Share */}
           <ShareSheet
             options={{
-              title: reel.title,
-              price: reel.price,
-              city: reel.city,
-              url: `${window.location.origin}?video=${reel.id}`,
-              description: reel.desc,
+              title: reel.title, price: reel.price, city: reel.city,
+              url: `${window.location.origin}?video=${reel.id}`, description: reel.desc,
             }}
             trigger={
               <button className="flex flex-col items-center gap-0.5">
@@ -413,32 +362,46 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
           />
         </div>
 
-        {/* Views — bottom right over video */}
+        {/* Views (bottom-right over video) */}
         <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 text-white/70 text-xs">
           <Eye className="w-3 h-3" />
           <span>{reel.views.toLocaleString("ar-EG")}</span>
         </div>
       </div>
 
-      {/* ── Info section below video ───────────────────────────────────────── */}
-      <div className="px-4 py-3 space-y-2">
-        {/* Title + price */}
-        <div className="flex items-start justify-between gap-2">
+      {/* ── Info section ──────────────────────────────────────────────────── */}
+      <div className="px-4 py-3 space-y-2 bg-background">
+        {/* Title + save button */}
+        <div className="flex items-start gap-2">
           <h3 className="font-bold text-base leading-snug flex-1 line-clamp-2">{reel.title}</h3>
-          {reel.price && (
-            <span className="text-amber-500 font-bold text-base flex-shrink-0 leading-snug">{reel.price}</span>
+          {reel.id > 0 && (
+            <button
+              onClick={() => toggleSave("car_sale" as any, reel.id)}
+              className={cn(
+                "flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-90",
+                saved
+                  ? "bg-primary/10 border-primary text-primary"
+                  : "border-border text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5"
+              )}
+              title={saved ? "إزالة من المحفوظات" : "حفظ الفيديو"}
+            >
+              <Bookmark className={cn("w-4 h-4", saved && "fill-primary")} />
+            </button>
           )}
         </div>
 
-        {/* Dealer + city */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
+        {/* Price + meta */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5">
+          {reel.price && (
+            <span className="text-amber-500 font-bold text-base">{reel.price}</span>
+          )}
           {reel.dealerName && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
               <Building2 className="w-3.5 h-3.5 text-primary/60" />
               <span className="font-medium text-foreground/80">{reel.dealerName}</span>
             </span>
           )}
-          {reel.city && <span>{reel.city}</span>}
+          {reel.city && <span className="text-sm text-muted-foreground">{reel.city}</span>}
         </div>
 
         {/* Description */}
@@ -505,7 +468,6 @@ export default function ReelsPage() {
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
-  // IntersectionObserver to track which card is active
   const setupObserver = useCallback(() => {
     if (observerRef.current) observerRef.current.disconnect();
     const container = containerRef.current;
@@ -544,33 +506,33 @@ export default function ReelsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {/* ── Sticky header ─────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
+    /* No custom height/fixed — flows naturally within AppLayout's flex-1 main */
+    <div dir="rtl">
+
+      {/* ── Page header bar (scrolls with content, NOT sticky) ─────────────── */}
+      <div className="px-4 py-3 flex items-center justify-between border-b bg-background">
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-bold">ريلز السيارات</h1>
-          {feed.length > 0 && (
-            <span className="text-xs text-muted-foreground font-medium">{feed.length} فيديو</span>
+          {!loading && feed.length > 0 && (
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+              {feed.length}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          {/* Refresh */}
           <button
             onClick={loadFeed}
-            className="w-9 h-9 rounded-full border flex items-center justify-center hover:bg-muted active:scale-90 transition-all"
-            title="تحديث"
+            className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-muted active:scale-90 transition-all"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
           </button>
 
-          {/* Admin review button */}
           {user?.role === "admin" && (
             <button
               onClick={() => setShowAdmin(true)}
-              className="relative flex items-center gap-1.5 bg-primary text-primary-foreground font-bold px-3 py-2 rounded-full text-xs active:scale-95 transition-all shadow-sm"
+              className="relative flex items-center gap-1.5 bg-primary text-primary-foreground font-bold px-3 py-1.5 rounded-full text-xs active:scale-95 transition-all"
             >
-              <ShieldCheck className="w-4 h-4" />
-              مراجعة
+              <ShieldCheck className="w-3.5 h-3.5" /> مراجعة
               {pendingCount > 0 && (
                 <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
                   {pendingCount}
@@ -579,13 +541,12 @@ export default function ReelsPage() {
             </button>
           )}
 
-          {/* Upload button */}
           {(user?.role === "admin" || user?.role === "dealer") && (
             <button
               onClick={() => navigate("/reels/upload")}
-              className="flex items-center gap-1.5 border font-bold px-3 py-2 rounded-full text-xs hover:bg-muted active:scale-95 transition-all"
+              className="flex items-center gap-1 border font-bold px-3 py-1.5 rounded-full text-xs hover:bg-muted active:scale-95 transition-all"
             >
-              <Upload className="w-4 h-4" /> رفع
+              <Upload className="w-3.5 h-3.5" /> رفع
             </button>
           )}
         </div>
@@ -612,26 +573,18 @@ export default function ReelsPage() {
           )}
         </div>
       ) : (
-        <div ref={containerRef} className="divide-y">
+        /* pb-4 gives breathing room above the BottomNav */
+        <div ref={containerRef} className="pb-4">
           {feed.map((reel, i) => (
             <div key={reel.id} data-reel-index={i}>
-              <ReelCard
-                reel={reel}
-                isActive={i === activeIndex}
-                onLikeUpdate={handleLikeUpdate}
-              />
+              <ReelCard reel={reel} isActive={i === activeIndex} onLikeUpdate={handleLikeUpdate} />
             </div>
           ))}
         </div>
       )}
 
-      {/* Admin panel */}
       {showAdmin && (
-        <AdminPanel
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onClose={() => setShowAdmin(false)}
-        />
+        <AdminPanel onApprove={handleApprove} onReject={handleReject} onClose={() => setShowAdmin(false)} />
       )}
     </div>
   );
