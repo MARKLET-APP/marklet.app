@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play } from "lucide-react";
 
 // ─── Video Preview Modal ─────────────────────────────────────────────────────
+// Uses a plain fixed overlay (not Radix Dialog) to guarantee rendering on top
 
 function VideoPreviewModal({ reel, onClose, onApprove, onReject, loading }: {
   reel: any | null;
@@ -29,10 +30,26 @@ function VideoPreviewModal({ reel, onClose, onApprove, onReject, loading }: {
 }) {
   if (!reel) return null;
   return (
-    <Dialog open={!!reel} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl" dir="rtl">
-        {/* Video player */}
-        <div className="relative bg-black w-full" style={{ aspectRatio: "9/16", maxHeight: "60vh" }}>
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden w-full shadow-2xl mx-4"
+        style={{ maxWidth: 440 }}
+        onClick={e => e.stopPropagation()}
+        dir="rtl"
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Video player — portrait 9:16 */}
+        <div className="relative bg-black w-full" style={{ aspectRatio: "9/16", maxHeight: "65vh" }}>
           <video
             src={reel.videoUrl}
             className="w-full h-full object-contain"
@@ -40,47 +57,40 @@ function VideoPreviewModal({ reel, onClose, onApprove, onReject, loading }: {
             autoPlay
             playsInline
           />
-          <button
-            onClick={onClose}
-            className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors z-10"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Info + actions */}
         <div className="p-4 space-y-3">
           <div>
-            <h3 className="font-bold text-lg leading-snug">{reel.title}</h3>
+            <h3 className="font-bold text-base leading-snug">{reel.title}</h3>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
               {reel.dealerName && <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{reel.dealerName}</span>}
               {reel.city && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{reel.city}</span>}
               {reel.price && <span className="font-bold text-primary" dir="ltr">${Number(reel.price).toLocaleString()}</span>}
             </div>
-            {reel.desc && <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{reel.desc}</p>}
+            {reel.desc && <p className="text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">{reel.desc}</p>}
           </div>
 
           <div className="flex gap-2">
-            <Button
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white gap-1.5 h-10"
+            <button
+              className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors disabled:opacity-60"
               onClick={() => onApprove(reel.id)}
               disabled={loading}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
               قبول ونشر
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1 border-red-400 text-red-600 hover:bg-red-50 gap-1.5 h-10"
+            </button>
+            <button
+              className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl border-2 border-red-400 text-red-600 hover:bg-red-50 font-bold text-sm transition-colors disabled:opacity-60"
               onClick={() => onReject(reel.id)}
               disabled={loading}
             >
               <XCircle className="w-4 h-4" /> رفض
-            </Button>
+            </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 
@@ -450,7 +460,7 @@ export default function AdminDashboard() {
   };
 
   const totalInboxUnread = (supportMessages as any[]).length;
-  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingPartRequests.length + pendingRentals.length + pendingCarParts.length + pendingJunkCars.length;
+  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingPartRequests.length + pendingRentals.length + pendingCarParts.length + pendingJunkCars.length + pendingReels.length;
 
   const handleBuyRequestStatus = async (id: number, status: "approved" | "rejected") => {
     try {
@@ -1288,70 +1298,65 @@ export default function AdminDashboard() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pendingReels.map((reel: any) => (
-                    <div key={reel.id} className="border-2 border-amber-200 rounded-2xl overflow-hidden bg-background shadow-sm hover:shadow-md transition-shadow">
-                      {/* Thumbnail */}
+                    <div key={reel.id} className="border-2 border-amber-200 rounded-xl overflow-hidden bg-background shadow-sm hover:shadow-md transition-shadow">
+                      {/* Thumbnail — landscape 16:9 to keep cards compact */}
                       <div
                         className="relative w-full cursor-pointer group"
-                        style={{ aspectRatio: "9/16" }}
+                        style={{ aspectRatio: "16/9" }}
                         onClick={() => setPreviewReel(reel)}
                       >
                         {reel.thumbnailUrl ? (
                           <img src={reel.thumbnailUrl} alt={reel.title} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
-                            <Video className="w-12 h-12 text-white/30" />
+                            <Video className="w-10 h-10 text-white/30" />
                           </div>
                         )}
                         {/* Play overlay */}
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                            <Play className="w-6 h-6 text-white fill-white mr-[-2px]" />
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                            <Play className="w-5 h-5 text-white fill-white mr-[-1px]" />
                           </div>
                         </div>
-                        <Badge className="absolute top-2 right-2 bg-amber-500 text-white border-0 text-xs">معلق</Badge>
+                        <Badge className="absolute top-2 right-2 bg-amber-500 text-white border-0 text-[10px]">معلق</Badge>
                       </div>
 
                       {/* Card body */}
                       <div className="p-3 space-y-2">
-                        <p className="font-bold text-sm leading-tight line-clamp-2">{reel.title}</p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                        <p className="font-bold text-sm leading-tight line-clamp-1">{reel.title}</p>
+                        <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                           {reel.dealerName && <span className="flex items-center gap-0.5"><Building2 className="w-3 h-3" />{reel.dealerName}</span>}
                           {reel.city && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{reel.city}</span>}
                           {reel.price && <span className="font-bold text-primary" dir="ltr">${Number(reel.price).toLocaleString()}</span>}
                         </div>
 
-                        <div className="flex gap-2 pt-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 h-8 text-xs gap-1 border-primary/40 text-primary hover:bg-primary/5"
+                        <div className="flex gap-1.5 pt-0.5">
+                          <button
+                            className="flex-1 flex items-center justify-center gap-1 h-8 text-xs font-semibold rounded-lg border border-primary/40 text-primary hover:bg-primary/5 transition-colors"
                             onClick={() => setPreviewReel(reel)}
                           >
                             <Eye className="w-3.5 h-3.5" /> معاينة
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="flex-1 h-8 text-xs bg-green-500 hover:bg-green-600 text-white gap-1"
+                          </button>
+                          <button
+                            className="flex-1 flex items-center justify-center gap-1 h-8 text-xs font-semibold rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
                             onClick={() => handleReelStatus(reel.id, "approve")}
                           >
                             <CheckCircle className="w-3.5 h-3.5" /> قبول
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 text-xs border-red-400 text-red-600 hover:bg-red-50 px-2"
+                          </button>
+                          <button
+                            className="flex items-center justify-center h-8 w-8 rounded-lg border-2 border-red-400 text-red-600 hover:bg-red-50 transition-colors"
                             onClick={() => handleReelStatus(reel.id, "reject")}
+                            title="رفض"
                           >
                             <XCircle className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 text-xs border-red-300 text-red-500 hover:bg-red-50 px-2"
+                          </button>
+                          <button
+                            className="flex items-center justify-center h-8 w-8 rounded-lg border border-red-300 text-red-400 hover:bg-red-50 transition-colors"
                             onClick={() => handleReelDelete(reel.id)}
+                            title="حذف"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          </button>
                         </div>
                       </div>
                     </div>
