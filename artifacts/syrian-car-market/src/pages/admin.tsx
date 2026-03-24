@@ -16,7 +16,75 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play } from "lucide-react";
+
+// ─── Video Preview Modal ─────────────────────────────────────────────────────
+
+function VideoPreviewModal({ reel, onClose, onApprove, onReject, loading }: {
+  reel: any | null;
+  onClose: () => void;
+  onApprove: (id: number) => void;
+  onReject: (id: number) => void;
+  loading: boolean;
+}) {
+  if (!reel) return null;
+  return (
+    <Dialog open={!!reel} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl" dir="rtl">
+        {/* Video player */}
+        <div className="relative bg-black w-full" style={{ aspectRatio: "9/16", maxHeight: "60vh" }}>
+          <video
+            src={reel.videoUrl}
+            className="w-full h-full object-contain"
+            controls
+            autoPlay
+            playsInline
+          />
+          <button
+            onClick={onClose}
+            className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors z-10"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Info + actions */}
+        <div className="p-4 space-y-3">
+          <div>
+            <h3 className="font-bold text-lg leading-snug">{reel.title}</h3>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
+              {reel.dealerName && <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{reel.dealerName}</span>}
+              {reel.city && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{reel.city}</span>}
+              {reel.price && <span className="font-bold text-primary" dir="ltr">${Number(reel.price).toLocaleString()}</span>}
+            </div>
+            {reel.desc && <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{reel.desc}</p>}
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white gap-1.5 h-10"
+              onClick={() => onApprove(reel.id)}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              قبول ونشر
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 border-red-400 text-red-600 hover:bg-red-50 gap-1.5 h-10"
+              onClick={() => onReject(reel.id)}
+              disabled={loading}
+            >
+              <XCircle className="w-4 h-4" /> رفض
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Showroom Dialog ──────────────────────────────────────────────────────────
 
 function ShowroomDialog({ open, onClose, editing, onSaved }: {
   open: boolean;
@@ -283,11 +351,47 @@ export default function AdminDashboard() {
     ...qOpts,
   });
 
+  const { data: pendingReels = [], isLoading: loadingPendingReels, refetch: refetchPendingReels } = useQuery<any[]>({
+    queryKey: ["/admin/reels/pending"],
+    queryFn: () => apiRequest<any[]>("/api/admin/reels/pending"),
+    ...qOpts,
+  });
+
+  const [previewReel, setPreviewReel] = useState<any | null>(null);
+  const [reelActionLoading, setReelActionLoading] = useState(false);
+
   const refetchAll = () => {
     refetchStats(); refetchUsers(); refetchCars(); refetchPending();
     refetchBuyRequests(); refetchJunkCars(); refetchSupport(); refetchFeedback();
     refetchRentals(); refetchCarParts(); refetchJunkCarsAdmin();
     refetchDealers(); refetchInspection(); refetchScrap(); refetchShowrooms();
+    refetchPendingReels();
+  };
+
+  const handleReelStatus = async (id: number, action: "approve" | "reject") => {
+    setReelActionLoading(true);
+    try {
+      await apiRequest(`/api/admin/reels/${id}/${action === "approve" ? "approve" : "reject"}`, "PATCH", {});
+      toast({ title: action === "approve" ? "✅ تم نشر الفيديو" : "❌ تم رفض الفيديو" });
+      setPreviewReel(null);
+      refetchPendingReels();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    } finally {
+      setReelActionLoading(false);
+    }
+  };
+
+  const handleReelDelete = async (id: number) => {
+    if (!confirm("هل أنت متأكد من حذف هذا الفيديو؟")) return;
+    try {
+      await apiRequest(`/api/admin/reels/${id}`, "DELETE");
+      toast({ title: "تم حذف الفيديو" });
+      setPreviewReel(null);
+      refetchPendingReels();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
   };
 
   const [dealerSearch, setDealerSearch] = useState("");
@@ -1147,6 +1251,114 @@ export default function AdminDashboard() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+          {/* ── Pending Reels Section ──────────────────────────────────────── */}
+          <div className="border-t">
+            <div className="p-6 border-b flex justify-between items-center bg-black/5 dark:bg-white/5">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Video className="w-5 h-5 text-black dark:text-white" />
+                  طلبات رفع الفيديو
+                  {pendingReels.length > 0 && (
+                    <span className="bg-amber-500 text-white text-xs font-bold rounded-full px-2 py-0.5 mr-1">
+                      {pendingReels.length}
+                    </span>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {loadingPendingReels ? "جارٍ التحميل..." : `${pendingReels.length} فيديو بانتظار المراجعة`}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchPendingReels()}>
+                <RefreshCw className="w-4 h-4 ml-2" /> تحديث
+              </Button>
+            </div>
+
+            <div className="p-4">
+              {loadingPendingReels ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-7 h-7 animate-spin text-primary" />
+                </div>
+              ) : pendingReels.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
+                  <p className="font-bold">لا توجد فيديوهات معلقة</p>
+                  <p className="text-muted-foreground text-sm mt-1">كل الفيديوهات تمت مراجعتها</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pendingReels.map((reel: any) => (
+                    <div key={reel.id} className="border-2 border-amber-200 rounded-2xl overflow-hidden bg-background shadow-sm hover:shadow-md transition-shadow">
+                      {/* Thumbnail */}
+                      <div
+                        className="relative w-full cursor-pointer group"
+                        style={{ aspectRatio: "9/16" }}
+                        onClick={() => setPreviewReel(reel)}
+                      >
+                        {reel.thumbnailUrl ? (
+                          <img src={reel.thumbnailUrl} alt={reel.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
+                            <Video className="w-12 h-12 text-white/30" />
+                          </div>
+                        )}
+                        {/* Play overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                            <Play className="w-6 h-6 text-white fill-white mr-[-2px]" />
+                          </div>
+                        </div>
+                        <Badge className="absolute top-2 right-2 bg-amber-500 text-white border-0 text-xs">معلق</Badge>
+                      </div>
+
+                      {/* Card body */}
+                      <div className="p-3 space-y-2">
+                        <p className="font-bold text-sm leading-tight line-clamp-2">{reel.title}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                          {reel.dealerName && <span className="flex items-center gap-0.5"><Building2 className="w-3 h-3" />{reel.dealerName}</span>}
+                          {reel.city && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{reel.city}</span>}
+                          {reel.price && <span className="font-bold text-primary" dir="ltr">${Number(reel.price).toLocaleString()}</span>}
+                        </div>
+
+                        <div className="flex gap-2 pt-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 h-8 text-xs gap-1 border-primary/40 text-primary hover:bg-primary/5"
+                            onClick={() => setPreviewReel(reel)}
+                          >
+                            <Eye className="w-3.5 h-3.5" /> معاينة
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1 h-8 text-xs bg-green-500 hover:bg-green-600 text-white gap-1"
+                            onClick={() => handleReelStatus(reel.id, "approve")}
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" /> قبول
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs border-red-400 text-red-600 hover:bg-red-50 px-2"
+                            onClick={() => handleReelStatus(reel.id, "reject")}
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs border-red-300 text-red-500 hover:bg-red-50 px-2"
+                            onClick={() => handleReelDelete(reel.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </TabsContent>
 
@@ -2520,6 +2732,15 @@ export default function AdminDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ===== Video Preview Modal ===== */}
+      <VideoPreviewModal
+        reel={previewReel}
+        onClose={() => setPreviewReel(null)}
+        onApprove={(id) => handleReelStatus(id, "approve")}
+        onReject={(id) => handleReelStatus(id, "reject")}
+        loading={reelActionLoading}
+      />
     </div>
   );
 }
