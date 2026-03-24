@@ -170,18 +170,20 @@ export default function AdminDashboard() {
     }
   };
 
-  const { data: users, isLoading: loadingUsers, refetch: refetchUsers } = useAdminListUsers({ query: { enabled: user?.role === 'admin' } });
+  const isAdmin = user?.role === 'admin';
+  const qOpts = { enabled: isAdmin, retry: 1, retryDelay: 800 };
+
+  const { data: users, isLoading: loadingUsers, refetch: refetchUsers } = useAdminListUsers({ query: { enabled: isAdmin, retry: 1 } });
   const { data: carsData, isLoading: loadingCars, refetch: refetchCars } = useQuery({
     queryKey: ["/admin/cars"],
     queryFn: () => api.admin.listCars(),
-    enabled: user?.role === 'admin',
-    staleTime: 0,
+    ...qOpts, staleTime: 0,
   });
-  const { data: settings, isLoading: loadingSettings } = useGetSettings({ query: { enabled: user?.role === 'admin' } });
+  const { data: settings, isLoading: loadingSettings } = useGetSettings({ query: { enabled: isAdmin, retry: 1 } });
   const { data: dashboard } = useQuery<{ usersCount: number; listingsCount: number; missingCarsCount: number }>({
     queryKey: ["/admin/dashboard"],
     queryFn: () => api.admin.dashboard(),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   type PendingCar = {
@@ -202,13 +204,13 @@ export default function AdminDashboard() {
   const { data: pendingCars, isLoading: loadingPending, refetch: refetchPending } = useQuery<PendingCar[]>({
     queryKey: ["/admin/pending-cars"],
     queryFn: () => api.admin.pendingCars(),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: adminBuyRequests = [], refetch: refetchBuyRequests } = useQuery({
     queryKey: ["/admin/buy-requests"],
     queryFn: () => api.admin.listBuyRequests(),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
   const adminCarBuyRequests = (adminBuyRequests as any[]).filter(r => r.category !== "parts");
   const adminPartsBuyRequests = (adminBuyRequests as any[]).filter(r => r.category === "parts");
@@ -217,69 +219,76 @@ export default function AdminDashboard() {
 
   const { data: adminJunkCars = [], refetch: refetchJunkCars } = useQuery<any[]>({
     queryKey: ["/admin/junk-cars"],
-    queryFn: () => api.get("/api/admin/junk-cars").then(r => r.json()),
-    enabled: user?.role === 'admin',
+    queryFn: () => apiRequest<any[]>("/api/admin/junk-cars"),
+    ...qOpts,
   });
 
   const { data: supportMessages = [], refetch: refetchSupport } = useQuery({
     queryKey: ["/support"],
     queryFn: () => api.admin.listSupportMessages(),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: feedbackList = [], refetch: refetchFeedback } = useQuery({
     queryKey: ["/feedback"],
     queryFn: () => api.admin.listFeedback(),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: pendingRentals = [], refetch: refetchRentals } = useQuery<any[]>({
     queryKey: ["/admin/rental-cars/pending"],
     queryFn: () => apiRequest<any[]>("/api/admin/rental-cars/pending"),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: pendingCarParts = [], refetch: refetchCarParts } = useQuery<any[]>({
     queryKey: ["/admin/car-parts/pending"],
     queryFn: () => apiRequest<any[]>("/api/admin/car-parts/pending"),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: pendingJunkCars = [], refetch: refetchJunkCarsAdmin } = useQuery<any[]>({
     queryKey: ["/admin/junk-cars/pending"],
     queryFn: () => apiRequest<any[]>("/api/admin/junk-cars/pending"),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
-  const { data: adminStats } = useQuery<any>({
+  const { data: adminStats, isLoading: loadingStats, isError: statsError, refetch: refetchStats } = useQuery<any>({
     queryKey: ["/admin/stats"],
     queryFn: () => apiRequest("/api/admin/stats"),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: dealers = [], isLoading: loadingDealers, refetch: refetchDealers } = useQuery<any[]>({
     queryKey: ["/admin/dealers"],
     queryFn: () => apiRequest("/api/admin/dealers"),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: inspectionCenters = [], isLoading: loadingInspection, refetch: refetchInspection } = useQuery<any[]>({
     queryKey: ["/admin/inspection-centers"],
     queryFn: () => apiRequest("/api/admin/inspection-centers"),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: scrapCenters = [], isLoading: loadingScrap, refetch: refetchScrap } = useQuery<any[]>({
     queryKey: ["/admin/scrap-centers"],
     queryFn: () => apiRequest("/api/admin/scrap-centers"),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
 
   const { data: showrooms = [], isLoading: loadingShowrooms, refetch: refetchShowrooms } = useQuery<any[]>({
     queryKey: ["/admin/showrooms"],
     queryFn: () => apiRequest("/api/admin/showrooms"),
-    enabled: user?.role === 'admin',
+    ...qOpts,
   });
+
+  const refetchAll = () => {
+    refetchStats(); refetchUsers(); refetchCars(); refetchPending();
+    refetchBuyRequests(); refetchJunkCars(); refetchSupport(); refetchFeedback();
+    refetchRentals(); refetchCarParts(); refetchJunkCarsAdmin();
+    refetchDealers(); refetchInspection(); refetchScrap(); refetchShowrooms();
+  };
 
   const [dealerSearch, setDealerSearch] = useState("");
   const [inspectionSearch, setInspectionSearch] = useState("");
@@ -606,6 +615,13 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold text-foreground">لوحة الإدارة</h1>
           <p className="text-muted-foreground mt-1">إدارة المستخدمين، الإعلانات، وإعدادات المنصة</p>
         </div>
+        <button
+          onClick={refetchAll}
+          className="w-10 h-10 flex items-center justify-center rounded-xl border border-border hover:bg-muted transition-colors"
+          title="تحديث البيانات"
+        >
+          <RefreshCw className={`w-4 h-4 text-muted-foreground ${loadingStats ? 'animate-spin' : ''}`} />
+        </button>
         <Link href="/admin/system-audit">
           <Button variant="outline" className="gap-2 rounded-xl border-green-300 text-green-700 hover:bg-green-50 hidden sm:flex">
             <ShieldCheck className="w-4 h-4" /> تدقيق النظام
@@ -614,7 +630,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Dashboard stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         {[
           { label: "المستخدمين", value: adminStats?.totalUsers ?? dashboard?.usersCount, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
           { label: "التجار", value: adminStats?.totalDealers, icon: Store, color: "text-violet-600", bg: "bg-violet-50" },
@@ -623,19 +639,34 @@ export default function AdminDashboard() {
           { label: "مراكز الفحص", value: adminStats?.totalInspectionCenters, icon: Building2, color: "text-cyan-600", bg: "bg-cyan-50" },
           { label: "مراكز الخردة", value: adminStats?.totalScrapCenters, icon: Recycle, color: "text-orange-600", bg: "bg-orange-50" },
         ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="bg-card border rounded-2xl p-5 shadow-sm flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${bg}`}>
-              <Icon className={`w-6 h-6 ${color}`} />
+          <div key={label} className="bg-card border rounded-2xl p-4 shadow-sm flex items-center gap-3">
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${bg}`}>
+              <Icon className={`w-5 h-5 ${color}`} />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">{label}</p>
-              <p className="text-3xl font-bold text-foreground">
-                {value !== undefined ? value.toLocaleString("ar-EG") : <Loader2 className="w-5 h-5 animate-spin inline text-muted-foreground" />}
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground font-medium">{label}</p>
+              <p className="text-2xl font-bold text-foreground leading-tight">
+                {loadingStats
+                  ? <Loader2 className="w-4 h-4 animate-spin inline text-muted-foreground" />
+                  : statsError
+                    ? <button onClick={() => refetchStats()} className="text-sm text-red-500 flex items-center gap-1"><RefreshCw className="w-3 h-3" /> إعادة</button>
+                    : value !== undefined ? value.toLocaleString("ar-EG") : "—"
+                }
               </p>
             </div>
           </div>
         ))}
       </div>
+      {/* Refresh all button when any error */}
+      {statsError && (
+        <div className="mb-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+          <p className="text-red-700 text-sm flex-1">تعذّر تحميل البيانات. تحقق من الاتصال أو سجّل الدخول مجدداً.</p>
+          <button onClick={refetchAll} className="flex items-center gap-1.5 bg-red-500 text-white text-xs font-bold rounded-lg px-3 py-2 hover:bg-red-600 active:scale-95 transition-all">
+            <RefreshCw className="w-3.5 h-3.5" /> تحديث
+          </button>
+        </div>
+      )}
 
       {/* Pending items alert banner */}
       {(pendingCars?.length ?? 0) > 0 && (
