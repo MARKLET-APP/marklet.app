@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { VideoCarousel } from "@/components/VideoCarousel";
 
 // ── خدمات التطبيق — تتناوب في الزر الحيوي بالـ Hero ──────────────────────────
 const SERVICE_TIPS: Array<{ icon: ReactNode; text: string }> = [
@@ -412,6 +413,9 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      {/* Video Carousel */}
+      <VideoCarousel />
 
       {/* Featured Cars */}
       <section className="py-12 bg-secondary/20 w-full">
