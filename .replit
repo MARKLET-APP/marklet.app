@@ -34,3 +34,15 @@ channel = "stable-25_05"
 VAPID_PUBLIC_KEY = "BH8dScFU0rsQtOAXv6tHTjqRXcJT0t6xu_JI-GN3eRjvBrNJ_ZAg36-E2lc9KPSCBEeCRS-o5C4qx5NBLn7cm2Q"
 VAPID_PRIVATE_KEY = "S3GKLxIQ4gzgkJhNQlj4S7YKLVc4v4RYIkHM2WDYXhE"
 VAPID_SUBJECT = "mailto:admin@marklet.sy"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 20307
+externalPort = 80
