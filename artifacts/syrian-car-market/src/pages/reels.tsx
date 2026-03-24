@@ -334,11 +334,17 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
           {muted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
         </button>
 
-        {/* Side action buttons — transparent, icons only */}
+        {/* Side action buttons — fully transparent, icon + text-shadow only */}
         <div className="absolute left-3 bottom-3 z-10 flex flex-col items-center gap-3">
-          <button onClick={handleLike} className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform">
-            <Heart className={cn("w-6 h-6 drop-shadow-lg filter", liked ? "fill-red-500 text-red-500" : "text-white [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.8))]")} />
-            <span className="text-white text-[10px] font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">{localLikes}</span>
+          <button
+            onClick={handleLike}
+            className="flex flex-col items-center gap-0.5 bg-transparent border-0 outline-none p-0 active:scale-90 transition-transform"
+            style={{ background: "none", border: "none" }}
+          >
+            <Heart className={cn("w-6 h-6", liked ? "fill-red-500 text-red-500" : "text-white")}
+              style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.9))" }} />
+            <span className="text-white text-[10px] font-bold"
+              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{localLikes}</span>
           </button>
 
           <ShareSheet
@@ -347,9 +353,14 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
               url: `${window.location.origin}?video=${reel.id}`, description: reel.desc,
             }}
             trigger={
-              <button className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform">
-                <Share2 className="w-6 h-6 text-white [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.8))]" />
-                <span className="text-white text-[10px] font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">مشاركة</span>
+              <button
+                className="flex flex-col items-center gap-0.5 bg-transparent border-0 outline-none p-0 active:scale-90 transition-transform"
+                style={{ background: "none", border: "none" }}
+              >
+                <Share2 className="w-6 h-6 text-white"
+                  style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.9))" }} />
+                <span className="text-white text-[10px] font-bold"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>مشاركة</span>
               </button>
             }
           />
@@ -501,9 +512,9 @@ export default function ReelsPage() {
   return (
     <div dir="rtl">
 
-      {/* ── Toolbar row (admin/dealer actions only, no custom header) ─────── */}
+      {/* ── Toolbar — glass-panel identical to app Header ─────────────────── */}
       {(user?.role === "admin" || user?.role === "dealer") && (
-        <div className="flex items-center justify-end gap-2 px-4 py-2 border-b">
+        <div className="glass-panel border-b h-14 flex items-center justify-end gap-2 px-4">
           {user?.role === "admin" && (
             <button
               onClick={() => setShowAdmin(true)}
