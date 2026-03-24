@@ -513,25 +513,23 @@ export default function ReelsPage() {
   return (
     <div dir="rtl">
 
-      {/* ── Toolbar — uses shadcn Button, same component as global Header ──── */}
+      {/* ── Toolbar — icon-only buttons identical to global Header ─────────── */}
       {(user?.role === "admin" || user?.role === "dealer") && (
         <div className="w-full glass-panel border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-end gap-2">
+          <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-end gap-1">
             {user?.role === "admin" && (
-              <Button size="sm" onClick={() => setShowAdmin(true)} className="relative text-xs gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" /> مراجعة
+              <Button variant="ghost" size="icon" onClick={() => setShowAdmin(true)} className="relative rounded-xl shrink-0" title="مراجعة الريلز">
+                <ShieldCheck className="w-5 h-5" />
                 {pendingCount > 0 && (
-                  <span className="absolute -top-2 -left-2 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                    {pendingCount}
-                  </span>
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
                 )}
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={loadFeed} className="rounded-xl shrink-0">
-              <RefreshCw className="w-4 h-4" />
+            <Button variant="ghost" size="icon" onClick={loadFeed} className="rounded-xl shrink-0" title="تحديث">
+              <RefreshCw className="w-5 h-5" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/reels/upload")} className="text-xs gap-1.5">
-              <Upload className="w-3.5 h-3.5" /> رفع
+            <Button variant="ghost" size="icon" onClick={() => navigate("/reels/upload")} className="rounded-xl shrink-0" title="رفع فيديو">
+              <Upload className="w-5 h-5" />
             </Button>
           </div>
         </div>
