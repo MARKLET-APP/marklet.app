@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, reelsTable, usersTable } from "@workspace/db";
+import { db, reelsTable, usersTable, showroomsTable } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
@@ -63,9 +63,12 @@ router.get("/reels", optionalAuth, async (_req, res): Promise<void> => {
         status: reelsTable.status,
         createdAt: reelsTable.createdAt,
         uploaderName: usersTable.name,
+        // owner user ID of the showroom (for messaging)
+        showroomOwnerId: showroomsTable.ownerUserId,
       })
       .from(reelsTable)
       .leftJoin(usersTable, eq(reelsTable.uploaderId, usersTable.id))
+      .leftJoin(showroomsTable, eq(reelsTable.dealerId, showroomsTable.id))
       .where(eq(reelsTable.status, "approved"))
       .orderBy(desc(reelsTable.createdAt));
     res.json(rows);

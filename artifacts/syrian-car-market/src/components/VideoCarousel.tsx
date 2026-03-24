@@ -25,6 +25,7 @@ interface Reel {
   dealerName?: string | null;
   status: string;
   dealerId?: number | null;
+  showroomOwnerId?: number | null;
 }
 
 // ─── Demo reels (shown when API has no content) ───────────────────────────────
@@ -199,10 +200,12 @@ export function VideoCarousel() {
     }
   };
 
+  // Contact: message the showroom owner directly; fallback to admin
   const handleContact = async () => {
     if (!user) { navigate("/login"); return; }
-    if (current.dealerId && current.dealerId > 0) {
-      navigate(`/messages?userId=${current.dealerId}`);
+    const ownerId = current.showroomOwnerId;
+    if (ownerId && ownerId > 0) {
+      navigate(`/messages?userId=${ownerId}`);
     } else {
       const adminId = await fetchAdminId();
       navigate(adminId ? `/messages?userId=${adminId}` : "/messages");

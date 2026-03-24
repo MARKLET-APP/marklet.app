@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import {
   Heart, Share2, Play, Upload, ChevronUp, ChevronDown,
   BadgeCheck, Eye, Phone, Loader2, Store,
-  ShieldCheck, X, Building2, CheckCircle2, RefreshCw,
+  ShieldCheck, X, Building2, CheckCircle2, RefreshCw, Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,7 @@ interface Reel {
   dealerName?: string | null;
   status: string;
   dealerId?: number | null;
+  showroomOwnerId?: number | null;
 }
 
 // ─── Demo reels (fallback) ────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ const DEMO_REELS: Reel[] = [
     desc: "حالة ممتازة · فحص كامل · سعر مميز",
     views: 3241, likes: 128, sponsored: "true",
     city: "دمشق", price: "12,500 $", status: "approved",
-    dealerId: null, dealerName: "معرض الأمانة",
+    dealerId: null, dealerName: "معرض الأمانة", showroomOwnerId: null,
   },
   {
     id: -2, videoUrl: "https://www.w3schools.com/html/movie.mp4",
@@ -45,7 +46,7 @@ const DEMO_REELS: Reel[] = [
     desc: "لون لؤلؤي · كيلو منخفض · نظيفة جداً",
     views: 1870, likes: 64, sponsored: "false",
     city: "حلب", price: "9,800 $", status: "approved",
-    dealerId: null, dealerName: "معرض الشمال",
+    dealerId: null, dealerName: "معرض الشمال", showroomOwnerId: null,
   },
 ];
 
@@ -63,6 +64,74 @@ async function fetchAdminId(): Promise<number | null> {
   return _adminIdCache;
 }
 
+// ─── Video Preview Modal (for Admin) ─────────────────────────────────────────
+
+function VideoPreviewModal({ reel, onClose, onApprove, onReject }: {
+  reel: Reel;
+  onClose: () => void;
+  onApprove: (id: number) => void;
+  onReject: (id: number) => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex flex-col bg-black"
+      onClick={onClose}
+    >
+      <div onClick={e => e.stopPropagation()} className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center active:scale-90"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <div className="text-right">
+            <p className="text-white font-bold text-sm">{reel.title}</p>
+            {reel.dealerName && <p className="text-white/50 text-xs">{reel.dealerName}</p>}
+          </div>
+        </div>
+
+        {/* Video */}
+        <div className="flex-1 flex items-center justify-center bg-black overflow-hidden">
+          <video
+            src={reel.videoUrl}
+            className="w-full h-full object-contain"
+            controls
+            autoPlay
+            playsInline
+            loop
+          />
+        </div>
+
+        {/* Info + Actions */}
+        <div className="flex-shrink-0 bg-[#111] border-t border-white/10 p-4 space-y-3"
+          style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+          <div className="flex flex-wrap gap-2 text-xs text-white/60">
+            {reel.price && <span className="text-amber-400 font-bold text-sm">{reel.price}</span>}
+            {reel.city && <span>{reel.city}</span>}
+          </div>
+          {reel.desc && <p className="text-white/70 text-sm leading-relaxed">{reel.desc}</p>}
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => { onApprove(reel.id); onClose(); }}
+              className="flex-1 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-xl py-3 text-sm transition-all"
+            >
+              ✅ نشر الفيديو
+            </button>
+            <button
+              onClick={() => { onReject(reel.id); onClose(); }}
+              className="flex-1 bg-red-500/80 hover:bg-red-600 active:scale-95 text-white font-bold rounded-xl py-3 text-sm transition-all"
+            >
+              ❌ رفض
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Admin Panel ──────────────────────────────────────────────────────────────
 
 function AdminPanel({ onApprove, onReject, onClose }: {
@@ -72,6 +141,7 @@ function AdminPanel({ onApprove, onReject, onClose }: {
 }) {
   const [pending, setPending] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewReel, setPreviewReel] = useState<Reel | null>(null);
 
   useEffect(() => {
     apiRequest<Reel[]>("/api/admin/reels/pending")
@@ -80,62 +150,115 @@ function AdminPanel({ onApprove, onReject, onClose }: {
       .finally(() => setLoading(false));
   }, []);
 
+  const doApprove = (id: number) => {
+    onApprove(id);
+    setPending(p => p.filter(x => x.id !== id));
+  };
+  const doReject = (id: number) => {
+    onReject(id);
+    setPending(p => p.filter(x => x.id !== id));
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="bg-[#111] text-white rounded-t-3xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto"
-        style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" /> مراجعة الفيديوهات
-          </h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-white/40" /></div>
-        ) : pending.length === 0 ? (
-          <div className="text-center py-10">
-            <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-400/50" />
-            <p className="text-white/50">لا توجد فيديوهات بانتظار المراجعة</p>
+    <>
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+        <div
+          className="bg-[#111] text-white rounded-t-3xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto"
+          style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" /> مراجعة الفيديوهات
+            </h2>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {pending.map(r => (
-              <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <div className="flex items-start gap-3">
-                  {r.thumbnailUrl
-                    ? <img src={r.thumbnailUrl} alt={r.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
-                    : <div className="w-16 h-16 rounded-xl bg-white/10 flex-shrink-0 flex items-center justify-center">
-                        <Play className="w-6 h-6 text-white/30" />
+
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-8 h-8 animate-spin text-white/40" />
+            </div>
+          ) : pending.length === 0 ? (
+            <div className="text-center py-10">
+              <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-400/50" />
+              <p className="text-white/50">لا توجد فيديوهات بانتظار المراجعة</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pending.map(r => (
+                <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    {/* Thumbnail — tap to preview */}
+                    <button
+                      onClick={() => setPreviewReel(r)}
+                      className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-white/10 active:scale-95 transition-transform group"
+                    >
+                      {r.thumbnailUrl
+                        ? <img src={r.thumbnailUrl} alt={r.title} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center">
+                            <Video className="w-7 h-7 text-white/30" />
+                          </div>
+                      }
+                      {/* play overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 transition-colors">
+                        <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                          <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                        </div>
                       </div>
-                  }
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm">{r.title}</p>
-                    {r.dealerName && <p className="text-white/50 text-xs">{r.dealerName}</p>}
-                    {r.price && <p className="text-amber-400 text-xs">{r.price}</p>}
-                    {r.city && <p className="text-white/40 text-xs">{r.city}</p>}
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm">{r.title}</p>
+                      {r.dealerName && <p className="text-white/50 text-xs mt-0.5">{r.dealerName}</p>}
+                      {r.price && <p className="text-amber-400 text-xs font-bold mt-0.5">{r.price}</p>}
+                      {r.city && <p className="text-white/40 text-xs">{r.city}</p>}
+                      <button
+                        onClick={() => setPreviewReel(r)}
+                        className="mt-2 text-xs text-emerald-400/80 underline"
+                      >
+                        معاينة الفيديو
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => doApprove(r.id)}
+                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
+                    >
+                      ✅ قبول
+                    </button>
+                    <button
+                      onClick={() => setPreviewReel(r)}
+                      className="px-4 bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => doReject(r.id)}
+                      className="flex-1 bg-red-500/80 hover:bg-red-600 active:scale-95 text-white font-bold rounded-xl py-2 text-sm transition-all"
+                    >
+                      ❌ رفض
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => { onApprove(r.id); setPending(p => p.filter(x => x.id !== r.id)); }}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl py-2 text-sm"
-                  >✅ قبول</button>
-                  <button
-                    onClick={() => { onReject(r.id); setPending(p => p.filter(x => x.id !== r.id)); }}
-                    className="flex-1 bg-red-500/80 hover:bg-red-600 text-white font-bold rounded-xl py-2 text-sm"
-                  >❌ رفض</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {previewReel && (
+        <VideoPreviewModal
+          reel={previewReel}
+          onClose={() => setPreviewReel(null)}
+          onApprove={doApprove}
+          onReject={doReject}
+        />
+      )}
+    </>
   );
 }
 
@@ -193,7 +316,7 @@ function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
     }
   };
 
-  // Share: open native share dialog, fallback to clipboard
+  // Share: open native apps share sheet, fallback to clipboard
   const handleShare = async () => {
     const url = `${window.location.origin}?video=${reel.id}`;
     if (navigator.share) {
@@ -208,10 +331,12 @@ function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
     }
   };
 
+  // Contact: message the showroom owner directly; fallback to admin
   const handleContact = async () => {
     if (!user) { navigate("/login"); return; }
-    if (reel.dealerId && reel.dealerId > 0) {
-      navigate(`/messages?userId=${reel.dealerId}`);
+    const ownerId = reel.showroomOwnerId;
+    if (ownerId && ownerId > 0) {
+      navigate(`/messages?userId=${ownerId}`);
     } else {
       const adminId = await fetchAdminId();
       navigate(adminId ? `/messages?userId=${adminId}` : "/messages");
@@ -317,7 +442,7 @@ function ReelCard({ reel, isActive, onLikeUpdate, safeBottom }: {
           <span className="text-white text-xs font-bold drop-shadow">{localLikes}</span>
         </button>
 
-        {/* Share button — opens native share dialog */}
+        {/* Share button — opens native apps share sheet */}
         <button onClick={handleShare} className="flex flex-col items-center gap-1">
           <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-lg active:scale-90">
             <Share2 className="w-5 h-5 text-white" />
