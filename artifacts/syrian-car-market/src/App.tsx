@@ -35,6 +35,7 @@ const SystemAuditPage = lazy(() => import("@/pages/system-audit"));
 const ShowroomPage = lazy(() => import("@/pages/showroom"));
 const ShowroomsPage = lazy(() => import("@/pages/showrooms"));
 const ShowroomManagePage = lazy(() => import("@/pages/showroom-manage"));
+const ReelsPage = lazy(() => import("@/pages/reels"));
 const InspectionCentersPage = lazy(() => import("@/pages/inspection-centers"));
 const InspectionCenterPage = lazy(() => import("@/pages/inspection-center"));
 const InspectionCenterManagePage = lazy(() => import("@/pages/inspection-center-manage"));
@@ -78,6 +79,17 @@ function GlobalHooks() {
 }
 
 function Router() {
+  const [location] = useLocation();
+  const isReels = location === "/reels";
+
+  if (isReels) {
+    return (
+      <Suspense fallback={<div className="flex h-screen bg-black items-center justify-center"><div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" /></div>}>
+        <ReelsPage />
+      </Suspense>
+    );
+  }
+
   return (
     <AppLayout>
       <Suspense fallback={<PageLoader />}>

@@ -1,5 +1,5 @@
 import { Link, useRoute } from "wouter";
-import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings, Building2 } from "lucide-react";
+import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings, Building2, Play } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useGetConversations } from "@workspace/api-client-react";
 
@@ -15,6 +15,7 @@ export function BottomNav() {
   const [isBuyRequests] = useRoute("/buy-requests");
   const [isAdmin] = useRoute("/admin");
   const [isShowroomManage] = useRoute("/showroom/manage");
+  const [isReels] = useRoute("/reels");
 
   const { data: conversations } = useGetConversations({
     query: {
@@ -34,6 +35,7 @@ export function BottomNav() {
       <div className="flex items-center justify-around h-16 px-1">
         <NavItem href="/" icon={<Home className="w-5 h-5" />} label="الرئيسية" isActive={isHome} />
         <NavItem href="/search" icon={<Search className="w-5 h-5" />} label="البحث" isActive={isSearch} />
+        <NavItem href="/reels" icon={<Play className="w-5 h-5" />} label="ريلز" isActive={isReels} />
 
         {/* Dealer showroom control button — between search and add */}
         {isDealerUser && (
