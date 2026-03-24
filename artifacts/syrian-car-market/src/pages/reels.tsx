@@ -11,6 +11,7 @@ import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
 import { ShareSheet } from "@/components/ShareSheet";
 import { useSaves } from "@/hooks/use-saves";
+import { Button } from "@/components/ui/button";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -512,36 +513,27 @@ export default function ReelsPage() {
   return (
     <div dir="rtl">
 
-      {/* ── Toolbar — mirrors exact Header structure ──────────────────────── */}
+      {/* ── Toolbar — uses shadcn Button, same component as global Header ──── */}
       {(user?.role === "admin" || user?.role === "dealer") && (
         <div className="w-full glass-panel border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-end gap-2">
-          {user?.role === "admin" && (
-            <button
-              onClick={() => setShowAdmin(true)}
-              className="relative flex items-center gap-1 bg-primary text-primary-foreground font-bold px-3 py-1.5 rounded-full text-xs active:scale-95 transition-all"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" /> مراجعة
-              {pendingCount > 0 && (
-                <span className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-          )}
-          <button
-            onClick={loadFeed}
-            className="w-8 h-8 rounded-full hover:bg-muted active:scale-90 transition-all flex items-center justify-center"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => navigate("/reels/upload")}
-            className="flex items-center gap-1 border font-bold px-3 py-1.5 rounded-full text-xs hover:bg-muted active:scale-95 transition-all"
-          >
-            <Upload className="w-3.5 h-3.5" /> رفع
-          </button>
-        </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-end gap-2">
+            {user?.role === "admin" && (
+              <Button size="sm" onClick={() => setShowAdmin(true)} className="relative text-xs gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" /> مراجعة
+                {pendingCount > 0 && (
+                  <span className="absolute -top-2 -left-2 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {pendingCount}
+                  </span>
+                )}
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={loadFeed} className="rounded-xl shrink-0">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/reels/upload")} className="text-xs gap-1.5">
+              <Upload className="w-3.5 h-3.5" /> رفع
+            </Button>
+          </div>
         </div>
       )}
 
