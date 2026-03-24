@@ -512,9 +512,10 @@ export default function ReelsPage() {
   return (
     <div dir="rtl">
 
-      {/* ── Toolbar — glass-panel identical to app Header ─────────────────── */}
+      {/* ── Toolbar — mirrors exact Header structure ──────────────────────── */}
       {(user?.role === "admin" || user?.role === "dealer") && (
-        <div className="glass-panel border-b h-14 flex items-center justify-end gap-2 px-4">
+        <div className="w-full glass-panel border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-end gap-2">
           {user?.role === "admin" && (
             <button
               onClick={() => setShowAdmin(true)}
@@ -540,6 +541,7 @@ export default function ReelsPage() {
           >
             <Upload className="w-3.5 h-3.5" /> رفع
           </button>
+        </div>
         </div>
       )}
 
