@@ -14,7 +14,7 @@ export function Header() {
   const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const { t, lang, setLang, isRTL } = useLanguage();
-  const isHome = location === "/" || location === "";
+  const isHome = location === "/" || location === "" || location === "/reels";
 
   const isPremium = !!(user as any)?.isPremium || !!(user as any)?.isVerified;
 
