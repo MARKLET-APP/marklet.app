@@ -369,8 +369,8 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
         </div>
       </div>
 
-      {/* ── Info section ──────────────────────────────────────────────────── */}
-      <div className="px-4 py-3 space-y-2 bg-background">
+      {/* ── Info section ── uses app's card background system ──────────────── */}
+      <div className="px-4 py-3 space-y-2 bg-card border-t">
         {/* Title + save button */}
         <div className="flex items-start gap-2">
           <h3 className="font-bold text-base leading-snug flex-1 line-clamp-2">{reel.title}</h3>
@@ -509,42 +509,40 @@ export default function ReelsPage() {
     /* No custom height/fixed — flows naturally within AppLayout's flex-1 main */
     <div dir="rtl">
 
-      {/* ── Page header bar (scrolls with content, NOT sticky) ─────────────── */}
-      <div className="px-4 py-3 flex items-center justify-between border-b bg-background">
+      {/* ── Page header — sticky, glass-panel, same system as app Header ──── */}
+      <div className="sticky top-0 z-20 glass-panel border-b px-4 flex items-center justify-between" style={{ height: 52 }}>
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold">ريلز السيارات</h1>
+          <h1 className="text-base font-bold">ريلز السيارات</h1>
           {!loading && feed.length > 0 && (
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+            <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full font-medium leading-none">
               {feed.length}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={loadFeed}
-            className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-muted active:scale-90 transition-all"
+            className="w-8 h-8 rounded-full hover:bg-muted active:scale-90 transition-all flex items-center justify-center"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
-
           {user?.role === "admin" && (
             <button
               onClick={() => setShowAdmin(true)}
-              className="relative flex items-center gap-1.5 bg-primary text-primary-foreground font-bold px-3 py-1.5 rounded-full text-xs active:scale-95 transition-all"
+              className="relative flex items-center gap-1 bg-primary text-primary-foreground font-bold px-2.5 py-1.5 rounded-full text-[11px] active:scale-95 transition-all"
             >
               <ShieldCheck className="w-3.5 h-3.5" /> مراجعة
               {pendingCount > 0 && (
-                <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                <span className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
                   {pendingCount}
                 </span>
               )}
             </button>
           )}
-
           {(user?.role === "admin" || user?.role === "dealer") && (
             <button
               onClick={() => navigate("/reels/upload")}
-              className="flex items-center gap-1 border font-bold px-3 py-1.5 rounded-full text-xs hover:bg-muted active:scale-95 transition-all"
+              className="flex items-center gap-1 border font-bold px-2.5 py-1.5 rounded-full text-[11px] hover:bg-muted active:scale-95 transition-all"
             >
               <Upload className="w-3.5 h-3.5" /> رفع
             </button>
@@ -573,8 +571,7 @@ export default function ReelsPage() {
           )}
         </div>
       ) : (
-        /* pb-4 gives breathing room above the BottomNav */
-        <div ref={containerRef} className="pb-4">
+        <div ref={containerRef} className="pb-safe">
           {feed.map((reel, i) => (
             <div key={reel.id} data-reel-index={i}>
               <ReelCard reel={reel} isActive={i === activeIndex} onLikeUpdate={handleLikeUpdate} />
