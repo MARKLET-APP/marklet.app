@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play } from "lucide-react";
 
 // ─── Video Preview Modal ─────────────────────────────────────────────────────
-// Uses a plain fixed overlay (not Radix Dialog) to guarantee rendering on top
+// Fixed overlay — guaranteed to render above everything with z-[9999]
 
 function VideoPreviewModal({ reel, onClose, onApprove, onReject, loading }: {
   reel: any | null;
@@ -29,65 +29,92 @@ function VideoPreviewModal({ reel, onClose, onApprove, onReject, loading }: {
   loading: boolean;
 }) {
   if (!reel) return null;
+
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="relative bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden w-full shadow-2xl mx-4"
-        style={{ maxWidth: 440 }}
+        className="relative bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+        style={{ width: "100%", maxWidth: 380, maxHeight: "90vh" }}
         onClick={e => e.stopPropagation()}
         dir="rtl"
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {/* Header bar */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+              <Video className="w-4 h-4 text-amber-600" />
+            </div>
+            <span className="font-bold text-sm">معاينة الفيديو</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
-        {/* Video player — portrait 9:16 */}
-        <div className="relative bg-black w-full" style={{ aspectRatio: "9/16", maxHeight: "65vh" }}>
+        {/* Video player — fixed height, keeps aspect ratio via object-contain */}
+        <div className="relative bg-black flex-shrink-0" style={{ height: 260 }}>
           <video
+            key={reel.id}
             src={reel.videoUrl}
             className="w-full h-full object-contain"
             controls
             autoPlay
             playsInline
+            preload="metadata"
           />
         </div>
 
-        {/* Info + actions */}
-        <div className="p-4 space-y-3">
-          <div>
-            <h3 className="font-bold text-base leading-snug">{reel.title}</h3>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
-              {reel.dealerName && <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{reel.dealerName}</span>}
-              {reel.city && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{reel.city}</span>}
-              {reel.price && <span className="font-bold text-primary" dir="ltr">${Number(reel.price).toLocaleString()}</span>}
-            </div>
-            {reel.desc && <p className="text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">{reel.desc}</p>}
+        {/* Info section */}
+        <div className="px-4 pt-3 pb-1 space-y-1.5 flex-shrink-0">
+          <h3 className="font-bold text-base leading-snug line-clamp-2">{reel.title}</h3>
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
+            {reel.dealerName && (
+              <span className="flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5" /> {reel.dealerName}
+              </span>
+            )}
+            {reel.city && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" /> {reel.city}
+              </span>
+            )}
           </div>
+          {reel.price && (
+            <p className="font-bold text-primary text-lg leading-none" dir="ltr">
+              ${Number(reel.price).toLocaleString()}
+            </p>
+          )}
+          {reel.desc && (
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{reel.desc}</p>
+          )}
+        </div>
 
-          <div className="flex gap-2">
-            <button
-              className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors disabled:opacity-60"
-              onClick={() => onApprove(reel.id)}
-              disabled={loading}
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-              قبول ونشر
-            </button>
-            <button
-              className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl border-2 border-red-400 text-red-600 hover:bg-red-50 font-bold text-sm transition-colors disabled:opacity-60"
-              onClick={() => onReject(reel.id)}
-              disabled={loading}
-            >
-              <XCircle className="w-4 h-4" /> رفض
-            </button>
-          </div>
+        {/* Action buttons */}
+        <div className="p-4 pt-3 flex gap-2">
+          <button
+            className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-green-500 hover:bg-green-600 active:scale-[0.97] text-white font-bold text-sm transition-all disabled:opacity-60 shadow-sm"
+            onClick={() => onApprove(reel.id)}
+            disabled={loading}
+          >
+            {loading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <CheckCircle className="w-4 h-4" />
+            }
+            قبول ونشر
+          </button>
+          <button
+            className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl border-2 border-red-400 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 active:scale-[0.97] font-bold text-sm transition-all disabled:opacity-60"
+            onClick={() => onReject(reel.id)}
+            disabled={loading}
+          >
+            <XCircle className="w-4 h-4" /> رفض
+          </button>
         </div>
       </div>
     </div>
@@ -1284,84 +1311,97 @@ export default function AdminDashboard() {
               </Button>
             </div>
 
-            <div className="p-4">
+            <div className="divide-y">
               {loadingPendingReels ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-7 h-7 animate-spin text-primary" />
                 </div>
               ) : pendingReels.length === 0 ? (
-                <div className="text-center py-12">
-                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
-                  <p className="font-bold">لا توجد فيديوهات معلقة</p>
+                <div className="text-center py-14">
+                  <CheckCircle className="w-11 h-11 text-green-500 mx-auto mb-3" />
+                  <p className="font-bold text-base">لا توجد فيديوهات معلقة</p>
                   <p className="text-muted-foreground text-sm mt-1">كل الفيديوهات تمت مراجعتها</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {pendingReels.map((reel: any) => (
-                    <div key={reel.id} className="border-2 border-amber-200 rounded-xl overflow-hidden bg-background shadow-sm hover:shadow-md transition-shadow">
-                      {/* Thumbnail — landscape 16:9 to keep cards compact */}
-                      <div
-                        className="relative w-full cursor-pointer group"
-                        style={{ aspectRatio: "16/9" }}
+                pendingReels.map((reel: any) => (
+                  <div
+                    key={reel.id}
+                    className="flex items-center gap-4 p-4 hover:bg-amber-50/40 dark:hover:bg-amber-950/10 transition-colors"
+                  >
+                    {/* Thumbnail — fixed compact size, click to preview */}
+                    <button
+                      className="relative flex-shrink-0 rounded-xl overflow-hidden bg-neutral-900 group focus:outline-none"
+                      style={{ width: 96, height: 72 }}
+                      onClick={() => setPreviewReel(reel)}
+                      title="معاينة الفيديو"
+                    >
+                      {reel.thumbnailUrl ? (
+                        <img src={reel.thumbnailUrl} alt={reel.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-700 flex items-center justify-center">
+                          <Video className="w-7 h-7 text-white/40" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+                        <Play className="w-5 h-5 text-white fill-white drop-shadow" />
+                      </div>
+                    </button>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-2 flex-wrap">
+                        <p className="font-bold text-sm leading-snug line-clamp-1 flex-1">{reel.title}</p>
+                        <Badge className="bg-amber-500 text-white border-0 text-[10px] flex-shrink-0">معلق</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                        {reel.dealerName && (
+                          <span className="flex items-center gap-0.5"><Building2 className="w-3 h-3" />{reel.dealerName}</span>
+                        )}
+                        {reel.city && (
+                          <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{reel.city}</span>
+                        )}
+                        {reel.price && (
+                          <span className="font-bold text-primary text-xs" dir="ltr">${Number(reel.price).toLocaleString()}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground/60 mt-0.5">
+                        {new Date(reel.createdAt).toLocaleDateString("ar-SY")}
+                      </p>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <button
+                        className="flex items-center gap-1.5 h-9 px-3 text-xs font-semibold rounded-xl border border-primary/40 text-primary hover:bg-primary/5 transition-colors"
                         onClick={() => setPreviewReel(reel)}
                       >
-                        {reel.thumbnailUrl ? (
-                          <img src={reel.thumbnailUrl} alt={reel.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
-                            <Video className="w-10 h-10 text-white/30" />
-                          </div>
-                        )}
-                        {/* Play overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                            <Play className="w-5 h-5 text-white fill-white mr-[-1px]" />
-                          </div>
-                        </div>
-                        <Badge className="absolute top-2 right-2 bg-amber-500 text-white border-0 text-[10px]">معلق</Badge>
-                      </div>
-
-                      {/* Card body */}
-                      <div className="p-3 space-y-2">
-                        <p className="font-bold text-sm leading-tight line-clamp-1">{reel.title}</p>
-                        <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                          {reel.dealerName && <span className="flex items-center gap-0.5"><Building2 className="w-3 h-3" />{reel.dealerName}</span>}
-                          {reel.city && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{reel.city}</span>}
-                          {reel.price && <span className="font-bold text-primary" dir="ltr">${Number(reel.price).toLocaleString()}</span>}
-                        </div>
-
-                        <div className="flex gap-1.5 pt-0.5">
-                          <button
-                            className="flex-1 flex items-center justify-center gap-1 h-8 text-xs font-semibold rounded-lg border border-primary/40 text-primary hover:bg-primary/5 transition-colors"
-                            onClick={() => setPreviewReel(reel)}
-                          >
-                            <Eye className="w-3.5 h-3.5" /> معاينة
-                          </button>
-                          <button
-                            className="flex-1 flex items-center justify-center gap-1 h-8 text-xs font-semibold rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
-                            onClick={() => handleReelStatus(reel.id, "approve")}
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" /> قبول
-                          </button>
-                          <button
-                            className="flex items-center justify-center h-8 w-8 rounded-lg border-2 border-red-400 text-red-600 hover:bg-red-50 transition-colors"
-                            onClick={() => handleReelStatus(reel.id, "reject")}
-                            title="رفض"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            className="flex items-center justify-center h-8 w-8 rounded-lg border border-red-300 text-red-400 hover:bg-red-50 transition-colors"
-                            onClick={() => handleReelDelete(reel.id)}
-                            title="حذف"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
+                        <Eye className="w-4 h-4" />
+                        <span className="hidden sm:inline">معاينة</span>
+                      </button>
+                      <button
+                        className="flex items-center gap-1.5 h-9 px-3 text-xs font-semibold rounded-xl bg-green-500 hover:bg-green-600 text-white transition-colors shadow-sm"
+                        onClick={() => handleReelStatus(reel.id, "approve")}
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="hidden sm:inline">قبول</span>
+                      </button>
+                      <button
+                        className="flex items-center justify-center h-9 w-9 rounded-xl border-2 border-red-400 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                        onClick={() => handleReelStatus(reel.id, "reject")}
+                        title="رفض"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                      <button
+                        className="flex items-center justify-center h-9 w-9 rounded-xl border border-red-300 text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                        onClick={() => handleReelDelete(reel.id)}
+                        title="حذف نهائي"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
