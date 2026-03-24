@@ -115,13 +115,31 @@ export default function Messages() {
   const activeConv = conversations.find((c) => c.id === activeChatId);
   const activeAdminConv = adminConversations.find((c) => c.id === activeChatId);
 
+  // Handle ?userId=X — auto-start conversation with that user
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("conversationId");
-    if (id) setActiveChatId(Number(id));
+
+    // Direct conversationId link
+    const convId = params.get("conversationId");
+    if (convId) { setActiveChatId(Number(convId)); }
+
+    // Pre-fill message
     const initial = params.get("initial");
     if (initial) setNewMessage(decodeURIComponent(initial));
-  }, []);
+
+    // Start conversation with a specific user
+    const targetUserId = params.get("userId");
+    if (targetUserId && token) {
+      fetch(`${API}/chats/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sellerId: Number(targetUserId) }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(conv => { if (conv?.id) setActiveChatId(conv.id); })
+        .catch(() => {});
+    }
+  }, [token]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

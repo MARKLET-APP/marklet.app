@@ -3,10 +3,10 @@ import { useLocation } from "wouter";
 import {
   ChevronLeft, ChevronRight, Share2, MessageCircle,
   Store, Eye, BadgeCheck, Play, Volume2, VolumeX, Building2,
+  X, Copy, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth";
-import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -54,6 +54,77 @@ const DEMO_REELS: Reel[] = [
 ];
 
 const viewedSet = new Set<number>();
+
+// ─── Share Modal ──────────────────────────────────────────────────────────────
+
+function ShareModal({ url, title, onClose }: { url: string; title: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(url); } catch { }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const wa = `https://wa.me/?text=${encodeURIComponent(title + "\n" + url)}`;
+  const tg = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
+  const fb = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-card border rounded-t-3xl w-full max-w-sm p-5"
+        style={{ paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))" }}
+        onClick={e => e.stopPropagation()}
+        dir="rtl"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <X className="w-4 h-4" />
+          </button>
+          <h3 className="font-bold text-foreground">مشاركة الفيديو</h3>
+        </div>
+
+        <div className="flex justify-around mb-5">
+          <a href={wa} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 active:scale-90 transition-transform">
+            <div className="w-14 h-14 rounded-2xl bg-[#25D366] flex items-center justify-center shadow">
+              <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.118 1.524 5.847L.057 23.928c-.073.284.198.55.48.47l6.214-1.64A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.817 9.817 0 0 1-5.012-1.37l-.36-.213-3.688.974.986-3.6-.234-.37A9.818 9.818 0 0 1 2.182 12C2.182 6.578 6.578 2.182 12 2.182c5.421 0 9.818 4.396 9.818 9.818 0 5.421-4.397 9.818-9.818 9.818z"/></svg>
+            </div>
+            <span className="text-xs text-foreground">واتساب</span>
+          </a>
+          <a href={tg} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 active:scale-90 transition-transform">
+            <div className="w-14 h-14 rounded-2xl bg-[#229ED9] flex items-center justify-center shadow">
+              <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            </div>
+            <span className="text-xs text-foreground">تيليغرام</span>
+          </a>
+          <a href={fb} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 active:scale-90 transition-transform">
+            <div className="w-14 h-14 rounded-2xl bg-[#1877F2] flex items-center justify-center shadow">
+              <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </div>
+            <span className="text-xs text-foreground">فيسبوك</span>
+          </a>
+          <button onClick={copyLink} className="flex flex-col items-center gap-2 active:scale-90 transition-transform">
+            <div className={cn(
+              "w-14 h-14 rounded-2xl flex items-center justify-center shadow transition-colors",
+              copied ? "bg-emerald-500" : "bg-muted"
+            )}>
+              {copied ? <Check className="w-7 h-7 text-white" /> : <Copy className="w-7 h-7 text-muted-foreground" />}
+            </div>
+            <span className="text-xs text-foreground">{copied ? "تم النسخ!" : "نسخ"}</span>
+          </button>
+        </div>
+
+        <div className="bg-muted rounded-xl px-3 py-2.5 flex items-center gap-2">
+          <span className="text-muted-foreground text-xs flex-1 truncate text-left" dir="ltr">{url}</span>
+          <button onClick={copyLink}>
+            {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Admin ID cache ───────────────────────────────────────────────────────────
 
@@ -157,9 +228,9 @@ export function VideoCarousel() {
   const [reels, setReels] = useState<Reel[]>([]);
   const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [showShare, setShowShare] = useState(false);
   const { user } = useAuthStore();
   const [, navigate] = useLocation();
-  const { toast } = useToast();
 
   useEffect(() => {
     apiRequest<Reel[]>("/api/reels")
@@ -185,19 +256,13 @@ export function VideoCarousel() {
   const prev = () => setIdx(i => (i - 1 + reels.length) % reels.length);
   const next = () => setIdx(i => (i + 1) % reels.length);
 
-  // Share: open native share dialog, fallback to clipboard
+  // Share: native share sheet on mobile, custom modal on desktop
   const handleShare = async () => {
     const url = `${window.location.origin}?video=${current.id}`;
     if (navigator.share) {
-      try { await navigator.share({ title: current.title, url }); } catch {}
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast({ title: "✅ تم نسخ رابط الفيديو" });
-      } catch {
-        toast({ title: "تعذّر مشاركة الرابط", variant: "destructive" });
-      }
+      try { await navigator.share({ title: current.title, url }); return; } catch {}
     }
+    setShowShare(true);
   };
 
   // Contact: message the showroom owner directly; fallback to admin
@@ -303,6 +368,14 @@ export function VideoCarousel() {
           </div>
         </div>
       </div>
+
+      {showShare && (
+        <ShareModal
+          url={`${window.location.origin}?video=${current.id}`}
+          title={current.title}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </section>
   );
 }
