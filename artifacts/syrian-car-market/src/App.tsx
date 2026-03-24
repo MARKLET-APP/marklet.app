@@ -80,29 +80,12 @@ function GlobalHooks() {
 }
 
 function Router() {
-  const [location] = useLocation();
-  const isReels = location === "/reels" || location === "/reels/upload";
-
-  if (location === "/reels") {
-    return (
-      <Suspense fallback={<div className="flex h-screen bg-black items-center justify-center"><div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" /></div>}>
-        <ReelsPage />
-      </Suspense>
-    );
-  }
-
-  if (location === "/reels/upload") {
-    return (
-      <Suspense fallback={<div className="flex h-screen bg-black items-center justify-center"><div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" /></div>}>
-        <ReelsUploadPage />
-      </Suspense>
-    );
-  }
-
   return (
     <AppLayout>
       <Suspense fallback={<PageLoader />}>
         <Switch>
+          <Route path="/reels" component={ReelsPage} />
+          <Route path="/reels/upload" component={ReelsUploadPage} />
           <Route path="/" component={Home} />
           <Route path="/search" component={SearchPage} />
           <Route path="/listing/:id" component={ListingRedirect} />
