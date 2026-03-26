@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play, Send, Megaphone } from "lucide-react";
 
 // ─── Video Preview Modal ─────────────────────────────────────────────────────
 // Fixed overlay — guaranteed to render above everything with z-[9999]
@@ -588,6 +588,46 @@ export default function AdminDashboard() {
   const [carShowroomSelections, setCarShowroomSelections] = useState<Record<number, string>>({});
   const [linkingCarId, setLinkingCarId] = useState<number | null>(null);
 
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastBody, setBroadcastBody] = useState("");
+  const [broadcastUrl, setBroadcastUrl] = useState("/");
+  const [broadcastLoading, setBroadcastLoading] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<{ fcm: number; webpush: number; errors: number } | null>(null);
+  const [pushStats, setPushStats] = useState<{ fcmTokens: number; webPushSubscriptions: number; total: number } | null>(null);
+
+  const fetchPushStats = async () => {
+    try {
+      const data = await apiRequest("/api/push/stats", "GET") as { fcmTokens: number; webPushSubscriptions: number; total: number };
+      setPushStats(data);
+    } catch {}
+  };
+
+  const sendBroadcast = async () => {
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) {
+      toast({ title: "يرجى إدخال العنوان والرسالة", variant: "destructive" });
+      return;
+    }
+    if (!confirm(`هل تريد إرسال إشعار لجميع المستخدمين (${pushStats?.total ?? "؟"} جهاز)؟`)) return;
+    setBroadcastLoading(true);
+    setBroadcastResult(null);
+    try {
+      const result = await apiRequest("/api/push/broadcast", "POST", {
+        title: broadcastTitle.trim(),
+        body: broadcastBody.trim(),
+        url: broadcastUrl || "/",
+      }) as { ok: boolean; sent: { fcm: number; webpush: number }; errors: number };
+      setBroadcastResult({ fcm: result.sent.fcm, webpush: result.sent.webpush, errors: result.errors });
+      toast({ title: "✅ تم إرسال الإشعار بنجاح!" });
+      setBroadcastTitle("");
+      setBroadcastBody("");
+      setBroadcastUrl("/");
+    } catch (e: any) {
+      toast({ title: e?.message || "فشل إرسال الإشعار", variant: "destructive" });
+    } finally {
+      setBroadcastLoading(false);
+    }
+  };
+
   const linkCarToShowroom = async (carId: number, showroomId: string) => {
     try {
       setLinkingCarId(carId);
@@ -866,6 +906,9 @@ export default function AdminDashboard() {
                 {totalInboxUnread}
               </span>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5" onClick={fetchPushStats}>
+            <Megaphone className="w-4 h-4 ml-1 text-rose-500" /> الإشعارات
           </TabsTrigger>
           <TabsTrigger value="settings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
             <Settings className="w-4 h-4 ml-1" /> الإعدادات
@@ -2223,6 +2266,137 @@ export default function AdminDashboard() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ══════════════════════════════════════════════════════════════
+            ADMIN_PUSH_01 — Broadcast Push Notifications
+        ══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="notifications" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b bg-muted/20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-xl flex items-center justify-center">
+                <Megaphone className="w-5 h-5 text-rose-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">إشعارات جماعية</h2>
+                <p className="text-sm text-muted-foreground">أرسل إشعاراً لجميع مستخدمي التطبيق</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchPushStats}>
+              <RefreshCw className="w-4 h-4 ml-2" /> تحديث الإحصائيات
+            </Button>
+          </div>
+
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6" dir="rtl">
+
+            {/* Stats cards */}
+            {pushStats && (
+              <div className="md:col-span-2 grid grid-cols-3 gap-4">
+                <div className="bg-muted/40 rounded-xl p-4 text-center">
+                  <p className="text-3xl font-bold text-primary">{pushStats.total}</p>
+                  <p className="text-sm text-muted-foreground mt-1">إجمالي الأجهزة</p>
+                </div>
+                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 text-center">
+                  <p className="text-3xl font-bold text-orange-500">{pushStats.fcmTokens}</p>
+                  <p className="text-sm text-muted-foreground mt-1">أجهزة Android</p>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center">
+                  <p className="text-3xl font-bold text-blue-500">{pushStats.webPushSubscriptions}</p>
+                  <p className="text-sm text-muted-foreground mt-1">متصفح / PWA</p>
+                </div>
+              </div>
+            )}
+
+            {/* Broadcast form */}
+            <div className="md:col-span-2 space-y-4 bg-muted/20 rounded-2xl p-5 border">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <Bell className="w-4 h-4 text-rose-500" /> إنشاء إشعار جديد
+              </h3>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-muted-foreground">العنوان *</label>
+                <Input
+                  placeholder="مثال: عرض خاص هذا الأسبوع!"
+                  value={broadcastTitle}
+                  onChange={e => setBroadcastTitle(e.target.value)}
+                  maxLength={100}
+                  dir="rtl"
+                  className="bg-background"
+                />
+                <p className="text-xs text-muted-foreground text-left">{broadcastTitle.length}/100</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-muted-foreground">الرسالة *</label>
+                <textarea
+                  placeholder="اكتب نص الإشعار هنا..."
+                  value={broadcastBody}
+                  onChange={e => setBroadcastBody(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  dir="rtl"
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <p className="text-xs text-muted-foreground text-left">{broadcastBody.length}/500</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-muted-foreground">رابط عند الضغط (اختياري)</label>
+                <Input
+                  placeholder="مثال: /used-cars أو /new-cars"
+                  value={broadcastUrl}
+                  onChange={e => setBroadcastUrl(e.target.value)}
+                  dir="ltr"
+                  className="bg-background font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">الرابط يُفتح داخل التطبيق عند نقر المستخدم على الإشعار</p>
+              </div>
+
+              {/* Preview */}
+              {(broadcastTitle || broadcastBody) && (
+                <div className="rounded-xl border bg-background p-4 space-y-1 shadow-sm">
+                  <p className="text-xs text-muted-foreground font-medium mb-2">معاينة الإشعار</p>
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bell className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm leading-tight">{broadcastTitle || "العنوان"}</p>
+                      <p className="text-sm text-muted-foreground leading-snug mt-0.5 line-clamp-2">{broadcastBody || "نص الرسالة"}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Result */}
+              {broadcastResult && (
+                <div className="rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
+                  <p className="font-bold text-green-700 dark:text-green-400 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" /> تم الإرسال بنجاح
+                  </p>
+                  <div className="mt-2 flex gap-6 text-sm text-muted-foreground">
+                    <span>Android: <strong className="text-foreground">{broadcastResult.fcm}</strong></span>
+                    <span>Web/PWA: <strong className="text-foreground">{broadcastResult.webpush}</strong></span>
+                    {broadcastResult.errors > 0 && <span className="text-rose-500">أخطاء: {broadcastResult.errors}</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* BTN_SEND_PUSH */}
+              <Button
+                className="w-full h-12 text-base bg-rose-500 hover:bg-rose-600 text-white font-bold gap-2"
+                onClick={sendBroadcast}
+                disabled={broadcastLoading || !broadcastTitle.trim() || !broadcastBody.trim()}
+                id="BTN_SEND_PUSH"
+              >
+                {broadcastLoading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> جاري الإرسال...</>
+                ) : (
+                  <><Send className="w-5 h-5" /> إرسال الإشعار لجميع المستخدمين</>
+                )}
+              </Button>
             </div>
           </div>
         </TabsContent>

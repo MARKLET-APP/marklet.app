@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db, pushSubscriptionsTable, fcmTokensTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
-import { authMiddleware, type AuthRequest } from "../lib/auth.js";
-import { VAPID_PUBLIC_KEY, sendPushToUser } from "../services/pushService.js";
+import { eq, and, count } from "drizzle-orm";
+import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
+import { VAPID_PUBLIC_KEY, sendPushToUser, sendBroadcastPush } from "../services/pushService.js";
 
 const router: IRouter = Router();
 
@@ -138,6 +138,50 @@ router.post("/push/test", authMiddleware, async (req: AuthRequest, res): Promise
   } catch (err) {
     console.error("[Push] Test error:", err);
     res.status(500).json({ error: "Failed to send test notification" });
+  }
+});
+
+router.get("/push/stats", authMiddleware, adminMiddleware, async (_req, res): Promise<void> => {
+  try {
+    const [fcmResult] = await db.select({ total: count() }).from(fcmTokensTable);
+    const [webResult] = await db.select({ total: count() }).from(pushSubscriptionsTable);
+    res.json({
+      fcmTokens: fcmResult?.total ?? 0,
+      webPushSubscriptions: webResult?.total ?? 0,
+      total: (fcmResult?.total ?? 0) + (webResult?.total ?? 0),
+    });
+  } catch (err) {
+    console.error("[Push] Stats error:", err);
+    res.status(500).json({ error: "Failed to get stats" });
+  }
+});
+
+router.post("/push/broadcast", authMiddleware, adminMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const { title, body, url } = req.body;
+  if (!title || !body) {
+    res.status(400).json({ error: "العنوان والرسالة مطلوبان" });
+    return;
+  }
+  if (title.length > 100 || body.length > 500) {
+    res.status(400).json({ error: "العنوان أو الرسالة طويلة جداً" });
+    return;
+  }
+  try {
+    const result = await sendBroadcastPush({
+      title,
+      body,
+      url: url || "/",
+      tag: "marklet-broadcast",
+    });
+    console.log(`[Broadcast] Admin ${req.userId} sent: FCM=${result.fcm}, Web=${result.webpush}, Errors=${result.errors}`);
+    res.json({
+      ok: true,
+      sent: { fcm: result.fcm, webpush: result.webpush },
+      errors: result.errors,
+    });
+  } catch (err) {
+    console.error("[Push] Broadcast error:", err);
+    res.status(500).json({ error: "فشل إرسال الإشعار" });
   }
 });
 
