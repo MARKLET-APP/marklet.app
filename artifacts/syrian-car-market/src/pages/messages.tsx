@@ -105,6 +105,7 @@ export default function Messages() {
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -259,7 +260,10 @@ export default function Messages() {
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if ((!newMessage.trim() && !imageFile) || !activeChatId || sending) return;
+    // Read from DOM ref first (Android IME fallback), then React state
+    const domValue = chatInputRef.current?.value ?? "";
+    const messageText = domValue.trim() || newMessage.trim();
+    if ((!messageText && !imageFile) || !activeChatId || sending) return;
     setSending(true);
     setShowEmojiPicker(false);
 
@@ -277,11 +281,11 @@ export default function Messages() {
         setImagePreview(null);
       }
 
-      if (newMessage.trim()) {
+      if (messageText) {
         const r = await fetch(`${API}/chats/${activeChatId}/messages`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ content: newMessage.trim() }),
+          body: JSON.stringify({ content: messageText }),
         });
         if (!r.ok) {
           const err = await r.json();
@@ -289,6 +293,7 @@ export default function Messages() {
           throw new Error("فشل الإرسال");
         }
         setNewMessage("");
+        if (chatInputRef.current) chatInputRef.current.value = "";
       }
       socketRef.current?.emit("typing_stop", { convId: activeChatId });
       await fetchConversations();
@@ -977,8 +982,10 @@ export default function Messages() {
                     </Button>
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
                     <Input
+                      ref={chatInputRef}
                       value={newMessage}
                       onChange={(e) => { setNewMessage(e.target.value); handleTyping(); if (showEmojiPicker) setShowEmojiPicker(false); }}
+                      onInput={(e) => { const v = (e.target as HTMLInputElement).value; if (v !== newMessage) { setNewMessage(v); handleTyping(); } }}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                       placeholder={
                         blockedByOther ? "لا يمكنك الرد (تم حظرك)" :
