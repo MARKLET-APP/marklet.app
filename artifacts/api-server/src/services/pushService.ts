@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import { db, pushSubscriptionsTable, fcmTokensTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import admin from "firebase-admin";
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
@@ -10,7 +11,37 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
-const FCM_SERVER_KEY = process.env.FCM_SERVER_KEY;
+// ─── Firebase Admin SDK (FCM v1 API) ─────────────────────────────────────────
+let firebaseApp: admin.app.App | null = null;
+
+function getFirebaseApp(): admin.app.App | null {
+  if (firebaseApp) return firebaseApp;
+
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!serviceAccountJson) {
+    console.warn("[FCM] FIREBASE_SERVICE_ACCOUNT_JSON not set — FCM push disabled");
+    return null;
+  }
+
+  try {
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    if (!admin.apps.length) {
+      firebaseApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    } else {
+      firebaseApp = admin.apps[0]!;
+    }
+    console.log("[FCM] Firebase Admin SDK initialized (v1 API)");
+    return firebaseApp;
+  } catch (err) {
+    console.error("[FCM] Failed to init Firebase Admin SDK:", err);
+    return null;
+  }
+}
+
+// Initialize on startup
+getFirebaseApp();
 
 export interface PushPayload {
   title: string;
@@ -21,8 +52,122 @@ export interface PushPayload {
   tag?: string;
 }
 
+async function sendFcmV1(token: string, payload: PushPayload): Promise<boolean> {
+  const app = getFirebaseApp();
+  if (!app) return false;
+
+  const message: admin.messaging.Message = {
+    token,
+    notification: {
+      title: payload.title,
+      body: payload.body,
+    },
+    data: {
+      url: payload.url || "/",
+      tag: payload.tag || "marklet-notification",
+    },
+    android: {
+      priority: "high",
+      notification: {
+        icon: "ic_stat_notification",
+        color: "#062f2f",
+        sound: "default",
+        channelId: "marklet_default",
+        clickAction: "FLUTTER_NOTIFICATION_CLICK",
+      },
+    },
+  };
+
+  try {
+    await admin.messaging(app).send(message);
+    return true;
+  } catch (err: unknown) {
+    const error = err as { code?: string; message?: string };
+    if (
+      error.code === "messaging/registration-token-not-registered" ||
+      error.code === "messaging/invalid-registration-token"
+    ) {
+      await db.delete(fcmTokensTable).where(eq(fcmTokensTable.token, token));
+      console.log("[FCM] Removed invalid token");
+    } else {
+      console.error("[FCM] Send error:", error.code, error.message);
+    }
+    return false;
+  }
+}
+
+async function sendFcmBatchV1(
+  tokens: string[],
+  payload: PushPayload
+): Promise<{ success: number; failed: number }> {
+  const app = getFirebaseApp();
+  if (!app || tokens.length === 0) return { success: 0, failed: 0 };
+
+  const CHUNK = 500;
+  let totalSuccess = 0;
+  let totalFailed = 0;
+
+  for (let i = 0; i < tokens.length; i += CHUNK) {
+    const chunk = tokens.slice(i, i + CHUNK);
+    const messages: admin.messaging.MulticastMessage = {
+      tokens: chunk,
+      notification: {
+        title: payload.title,
+        body: payload.body,
+      },
+      data: {
+        url: payload.url || "/",
+        tag: payload.tag || "marklet-broadcast",
+      },
+      android: {
+        priority: "high",
+        notification: {
+          icon: "ic_stat_notification",
+          color: "#062f2f",
+          sound: "default",
+          channelId: "marklet_default",
+          clickAction: "FLUTTER_NOTIFICATION_CLICK",
+        },
+      },
+    };
+
+    try {
+      const batchResponse = await admin.messaging(app).sendEachForMulticast(messages);
+      totalSuccess += batchResponse.successCount;
+      totalFailed += batchResponse.failureCount;
+
+      // Remove invalid tokens
+      const expiredTokens: string[] = [];
+      batchResponse.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          const code = resp.error?.code;
+          if (
+            code === "messaging/registration-token-not-registered" ||
+            code === "messaging/invalid-registration-token"
+          ) {
+            expiredTokens.push(chunk[idx]);
+          }
+        }
+      });
+
+      for (const token of expiredTokens) {
+        await db.delete(fcmTokensTable).where(eq(fcmTokensTable.token, token));
+      }
+      if (expiredTokens.length > 0) {
+        console.log(`[FCM] Removed ${expiredTokens.length} expired tokens`);
+      }
+    } catch (err) {
+      console.error("[FCM Broadcast] Batch error:", err);
+      totalFailed += chunk.length;
+    }
+  }
+
+  return { success: totalSuccess, failed: totalFailed };
+}
+
 async function sendFcmToUser(userId: number, payload: PushPayload): Promise<void> {
-  if (!FCM_SERVER_KEY) return;
+  const app = getFirebaseApp();
+  if (!app) return;
 
   const tokens = await db
     .select()
@@ -31,49 +176,7 @@ async function sendFcmToUser(userId: number, payload: PushPayload): Promise<void
 
   if (tokens.length === 0) return;
 
-  const message = {
-    notification: {
-      title: payload.title,
-      body: payload.body,
-    },
-    data: {
-      url: payload.url || "/messages",
-      tag: payload.tag || "marklet-notification",
-      click_action: "FLUTTER_NOTIFICATION_CLICK",
-    },
-    android: {
-      notification: {
-        icon: "ic_stat_notification",
-        color: "#062f2f",
-        sound: "default",
-        channel_id: "marklet_default",
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
-      priority: "high" as const,
-    },
-  };
-
-  const sendPromises = tokens.map(async (t) => {
-    try {
-      const response = await fetch("https://fcm.googleapis.com/fcm/send", {
-        method: "POST",
-        headers: {
-          Authorization: `key=${FCM_SERVER_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...message, to: t.token }),
-      });
-      const result = await response.json() as { success?: number; failure?: number; results?: Array<{ error?: string }> };
-      if (result.failure === 1 && result.results?.[0]?.error === "NotRegistered") {
-        await db.delete(fcmTokensTable).where(eq(fcmTokensTable.token, t.token));
-        console.log("[FCM] Removed expired token for user", userId);
-      }
-    } catch (err) {
-      console.error("[FCM] Failed to send to user", userId, err);
-    }
-  });
-
-  await Promise.allSettled(sendPromises);
+  await Promise.allSettled(tokens.map((t) => sendFcmV1(t.token, payload)));
 }
 
 async function sendWebPushToUser(userId: number, payload: PushPayload): Promise<void> {
@@ -128,59 +231,19 @@ export async function sendPushToUser(userId: number, payload: PushPayload): Prom
 
 export async function sendBroadcastPush(payload: PushPayload): Promise<{ fcm: number; webpush: number; errors: number }> {
   let fcmSent = 0;
-  let webPushSent = 0;
   let errors = 0;
+  let webPushSent = 0;
 
-  if (FCM_SERVER_KEY) {
+  // ── FCM v1 (firebase-admin) ──────────────────────────────────────────────
+  const app = getFirebaseApp();
+  if (app) {
     try {
-      const tokens = await db.select().from(fcmTokensTable);
-      if (tokens.length > 0) {
-        const CHUNK = 500;
-        for (let i = 0; i < tokens.length; i += CHUNK) {
-          const chunk = tokens.slice(i, i + CHUNK);
-          const registrationIds = chunk.map((t) => t.token);
-          try {
-            const response = await fetch("https://fcm.googleapis.com/fcm/send", {
-              method: "POST",
-              headers: {
-                Authorization: `key=${FCM_SERVER_KEY}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                registration_ids: registrationIds,
-                notification: { title: payload.title, body: payload.body },
-                data: {
-                  url: payload.url || "/",
-                  tag: payload.tag || "marklet-broadcast",
-                  click_action: "FLUTTER_NOTIFICATION_CLICK",
-                },
-                android: {
-                  notification: {
-                    icon: "ic_stat_notification",
-                    color: "#062f2f",
-                    sound: "default",
-                    channel_id: "marklet_default",
-                    click_action: "FLUTTER_NOTIFICATION_CLICK",
-                  },
-                  priority: "high",
-                },
-              }),
-            });
-            const result = await response.json() as { success?: number; failure?: number; results?: Array<{ error?: string }> };
-            fcmSent += result.success ?? 0;
-            if (result.results) {
-              const expiredTokens = chunk
-                .filter((_, idx) => result.results![idx]?.error === "NotRegistered")
-                .map((t) => t.token);
-              for (const token of expiredTokens) {
-                await db.delete(fcmTokensTable).where(eq(fcmTokensTable.token, token));
-              }
-            }
-          } catch (err) {
-            console.error("[FCM Broadcast] Chunk error:", err);
-            errors++;
-          }
-        }
+      const rows = await db.select().from(fcmTokensTable);
+      if (rows.length > 0) {
+        const tokens = rows.map((r) => r.token);
+        const result = await sendFcmBatchV1(tokens, payload);
+        fcmSent = result.success;
+        errors += result.failed;
       }
     } catch (err) {
       console.error("[FCM Broadcast] Error:", err);
@@ -188,6 +251,7 @@ export async function sendBroadcastPush(payload: PushPayload): Promise<{ fcm: nu
     }
   }
 
+  // ── Web Push (VAPID) ─────────────────────────────────────────────────────
   if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
     try {
       const subscriptions = await db.select().from(pushSubscriptionsTable);
