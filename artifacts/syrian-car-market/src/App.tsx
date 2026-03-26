@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/lib/i18n";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useFcmPush } from "@/hooks/useFcmPush";
 
 const Home = lazy(() => import("@/pages/home"));
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -76,6 +78,8 @@ function GlobalHooks() {
   useEffect(() => {
     setGlobalNavigate(navigate);
   }, [navigate]);
+  usePushNotifications();
+  useFcmPush();
   return null;
 }
 

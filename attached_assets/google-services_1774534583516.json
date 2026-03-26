@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "480353426926",
+    "project_id": "marklet-22c1b",
+    "storage_bucket": "marklet-22c1b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:480353426926:android:2a6bca572a43c4b32b42ff",
+        "android_client_info": {
+          "package_name": "com.marklet.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBv0U44Bvs1KfSrWKSLTA-jRQ2M9tKDlKg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

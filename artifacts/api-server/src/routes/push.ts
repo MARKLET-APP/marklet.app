@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, pushSubscriptionsTable } from "@workspace/db";
+import { db, pushSubscriptionsTable, fcmTokensTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
 import { VAPID_PUBLIC_KEY, sendPushToUser } from "../services/pushService.js";
@@ -63,6 +63,64 @@ router.delete("/push/unsubscribe", authMiddleware, async (req: AuthRequest, res)
       and(
         eq(pushSubscriptionsTable.userId, req.userId!),
         eq(pushSubscriptionsTable.endpoint, endpoint)
+      )
+    );
+  res.json({ ok: true });
+});
+
+router.post("/push/fcm-token", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const { token, platform } = req.body;
+  if (!token) {
+    res.status(400).json({ error: "FCM token required" });
+    return;
+  }
+
+  const userId = req.userId!;
+  const plat = platform || "android";
+
+  const existing = await db
+    .select()
+    .from(fcmTokensTable)
+    .where(eq(fcmTokensTable.token, token))
+    .limit(1);
+
+  if (existing.length > 0) {
+    if (existing[0].userId !== userId) {
+      await db
+        .update(fcmTokensTable)
+        .set({ userId, platform: plat, updatedAt: new Date() })
+        .where(eq(fcmTokensTable.token, token));
+    } else {
+      await db
+        .update(fcmTokensTable)
+        .set({ updatedAt: new Date() })
+        .where(eq(fcmTokensTable.token, token));
+    }
+    res.json({ ok: true, updated: true });
+    return;
+  }
+
+  await db.insert(fcmTokensTable).values({
+    userId,
+    token,
+    platform: plat,
+  });
+
+  res.status(201).json({ ok: true });
+});
+
+router.delete("/push/fcm-token", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const { token } = req.body;
+  if (!token) {
+    res.status(400).json({ error: "Token required" });
+    return;
+  }
+  await db
+    .delete(fcmTokensTable)
+    .where(
+      and(
+        eq(fcmTokensTable.userId, req.userId!),
+        eq(fcmTokensTable.token, token)
       )
     );
   res.json({ ok: true });

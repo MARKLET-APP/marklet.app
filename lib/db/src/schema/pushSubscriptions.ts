@@ -11,3 +11,14 @@ export const pushSubscriptionsTable = pgTable("push_subscriptions", {
 });
 
 export type PushSubscriptionRecord = typeof pushSubscriptionsTable.$inferSelect;
+
+export const fcmTokensTable = pgTable("fcm_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  token: text("token").notNull().unique(),
+  platform: text("platform").notNull().default("android"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type FcmTokenRecord = typeof fcmTokensTable.$inferSelect;

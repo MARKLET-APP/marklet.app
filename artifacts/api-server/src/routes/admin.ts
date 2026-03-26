@@ -3,6 +3,7 @@ import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable
 import { eq, desc, count, sql, ilike, or } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
+import { sendPushToUser } from "../services/pushService.js";
 
 const router: IRouter = Router();
 
@@ -224,18 +225,32 @@ router.patch("/admin/cars/:id/status", ...guard, async (req: AuthRequest, res): 
   const [updated] = await db.update(carsTable).set({ status }).where(eq(carsTable.id, id)).returning({ id: carsTable.id, status: carsTable.status });
 
   if (status === "approved" && car.sellerId) {
+    const msg = `تمت الموافقة على إعلانك "${car.brand ?? ""} ${car.model ?? ""}". تم نشره الآن في MARKLET.`;
     await db.insert(notificationsTable).values({
       userId: car.sellerId,
       type: "approval",
-      message: `تمت الموافقة على إعلانك "${car.brand ?? ""} ${car.model ?? ""}".  تم نشره الآن في MARKLET.`,
+      message: msg,
       link: `/cars/${car.id}`,
     }).catch(() => {});
+    sendPushToUser(car.sellerId, {
+      title: "✅ تمت الموافقة على إعلانك",
+      body: msg,
+      url: `/cars/${car.id}`,
+      tag: `approval-${car.id}`,
+    }).catch(() => {});
   } else if (status === "rejected" && car.sellerId) {
+    const msg = `تم رفض إعلانك "${car.brand ?? ""} ${car.model ?? ""}". يمكنك تعديله وإعادة إرساله.`;
     await db.insert(notificationsTable).values({
       userId: car.sellerId,
       type: "rejection",
-      message: `تم رفض إعلانك "${car.brand ?? ""} ${car.model ?? ""}". يمكنك تعديله وإعادة إرساله.`,
+      message: msg,
       link: `/cars/${car.id}`,
+    }).catch(() => {});
+    sendPushToUser(car.sellerId, {
+      title: "❌ تم رفض إعلانك",
+      body: msg,
+      url: `/cars/${car.id}`,
+      tag: `rejection-${car.id}`,
     }).catch(() => {});
   }
 
