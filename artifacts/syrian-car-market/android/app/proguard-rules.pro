@@ -1,21 +1,39 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ─── Capacitor ───────────────────────────────────────────────────────────────
+-keep class com.getcapacitor.** { *; }
+-keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
+-keepclassmembers class * extends com.getcapacitor.Plugin {
+    @com.getcapacitor.annotation.PluginMethod public *;
+}
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ─── MainActivity + AndroidBridge JS Interface ────────────────────────────────
+-keep class com.marklet.app.** { *; }
+-keepclassmembers class com.marklet.app.MainActivity$AndroidBridge {
+    @android.webkit.JavascriptInterface public *;
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ─── Firebase ─────────────────────────────────────────────────────────────────
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ─── WebView / JavaScript Interface ──────────────────────────────────────────
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# ─── OkHttp / Networking ─────────────────────────────────────────────────────
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class okhttp3.** { *; }
+
+# ─── Kotlin ───────────────────────────────────────────────────────────────────
+-keep class kotlin.** { *; }
+-dontwarn kotlin.**
+
+# ─── Coroutines ───────────────────────────────────────────────────────────────
+-keepclassmembernames class kotlinx.** { volatile <fields>; }
+
+# ─── Keep line numbers for crash reports ─────────────────────────────────────
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

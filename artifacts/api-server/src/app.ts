@@ -40,6 +40,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/api/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/uploads/chat", express.static(path.join(process.cwd(), "uploads", "chat")));
+
 app.use("/api", writeLimiter, router);
 
 app.get("/app-link", (req, res) => {

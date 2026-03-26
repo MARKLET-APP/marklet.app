@@ -24,6 +24,15 @@ A full-stack mobile-first Arabic RTL marketplace for buying and selling cars in 
 - **Scrap Centers tab**: full CRUD (add/edit/delete), verified/featured toggles
 - **New DB tables**: `scrap_centers`; users table has `whatsapp`, `is_featured_seller`; inspection_centers has `whatsapp`, `logo`, `description`, `is_verified`
 
+## Android APK
+- **Package name**: `com.marklet.app`
+- **Download URL**: `/marklet.apk` (served by Vite static from `public/marklet.apk`)
+- **Current APK**: 9MB debug build (arm64-v8a + armeabi-v7a, com.marklet.app)
+- **Build fix**: APK files were mistakenly placed in `public/` → included in Android assets → bloated APK to 545MB. Fix: removed APK files from `public/` except the current 9MB build. Future builds: run `gradlew assembleDebug` and copy output to `public/marklet.apk`.
+- **Build command**: `cd android && JAVA_HOME=<path> ANDROID_HOME=/home/runner/android-sdk GRADLE_OPTS="-Xmx2g" ./gradlew assembleDebug --no-daemon`
+- **IMPORTANT**: Never place APK or large binary files in `public/` — they get bundled into the next Android build via `cap sync`
+- **FCM**: google-services.json at `android/app/google-services.json`, package `com.marklet.app`
+
 ## Pre-Android Audit & Fixes (March 2026)
 - **Push Notifications**: Full Web Push implementation (sw.js, VAPID keys, pushService, push.ts routes, usePushNotifications hook)
 - **PWA Icons**: Generated PNG icons (96×96, 192×192, 512×512, maskable) from SVG via ImageMagick
