@@ -1,4 +1,4 @@
-package com.marklet.sy;
+package com.marklet.app;
 
 import android.content.Intent;
 import android.os.Bundle;
