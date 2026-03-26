@@ -126,7 +126,7 @@ export function Header() {
 
             {user ? (
               <>
-                {user.role === "admin" && (
+                {user.role === "admin" && !location.startsWith("/admin") && (
                   <Link href="/admin">
                     <Button
                       size="sm"

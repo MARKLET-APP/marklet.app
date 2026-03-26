@@ -607,7 +607,6 @@ export default function AdminDashboard() {
       toast({ title: "يرجى إدخال العنوان والرسالة", variant: "destructive" });
       return;
     }
-    if (!confirm(`هل تريد إرسال إشعار لجميع المستخدمين (${pushStats?.total ?? "؟"} جهاز)؟`)) return;
     setBroadcastLoading(true);
     setBroadcastResult(null);
     try {
@@ -870,48 +869,58 @@ export default function AdminDashboard() {
       )}
 
       <Tabs defaultValue="review" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-5 mb-2 h-auto bg-muted/50 rounded-xl p-1 gap-1">
-          <TabsTrigger value="users" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
-            <Users className="w-4 h-4 ml-1" /> المستخدمين
+        <TabsList className="flex w-full mb-2 h-auto bg-muted/50 rounded-xl p-1 gap-1 overflow-x-auto">
+          <TabsTrigger value="users" className="flex-1 min-w-[72px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+            <Users className="w-4 h-4" />
+            <span>المستخدمين</span>
           </TabsTrigger>
-          <TabsTrigger value="dealers" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
-            <Store className="w-4 h-4 ml-1 text-violet-500" /> التجار
+          <TabsTrigger value="dealers" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+            <Store className="w-4 h-4 text-violet-500" />
+            <span>التجار</span>
           </TabsTrigger>
-          <TabsTrigger value="showrooms" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
-            <Building2 className="w-4 h-4 ml-1 text-primary" /> المعارض
+          <TabsTrigger value="showrooms" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+            <Building2 className="w-4 h-4 text-primary" />
+            <span>المعارض</span>
           </TabsTrigger>
-          <TabsTrigger value="inspection" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
-            <Building2 className="w-4 h-4 ml-1 text-cyan-500" /> مراكز الفحص
+          <TabsTrigger value="inspection" className="flex-1 min-w-[70px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+            <Building2 className="w-4 h-4 text-cyan-500" />
+            <span>مراكز الفحص</span>
           </TabsTrigger>
-          <TabsTrigger value="scrap" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
-            <Recycle className="w-4 h-4 ml-1 text-orange-500" /> مراكز الخردة
+          <TabsTrigger value="scrap" className="flex-1 min-w-[70px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+            <Recycle className="w-4 h-4 text-orange-500" />
+            <span>مراكز الخردة</span>
           </TabsTrigger>
         </TabsList>
-        <TabsList className="grid w-full grid-cols-4 mb-8 h-auto bg-muted/50 rounded-xl p-1 gap-1">
-          <TabsTrigger value="review" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 relative">
-            <AlertTriangle className="w-4 h-4 ml-1 text-red-500" /> مراجعة
+        <TabsList className="flex w-full mb-8 h-auto bg-muted/50 rounded-xl p-1 gap-1 overflow-x-auto">
+          <TabsTrigger value="review" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <span>مراجعة</span>
             {totalReviewPending > 0 && (
-              <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
                 {totalReviewPending}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="listings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
-            <Car className="w-4 h-4 ml-1" /> الإعلانات
+          <TabsTrigger value="listings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+            <Car className="w-4 h-4" />
+            <span>الإعلانات</span>
           </TabsTrigger>
-          <TabsTrigger value="inbox" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 relative">
-            <Inbox className="w-4 h-4 ml-1 text-blue-500" /> الرسائل
+          <TabsTrigger value="inbox" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
+            <Inbox className="w-4 h-4 text-blue-500" />
+            <span>الرسائل</span>
             {totalInboxUnread > 0 && (
-              <span className="absolute -top-1.5 -left-1.5 bg-blue-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1.5 -left-1.5 bg-blue-500 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
                 {totalInboxUnread}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5" onClick={fetchPushStats}>
-            <Megaphone className="w-4 h-4 ml-1 text-rose-500" /> الإشعارات
+          <TabsTrigger value="notifications" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5" onClick={fetchPushStats}>
+            <Megaphone className="w-4 h-4 text-rose-500" />
+            <span>الإشعارات</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-lg font-bold text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
-            <Settings className="w-4 h-4 ml-1" /> الإعدادات
+          <TabsTrigger value="settings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+            <Settings className="w-4 h-4" />
+            <span>الإعدادات</span>
           </TabsTrigger>
         </TabsList>
         
@@ -2321,6 +2330,7 @@ export default function AdminDashboard() {
                   placeholder="مثال: عرض خاص هذا الأسبوع!"
                   value={broadcastTitle}
                   onChange={e => setBroadcastTitle(e.target.value)}
+                  onInput={e => setBroadcastTitle((e.target as HTMLInputElement).value)}
                   maxLength={100}
                   dir="rtl"
                   className="bg-background"
@@ -2334,6 +2344,7 @@ export default function AdminDashboard() {
                   placeholder="اكتب نص الإشعار هنا..."
                   value={broadcastBody}
                   onChange={e => setBroadcastBody(e.target.value)}
+                  onInput={e => setBroadcastBody((e.target as HTMLTextAreaElement).value)}
                   maxLength={500}
                   rows={3}
                   dir="rtl"
@@ -2348,6 +2359,7 @@ export default function AdminDashboard() {
                   placeholder="مثال: /used-cars أو /new-cars"
                   value={broadcastUrl}
                   onChange={e => setBroadcastUrl(e.target.value)}
+                  onInput={e => setBroadcastUrl((e.target as HTMLInputElement).value)}
                   dir="ltr"
                   className="bg-background font-mono text-sm"
                 />
