@@ -1,7 +1,7 @@
 {
   "buildCommand": "pnpm --filter @workspace/syrian-car-market run build",
   "outputDirectory": "artifacts/syrian-car-market/dist/public",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ],
