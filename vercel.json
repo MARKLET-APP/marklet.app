@@ -1,0 +1,21 @@
+{
+  "buildCommand": "pnpm --filter @workspace/syrian-car-market run build",
+  "outputDirectory": "artifacts/syrian-car-market/dist/public",
+  "installCommand": "pnpm install",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ],
+  "headers": [
+    {
+      "source": "/manifest.json",
+      "headers": [{ "key": "Content-Type", "value": "application/manifest+json" }]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    }
+  ]
+}

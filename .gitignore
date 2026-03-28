@@ -47,3 +47,24 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Environment secrets
+.env
+.env.local
+.env.production
+*.env
+
+# Android / Capacitor build
+android/app/build/
+android/.gradle/
+android/local.properties
+*.apk
+*.aab
+*.keystore
+
+# APK in public (Capacitor safety rule)
+artifacts/syrian-car-market/public/*.apk
+artifacts/syrian-car-market/dist/public/*.apk
+
+# Uploads (user-generated files)
+artifacts/api-server/uploads/
