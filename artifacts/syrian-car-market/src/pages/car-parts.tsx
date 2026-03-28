@@ -1,3 +1,5 @@
+// UI_ID: CAR_PARTS_01
+// NAME: قطع السيارات
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";

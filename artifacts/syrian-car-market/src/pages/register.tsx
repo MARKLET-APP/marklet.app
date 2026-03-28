@@ -1,3 +1,5 @@
+// UI_ID: REGISTER_01
+// NAME: إنشاء حساب
 import { useForm } from "react-hook-form";
 import { useRegister } from "@workspace/api-client-react";
 import { useAuthStore } from "@/lib/auth";
@@ -47,11 +49,18 @@ export default function Register() {
           <p className="text-muted-foreground">{t("auth.register.subtitle")}</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <form
+          data-ui-id="FORM_REGISTER_01"
+          data-testid="FORM_REGISTER_01"
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-5"
+        >
           <div className="space-y-2">
             <label className="text-sm font-bold">{t("auth.register.name")}</label>
             <input
               {...formRegister("name", { required: t("common.requiredField") })}
+              data-ui-id="INPUT_TITLE_01"
+              data-testid="INPUT_TITLE_01"
               autoComplete="name"
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none"
             />
@@ -87,7 +96,13 @@ export default function Register() {
             </select>
           </div>
 
-          <Button type="submit" disabled={registerMutation.isPending} className="w-full h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/20">
+          <Button
+            type="submit"
+            data-ui-id="BTN_REGISTER_01"
+            data-testid="BTN_REGISTER_01"
+            disabled={registerMutation.isPending}
+            className="w-full h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/20"
+          >
             {registerMutation.isPending ? t("auth.register.creating") : t("auth.register.submit")}
           </Button>
         </form>

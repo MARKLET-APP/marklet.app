@@ -1,3 +1,5 @@
+// UI_ID: CHAT_01
+// NAME: المراسلة
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io, type Socket } from "socket.io-client";
 import Picker from "@emoji-mart/react";
@@ -959,7 +961,12 @@ export default function Messages() {
 
                 {/* Message input form */}
                 {!isRecording && !audioBlob && (
-                  <form onSubmit={handleSend} className="flex gap-1.5 items-center px-3 py-2.5">
+                  <form
+                    data-ui-id="FORM_CHAT_01"
+                    data-testid="FORM_CHAT_01"
+                    onSubmit={handleSend}
+                    className="flex gap-1.5 items-center px-3 py-2.5"
+                  >
                     <Button
                       type="button"
                       variant="ghost"
@@ -983,6 +990,8 @@ export default function Messages() {
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
                     <Input
                       ref={chatInputRef}
+                      data-ui-id="INPUT_CHAT_MESSAGE_01"
+                      data-testid="INPUT_CHAT_MESSAGE_01"
                       value={newMessage}
                       onChange={(e) => { setNewMessage(e.target.value); handleTyping(); if (showEmojiPicker) setShowEmojiPicker(false); }}
                       onInput={(e) => { const v = (e.target as HTMLInputElement).value; if (v !== newMessage) { setNewMessage(v); handleTyping(); } }}
@@ -1011,6 +1020,8 @@ export default function Messages() {
                     ) : (
                       <Button
                         type="submit"
+                        data-ui-id="BTN_SEND_MSG_01"
+                        data-testid="BTN_SEND_MSG_01"
                         size="icon"
                         disabled={(!newMessage.trim() && !imageFile) || sending || isBlocked}
                         className="shrink-0 w-10 h-10 rounded-full bg-primary hover:bg-primary/90 shadow-md transition-all disabled:opacity-50"

@@ -1,3 +1,5 @@
+// UI_ID: AUCTIONS_01
+// NAME: المزادات
 import { useState } from "react";
 import { useLocation } from "wouter";
 import {

@@ -1,3 +1,5 @@
+// UI_ID: VEHICLE_INFO_01
+// NAME: معلومات المركبة
 import { VehicleReportWidget } from "@/components/VehicleReportWidget";
 
 export default function VehicleInfo() {

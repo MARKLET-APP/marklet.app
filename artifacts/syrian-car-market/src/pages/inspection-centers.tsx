@@ -1,3 +1,5 @@
+// UI_ID: INSPECTION_CENTERS_01
+// NAME: مراكز الفحص
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";

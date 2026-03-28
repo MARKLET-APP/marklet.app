@@ -1,3 +1,5 @@
+// UI_ID: SCRAP_CENTER_DETAIL_01
+// NAME: تفاصيل مركز الخردة
 import { useState, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

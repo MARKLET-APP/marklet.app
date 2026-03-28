@@ -1,3 +1,5 @@
+// UI_ID: COMP_HEADER_01
+// NAME: الترويسة
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight, Globe, Bookmark, Settings2 } from "lucide-react";

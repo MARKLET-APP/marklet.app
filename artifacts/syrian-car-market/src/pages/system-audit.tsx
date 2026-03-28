@@ -1,3 +1,5 @@
+// UI_ID: ADMIN_SYSTEM_AUDIT_01
+// NAME: مراجعة النظام
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";

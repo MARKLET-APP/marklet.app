@@ -1,7 +1,9 @@
+// UI_ID: SHOWROOM_MANAGE_01
+// NAME: إدارة المعرض
 import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";

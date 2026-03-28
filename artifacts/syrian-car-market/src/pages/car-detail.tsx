@@ -1,3 +1,5 @@
+// UI_ID: CAR_DETAIL_01
+// NAME: تفاصيل السيارة
 import { useRoute, useLocation } from "wouter";
 import { useGetCar } from "@workspace/api-client-react";
 import { api } from "@/lib/api";

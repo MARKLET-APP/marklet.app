@@ -1,3 +1,5 @@
+// UI_ID: HOME_01
+// NAME: الصفحة الرئيسية
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";

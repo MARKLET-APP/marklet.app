@@ -1,3 +1,5 @@
+// UI_ID: ADMIN_01
+// NAME: لوحة التحكم
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { useAuthStore } from "@/lib/auth";
@@ -870,29 +872,29 @@ export default function AdminDashboard() {
 
       <Tabs defaultValue="review" className="w-full" dir="rtl">
         <TabsList className="flex w-full mb-2 h-auto bg-muted/50 rounded-xl p-1 gap-1 overflow-x-auto">
-          <TabsTrigger value="users" className="flex-1 min-w-[72px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+          <TabsTrigger data-ui-id="ADMIN_TAB_USERS_01" data-testid="ADMIN_TAB_USERS_01" value="users" className="flex-1 min-w-[72px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
             <Users className="w-4 h-4" />
             <span>المستخدمين</span>
           </TabsTrigger>
-          <TabsTrigger value="dealers" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+          <TabsTrigger data-ui-id="ADMIN_TAB_DEALERS_01" data-testid="ADMIN_TAB_DEALERS_01" value="dealers" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
             <Store className="w-4 h-4 text-violet-500" />
             <span>التجار</span>
           </TabsTrigger>
-          <TabsTrigger value="showrooms" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+          <TabsTrigger data-ui-id="ADMIN_TAB_SHOWROOMS_01" data-testid="ADMIN_TAB_SHOWROOMS_01" value="showrooms" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
             <Building2 className="w-4 h-4 text-primary" />
             <span>المعارض</span>
           </TabsTrigger>
-          <TabsTrigger value="inspection" className="flex-1 min-w-[70px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+          <TabsTrigger data-ui-id="ADMIN_TAB_INSPECTION_01" data-testid="ADMIN_TAB_INSPECTION_01" value="inspection" className="flex-1 min-w-[70px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
             <Building2 className="w-4 h-4 text-cyan-500" />
             <span>مراكز الفحص</span>
           </TabsTrigger>
-          <TabsTrigger value="scrap" className="flex-1 min-w-[70px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+          <TabsTrigger data-ui-id="ADMIN_TAB_SCRAP_01" data-testid="ADMIN_TAB_SCRAP_01" value="scrap" className="flex-1 min-w-[70px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
             <Recycle className="w-4 h-4 text-orange-500" />
             <span>مراكز الخردة</span>
           </TabsTrigger>
         </TabsList>
         <TabsList className="flex w-full mb-8 h-auto bg-muted/50 rounded-xl p-1 gap-1 overflow-x-auto">
-          <TabsTrigger value="review" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
+          <TabsTrigger data-ui-id="ADMIN_TAB_REVIEW_01" data-testid="ADMIN_TAB_REVIEW_01" value="review" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
             <AlertTriangle className="w-4 h-4 text-red-500" />
             <span>مراجعة</span>
             {totalReviewPending > 0 && (
@@ -901,11 +903,11 @@ export default function AdminDashboard() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="listings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+          <TabsTrigger data-ui-id="ADMIN_TAB_LISTINGS_01" data-testid="ADMIN_TAB_LISTINGS_01" value="listings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
             <Car className="w-4 h-4" />
             <span>الإعلانات</span>
           </TabsTrigger>
-          <TabsTrigger value="inbox" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
+          <TabsTrigger data-ui-id="ADMIN_TAB_INBOX_01" data-testid="ADMIN_TAB_INBOX_01" value="inbox" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
             <Inbox className="w-4 h-4 text-blue-500" />
             <span>الرسائل</span>
             {totalInboxUnread > 0 && (
@@ -914,11 +916,11 @@ export default function AdminDashboard() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5" onClick={fetchPushStats}>
+          <TabsTrigger data-ui-id="ADMIN_TAB_NOTIFICATIONS_01" data-testid="ADMIN_TAB_NOTIFICATIONS_01" value="notifications" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5" onClick={fetchPushStats}>
             <Megaphone className="w-4 h-4 text-rose-500" />
             <span>الإشعارات</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+          <TabsTrigger data-ui-id="ADMIN_TAB_SETTINGS_01" data-testid="ADMIN_TAB_SETTINGS_01" value="settings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
             <Settings className="w-4 h-4" />
             <span>الإعدادات</span>
           </TabsTrigger>

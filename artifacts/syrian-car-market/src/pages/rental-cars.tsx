@@ -1,3 +1,5 @@
+// UI_ID: RENTAL_CARS_01
+// NAME: تأجير السيارات
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";

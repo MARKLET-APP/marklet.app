@@ -1,3 +1,5 @@
+// UI_ID: USED_CARS_01
+// NAME: سيارات مستعملة
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";

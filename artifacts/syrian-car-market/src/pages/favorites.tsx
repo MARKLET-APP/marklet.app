@@ -1,3 +1,5 @@
+// UI_ID: FAVORITES_01
+// NAME: المفضلة
 import { useAuthStore } from "@/lib/auth";
 import { Loader2, Bookmark, MapPin, Trash2, Car, Bike, Wrench, Package, Hash } from "lucide-react";
 import { Link, Redirect } from "wouter";

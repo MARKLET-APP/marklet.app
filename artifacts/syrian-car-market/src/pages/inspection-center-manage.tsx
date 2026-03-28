@@ -1,3 +1,5 @@
+// UI_ID: INSPECTION_CENTER_MANAGE_01
+// NAME: إدارة مركز الفحص
 import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";

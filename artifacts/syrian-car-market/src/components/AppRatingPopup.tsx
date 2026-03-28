@@ -1,3 +1,5 @@
+// UI_ID: COMP_APP_RATING_POPUP_01
+// NAME: نافذة تقييم التطبيق
 import { useState, useEffect } from "react";
 import { Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";

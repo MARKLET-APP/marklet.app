@@ -1,3 +1,5 @@
+// UI_ID: PROFILE_01
+// NAME: الملف الشخصي
 import { useState, useRef } from "react";
 import { useAuthStore } from "@/lib/auth";
 import { API_BASE, withApi } from "@/lib/runtimeConfig";

@@ -1,3 +1,5 @@
+// UI_ID: COMP_BOTTOM_NAV_01
+// NAME: شريط التنقل السفلي
 import { Link, useRoute } from "wouter";
 import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings, Building2, Play } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";

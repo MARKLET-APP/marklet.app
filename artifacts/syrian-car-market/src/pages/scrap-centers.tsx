@@ -1,3 +1,5 @@
+// UI_ID: SCRAP_CENTERS_01
+// NAME: مراكز الخردة
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";

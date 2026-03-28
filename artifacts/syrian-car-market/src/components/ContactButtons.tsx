@@ -1,3 +1,5 @@
+// UI_ID: COMP_CONTACT_BUTTONS_01
+// NAME: أزرار التواصل
 import { useState } from "react";
 import { Phone, MessageCircle, Lock, LogIn, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";

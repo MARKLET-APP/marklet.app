@@ -1,3 +1,5 @@
+// UI_ID: INSPECTIONS_01
+// NAME: الفحوصات
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";

@@ -1,3 +1,5 @@
+// UI_ID: NOT_FOUND_01
+// NAME: صفحة 404
 import { Link } from "wouter";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";

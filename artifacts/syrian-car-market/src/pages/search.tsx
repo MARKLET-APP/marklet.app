@@ -1,3 +1,5 @@
+// UI_ID: SEARCH_01
+// NAME: البحث
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";

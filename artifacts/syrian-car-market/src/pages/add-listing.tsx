@@ -1,3 +1,5 @@
+// UI_ID: POST_01
+// NAME: نشر إعلان
 import { useState, useRef, useCallback } from "react";
 import { useCreateCar, useGenerateCarDescription } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";

@@ -1,3 +1,5 @@
+// UI_ID: SUPPORT_01
+// NAME: الدعم والتغذية الراجعة
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
@@ -83,6 +85,8 @@ export default function SupportPage() {
           <div className="space-y-1">
             <label className="text-sm font-medium">{t("support.form.message")}</label>
             <textarea
+              data-ui-id="INPUT_SUPPORT_MSG_01"
+              data-testid="INPUT_SUPPORT_MSG_01"
               value={message}
               onChange={e => setMessage(e.target.value)}
               rows={5}
@@ -92,6 +96,8 @@ export default function SupportPage() {
           </div>
 
           <Button
+            data-ui-id="BTN_SEND_SUPPORT_01"
+            data-testid="BTN_SEND_SUPPORT_01"
             className="w-full rounded-xl font-bold"
             disabled={!message.trim() || supportMutation.isPending}
             onClick={() => supportMutation.mutate()}
@@ -110,6 +116,8 @@ export default function SupportPage() {
           {isRTL ? "شاركنا أفكارك لتحسين التطبيق" : "Share your ideas to help us improve the app"}
         </p>
         <textarea
+          data-ui-id="INPUT_FEEDBACK_MSG_01"
+          data-testid="INPUT_FEEDBACK_MSG_01"
           value={feedback}
           onChange={e => setFeedback(e.target.value)}
           rows={3}
@@ -117,6 +125,8 @@ export default function SupportPage() {
           className="w-full border rounded-xl px-4 py-3 text-sm bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         <Button
+          data-ui-id="BTN_SEND_FEEDBACK_01"
+          data-testid="BTN_SEND_FEEDBACK_01"
           variant="outline"
           className="w-full rounded-xl font-bold"
           disabled={!feedback.trim() || feedbackMutation.isPending}

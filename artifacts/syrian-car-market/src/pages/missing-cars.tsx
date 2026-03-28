@@ -1,3 +1,5 @@
+// UI_ID: MISSING_CARS_01
+// NAME: السيارات المسروقة
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";

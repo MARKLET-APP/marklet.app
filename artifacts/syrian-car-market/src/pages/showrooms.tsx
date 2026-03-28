@@ -1,3 +1,5 @@
+// UI_ID: SHOWROOMS_01
+// NAME: المعارض
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";

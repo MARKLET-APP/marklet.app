@@ -1,3 +1,5 @@
+// UI_ID: COMP_SHARE_SHEET_01
+// NAME: ورقة المشاركة
 /**
  * ShareSheet — one-tap share button
  *

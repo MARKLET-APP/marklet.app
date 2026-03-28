@@ -1,3 +1,5 @@
+// UI_ID: PLATES_01
+// NAME: لوحات السيارات
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";

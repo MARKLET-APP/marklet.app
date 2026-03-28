@@ -1,3 +1,5 @@
+// UI_ID: COMP_CARD_CAR_01
+// NAME: بطاقة السيارة
 import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
 import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, MessageCircle, Loader2, Building2 } from "lucide-react";

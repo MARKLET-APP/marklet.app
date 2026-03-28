@@ -1,3 +1,5 @@
+// UI_ID: SHOWROOM_DETAIL_01
+// NAME: تفاصيل المعرض
 import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
