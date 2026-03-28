@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Request, Response, NextFunction } from "express";
+import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "syrian-car-market-secret-key-2024";
 
@@ -30,6 +32,16 @@ export interface AuthRequest extends Request {
   user?: { id: number; role: string };
 }
 
+// Track last active — fire-and-forget (never blocks the request)
+function trackLastActive(userId: number): void {
+  setImmediate(() => {
+    db.update(usersTable)
+      .set({ lastActiveAt: new Date() })
+      .where(eq(usersTable.id, userId))
+      .catch(() => {/* silent */});
+  });
+}
+
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -45,6 +57,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   req.userId = payload.userId;
   req.userRole = payload.role;
   req.user = { id: payload.userId, role: payload.role };
+  trackLastActive(payload.userId);
   next();
 }
 

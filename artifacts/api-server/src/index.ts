@@ -4,6 +4,7 @@ import app from "./app";
 import { setSocketServer } from "./lib/socket.js";
 import { checkFeatures } from "./utils/checkFeatures.js";
 import { runFeaturedSellerCheck } from "./services/featuredSellerService.js";
+import { startNotificationsScheduler } from "./services/notificationsScheduler.js";
 import { db, messagesTable, conversationsTable, junkCarsTable, carPartsTable, buyRequestsTable, notificationsTable } from "@workspace/db";
 import { eq, and, isNull, lt } from "drizzle-orm";
 import jwt from "jsonwebtoken";
@@ -148,4 +149,6 @@ server.listen(port, () => {
   // Run featured seller badge check on startup and every 24 hours
   setTimeout(runFeaturedSellerCheck, 10000);
   setInterval(runFeaturedSellerCheck, 24 * 60 * 60 * 1000);
+  // Start inactive-user nudge scheduler (runs daily, first run 5 min after boot)
+  startNotificationsScheduler();
 });
