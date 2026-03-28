@@ -53,6 +53,7 @@ export async function shareListing(
 
 export function getListingUrl(type: "car" | "part" | "rental" | "junk" | "moto" | "plate" | "buy-request", id: number): string {
   const base = window.location.origin;
-  if (type === "car" || type === "plate" || type === "moto") return `${base}/listing/${id}`;
+  // For car listings, use /og/:id so WhatsApp/Telegram show the car image in the preview
+  if (type === "car" || type === "moto") return `${base}/og/${id}`;
   return `${base}/listing/${id}`;
 }

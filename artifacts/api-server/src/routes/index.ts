@@ -32,6 +32,7 @@ import systemAuditRouter from "./systemAudit";
 import searchRouter from "./search";
 import pushRouter from "./push";
 import reelsRouter from "./reels";
+import ogRouter from "./og";
 
 const router: IRouter = Router();
 
@@ -68,5 +69,6 @@ router.use(systemAuditRouter);
 router.use(searchRouter);
 router.use(pushRouter);
 router.use(reelsRouter);
+router.use(ogRouter);
 
 export default router;

@@ -74,6 +74,11 @@ export default defineConfig({
         target: `http://localhost:${process.env.API_PORT || 8080}`,
         changeOrigin: true,
       },
+      "/og": {
+        target: `http://localhost:${process.env.API_PORT || 8080}`,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/og/, "/api/og"),
+      },
       "/socket.io": {
         target: `http://localhost:${process.env.API_PORT || 8080}`,
         changeOrigin: true,

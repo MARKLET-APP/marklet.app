@@ -59,7 +59,7 @@ export default function CarDetail() {
     const title = [(car as any).brand, (car as any).model, (car as any).year].filter(Boolean).join(" ") || "MARKLET";
     const description = (car as any).description || `${(car as any).city ?? ""} — ${(car as any).price ? "$" + Number((car as any).price).toLocaleString() : ""}`;
     const image = (car as any).images?.[0] ?? "";
-    const url = `${window.location.origin}/listing/${car.id}`;
+    const url = `${window.location.origin}/og/${car.id}`;
     document.title = `${title} | MARKLET`;
     const setMeta = (property: string, content: string) => {
       let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
@@ -68,7 +68,7 @@ export default function CarDetail() {
     };
     setMeta("og:title", title);
     setMeta("og:description", description);
-    setMeta("og:image", image);
+    if (image) setMeta("og:image", image.startsWith("http") ? image : `${window.location.origin}${image}`);
     setMeta("og:url", url);
     setMeta("og:type", "website");
     return () => { document.title = "MARKLET"; };
@@ -97,7 +97,7 @@ export default function CarDetail() {
     title: [(car as any)?.brand, (car as any)?.model, (car as any)?.year].filter(Boolean).join(" ") || "إعلان على MARKLET",
     price: (car as any)?.price,
     city: (car as any)?.city,
-    url: `${window.location.origin}/listing/${carId}`,
+    url: `${window.location.origin}/og/${carId}`,
     description: (car as any)?.description,
   };
 
