@@ -75,16 +75,22 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || "/messages";
+  const targetPath = event.notification.data?.url || "/";
+
+  // Build full absolute URL from the path
+  const targetUrl = new URL(targetPath, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // Try to find an already-open window on our origin
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.navigate(targetUrl);
+        if (new URL(client.url).origin === self.location.origin) {
+          // Send a message so the SPA navigates without a full page reload
+          client.postMessage({ type: "SW_NAVIGATE", url: targetPath });
           return client.focus();
         }
       }
+      // No open window — open a new one with the full URL
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }

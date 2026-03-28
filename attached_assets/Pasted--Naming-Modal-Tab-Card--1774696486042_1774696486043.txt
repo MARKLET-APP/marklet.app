@@ -1,0 +1,115 @@
+نريد إنشاء نظام Naming ثابت وشامل داخل المشروع بحيث يصبح لكل شاشة، قسم، زر، نافذة، Modal، Tab، Card، Form، Input، API، Route، Component اسم/Code واضح وثابت.
+
+المطلوب:
+
+1) إنشاء ملف مركزي باسم:
+src/config/ui-map.ts
+
+يحتوي على جميع أسماء العناصر بالشكل التالي:
+
+export const UI = {
+  PAGES: {
+    HOME_01: "الصفحة الرئيسية",
+    VIDEO_01: "صفحة الفيديو",
+    POST_01: "نشر إعلان",
+    CHAT_01: "المراسلة",
+    DEALER_01: "المعارض",
+    SEARCH_01: "البحث",
+    PROFILE_01: "الملف الشخصي",
+    NOTIFICATIONS_01: "الإشعارات",
+    SETTINGS_01: "الإعدادات",
+    LOGIN_01: "تسجيل الدخول",
+    REGISTER_01: "إنشاء حساب"
+  },
+
+  BUTTONS: {
+    BTN_SHARE_01: "زر المشاركة",
+    BTN_CHAT_01: "زر المراسلة",
+    BTN_POST_01: "زر نشر الإعلان",
+    BTN_SAVE_01: "زر الحفظ",
+    BTN_DELETE_01: "زر الحذف",
+    BTN_EDIT_01: "زر التعديل",
+    BTN_BACK_01: "زر الرجوع",
+    BTN_NEXT_01: "زر التالي",
+    BTN_FILTER_01: "زر الفلترة",
+    BTN_SEARCH_01: "زر البحث"
+  },
+
+  FORMS: {
+    FORM_POST_01: "فورم نشر الإعلان",
+    FORM_LOGIN_01: "فورم تسجيل الدخول",
+    FORM_REGISTER_01: "فورم إنشاء حساب",
+    FORM_CHAT_01: "فورم إرسال رسالة"
+  },
+
+  INPUTS: {
+    INPUT_TITLE_01: "عنوان الإعلان",
+    INPUT_PRICE_01: "السعر",
+    INPUT_DESCRIPTION_01: "الوصف",
+    INPUT_PHONE_01: "رقم الهاتف",
+    INPUT_VIDEO_01: "رفع الفيديو",
+    INPUT_IMAGES_01: "رفع الصور",
+    INPUT_DEALER_01: "اسم المعرض"
+  },
+
+  MODALS: {
+    MODAL_SHARE_01: "نافذة المشاركة",
+    MODAL_DELETE_01: "نافذة تأكيد الحذف",
+    MODAL_VIDEO_01: "نافذة تشغيل الفيديو",
+    MODAL_FILTER_01: "نافذة الفلترة"
+  }
+}
+
+2) إضافة data-testid و data-ui-id لكل عنصر مهم داخل التطبيق.
+
+مثال:
+
+<button
+  data-ui-id="BTN_SHARE_01"
+  data-testid="BTN_SHARE_01"
+>
+  مشاركة
+</button>
+
+<div
+  data-ui-id="POST_01"
+  data-testid="POST_01"
+>
+</div>
+
+<input
+  data-ui-id="INPUT_PRICE_01"
+  data-testid="INPUT_PRICE_01"
+/>
+
+3) أضف تعليق أعلى كل Component أو Page بالشكل:
+
+// UI_ID: POST_01
+// NAME: صفحة نشر الإعلان
+
+4) أنشئ ملف توثيق جديد باسم:
+docs/UI_MAP.md
+
+ويحتوي جدول كامل:
+
+| UI Code | الاسم | الملف | الوظيفة |
+|---------|--------|--------|----------|
+| HOME_01 | الصفحة الرئيسية | Home.tsx | عرض الإعلانات |
+| BTN_SHARE_01 | زر المشاركة | AdCard.tsx | مشاركة الإعلان |
+| POST_01 | نشر إعلان | PostAd.tsx | إنشاء إعلان جديد |
+
+5) أضف Route Mapping:
+
+| Route | UI Code |
+|-------|----------|
+| / | HOME_01 |
+| /post | POST_01 |
+| /chat | CHAT_01 |
+
+6) لا تغيّر التصميم أو السلوك.
+فقط أضف نظام التسمية والتوثيق.
+
+7) بعد الانتهاء، أعطني:
+- ملف UI_MAP.md
+- قائمة بجميع الأكواد
+- وأي عنصر لم يتمكن من إعطائه اسم واضح

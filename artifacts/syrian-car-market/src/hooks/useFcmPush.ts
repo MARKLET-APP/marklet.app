@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { useAuthStore } from "@/lib/auth";
 import { withApi } from "@/lib/runtimeConfig";
 
@@ -30,6 +31,13 @@ export function useFcmPush() {
   const { user, token } = useAuthStore();
   const registeredRef = useRef(false);
   const userIdRef = useRef<number | null>(null);
+  const [, navigate] = useLocation();
+
+  // Keep latest navigate in a ref so async listeners always use the current one
+  const navigateRef = useRef(navigate);
+  useEffect(() => {
+    navigateRef.current = navigate;
+  });
 
   useEffect(() => {
     if (!user || !token) {
@@ -78,10 +86,15 @@ export function useFcmPush() {
         });
 
         PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-          const url = action.notification.data?.url;
-          if (url) {
-            window.location.hash = url;
-          }
+          const url: string | undefined = action.notification.data?.url;
+          console.log("[FCM] Notification tapped, navigating to:", url);
+          if (!url) return;
+
+          // Normalize: strip leading slash for wouter (relative path)
+          const path = url.startsWith("/") ? url : `/${url}`;
+
+          // Use wouter navigate for in-app navigation (no full page reload)
+          navigateRef.current(path);
         });
       } catch (err) {
         console.error("[FCM] Setup failed:", err);

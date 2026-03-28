@@ -78,6 +78,19 @@ function GlobalHooks() {
   useEffect(() => {
     setGlobalNavigate(navigate);
   }, [navigate]);
+
+  // Handle navigation messages from service worker (Web Push notification clicks)
+  useEffect(() => {
+    const handleSwMessage = (event: MessageEvent) => {
+      if (event.data?.type === "SW_NAVIGATE" && event.data.url) {
+        const path: string = event.data.url;
+        navigate(path.startsWith("/") ? path : `/${path}`);
+      }
+    };
+    navigator.serviceWorker?.addEventListener("message", handleSwMessage);
+    return () => navigator.serviceWorker?.removeEventListener("message", handleSwMessage);
+  }, [navigate]);
+
   usePushNotifications();
   useFcmPush();
   return null;
