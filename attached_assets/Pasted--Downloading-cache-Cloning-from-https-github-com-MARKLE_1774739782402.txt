@@ -1,0 +1,74 @@
+==> Downloading cache...
+==> Cloning from https://github.com/MARKLET-APP/marklet.app
+==> Checking out commit df555851d423fd503f3e691398b61ea49e383b28 in branch main
+==> Downloaded 173MB in 4s. Extraction took 9s.
+==> Requesting Node.js version >=20
+==> Using Node.js version 25.8.2 via /opt/render/project/src/package.json
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/db run push'...
+> @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+> tsx ./build.ts
+building server...
+▲ [WARNING] Duplicate key "JTH" in object literal [duplicate-object-key]
+    src/routes/vehicleReports.ts:32:2:
+      32 │   JTH: { brand: "Lexus", origin: "اليابان" },  // overrides...
+         ╵   ~~~
+  The original key "JTH" is here:
+    src/routes/vehicleReports.ts:22:2:
+      22 │   JTH: { brand: "Toyota", origin: "اليابان" },
+         ╵   ~~~
+1 warning
+  dist/index.cjs  1.7mb ⚠️
+⚡ Done in 374ms
+> @workspace/db@0.0.0 push /opt/render/project/src/lib/db
+> drizzle-kit push --config ./drizzle.config.ts
+Reading config file '/opt/render/project/src/lib/db/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] Pulling schema from database...
+Error: getaddrinfo ENOTFOUND base
+    at /opt/render/project/src/node_modules/.pnpm/pg-pool@3.13.0_pg@8.20.0/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Object.query (/opt/render/project/src/node_modules/.pnpm/drizzle-kit@0.31.9/node_modules/drizzle-kit/bin.cjs:80623:26)
+    at async fromDatabase2 (/opt/render/project/src/node_modules/.pnpm/drizzle-kit@0.31.9/node_modules/drizzle-kit/bin.cjs:19276:25) {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'base'
+}
+==> Uploading build...
+==> Uploaded in 29.7s. Compression took 5.6s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+│  1 endpoints registered                                  │
+└──────────────────────────────────────────────────────────┘
+[Scheduler] Notifications scheduler started — first run in 5 min, then every 24h
+[followup] error: t [Error]: Failed query: select "id", "seller_id", "type", "model", "year", "condition", "price", "city", "images", "description", "status", "followup_sent_at", "sold_confirmed", "created_at" from "junk_cars" where ("junk_cars"."followup_sent_at" is null and "junk_cars"."created_at" < $1)
+params: 2026-03-23T23:15:10.476Z
+    at Bb.queryWithCache (/opt/render/project/src/artifacts/api-server/dist/index.cjs:70:32440)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async /opt/render/project/src/artifacts/api-server/dist/index.cjs:70:35681
+    at async Timeout.$q [as _onTimeout] (/opt/render/project/src/artifacts/api-server/dist/index.cjs:194:5954) {
+  query: 'select "id", "seller_id", "type", "model", "year", "condition", "price", "city", "images", "description", "status", "followup_sent_at", "sold_confirmed", "created_at" from "junk_cars" where ("junk_cars"."followup_sent_at" is null and "junk_cars"."created_at" < $1)',
+  params: [ '2026-03-23T23:15:10.476Z' ],
+  cause: Error: getaddrinfo ENOTFOUND base
+      at /opt/render/project/src/artifacts/api-server/dist/index.cjs:59:15231
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async /opt/render/project/src/artifacts/api-server/dist/index.cjs:70:35890
+      at async Bb.queryWithCache (/opt/render/project/src/artifacts/api-server/dist/index.cjs:70:32415)
+      at async /opt/render/project/src/artifacts/api-server/dist/index.cjs:70:35681
+      at async Timeout.$q [as _onTimeout] (/opt/render/project/src/artifacts/api-server/dist/index.cjs:194:5954) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+Menu
+    syscall: 'getaddrinfo',
+    hostname: 'base'
+  }
+}
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://marklet-app.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
