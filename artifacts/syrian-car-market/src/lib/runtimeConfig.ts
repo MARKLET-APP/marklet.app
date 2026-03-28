@@ -2,11 +2,14 @@ import { Capacitor } from "@capacitor/core";
 
 export const IS_NATIVE = Capacitor.isNativePlatform();
 
-// On native, server.url in capacitor.config.ts loads the live Replit server,
-// so API calls use relative paths (empty base) just like on web.
-export const API_BASE = "";
+// In dev → Vite proxies /api/* to localhost backend (API_BASE = "")
+// In production on Vercel → VITE_API_URL must point to the Render API server
+// e.g.  VITE_API_URL=https://marklet-api.onrender.com
+export const API_BASE: string = import.meta.env.VITE_API_URL || "";
 
-export const SOCKET_URL: string | undefined = undefined;
+// Socket.io URL: same server as API in production, undefined = relative in dev
+export const SOCKET_URL: string | undefined =
+  import.meta.env.VITE_API_URL || undefined;
 
 export function withApi(path: string): string {
   if (!path.startsWith("/")) path = `/${path}`;
