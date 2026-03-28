@@ -24,3 +24,9 @@ id = "6H1Ee4cgdNL5CZtISkeUf"
 uri = "file://MARKLET_android.tar.gz"
 type = "unspecified"
 title = "MARKLET Android Project (tar.gz — 7.4MB)"
+
+[[outputs]]
+id = "AaRXALOUno5sfzxH1FTs1"
+uri = "file://artifacts/syrian-car-market/docs/MARKLET_UI_MAP.xlsx"
+type = "table"
+title = "MARKLET — خريطة واجهة المستخدم الشاملة"
