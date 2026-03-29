@@ -283,6 +283,24 @@ export default function Profile() {
 
                   {/* ── دعوة الأصدقاء ── */}
                   <InviteFriends userId={cp.id} />
+
+                  {/* ── روابط قانونية ── */}
+                  <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">قانوني</p>
+                    <Link href="/privacy-policy">
+                      <button className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted transition-colors text-right">
+                        <span className="text-sm font-medium">سياسة الخصوصية</span>
+                        <span className="text-muted-foreground text-lg">‹</span>
+                      </button>
+                    </Link>
+                    <Link href="/terms">
+                      <button className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted transition-colors text-right">
+                        <span className="text-sm font-medium">الشروط والأحكام</span>
+                        <span className="text-muted-foreground text-lg">‹</span>
+                      </button>
+                    </Link>
+                    <p className="text-center text-xs text-muted-foreground pt-2">MARKLET v1.0 — marklet.net</p>
+                  </div>
                 </div>
               ) : (
                 /* ── Edit Form ── */

@@ -45,6 +45,8 @@ const InspectionCenterManagePage = lazy(() => import("@/pages/inspection-center-
 const ScrapCentersPage = lazy(() => import("@/pages/scrap-centers"));
 const ScrapCenterPage = lazy(() => import("@/pages/scrap-center"));
 const ScrapCenterManagePage = lazy(() => import("@/pages/scrap-center-manage"));
+const PrivacyPolicyPage = lazy(() => import("@/pages/privacy-policy"));
+const TermsPage = lazy(() => import("@/pages/terms"));
 import AppRatingPopup from "@/components/AppRatingPopup";
 
 function PageLoader() {
@@ -138,6 +140,8 @@ function Router() {
           <Route path="/scrap-centers" component={ScrapCentersPage} />
           <Route path="/scrap-center/manage" component={ScrapCenterManagePage} />
           <Route path="/scrap-center/:id" component={ScrapCenterPage} />
+          <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+          <Route path="/terms" component={TermsPage} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

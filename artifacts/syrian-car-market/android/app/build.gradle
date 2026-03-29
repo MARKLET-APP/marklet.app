@@ -3,6 +3,16 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.marklet.app"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    signingConfigs {
+        release {
+            storeFile file('/home/runner/workspace/marklet-release.keystore')
+            storePassword 'Marklet@2026'
+            keyAlias 'marklet'
+            keyPassword 'Marklet@2026'
+        }
+    }
+
     defaultConfig {
         applicationId "com.marklet.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -20,10 +30,10 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
         debug {
             minifyEnabled false

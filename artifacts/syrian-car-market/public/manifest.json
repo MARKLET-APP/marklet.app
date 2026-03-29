@@ -11,7 +11,7 @@
   "theme_color": "#16a34a",
   "lang": "ar",
   "dir": "rtl",
-  "id": "com.marklet.sy",
+  "id": "com.marklet.app",
   "icons": [
     {
       "src": "/icons/icon-96.png",
@@ -50,7 +50,7 @@
   "related_applications": [
     {
       "platform": "play",
-      "id": "com.marklet.sy"
+      "id": "com.marklet.app"
     }
   ],
   "share_target": {
