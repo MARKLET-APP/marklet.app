@@ -36,3 +36,15 @@ id = "KhKJ_sZjRzrzdGP4Qz-rY"
 uri = "file://.local/MARKLET-REFERENCE.md"
 type = "text"
 title = "MARKLET — مرجع المشروع الكامل"
+
+[[outputs]]
+id = "G4H5bNhVw_qlklryKHk_h"
+uri = "file://attached_assets/generated_images/marklet-logo-square.png"
+type = "image"
+title = "MARKLET — لوغو مربع (صورة الملف الشخصي + أيقونة)"
+
+[[outputs]]
+id = "PJuO9Xw0fh6QnGwGQUsI5"
+uri = "file://attached_assets/generated_images/marklet-logo-wide.png"
+type = "image"
+title = "MARKLET — بانر غلاف فيسبوك"
