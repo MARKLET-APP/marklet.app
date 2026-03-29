@@ -48,3 +48,15 @@ id = "PJuO9Xw0fh6QnGwGQUsI5"
 uri = "file://attached_assets/generated_images/marklet-logo-wide.png"
 type = "image"
 title = "MARKLET — بانر غلاف فيسبوك"
+
+[[outputs]]
+id = "50RsYkBTyQgLOtpp-A7OM"
+uri = "file://attached_assets/generated_images/marklet-logo-square-v2.png"
+type = "image"
+title = "MARKLET — لوغو مربع (بالهوية الحالية)"
+
+[[outputs]]
+id = "BrobF4-U9wLmtC3tm0lgi"
+uri = "file://attached_assets/generated_images/marklet-logo-wide-v2.png"
+type = "image"
+title = "MARKLET — غلاف فيسبوك (بالهوية الحالية)"
