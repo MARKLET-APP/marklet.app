@@ -30,3 +30,9 @@ id = "AaRXALOUno5sfzxH1FTs1"
 uri = "file://artifacts/syrian-car-market/docs/MARKLET_UI_MAP.xlsx"
 type = "table"
 title = "MARKLET — خريطة واجهة المستخدم الشاملة"
+
+[[outputs]]
+id = "KhKJ_sZjRzrzdGP4Qz-rY"
+uri = "file://.local/MARKLET-REFERENCE.md"
+type = "text"
+title = "MARKLET — مرجع المشروع الكامل"
