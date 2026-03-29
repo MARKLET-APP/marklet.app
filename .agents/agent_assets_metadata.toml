@@ -60,3 +60,15 @@ id = "BrobF4-U9wLmtC3tm0lgi"
 uri = "file://attached_assets/generated_images/marklet-logo-wide-v2.png"
 type = "image"
 title = "MARKLET — غلاف فيسبوك (بالهوية الحالية)"
+
+[[outputs]]
+id = "kIhrE70p3NDdlSP0U776e"
+uri = "file://attached_assets/generated_images/marklet-final-square.png"
+type = "image"
+title = "MARKLET — لوغو مربع نهائي"
+
+[[outputs]]
+id = "ReTK0cv7w8rqZOL3k42li"
+uri = "file://attached_assets/generated_images/marklet-final-wide-v2.png"
+type = "image"
+title = "MARKLET — غلاف أفقي نهائي"
