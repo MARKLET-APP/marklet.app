@@ -78,3 +78,9 @@ id = "JbfOXg_UspagsdJmfZ-V7"
 uri = "file://screenshots/brand-comparison-full.jpg"
 type = "image"
 title = "مقارنة الأسماء التجارية — MARKLET"
+
+[[outputs]]
+id = "eGD-1VwHO9dE_28fiGXiP"
+uri = "file://screenshots/brand-comparison-final.jpg"
+type = "image"
+title = "مقارنة الأسماء التجارية — النسخة النهائية"
