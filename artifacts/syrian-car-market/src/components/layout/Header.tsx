@@ -57,7 +57,8 @@ export function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
 
           <div className="flex items-center gap-2">
-            {!isHome && (
+            {!isHome ? (
+              /* صفحات فرعية: زر رجوع فقط بدون هامبرغر */
               <Button
                 variant="ghost"
                 size="icon"
@@ -74,16 +75,18 @@ export function Header() {
               >
                 <ChevronRight className={cn("w-5 h-5", !isRTL && "rotate-180")} />
               </Button>
+            ) : (
+              /* الصفحة الرئيسية: هامبرغر فقط */
+              <Button
+                variant="ghost"
+                size="icon"
+                className="sm:hidden"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label={t("nav.menu")}
+              >
+                {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="sm:hidden"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label={t("nav.menu")}
-            >
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </Button>
             <Link href="/" className="flex items-center gap-2 group">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                 <img
