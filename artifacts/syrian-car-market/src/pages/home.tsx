@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useLanguage } from "@/lib/i18n";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { VideoCarousel } from "@/components/VideoCarousel";
+import { HeroCategorySlider } from "@/components/HeroCategorySlider";
 
 // ── خدمات التطبيق — تتناوب في الزر الحيوي بالـ Hero ──────────────────────────
 const SERVICE_TIPS: Array<{ icon: ReactNode; text: string }> = [
@@ -158,18 +159,8 @@ export default function Home() {
           paddingRight: "20px",
         }}
       >
-        {/* Car outline watermark — animated background */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url("${import.meta.env.BASE_URL}assets/car-outline.svg")`,
-            backgroundSize: "650px",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            opacity: 0.05,
-            animation: "backgroundMove 30s linear infinite",
-          }}
-        />
+        {/* ── منزلق الفئات — يتبادل بين السيارات / العقارات / الوظائف / الخ ── */}
+        <HeroCategorySlider baseUrl={import.meta.env.BASE_URL} />
 
         {/* Animated glow blobs */}
         <motion.div
@@ -185,20 +176,6 @@ export default function Home() {
           transition={{ duration: 12, ease: "easeInOut", repeat: Infinity, delay: 3 }}
         />
 
-        {/* Hero car image — floating animation */}
-        <img
-          src={`${import.meta.env.BASE_URL}assets/hero-car.png`}
-          alt="MARKLET"
-          className="absolute pointer-events-none hidden md:block"
-          style={{
-            bottom: "-40px",
-            right: "5%",
-            width: "520px",
-            opacity: 0.9,
-            animation: "carFloat 6s ease-in-out infinite",
-            zIndex: 1,
-          }}
-        />
 
         <div className="relative z-10 max-w-3xl w-full space-y-3 sm:space-y-5">
           {/* ── شريط الخدمات الحيوي ── */}
