@@ -1,5 +1,5 @@
 /**
- * Marketplace Feed Ranking — MARKLET
+ * Marketplace Feed Ranking — LAZEMNI
  *
  * Ranks listings by a composite score:
  *   +3  if the listing has more than 3 images

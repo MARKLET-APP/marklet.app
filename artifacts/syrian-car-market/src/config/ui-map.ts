@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// MARKLET — نظام التسمية المركزي لعناصر الواجهة
-// Central UI naming map for the MARKLET car marketplace
+// LAZEMNI — نظام التسمية المركزي لعناصر الواجهة
+// Central UI naming map for the LAZEMNI car marketplace
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const UI = {

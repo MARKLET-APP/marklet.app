@@ -30,8 +30,8 @@ export default function PrivacyPolicyPage() {
         <Section
           title={isRTL ? "مقدمة" : "Introduction"}
           content={isRTL
-            ? "مرحباً بك في تطبيق MARKLET — السوق الذكي للسيارات في سورية. نحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية. توضح هذه السياسة كيفية جمع معلوماتك واستخدامها وحمايتها عند استخدام تطبيقنا."
-            : "Welcome to MARKLET — Syria's Smart Car Marketplace. We respect your privacy and are committed to protecting your personal data. This policy explains how we collect, use, and protect your information when you use our app."}
+            ? "مرحباً بك في تطبيق LAZEMNI — السوق الذكي للسيارات في سورية. نحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية. توضح هذه السياسة كيفية جمع معلوماتك واستخدامها وحمايتها عند استخدام تطبيقنا."
+            : "Welcome to LAZEMNI — Syria's Smart Car Marketplace. We respect your privacy and are committed to protecting your personal data. This policy explains how we collect, use, and protect your information when you use our app."}
         />
 
         <Section
@@ -72,8 +72,8 @@ export default function PrivacyPolicyPage() {
         <Section
           title={isRTL ? "حقوقك" : "Your Rights"}
           content={isRTL
-            ? "لديك الحق في:\n• الاطلاع على بياناتك الشخصية\n• تعديل معلوماتك من صفحة الملف الشخصي\n• حذف حسابك وجميع بياناتك المرتبطة به\n• إلغاء الاشتراك في الإشعارات\n\nللتواصل بشأن بياناتك: support@marklet.net"
-            : "You have the right to:\n• Access your personal data\n• Edit your information from your profile page\n• Delete your account and all associated data\n• Unsubscribe from notifications\n\nContact us about your data: support@marklet.net"}
+            ? "لديك الحق في:\n• الاطلاع على بياناتك الشخصية\n• تعديل معلوماتك من صفحة الملف الشخصي\n• حذف حسابك وجميع بياناتك المرتبطة به\n• إلغاء الاشتراك في الإشعارات\n\nللتواصل بشأن بياناتك: support@lazemni.net"
+            : "You have the right to:\n• Access your personal data\n• Edit your information from your profile page\n• Delete your account and all associated data\n• Unsubscribe from notifications\n\nContact us about your data: support@lazemni.net"}
         />
 
         <Section
@@ -93,8 +93,8 @@ export default function PrivacyPolicyPage() {
         <div className="border-t pt-6">
           <p className="text-muted-foreground text-center">
             {isRTL
-              ? "للتواصل معنا: support@marklet.net | marklet.net"
-              : "Contact us: support@marklet.net | marklet.net"}
+              ? "للتواصل معنا: support@lazemni.net | lazemni.net"
+              : "Contact us: support@lazemni.net | lazemni.net"}
           </p>
         </div>
       </div>

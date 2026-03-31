@@ -75,7 +75,7 @@ async function uploadImage(file: File): Promise<string> {
   return (data.image ?? data.url)!;
 }
 
-const DRAFT_KEY = "marklet_listing_draft";
+const DRAFT_KEY = "lazemni_listing_draft";
 
 const DEFAULT_FIELDS = {
   brand: "", model: "", year: "2015", price: "", mileage: "0",

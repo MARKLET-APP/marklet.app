@@ -59,7 +59,7 @@ export function ShareSheet({ options, trigger, className }: ShareSheetProps) {
     e.stopPropagation();
 
     const text = buildText(options);
-    const title = options.title || "MARKLET";
+    const title = options.title || "LAZEMNI";
 
     /* ── 1. Native Android bridge (Capacitor APK) ─────────────────── */
     const native = (window as any).AndroidNative;

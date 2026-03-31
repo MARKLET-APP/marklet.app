@@ -300,7 +300,7 @@ export default function Profile() {
                         <span className="text-muted-foreground text-lg">‹</span>
                       </button>
                     </Link>
-                    <p className="text-center text-xs text-muted-foreground pt-2">MARKLET v1.0 — marklet.net</p>
+                    <p className="text-center text-xs text-muted-foreground pt-2">LAZEMNI v1.0 — lazemni.net</p>
                   </div>
                 </div>
               ) : (
@@ -582,7 +582,7 @@ function InviteFriends({ userId }: { userId: number }) {
   const { toast } = useToast();
 
   const appUrl = typeof window !== "undefined" ? `${window.location.origin}?ref=${userId}` : "";
-  const shareMsg = `انضم إلى MARKLET — السوق الأول للسيارات في سورية 🚗\n${appUrl}`;
+  const shareMsg = `انضم إلى LAZEMNI — السوق الأول للسيارات في سورية 🚗\n${appUrl}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(appUrl).then(() => {

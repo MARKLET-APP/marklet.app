@@ -232,7 +232,7 @@ router.post("/chats/:conversationId/messages", authMiddleware, async (req: AuthR
   });
 
   sendPushToUser(otherUserId, {
-    title: `MARKLET — رسالة من ${sender?.name ?? "شخص ما"}`,
+    title: `LAZEMNI — رسالة من ${sender?.name ?? "شخص ما"}`,
     body: filteredContent.length > 80 ? filteredContent.slice(0, 80) + "..." : filteredContent,
     url: `/messages?conversationId=${convId}`,
     tag: `msg-conv-${convId}`,
@@ -299,7 +299,7 @@ router.post("/chats/:conversationId/messages/image", authMiddleware, upload.sing
   if (io) io.to(`conv:${convId}`).emit("new_message", { convId, message: fullMsg });
 
   sendPushToUser(otherUserIdImg, {
-    title: `MARKLET — رسالة من ${sender?.name ?? "شخص ما"}`,
+    title: `LAZEMNI — رسالة من ${sender?.name ?? "شخص ما"}`,
     body: "📷 أرسل لك صورة",
     url: `/messages?conversationId=${convId}`,
     tag: `msg-conv-${convId}`,
@@ -340,7 +340,7 @@ router.post("/chats/:conversationId/messages/audio", authMiddleware, audioUpload
   }
 
   sendPushToUser(otherUserId, {
-    title: `MARKLET — رسالة من ${sender?.name ?? "شخص ما"}`,
+    title: `LAZEMNI — رسالة من ${sender?.name ?? "شخص ما"}`,
     body: "🎤 أرسل لك رسالة صوتية",
     url: `/messages?conversationId=${convId}`,
     tag: `msg-conv-${convId}`,

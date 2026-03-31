@@ -20,7 +20,7 @@ const LanguageContext = createContext<LangContext>({
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     try {
-      const saved = localStorage.getItem("marklet_lang");
+      const saved = localStorage.getItem("lazemni_lang");
       if (saved === "ar" || saved === "en") return saved;
     } catch {}
     return "ar";
@@ -28,7 +28,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLang = (l: Lang) => {
     setLangState(l);
-    try { localStorage.setItem("marklet_lang", l); } catch {}
+    try { localStorage.setItem("lazemni_lang", l); } catch {}
   };
 
   const isRTL = lang === "ar";

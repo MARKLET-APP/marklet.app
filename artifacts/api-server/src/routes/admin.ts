@@ -225,7 +225,7 @@ router.patch("/admin/cars/:id/status", ...guard, async (req: AuthRequest, res): 
   const [updated] = await db.update(carsTable).set({ status }).where(eq(carsTable.id, id)).returning({ id: carsTable.id, status: carsTable.status });
 
   if (status === "approved" && car.sellerId) {
-    const msg = `تمت الموافقة على إعلانك "${car.brand ?? ""} ${car.model ?? ""}". تم نشره الآن في MARKLET.`;
+    const msg = `تمت الموافقة على إعلانك "${car.brand ?? ""} ${car.model ?? ""}". تم نشره الآن في LAZEMNI.`;
     await db.insert(notificationsTable).values({
       userId: car.sellerId,
       type: "approval",

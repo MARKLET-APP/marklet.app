@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#16a34a"/>
-  <text x="256" y="300" font-family="Arial,sans-serif" font-size="160" font-weight="bold" fill="white" text-anchor="middle">M</text>
-  <text x="256" y="390" font-family="Arial,sans-serif" font-size="60" font-weight="bold" fill="#bbf7d0" text-anchor="middle">MARKLET</text>
+  <rect width="512" height="512" rx="96" fill="#0A0A0A"/>
+  <!-- L base (silver/white) -->
+  <polygon points="90,110 155,110 155,355 380,355 380,415 90,415" fill="#D0D0D0"/>
+  <!-- Z overlay (gold) -->
+  <polygon points="155,110 410,110 410,170 230,355 410,355 410,415 150,415 150,355 330,170 155,170" fill="#F5A623"/>
 </svg>

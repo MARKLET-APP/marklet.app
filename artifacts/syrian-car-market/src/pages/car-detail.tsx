@@ -56,11 +56,11 @@ export default function CarDetail() {
 
   useEffect(() => {
     if (!car) return;
-    const title = [(car as any).brand, (car as any).model, (car as any).year].filter(Boolean).join(" ") || "MARKLET";
+    const title = [(car as any).brand, (car as any).model, (car as any).year].filter(Boolean).join(" ") || "LAZEMNI";
     const description = (car as any).description || `${(car as any).city ?? ""} — ${(car as any).price ? "$" + Number((car as any).price).toLocaleString() : ""}`;
     const image = (car as any).images?.[0] ?? "";
     const url = `${window.location.origin}/og/${car.id}`;
-    document.title = `${title} | MARKLET`;
+    document.title = `${title} | LAZEMNI`;
     const setMeta = (property: string, content: string) => {
       let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
       if (!el) { el = document.createElement("meta"); el.setAttribute("property", property); document.head.appendChild(el); }
@@ -71,7 +71,7 @@ export default function CarDetail() {
     if (image) setMeta("og:image", image.startsWith("http") ? image : `${window.location.origin}${image}`);
     setMeta("og:url", url);
     setMeta("og:type", "website");
-    return () => { document.title = "MARKLET"; };
+    return () => { document.title = "LAZEMNI"; };
   }, [car]);
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export default function CarDetail() {
   }, [car, showEditDialog]);
 
   const shareOptions = {
-    title: [(car as any)?.brand, (car as any)?.model, (car as any)?.year].filter(Boolean).join(" ") || "إعلان على MARKLET",
+    title: [(car as any)?.brand, (car as any)?.model, (car as any)?.year].filter(Boolean).join(" ") || "إعلان على LAZEMNI",
     price: (car as any)?.price,
     city: (car as any)?.city,
     url: `${window.location.origin}/og/${carId}`,
@@ -109,7 +109,7 @@ export default function CarDetail() {
       toast({ title: "🎉 تم تحديد السيارة كمباعة", description: "سيبقى الإعلان ظاهراً مع علامة «تم البيع» لمدة 3 أيام ثم يُخفى تلقائياً." });
       setShowSoldConfirm(false);
       refetch();
-      const alreadyRated = localStorage.getItem("marklet_app_rated");
+      const alreadyRated = localStorage.getItem("lazemni_app_rated");
       if (!alreadyRated) setTimeout(() => setShowRatingPopup(true), 1500);
     } catch (err: any) {
       toast({ title: err.message ?? "حدث خطأ", variant: "destructive" });
@@ -142,7 +142,7 @@ export default function CarDetail() {
     if (!isPremium && !isSeller && !isAdmin) {
       toast({
         title: "هذه الميزة للمشتركين فقط",
-        description: "اشترك في MARKLET للوصول لأرقام هواتف البائعين.",
+        description: "اشترك في LAZEMNI للوصول لأرقام هواتف البائعين.",
       });
       return;
     }

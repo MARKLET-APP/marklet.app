@@ -1,5 +1,5 @@
 /**
- * Smart Category Engine — MARKLET
+ * Smart Category Engine — LAZEMNI
  * GET /api/ads/:category
  *
  * Unified category filter endpoint.

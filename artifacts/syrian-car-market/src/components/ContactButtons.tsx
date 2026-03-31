@@ -8,7 +8,7 @@ import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
 
 const WA_MSG = encodeURIComponent(
-  "مرحباً، رأيت إعلانك على MARKLET. هل ما زال متوفراً؟"
+  "مرحباً، رأيت إعلانك على LAZEMNI. هل ما زال متوفراً؟"
 );
 
 export function formatPhone(phone: string): string {
@@ -44,7 +44,7 @@ export function ContactButtons({
   phone,
   sellerId,
   listingId,
-  listingTitle = "إعلان على MARKLET",
+  listingTitle = "إعلان على LAZEMNI",
   size = "lg",
   compact = false,
   onInAppMessage,

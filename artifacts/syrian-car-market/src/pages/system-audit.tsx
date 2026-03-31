@@ -84,7 +84,7 @@ export default function SystemAudit() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="text-4xl font-black text-primary tracking-tight">MARKLET</span>
+            <span className="text-4xl font-black text-primary tracking-tight">LAZEMNI</span>
           </div>
           <h1 className="text-2xl font-bold">تدقيق النظام الداخلي</h1>
           <p className="text-muted-foreground text-sm">فحص شامل للتحقق من جاهزية التطبيق قبل التحويل للأندرويد</p>
@@ -106,7 +106,7 @@ export default function SystemAudit() {
             <div className={`rounded-2xl p-6 text-center border-2 ${isReady ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"}`}>
               <div className="text-5xl mb-3">{isReady ? "✅" : "⚠️"}</div>
               <h2 className={`text-2xl font-black mb-1 ${isReady ? "text-green-700" : "text-red-700"}`}>
-                {isReady ? "MARKLET جاهز للتحويل للأندرويد" : "النظام غير جاهز بعد"}
+                {isReady ? "LAZEMNI جاهز للتحويل للأندرويد" : "النظام غير جاهز بعد"}
               </h2>
               <p className={`text-sm font-medium ${isReady ? "text-green-600" : "text-red-600"}`}>
                 {passedChecks} من {totalChecks} فحوصات ناجحة

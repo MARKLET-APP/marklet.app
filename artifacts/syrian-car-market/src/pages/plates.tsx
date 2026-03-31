@@ -372,7 +372,7 @@ export default function PlatesPage() {
         <DialogContent className="max-w-sm text-center" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold text-center">متابعة الطلب</DialogTitle></DialogHeader>
           <div className="py-4 space-y-4">
-            <p className="text-muted-foreground">هل تمكنت من شراء اللوحة التي طلبتها؟ هل ساعدك <span className="font-bold text-primary">MARKLET</span> في إتمام الصفقة؟</p>
+            <p className="text-muted-foreground">هل تمكنت من شراء اللوحة التي طلبتها؟ هل ساعدك <span className="font-bold text-primary">LAZEMNI</span> في إتمام الصفقة؟</p>
             <div className="flex gap-3 justify-center">
               <Button onClick={() => followupRespond.mutate("yes")} disabled={followupRespond.isPending} className="gap-2 bg-green-600 hover:bg-green-700 rounded-xl font-bold flex-1">
                 <CheckCircle2 className="w-4 h-4" /> نعم، تم الشراء

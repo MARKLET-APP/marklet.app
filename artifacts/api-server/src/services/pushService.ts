@@ -5,7 +5,7 @@ import admin from "firebase-admin";
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:admin@marklet.sy";
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:admin@lazemni.sy";
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
@@ -64,7 +64,7 @@ async function sendFcmV1(token: string, payload: PushPayload): Promise<boolean> 
     },
     data: {
       url: payload.url || "/",
-      tag: payload.tag || "marklet-notification",
+      tag: payload.tag || "lazemni-notification",
     },
     android: {
       priority: "high",
@@ -72,7 +72,7 @@ async function sendFcmV1(token: string, payload: PushPayload): Promise<boolean> 
         icon: "ic_stat_notification",
         color: "#062f2f",
         sound: "default",
-        channelId: "marklet_default",
+        channelId: "lazemni_default",
         clickAction: "FLUTTER_NOTIFICATION_CLICK",
       },
     },
@@ -117,7 +117,7 @@ async function sendFcmBatchV1(
       },
       data: {
         url: payload.url || "/",
-        tag: payload.tag || "marklet-broadcast",
+        tag: payload.tag || "lazemni-broadcast",
       },
       android: {
         priority: "high",
@@ -125,7 +125,7 @@ async function sendFcmBatchV1(
           icon: "ic_stat_notification",
           color: "#062f2f",
           sound: "default",
-          channelId: "marklet_default",
+          channelId: "lazemni_default",
           clickAction: "FLUTTER_NOTIFICATION_CLICK",
         },
       },
@@ -195,7 +195,7 @@ async function sendWebPushToUser(userId: number, payload: PushPayload): Promise<
     icon: payload.icon || "/icons/icon-192.png",
     badge: payload.badge || "/icons/icon-96.png",
     url: payload.url || "/messages",
-    tag: payload.tag || "marklet-notification",
+    tag: payload.tag || "lazemni-notification",
   });
 
   const sendPromises = subscriptions.map(async (sub) => {
@@ -261,7 +261,7 @@ export async function sendBroadcastPush(payload: PushPayload): Promise<{ fcm: nu
         icon: payload.icon || "/icons/icon-192.png",
         badge: payload.badge || "/icons/icon-96.png",
         url: payload.url || "/",
-        tag: payload.tag || "marklet-broadcast",
+        tag: payload.tag || "lazemni-broadcast",
       });
       for (const sub of subscriptions) {
         try {

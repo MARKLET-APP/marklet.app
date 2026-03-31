@@ -1,4 +1,4 @@
-# MARKLET — السوق الشامل السوري
+# LAZEMNI — السوق الشامل السوري
 
 ## Overview
 
@@ -41,13 +41,13 @@ A full-stack mobile-first Arabic RTL multi-category marketplace for Syria coveri
 - **New DB tables**: `scrap_centers`; users table has `whatsapp`, `is_featured_seller`; inspection_centers has `whatsapp`, `logo`, `description`, `is_verified`
 
 ## Android APK
-- **Package name**: `com.marklet.app`
-- **Download URL**: `/marklet.apk` (served by Vite static from `public/marklet.apk`)
-- **Current APK**: 9MB debug build (arm64-v8a + armeabi-v7a, com.marklet.app)
-- **Build fix**: APK files were mistakenly placed in `public/` → included in Android assets → bloated APK to 545MB. Fix: removed APK files from `public/` except the current 9MB build. Future builds: run `gradlew assembleDebug` and copy output to `public/marklet.apk`.
+- **Package name**: `com.lazemni.app`
+- **Download URL**: `/lazemni.apk` (served by Vite static from `public/lazemni.apk`)
+- **Current APK**: 9MB debug build (arm64-v8a + armeabi-v7a, com.lazemni.app)
+- **Build fix**: APK files were mistakenly placed in `public/` → included in Android assets → bloated APK to 545MB. Fix: removed APK files from `public/` except the current 9MB build. Future builds: run `gradlew assembleDebug` and copy output to `public/lazemni.apk`.
 - **Build command**: `cd android && JAVA_HOME=<path> ANDROID_HOME=/home/runner/android-sdk GRADLE_OPTS="-Xmx2g" ./gradlew assembleDebug --no-daemon`
 - **IMPORTANT**: Never place APK or large binary files in `public/` — they get bundled into the next Android build via `cap sync`
-- **FCM**: google-services.json at `android/app/google-services.json`, package `com.marklet.app`
+- **FCM**: google-services.json at `android/app/google-services.json`, package `com.lazemni.app`
 
 ## Pre-Android Audit & Fixes (March 2026)
 - **Push Notifications**: Full Web Push implementation (sw.js, VAPID keys, pushService, push.ts routes, usePushNotifications hook)
@@ -70,7 +70,7 @@ A full-stack mobile-first Arabic RTL multi-category marketplace for Syria coveri
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
 - **Frontend**: React + Vite (artifacts/syrian-car-market) - Arabic RTL / English LTR (bilingual)
-- **i18n**: Custom React context (`src/lib/i18n.tsx`) + translations (`src/lib/translations.ts`), persisted to localStorage as `marklet_lang`
+- **i18n**: Custom React context (`src/lib/i18n.tsx`) + translations (`src/lib/translations.ts`), persisted to localStorage as `lazemni_lang`
 - **API framework**: Express 5 (artifacts/api-server)
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
@@ -164,5 +164,5 @@ lib/
 - Page: `artifacts/syrian-car-market/src/pages/auctions.tsx`
 - 3 regions: عربية (Emirates Auction), أمريكية (Copart + IAAI), كورية (Encar)
 - Iframe viewer with disclaimer + external-link fallback for sites that block iframes
-- 'طلب شراء عبر MARKLET' fixed button → sends auction_request to POST /api/support
+- 'طلب شراء عبر LAZEMNI' fixed button → sends auction_request to POST /api/support
 - Category icon added to home page categories grid

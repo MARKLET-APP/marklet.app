@@ -1,17 +1,17 @@
 {
-  "name": "MARKLET — سوق السيارات في سورية",
-  "short_name": "MARKLET",
-  "description": "السوق الذكي للسيارات والخدمات في سورية — بيع، شراء، إيجار، قطع غيار",
+  "name": "LAZEMNI — السوق الشامل في سورية",
+  "short_name": "LAZEMNI",
+  "description": "السوق الشامل في سورية — بيع، شراء، إيجار، وظائف، عقارات، سيارات",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait",
-  "background_color": "#062f2f",
-  "theme_color": "#16a34a",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
   "lang": "ar",
   "dir": "rtl",
-  "id": "com.marklet.app",
+  "id": "com.lazemni.app",
   "icons": [
     {
       "src": "/icons/icon-96.png",
@@ -36,21 +36,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
     }
   ],
   "screenshots": [],
-  "categories": ["shopping", "auto"],
+  "categories": ["shopping", "marketplace", "classifieds"],
   "prefer_related_applications": false,
   "related_applications": [
     {
       "platform": "play",
-      "id": "com.marklet.app"
+      "id": "com.lazemni.app"
     }
   ],
   "share_target": {

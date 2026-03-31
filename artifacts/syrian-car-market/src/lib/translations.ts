@@ -22,7 +22,7 @@ const translations: Record<Lang, Record<string, string>> = {
 
     // Home page
     "home.hero.badge": "بيع • شراء • تأجير • عقارات • وظائف",
-    "home.hero.title1": "MARKLET",
+    "home.hero.title1": "LAZEMNI",
     "home.hero.title2": "",
     "home.hero.subtitle": "السوق الإلكتروني الشامل في سورية",
     "home.hero.description": "سيارات • عقارات • وظائف • قطع غيار • وأكثر\nكل ما تحتاجه في منصة واحدة",
@@ -129,7 +129,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.login.error": "بيانات الدخول غير صحيحة",
 
     "auth.register.title": "إنشاء حساب جديد",
-    "auth.register.subtitle": "انضم إلى MARKLET وابدأ البيع والشراء",
+    "auth.register.subtitle": "انضم إلى LAZEMNI وابدأ البيع والشراء",
     "auth.register.name": "الاسم الكامل",
     "auth.register.email": "البريد الإلكتروني",
     "auth.register.phone": "رقم الهاتف",
@@ -353,7 +353,7 @@ const translations: Record<Lang, Record<string, string>> = {
 
     // Home page
     "home.hero.badge": "Cars • Real Estate • Jobs • More",
-    "home.hero.title1": "MARKLET",
+    "home.hero.title1": "LAZEMNI",
     "home.hero.title2": "",
     "home.hero.subtitle": "Syria's All-in-One Digital Marketplace",
     "home.hero.description": "Cars • Real Estate • Jobs • Parts • And more\nEverything you need in one platform",
@@ -460,7 +460,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.login.error": "Invalid credentials",
 
     "auth.register.title": "Create New Account",
-    "auth.register.subtitle": "Join MARKLET and start buying and selling",
+    "auth.register.subtitle": "Join LAZEMNI and start buying and selling",
     "auth.register.name": "Full Name",
     "auth.register.email": "Email Address",
     "auth.register.phone": "Phone Number",

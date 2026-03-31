@@ -88,19 +88,18 @@ export function Header() {
               </Button>
             )}
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-md">
                 <img
-                  src={`${import.meta.env.BASE_URL}images/logo.png`}
-                  alt="MARKLET Logo"
-                  className="w-8 h-8 object-contain drop-shadow-sm"
+                  src={`${import.meta.env.BASE_URL}icons/icon-96.png`}
+                  alt="LAZEMNI Logo"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}
                 />
-                <Car className="w-5 h-5 text-primary hidden" />
               </div>
-              <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                MARKLET
+              <span className="text-xl font-extrabold tracking-widest" style={{ color: "#F5A623", letterSpacing: "0.08em" }}>
+                LAZEMNI
               </span>
             </Link>
           </div>

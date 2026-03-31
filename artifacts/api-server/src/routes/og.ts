@@ -54,7 +54,7 @@ router.get("/og/:id", async (req, res): Promise<void> => {
     const titleParts = [car.brand, car.model, car.year].filter(Boolean).join(" ");
     const priceStr = car.price ? ` — $${Number(car.price).toLocaleString()}` : "";
     const cityStr = car.city ? ` | ${car.city}` : "";
-    const ogTitle = `${titleParts}${priceStr}${cityStr} — MARKLET`;
+    const ogTitle = `${titleParts}${priceStr}${cityStr} — LAZEMNI`;
     const ogDesc = car.description
       ? car.description.slice(0, 160)
       : "السوق الذكي للسيارات والخدمات في سورية — بيع . تأجير . قطع غيار . خردة";
@@ -70,7 +70,7 @@ router.get("/og/:id", async (req, res): Promise<void> => {
   <meta charset="UTF-8" />
   <title>${esc(ogTitle)}</title>
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="MARKLET" />
+  <meta property="og:site_name" content="LAZEMNI" />
   <meta property="og:title" content="${esc(ogTitle)}" />
   <meta property="og:description" content="${esc(ogDesc)}" />
   <meta property="og:image" content="${esc(carImage)}" />

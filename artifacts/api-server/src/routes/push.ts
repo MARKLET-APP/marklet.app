@@ -129,7 +129,7 @@ router.delete("/push/fcm-token", authMiddleware, async (req: AuthRequest, res): 
 router.post("/push/test", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   try {
     await sendPushToUser(req.userId!, {
-      title: "MARKLET 🔔",
+      title: "LAZEMNI 🔔",
       body: "اختبار الإشعارات - يعمل بشكل صحيح!",
       url: "/messages",
       tag: "test-notification",
@@ -171,7 +171,7 @@ router.post("/push/broadcast", authMiddleware, adminMiddleware, async (req: Auth
       title,
       body,
       url: url || "/",
-      tag: "marklet-broadcast",
+      tag: "lazemni-broadcast",
     });
     console.log(`[Broadcast] Admin ${req.userId} sent: FCM=${result.fcm}, Web=${result.webpush}, Errors=${result.errors}`);
     res.json({

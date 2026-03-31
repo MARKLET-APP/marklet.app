@@ -1,5 +1,5 @@
 /**
- * MARKLET — Notifications Automation Scheduler
+ * LAZEMNI — Notifications Automation Scheduler
  * Handles: inactive user nudges (3/7/14 days), service rating prompts, daily tasks
  * Uses: PostgreSQL (Drizzle ORM) + existing sendPushToUser from pushService
  */
@@ -36,7 +36,7 @@ const INACTIVITY_LEVELS: InactivityLevel[] = [
   {
     minDays: 14,
     maxDays: 15,
-    title: "الفرصة تنتظرك في MARKLET 🔥",
+    title: "الفرصة تنتظرك في LAZEMNI 🔥",
     body: "سيارات وخدمات بأفضل الأسعار — شراء . بيع . تأجير . قطع غيار",
     tag: "inactive-14d",
   },

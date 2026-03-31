@@ -101,7 +101,7 @@ async function runFollowupNotifications() {
       await db.insert(notificationsTable).values({
         userId: item.sellerId,
         type: "followup_junk",
-        message: `هل تم بيع سيارتك المعطوبة ${[item.type, item.model].filter(Boolean).join(" ") || ""}؟ هل ساعدك MARKLET في إتمام الصفقة؟`,
+        message: `هل تم بيع سيارتك المعطوبة ${[item.type, item.model].filter(Boolean).join(" ") || ""}؟ هل ساعدك LAZEMNI في إتمام الصفقة؟`,
         link: `/junk-cars?followup=${item.id}&table=junk`,
       });
     }
@@ -114,7 +114,7 @@ async function runFollowupNotifications() {
       await db.insert(notificationsTable).values({
         userId: item.sellerId,
         type: "followup_part",
-        message: `هل تم بيع القطعة "${item.name}"؟ هل ساعدك MARKLET في إتمام الصفقة؟`,
+        message: `هل تم بيع القطعة "${item.name}"؟ هل ساعدك LAZEMNI في إتمام الصفقة؟`,
         link: `/car-parts?followup=${item.id}&table=parts`,
       });
     }
@@ -127,7 +127,7 @@ async function runFollowupNotifications() {
       await db.insert(notificationsTable).values({
         userId: item.userId,
         type: "followup_buyreq",
-        message: `هل تمكنت من شراء ${[item.brand, item.model].filter(Boolean).join(" ") || "السيارة"} التي طلبتها؟ هل ساعدك MARKLET في إتمام الصفقة؟`,
+        message: `هل تمكنت من شراء ${[item.brand, item.model].filter(Boolean).join(" ") || "السيارة"} التي طلبتها؟ هل ساعدك LAZEMNI في إتمام الصفقة؟`,
         link: `/buy-requests?followup=${item.id}&table=buyreq`,
       });
     }

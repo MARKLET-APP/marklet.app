@@ -5,7 +5,7 @@ import { authMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
-const AUTO_REPLY = "تم استلام رسالتك، سيقوم فريق MARKLET بالرد عليك قريباً. شكراً لملاحظاتك.";
+const AUTO_REPLY = "تم استلام رسالتك، سيقوم فريق LAZEMNI بالرد عليك قريباً. شكراً لملاحظاتك.";
 
 router.post("/support", async (req, res): Promise<void> => {
   const { type, message, userId } = req.body;

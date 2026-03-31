@@ -132,7 +132,7 @@ export default function AuctionsPage() {
         `الهاتف: ${form.phone}\n` +
         `ملاحظات: ${form.notes || "—"}`;
       await api.support.send({ type: "auction_request", message: msg, userId: user?.id ?? null });
-      toast({ title: "تم إرسال طلبك بنجاح", description: "سيتواصل معك فريق MARKLET قريباً" });
+      toast({ title: "تم إرسال طلبك بنجاح", description: "سيتواصل معك فريق LAZEMNI قريباً" });
       setPurchaseOpen(false);
       setForm(f => ({ ...f, price: "", notes: "" }));
     } catch {
@@ -169,7 +169,7 @@ export default function AuctionsPage() {
 
         {/* Disclaimer strip */}
         <div className="bg-amber-100 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700 px-4 py-2 text-xs font-semibold text-amber-900 dark:text-amber-200 text-center shrink-0">
-          يعرض MARKLET المزادات العالمية للتصفح فقط. عملية الشراء تتم مباشرة عبر موقع المزاد أو عبر فريق MARKLET عند طلب المساعدة.
+          يعرض LAZEMNI المزادات العالمية للتصفح فقط. عملية الشراء تتم مباشرة عبر موقع المزاد أو عبر فريق LAZEMNI عند طلب المساعدة.
         </div>
 
         {/* Site opened - show purchase CTA */}
@@ -188,10 +188,10 @@ export default function AuctionsPage() {
             </button>
           </div>
           <div className="w-full max-w-sm bg-primary/5 border border-primary/20 rounded-2xl p-4 text-sm text-right space-y-1">
-            <p className="font-bold text-foreground mb-2">كيف يعمل MARKLET للمزادات؟</p>
+            <p className="font-bold text-foreground mb-2">كيف يعمل LAZEMNI للمزادات؟</p>
             <p className="text-muted-foreground">١. ابحث عن سيارتك في موقع المزاد</p>
             <p className="text-muted-foreground">٢. انسخ رابط السيارة وأرسله لنا</p>
-            <p className="text-muted-foreground">٣. يقوم فريق MARKLET بالمزايدة والشراء نيابةً عنك</p>
+            <p className="text-muted-foreground">٣. يقوم فريق LAZEMNI بالمزايدة والشراء نيابةً عنك</p>
           </div>
         </div>
 
@@ -205,7 +205,7 @@ export default function AuctionsPage() {
             }}
           >
             <ShoppingCart className="w-4 h-4" />
-            طلب شراء عبر MARKLET
+            طلب شراء عبر LAZEMNI
           </Button>
         </div>
 
@@ -215,12 +215,12 @@ export default function AuctionsPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5 text-primary" />
-                طلب شراء عبر MARKLET
+                طلب شراء عبر LAZEMNI
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-sm text-primary">
-                سيتواصل معك فريق MARKLET لمساعدتك في إتمام عملية الشراء من {activeSite.nameAr}.
+                سيتواصل معك فريق LAZEMNI لمساعدتك في إتمام عملية الشراء من {activeSite.nameAr}.
               </div>
               <div className="space-y-2">
                 <Label htmlFor="carUrl">رابط السيارة في المزاد</Label>
@@ -314,8 +314,8 @@ export default function AuctionsPage() {
       <div className="mx-4 mt-4 rounded-xl bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-600 p-4 flex gap-3">
         <AlertTriangle className="w-5 h-5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
         <p className="text-sm font-medium text-amber-900 dark:text-amber-200 leading-relaxed">
-          يعرض MARKLET المزادات العالمية للتصفح فقط.<br />
-          عملية الشراء تتم مباشرة عبر موقع المزاد أو عبر فريق MARKLET عند طلب المساعدة.
+          يعرض LAZEMNI المزادات العالمية للتصفح فقط.<br />
+          عملية الشراء تتم مباشرة عبر موقع المزاد أو عبر فريق LAZEMNI عند طلب المساعدة.
         </p>
       </div>
 
@@ -380,7 +380,7 @@ export default function AuctionsPage() {
       <div className="mx-4 mt-6 rounded-2xl border bg-gradient-to-br from-primary/5 to-primary/10 p-5">
         <h3 className="font-bold mb-2 flex items-center gap-2">
           <ShoppingCart className="w-4 h-4 text-primary" />
-          كيف يساعدك MARKLET؟
+          كيف يساعدك LAZEMNI؟
         </h3>
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-start gap-2">
@@ -389,7 +389,7 @@ export default function AuctionsPage() {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary mt-0.5">✓</span>
-            أرسل طلب شراء وسيتولى فريق MARKLET الباقي
+            أرسل طلب شراء وسيتولى فريق LAZEMNI الباقي
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary mt-0.5">✓</span>

@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
-const STORAGE_KEY = "marklet_app_rated";
+const STORAGE_KEY = "lazemni_app_rated";
 const DELAY_MS = 2 * 60 * 1000;
 
 interface Props {
@@ -83,7 +83,7 @@ export default function AppRatingPopup({ forceOpen, onClose }: Props = {}) {
         {!submitted ? (
           <>
             <div className="text-4xl mb-3">⭐</div>
-            <h3 className="text-xl font-bold text-foreground mb-1">هل أعجبك MARKLET؟</h3>
+            <h3 className="text-xl font-bold text-foreground mb-1">هل أعجبك LAZEMNI؟</h3>
             <p className="text-muted-foreground text-sm mb-5">شاركنا رأيك لنحسّن التجربة</p>
 
             <div className="flex justify-center gap-2 mb-5">
@@ -131,7 +131,7 @@ export default function AppRatingPopup({ forceOpen, onClose }: Props = {}) {
           <div className="py-4">
             <div className="text-5xl mb-3">🎉</div>
             <h3 className="text-xl font-bold text-foreground mb-2">شكراً على تقييمك!</h3>
-            <p className="text-muted-foreground text-sm">رأيك يساعدنا على تحسين MARKLET</p>
+            <p className="text-muted-foreground text-sm">رأيك يساعدنا على تحسين LAZEMNI</p>
           </div>
         )}
       </div>

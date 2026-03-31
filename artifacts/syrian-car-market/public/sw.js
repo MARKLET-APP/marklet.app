@@ -1,4 +1,4 @@
-const CACHE_NAME = "marklet-v2";
+const CACHE_NAME = "lazemni-v2";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json"
@@ -48,15 +48,15 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data.json();
   } catch {
-    data = { title: "MARKLET", body: event.data.text() };
+    data = { title: "LAZEMNI", body: event.data.text() };
   }
 
-  const title = data.title || "MARKLET";
+  const title = data.title || "LAZEMNI";
   const options = {
     body: data.body || "لديك إشعار جديد",
     icon: data.icon || "/icons/icon-192.png",
     badge: data.badge || "/icons/icon-96.png",
-    tag: data.tag || "marklet-notification",
+    tag: data.tag || "lazemni-notification",
     renotify: true,
     data: {
       url: data.url || "/messages",

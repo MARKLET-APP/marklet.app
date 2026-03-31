@@ -15,7 +15,7 @@ import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
 
 // ─── Search History ──────────────────────────────────────────────────────────
-const HISTORY_KEY = "marklet_search_history";
+const HISTORY_KEY = "lazemni_search_history";
 const MAX_HISTORY = 12;
 
 function useSearchHistory() {

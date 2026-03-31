@@ -28,15 +28,15 @@ export default function TermsPage() {
         <Section
           title={isRTL ? "القبول بالشروط" : "Acceptance of Terms"}
           content={isRTL
-            ? "باستخدامك لتطبيق MARKLET فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي جزء منها، يرجى التوقف عن استخدام التطبيق."
-            : "By using MARKLET, you agree to be bound by these Terms & Conditions. If you do not agree to any part of these terms, please stop using the app."}
+            ? "باستخدامك لتطبيق LAZEMNI فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي جزء منها، يرجى التوقف عن استخدام التطبيق."
+            : "By using LAZEMNI, you agree to be bound by these Terms & Conditions. If you do not agree to any part of these terms, please stop using the app."}
         />
 
         <Section
           title={isRTL ? "وصف الخدمة" : "Service Description"}
           content={isRTL
-            ? "MARKLET هو سوق إلكتروني يربط بائعي ومشتري السيارات والمركبات وقطع الغيار في سورية. نحن نوفر المنصة فقط ولسنا طرفاً في أي صفقة بيع أو شراء."
-            : "MARKLET is an online marketplace connecting car buyers and sellers, vehicles, and spare parts in Syria. We provide the platform only and are not a party to any sale or purchase transaction."}
+            ? "LAZEMNI هو سوق إلكتروني يربط بائعي ومشتري السيارات والمركبات وقطع الغيار في سورية. نحن نوفر المنصة فقط ولسنا طرفاً في أي صفقة بيع أو شراء."
+            : "LAZEMNI is an online marketplace connecting car buyers and sellers, vehicles, and spare parts in Syria. We provide the platform only and are not a party to any sale or purchase transaction."}
         />
 
         <Section
@@ -56,15 +56,15 @@ export default function TermsPage() {
         <Section
           title={isRTL ? "المسؤولية" : "Liability"}
           content={isRTL
-            ? "MARKLET غير مسؤول عن:\n• صحة المعلومات المقدمة من المستخدمين\n• أي خلافات تنشأ بين البائع والمشتري\n• جودة أو حالة المركبات المعلنة\n• أي خسائر مالية ناتجة عن صفقات المستخدمين\n\nيُنصح بإجراء فحص شامل للمركبة قبل إتمام أي عملية شراء."
-            : "MARKLET is not responsible for:\n• The accuracy of information provided by users\n• Any disputes arising between buyer and seller\n• The quality or condition of listed vehicles\n• Any financial losses from user transactions\n\nWe recommend a thorough vehicle inspection before completing any purchase."}
+            ? "LAZEMNI غير مسؤول عن:\n• صحة المعلومات المقدمة من المستخدمين\n• أي خلافات تنشأ بين البائع والمشتري\n• جودة أو حالة المركبات المعلنة\n• أي خسائر مالية ناتجة عن صفقات المستخدمين\n\nيُنصح بإجراء فحص شامل للمركبة قبل إتمام أي عملية شراء."
+            : "LAZEMNI is not responsible for:\n• The accuracy of information provided by users\n• Any disputes arising between buyer and seller\n• The quality or condition of listed vehicles\n• Any financial losses from user transactions\n\nWe recommend a thorough vehicle inspection before completing any purchase."}
         />
 
         <Section
           title={isRTL ? "الملكية الفكرية" : "Intellectual Property"}
           content={isRTL
-            ? "جميع حقوق الملكية الفكرية لتطبيق MARKLET، بما في ذلك الشعار والتصميم والكود البرمجي، محفوظة لـ MARKLET. لا يجوز نسخ أو توزيع أي جزء من التطبيق دون إذن مسبق."
-            : "All intellectual property rights of the MARKLET app, including logo, design, and code, are reserved by MARKLET. No part of the app may be copied or distributed without prior permission."}
+            ? "جميع حقوق الملكية الفكرية لتطبيق LAZEMNI، بما في ذلك الشعار والتصميم والكود البرمجي، محفوظة لـ LAZEMNI. لا يجوز نسخ أو توزيع أي جزء من التطبيق دون إذن مسبق."
+            : "All intellectual property rights of the LAZEMNI app, including logo, design, and code, are reserved by LAZEMNI. No part of the app may be copied or distributed without prior permission."}
         />
 
         <Section
@@ -84,8 +84,8 @@ export default function TermsPage() {
         <div className="border-t pt-6">
           <p className="text-muted-foreground text-center">
             {isRTL
-              ? "للتواصل معنا: support@marklet.net | marklet.net"
-              : "Contact us: support@marklet.net | marklet.net"}
+              ? "للتواصل معنا: support@lazemni.net | lazemni.net"
+              : "Contact us: support@lazemni.net | lazemni.net"}
           </p>
         </div>
       </div>

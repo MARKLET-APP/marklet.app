@@ -1,5 +1,5 @@
 /**
- * Marketplace Feed — MARKLET
+ * Marketplace Feed — LAZEMNI
  * GET /api/feed
  *
  * Returns ranked listings using the feedRanking service.
