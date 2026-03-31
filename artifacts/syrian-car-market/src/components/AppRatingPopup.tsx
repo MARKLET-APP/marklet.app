@@ -64,9 +64,13 @@ export default function AppRatingPopup({ forceOpen, onClose }: Props = {}) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={handleDismiss}>
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onPointerDown={(e) => { if (e.target === e.currentTarget) handleDismiss(); }}
+    >
       <div
-        className="bg-card border rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center animate-in slide-in-from-bottom-4 duration-300"
+        className="bg-card border rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center animate-in slide-in-from-bottom-4 duration-300 relative"
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         <button
