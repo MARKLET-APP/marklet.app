@@ -71,6 +71,11 @@ export default function Register() {
             <label className="text-sm font-bold">{t("auth.register.email")}</label>
             <input
               {...formRegister("identifier", { required: t("common.requiredField") })}
+              autoComplete="email"
+              inputMode="email"
+              autoCapitalize="none"
+              spellCheck={false}
+              style={{ fontSize: 16 }}
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr"
             />
             {errors.identifier && <p className="text-destructive text-xs">{errors.identifier.message as string}</p>}
@@ -82,18 +87,10 @@ export default function Register() {
               type="password"
               {...formRegister("password", { required: t("common.requiredField") })}
               autoComplete="new-password"
+              style={{ fontSize: 16 }}
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr"
             />
             {errors.password && <p className="text-destructive text-xs">{errors.password.message as string}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-bold">{t("auth.register.role")}</label>
-            <select {...formRegister("role")} className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none">
-              <option value="buyer">{t("auth.register.role.buyer")}</option>
-              <option value="seller">{t("auth.register.role.seller")}</option>
-              <option value="dealer">{t("auth.register.role.dealer")}</option>
-            </select>
           </div>
 
           <Button

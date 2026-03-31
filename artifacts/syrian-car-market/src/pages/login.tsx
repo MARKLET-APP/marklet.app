@@ -63,11 +63,12 @@ export default function Login() {
               {...register("identifier", { required: t("common.requiredField") })}
               data-ui-id="INPUT_EMAIL_01"
               data-testid="INPUT_EMAIL_01"
-              autoComplete="username"
+              autoComplete="email"
               inputMode="email"
               spellCheck={false}
               autoCapitalize="none"
               className="w-full rounded-xl border-2 border-border px-4 py-3 bg-background focus:border-primary outline-none text-left dir-ltr text-base"
+              style={{ fontSize: 16 }}
               placeholder="email@example.com"
             />
             {errors.identifier && <p className="text-destructive text-xs">{errors.identifier.message as string}</p>}

@@ -557,6 +557,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     onCompositionStart: handleCompositionStart,
     onCompositionEnd: handleCompositionEnd as React.CompositionEventHandler<any>,
     onBlur: handleBlur as React.FocusEventHandler<any>,
+    dir: "auto" as const,
   };
 
   // Show the draft badge only when the user has typed meaningful data

@@ -3,11 +3,12 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
+import { getRealEstate, getJobs } from "@/lib/api";
 import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
   AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag,
-  Building2, Star, Share2, FileSearch2, Briefcase, House
+  Building2, Star, Share2, FileSearch2, Briefcase, House, BedDouble, Banknote
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { VehicleReportWidget } from "@/components/VehicleReportWidget";
@@ -28,20 +29,33 @@ import { VideoCarousel } from "@/components/VideoCarousel";
 // ── خدمات التطبيق — تتناوب في الزر الحيوي بالـ Hero ──────────────────────────
 const SERVICE_TIPS: Array<{ icon: ReactNode; text: string }> = [
   { icon: <Car size={13} />,           text: "بيع سيارتك بسرعة وأمان — آلاف المشترين ينتظرون عرضك الآن" },
+  { icon: <Building2 size={13} />,     text: "أعلن عن عقارك للبيع أو الإيجار وتواصل مع المهتمين مباشرةً" },
+  { icon: <Briefcase size={13} />,     text: "انشر وظيفتك الشاغرة أو ابحث عن فرصة عمل مناسبة لمهاراتك" },
   { icon: <ShoppingCart size={13} />,  text: "انشر طلب شراء مجاناً وستصلك العروض مباشرةً من البائعين" },
-  { icon: <Key size={13} />,           text: "استأجر سيارتك ليوم أو شهر أو أكثر بأفضل الأسعار في سوريا" },
-  { icon: <FileSearch2 size={13} />,   text: "استعلم عن حالة أي مركبة قبل شراءها عبر رقم الشاسيه VIN" },
+  { icon: <Key size={13} />,           text: "استأجر سيارة ليوم أو شهر أو أكثر بأفضل الأسعار في سوريا" },
+  { icon: <House size={13} />,         text: "ابحث عن شقة أو منزل أو أرض في جميع المحافظات السورية" },
   { icon: <Wrench size={13} />,        text: "قطع غيار أصلية وبديلة بأسعار تنافسية من بائعين موثوقين" },
+  { icon: <FileSearch2 size={13} />,   text: "استعلم عن حالة أي مركبة قبل شراءها عبر رقم الشاسيه VIN" },
   { icon: <Package size={13} />,       text: "تخلص من سيارتك المعطوبة أو المصدومة واحصل على أفضل سعر" },
   { icon: <ShieldCheck size={13} />,   text: "احجز فحص مركبة من مراكز معتمدة قبل إتمام أي صفقة شراء" },
-  { icon: <Building2 size={13} />,     text: "تواصل مع معارض سيارات موثوقة ومعتمدة من جميع المحافظات" },
   { icon: <AlertTriangle size={13} />, text: "ساعد في استعادة السيارات المسروقة أو المفقودة وأبلغ فوراً" },
-  { icon: <Bike size={13} />,          text: "دراجات نارية وأرقام اللوحات — كل ما يتعلق بالآليات هنا" },
 ];
 
 export default function Home() {
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
   const { data: latestCars, isLoading: loadingLatest } = useListCars({ limit: 6, sortBy: 'createdAt:desc' });
+
+  const { data: latestRealEstate = [] } = useQuery({
+    queryKey: ["/real-estate", "home"],
+    queryFn: () => getRealEstate({ limit: "4" }),
+    staleTime: 60_000,
+  });
+
+  const { data: latestJobs = [] } = useQuery({
+    queryKey: ["/jobs", "home"],
+    queryFn: () => getJobs({ limit: "4" }),
+    staleTime: 60_000,
+  });
   const { user } = useAuthStore();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -117,6 +131,8 @@ export default function Home() {
   };
 
   const categories = [
+    { id: 'real-estate', name: isRTL ? 'عقارات' : 'Real Estate', icon: 'realestate', href: '/real-estate' },
+    { id: 'jobs', name: isRTL ? 'وظائف' : 'Jobs', icon: 'jobs', href: '/jobs' },
     { id: 'new', name: isRTL ? 'سيارات جديدة' : 'New Cars', icon: 'car-new', href: '/new-cars' },
     { id: 'used', name: isRTL ? 'سيارات مستعملة' : 'Used Cars', icon: 'car-used', href: '/used-cars' },
     { id: 'rent', name: isRTL ? 'سيارات للإيجار' : 'Cars for Rent', icon: 'key', href: '/rental-cars' },
@@ -128,9 +144,7 @@ export default function Home() {
     { id: 'showrooms', name: isRTL ? 'معارض' : 'Showrooms', icon: 'showrooms', href: '/showrooms' },
     { id: 'missing', name: t("home.browse.missing"), icon: 'search', href: '/missing-cars' },
     { id: 'buy-request', name: t("nav.buyRequests"), icon: 'cart', href: '/buy-requests' },
-    { id: 'auctions', name: isRTL ? '🏁 مزادات' : '🏁 Auctions', icon: 'auctions', href: '/auctions' },
-    { id: 'real-estate', name: isRTL ? '🏠 العقارات' : '🏠 Real Estate', icon: 'realestate', href: '/real-estate' },
-    { id: 'jobs', name: isRTL ? '💼 الوظائف' : '💼 Jobs', icon: 'jobs', href: '/jobs' },
+    { id: 'auctions', name: isRTL ? 'مزادات' : 'Auctions', icon: 'auctions', href: '/auctions' },
   ];
 
   return (
@@ -373,7 +387,7 @@ export default function Home() {
         <div className="flex justify-between items-end mb-4 sm:mb-8">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t("home.browse.title")}</h2>
-            <p className="text-muted-foreground mt-1 text-sm sm:text-base hidden sm:block">{isRTL ? "كل ما تحتاجه في عالم السيارات في مكان واحد" : "Everything you need for cars in one place"}</p>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base hidden sm:block">{isRTL ? "سيارات، عقارات، وظائف، وأكثر — كل شيء في مكان واحد" : "Cars, real estate, jobs and more — all in one place"}</p>
           </div>
         </div>
         <div className="grid grid-cols-4 md:grid-cols-6 gap-2 sm:gap-4">
@@ -493,6 +507,99 @@ export default function Home() {
           </>
         )}
       </section>
+
+      {/* Latest Real Estate */}
+      {(latestRealEstate as any[]).length > 0 && (
+        <section className="py-10 bg-cyan-50/40 dark:bg-cyan-950/10 w-full border-y border-cyan-100 dark:border-cyan-900/30">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-end mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <span className="w-3 h-8 bg-cyan-500 rounded-full inline-block"></span>
+                  {isRTL ? "أحدث العقارات" : "Latest Real Estate"}
+                </h2>
+                <p className="text-muted-foreground mt-1 text-sm">{isRTL ? "شقق، منازل، وأراضي للبيع والإيجار" : "Apartments, homes and land for sale or rent"}</p>
+              </div>
+              <Link href="/real-estate" className="text-cyan-600 font-semibold flex items-center gap-1 hover:underline text-sm">
+                {isRTL ? "عرض الكل" : "View All"} <ChevronLeft className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {(latestRealEstate as any[]).slice(0, 4).map((item: any) => (
+                <Link key={item.id} href={`/real-estate/${item.id}`}>
+                  <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer h-full">
+                    {Array.isArray(item.images) && item.images[0] ? (
+                      <img src={item.images[0]} alt={item.title} className="w-full h-28 object-cover" />
+                    ) : (
+                      <div className="w-full h-28 bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center">
+                        <House className="w-10 h-10 text-cyan-300" />
+                      </div>
+                    )}
+                    <div className="p-3 space-y-1.5">
+                      <p className="font-bold text-sm line-clamp-1">{item.title}</p>
+                      {item.price && (
+                        <p className="text-primary font-bold text-sm">${Number(item.price).toLocaleString()}</p>
+                      )}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                        {item.province && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.province}</span>}
+                        {item.area && <span><BedDouble className="w-3 h-3 inline" /> {item.area} م²</span>}
+                      </div>
+                      <Badge className={`text-xs border-0 ${item.listingType === "بيع" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}`}>
+                        {item.listingType}
+                      </Badge>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Latest Jobs */}
+      {(latestJobs as any[]).length > 0 && (
+        <section className="py-10 bg-violet-50/40 dark:bg-violet-950/10 w-full border-b border-violet-100 dark:border-violet-900/30">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-end mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <span className="w-3 h-8 bg-violet-500 rounded-full inline-block"></span>
+                  {isRTL ? "أحدث الوظائف" : "Latest Jobs"}
+                </h2>
+                <p className="text-muted-foreground mt-1 text-sm">{isRTL ? "فرص عمل منشورة مؤخراً في سورية" : "Recently posted job opportunities in Syria"}</p>
+              </div>
+              <Link href="/jobs" className="text-violet-600 font-semibold flex items-center gap-1 hover:underline text-sm">
+                {isRTL ? "عرض الكل" : "View All"} <ChevronLeft className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="flex flex-col gap-3">
+              {(latestJobs as any[]).slice(0, 4).map((job: any) => (
+                <Link key={job.id} href={`/jobs/${job.id}`}>
+                  <div className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                      <Briefcase className="w-6 h-6 text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm line-clamp-1">{job.title}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                        {job.company && <span>{job.company}</span>}
+                        {job.province && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{job.province}</span>}
+                        {job.jobType && <Badge className="text-xs border-0 bg-violet-100 text-violet-800">{job.jobType}</Badge>}
+                      </div>
+                    </div>
+                    {job.salary && (
+                      <div className="text-left shrink-0">
+                        <p className="text-primary font-bold text-sm">${Number(job.salary).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">{isRTL ? "شهرياً" : "/mo"}</p>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Buy Requests Section — visible to all logged-in users */}
       {(buyRequests as any[]).length > 0 && (
