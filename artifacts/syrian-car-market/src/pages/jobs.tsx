@@ -13,10 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Briefcase, Loader2, Building, Clock, Star } from "lucide-react";
+import { Search, Plus, MapPin, Briefcase, Loader2, Building, Clock, Star, FileText } from "lucide-react";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { BuyRequestCard } from "@/components/BuyRequestCard";
 
 const SUB_CATEGORIES = ["وظيفة شاغرة", "طلب توظيف", "عمالة منزلية", "عمال مهرة"];
 const JOB_TYPES = ["دوام كامل", "دوام جزئي", "عن بعد", "عقد مؤقت"];
@@ -60,10 +61,13 @@ export default function JobsPage() {
   const [filterSub, setFilterSub] = useState(initialSub);
   const [filterField, setFilterField] = useState("__all__");
   const [filterProv, setFilterProv] = useState("__all__");
+  const [tab, setTab] = useState<"listings" | "requests">("listings");
   const [addOpen, setAddOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
   const [detail, setDetail] = useState<DetailedJob | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const { startChat } = useStartChat();
+  const [applyForm, setApplyForm] = useState({ jobTitle: "", field: "أخرى", experience: "بدون خبرة", province: "", city: "", description: "" });
+  const { startChat, loading: startingChat } = useStartChat();
 
   const activeSub = filterSub === "__all__" ? "" : filterSub;
   const activeField = filterField === "__all__" ? "" : filterField;
@@ -98,6 +102,39 @@ export default function JobsPage() {
     onError: () => toast({ title: "فشل نشر الإعلان", variant: "destructive" }),
   });
 
+  // ── طلبات التوظيف ───────────────────────────────────────────
+  const { data: applyReqs = [], isLoading: applyLoading } = useQuery({
+    queryKey: ["buy-requests", "jobs"],
+    queryFn: () => apiRequest<any[]>("/api/buy-requests?category=jobs"),
+  });
+  const applyMutation = useMutation({
+    mutationFn: (body: object) => apiRequest("/api/buy-requests", "POST", body),
+    onSuccess: () => {
+      toast({ title: "تم إرسال طلب التوظيف وهو بانتظار مراجعة الإدارة" });
+      setApplyOpen(false);
+      setApplyForm({ jobTitle: "", field: "أخرى", experience: "بدون خبرة", province: "", city: "", description: "" });
+      qc.invalidateQueries({ queryKey: ["buy-requests", "jobs"] });
+    },
+    onError: () => toast({ title: "فشل إرسال الطلب", variant: "destructive" }),
+  });
+  const deleteApplyMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/buy-requests/${id}`, "DELETE"),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["buy-requests", "jobs"] }),
+  });
+  const handleApplySubmit = () => {
+    if (!applyForm.province || !applyForm.city) {
+      toast({ title: "يرجى تحديد المحافظة والمدينة", variant: "destructive" });
+      return;
+    }
+    applyMutation.mutate({
+      brand: applyForm.jobTitle || applyForm.field,
+      model: applyForm.experience,
+      city: applyForm.city,
+      description: `المحافظة: ${applyForm.province} | المجال: ${applyForm.field}${applyForm.description ? `\n${applyForm.description}` : ""}`,
+      category: "jobs",
+    });
+  };
+
   const f = (k: keyof typeof emptyForm, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
@@ -117,18 +154,37 @@ export default function JobsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24" dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border/50 px-4 py-3">
-        <div className="flex items-center gap-2 mb-3">
-          <Briefcase className="w-5 h-5 text-primary" />
-          <h1 className="font-bold text-lg">الوظائف</h1>
-          <Badge variant="secondary" className="mr-auto">{jobs.length} إعلان</Badge>
-          {user && (
-            <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1">
-              <Plus className="w-4 h-4" />أضف إعلان
-            </Button>
-          )}
+
+      {/* ── Hero Header ── */}
+      <div className="relative overflow-hidden bg-gradient-to-l from-amber-600 to-orange-800 text-white px-4 pt-6 pb-5">
+        <div className="absolute inset-0 opacity-[0.07] pointer-events-none flex items-center justify-center">
+          <Briefcase size={320} strokeWidth={0.5} color="white" />
         </div>
+        <div className="relative z-[1] max-w-5xl mx-auto">
+          <div className="flex items-center gap-3 mb-1">
+            <Briefcase className="w-7 h-7" />
+            <h1 className="text-2xl font-extrabold tracking-tight">الوظائف</h1>
+          </div>
+          <p className="text-amber-100 text-sm mb-4">آلاف الفرص الوظيفية في مختلف القطاعات</p>
+          <div className="flex gap-3">
+            <Button
+              className="flex-1 gap-2 rounded-2xl bg-white text-amber-800 hover:bg-amber-50 font-bold text-sm py-3 shadow-lg border-0"
+              onClick={() => { if (!user) { navigate("/login"); return; } setAddOpen(true); }}
+            >
+              <Plus className="w-5 h-5" /> نشر إعلان وظيفي
+            </Button>
+            <Button
+              className="flex-1 gap-2 rounded-2xl bg-amber-500/40 hover:bg-amber-500/60 text-white font-bold text-sm py-3 border border-white/40 shadow-sm"
+              onClick={() => { if (!user) { navigate("/login"); return; } setApplyOpen(true); }}
+            >
+              <FileText className="w-5 h-5" /> طلب توظيف
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Sticky Search + Filters ── */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border/50 px-4 py-3">
         <div className="relative mb-2">
           <Search className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground" />
           <Input
@@ -169,19 +225,66 @@ export default function JobsPage() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Tabs ── */}
+      <div className="flex border-b px-4">
+        <button
+          className={cn("flex-1 pb-3 pt-3 text-sm font-semibold transition-colors", tab === "listings" ? "text-amber-700 dark:text-amber-400 border-b-2 border-amber-700 dark:border-amber-400" : "text-muted-foreground")}
+          onClick={() => setTab("listings")}
+        >
+          إعلانات الوظائف {jobs.length > 0 && <span className="mr-1 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 rounded-full px-2 py-0.5">{jobs.length}</span>}
+        </button>
+        <button
+          className={cn("flex-1 pb-3 pt-3 text-sm font-semibold transition-colors", tab === "requests" ? "text-amber-700 dark:text-amber-400 border-b-2 border-amber-700 dark:border-amber-400" : "text-muted-foreground")}
+          onClick={() => setTab("requests")}
+        >
+          طلبات التوظيف {(applyReqs as any[]).length > 0 && <span className="mr-1 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 rounded-full px-2 py-0.5">{(applyReqs as any[]).length}</span>}
+        </button>
+      </div>
+
+      {/* ── Content ── */}
       <div className="p-4">
-        {isLoading ? (
-          <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-        ) : jobs.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Briefcase className="w-12 h-12 mx-auto mb-3 opacity-40" />
-            <p>لا توجد وظائف حالياً</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {jobs.map(job => <JobCard key={job.id} job={job} onOpen={() => navigate(`/jobs/${job.id}`)} />)}
-          </div>
+        {tab === "listings" && (
+          isLoading ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Briefcase className="w-12 h-12 mx-auto mb-3 opacity-40" />
+              <p>لا توجد وظائف حالياً</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {jobs.map(job => <JobCard key={job.id} job={job} onOpen={() => navigate(`/jobs/${job.id}`)} />)}
+            </div>
+          )
+        )}
+
+        {tab === "requests" && (
+          applyLoading ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          ) : (applyReqs as any[]).length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
+              <p className="text-lg font-bold mb-2">لا توجد طلبات توظيف حالياً</p>
+              <p className="text-sm mb-4">هل تبحث عن عمل؟ انشر ملفك الوظيفي وسيتواصل معك أصحاب العمل</p>
+              {user && <Button onClick={() => setApplyOpen(true)} className="gap-2 bg-amber-600 hover:bg-amber-700"><FileText className="w-4 h-4" /> نشر طلب توظيف</Button>}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {(applyReqs as any[]).map((req: any) => (
+                <BuyRequestCard
+                  key={req.id}
+                  data={{ ...req, type: req.brand || "طلب توظيف" }}
+                  currentUserId={user?.id}
+                  accentColor="orange"
+                  label="طلب توظيف"
+                  onChat={user && req.userId !== user.id ? () => startChat(req.userId, `مرحباً، رأيت طلب التوظيف الخاص بك وأودّ التواصل معك`) : undefined}
+                  chatLoading={startingChat}
+                  onDelete={user && req.userId === user.id ? () => deleteApplyMutation.mutate(req.id) : undefined}
+                  deleteLoading={deleteApplyMutation.isPending}
+                />
+              ))}
+            </div>
+          )
         )}
       </div>
 
@@ -331,6 +434,61 @@ export default function JobsPage() {
             <Button className="w-full" onClick={handleSubmit} disabled={createMutation.isPending}>
               {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
               نشر الإعلان
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Apply Request Dialog ── */}
+      <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">طلب توظيف</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>المسمى الوظيفي المطلوب</Label>
+              <Input placeholder="مثال: مطور ويب، معلم، محاسب..." style={{ fontSize: 16 }}
+                value={applyForm.jobTitle} onChange={e => setApplyForm(p => ({ ...p, jobTitle: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>المجال *</Label>
+                <Select value={applyForm.field} onValueChange={v => setApplyForm(p => ({ ...p, field: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>الخبرة *</Label>
+                <Select value={applyForm.experience} onValueChange={v => setApplyForm(p => ({ ...p, experience: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{EXPERIENCE_LEVELS.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>المحافظة *</Label>
+                <Select value={applyForm.province} onValueChange={v => setApplyForm(p => ({ ...p, province: v }))}>
+                  <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
+                  <SelectContent>{SYRIAN_PROVINCES.map(pr => <SelectItem key={pr} value={pr}>{pr}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>المدينة *</Label>
+                <Input placeholder="مثال: دمشق، حلب..." style={{ fontSize: 16 }}
+                  value={applyForm.city} onChange={e => setApplyForm(p => ({ ...p, city: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>نبذة عن نفسك / مهاراتك</Label>
+              <Textarea placeholder="مثال: خبرة 3 سنوات في البرمجة، أجيد اللغة الإنجليزية، حاصل على شهادة جامعية..." rows={3}
+                value={applyForm.description} onChange={e => setApplyForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+            <Button className="w-full gap-2 bg-amber-600 hover:bg-amber-700" onClick={handleApplySubmit} disabled={applyMutation.isPending}>
+              {applyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              إرسال طلب التوظيف
             </Button>
           </div>
         </DialogContent>

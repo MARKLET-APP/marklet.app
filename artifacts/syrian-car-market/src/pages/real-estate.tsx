@@ -13,12 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Building2, Bed, Ruler, Loader2, Eye } from "lucide-react";
-
+import { Search, Plus, MapPin, Building2, Bed, Ruler, Loader2, Eye, ShoppingCart, MessageCircle, Trash2 } from "lucide-react";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { BuyRequestCard } from "@/components/BuyRequestCard";
 
 const LISTING_TYPES = ["بيع", "إيجار"];
 const SUB_CATEGORIES = ["شقق", "منازل وفيلات", "أراضي", "مكاتب", "محلات تجارية", "مستودعات", "استديو", "غرفة"];
@@ -58,10 +58,13 @@ export default function RealEstatePage() {
   const [filterType, setFilterType] = useState(initialType);
   const [filterSub, setFilterSub] = useState(initialSub);
   const [filterProv, setFilterProv] = useState("__all__");
+  const [tab, setTab] = useState<"listings" | "requests">("listings");
   const [addOpen, setAddOpen] = useState(false);
+  const [buyOpen, setBuyOpen] = useState(false);
   const [detail, setDetail] = useState<DetailedRealEstate | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const { startChat } = useStartChat();
+  const [buyForm, setBuyForm] = useState({ propertyType: "شقة", maxPrice: "", currency: "USD", province: "", city: "", description: "" });
+  const { startChat, loading: startingChat } = useStartChat();
 
   const activeType = filterType === "__all__" ? "" : filterType;
   const activeSub = filterSub === "__all__" ? "" : filterSub;
@@ -96,6 +99,40 @@ export default function RealEstatePage() {
     onError: () => toast({ title: "فشل نشر الإعلان", variant: "destructive" }),
   });
 
+  // ── طلبات شراء العقارات ──────────────────────────────────────
+  const { data: buyReqs = [], isLoading: buyLoading } = useQuery({
+    queryKey: ["buy-requests", "real-estate"],
+    queryFn: () => apiRequest<any[]>("/api/buy-requests?category=real-estate"),
+  });
+  const buyMutation = useMutation({
+    mutationFn: (body: object) => apiRequest("/api/buy-requests", "POST", body),
+    onSuccess: () => {
+      toast({ title: "تم إرسال طلبك بنجاح وهو بانتظار مراجعة الإدارة" });
+      setBuyOpen(false);
+      setBuyForm({ propertyType: "شقة", maxPrice: "", currency: "USD", province: "", city: "", description: "" });
+      qc.invalidateQueries({ queryKey: ["buy-requests", "real-estate"] });
+    },
+    onError: () => toast({ title: "فشل إرسال الطلب", variant: "destructive" }),
+  });
+  const deleteBuyMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/buy-requests/${id}`, "DELETE"),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["buy-requests", "real-estate"] }),
+  });
+  const handleBuySubmit = () => {
+    if (!buyForm.province || !buyForm.city) {
+      toast({ title: "يرجى تحديد المحافظة والمدينة", variant: "destructive" });
+      return;
+    }
+    buyMutation.mutate({
+      brand: buyForm.propertyType,
+      maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : null,
+      currency: buyForm.currency,
+      city: buyForm.city,
+      description: `المحافظة: ${buyForm.province}${buyForm.description ? `\n${buyForm.description}` : ""}`,
+      category: "real-estate",
+    });
+  };
+
   const f = (k: keyof typeof emptyForm, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
@@ -115,19 +152,37 @@ export default function RealEstatePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24" dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border/50 px-4 py-3">
-        <div className="flex items-center gap-2 mb-3">
-          <Building2 className="w-5 h-5 text-primary" />
-          <h1 className="font-bold text-lg">العقارات</h1>
-          <Badge variant="secondary" className="mr-auto">{listings.length} إعلان</Badge>
-          {user && (
-            <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1">
-              <Plus className="w-4 h-4" />أضف إعلان
-            </Button>
-          )}
+
+      {/* ── Hero Header ── */}
+      <div className="relative overflow-hidden bg-gradient-to-l from-cyan-700 to-teal-900 text-white px-4 pt-6 pb-5">
+        <div className="absolute inset-0 opacity-[0.07] pointer-events-none flex items-center justify-center">
+          <Building2 size={320} strokeWidth={0.5} color="white" />
         </div>
-        {/* Search */}
+        <div className="relative z-[1] max-w-5xl mx-auto">
+          <div className="flex items-center gap-3 mb-1">
+            <Building2 className="w-7 h-7" />
+            <h1 className="text-2xl font-extrabold tracking-tight">العقارات</h1>
+          </div>
+          <p className="text-cyan-100 text-sm mb-4">شقق، منازل، أراضي وعقارات تجارية في سورية</p>
+          <div className="flex gap-3">
+            <Button
+              className="flex-1 gap-2 rounded-2xl bg-white text-teal-800 hover:bg-teal-50 font-bold text-sm py-3 shadow-lg border-0"
+              onClick={() => { if (!user) { navigate("/login"); return; } setAddOpen(true); }}
+            >
+              <Plus className="w-5 h-5" /> نشر إعلان عقاري
+            </Button>
+            <Button
+              className="flex-1 gap-2 rounded-2xl bg-teal-500/40 hover:bg-teal-500/60 text-white font-bold text-sm py-3 border border-white/40 shadow-sm"
+              onClick={() => { if (!user) { navigate("/login"); return; } setBuyOpen(true); }}
+            >
+              <ShoppingCart className="w-5 h-5" /> طلب شراء عقار
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Sticky Search + Filters ── */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border/50 px-4 py-3">
         <div className="relative mb-2">
           <Search className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground" />
           <Input
@@ -137,7 +192,6 @@ export default function RealEstatePage() {
             className="pr-9"
           />
         </div>
-        {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="h-8 text-xs min-w-[90px]"><SelectValue placeholder="النوع" /></SelectTrigger>
@@ -169,21 +223,68 @@ export default function RealEstatePage() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Tabs ── */}
+      <div className="flex border-b px-4">
+        <button
+          className={cn("flex-1 pb-3 pt-3 text-sm font-semibold transition-colors", tab === "listings" ? "text-teal-700 dark:text-teal-400 border-b-2 border-teal-700 dark:border-teal-400" : "text-muted-foreground")}
+          onClick={() => setTab("listings")}
+        >
+          إعلانات العقارات {listings.length > 0 && <span className="mr-1 text-xs bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 rounded-full px-2 py-0.5">{listings.length}</span>}
+        </button>
+        <button
+          className={cn("flex-1 pb-3 pt-3 text-sm font-semibold transition-colors", tab === "requests" ? "text-teal-700 dark:text-teal-400 border-b-2 border-teal-700 dark:border-teal-400" : "text-muted-foreground")}
+          onClick={() => setTab("requests")}
+        >
+          طلبات الشراء {(buyReqs as any[]).length > 0 && <span className="mr-1 text-xs bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 rounded-full px-2 py-0.5">{(buyReqs as any[]).length}</span>}
+        </button>
+      </div>
+
+      {/* ── Content ── */}
       <div className="p-4">
-        {isLoading ? (
-          <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-        ) : listings.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Building2 className="w-12 h-12 mx-auto mb-3 opacity-40" />
-            <p>لا توجد إعلانات عقارية حالياً</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {listings.map(item => (
-              <RealEstateCard key={item.id} item={item} onOpen={() => navigate(`/real-estate/${item.id}`)} />
-            ))}
-          </div>
+        {tab === "listings" && (
+          isLoading ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          ) : listings.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Building2 className="w-12 h-12 mx-auto mb-3 opacity-40" />
+              <p>لا توجد إعلانات عقارية حالياً</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {listings.map(item => (
+                <RealEstateCard key={item.id} item={item} onOpen={() => navigate(`/real-estate/${item.id}`)} />
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === "requests" && (
+          buyLoading ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          ) : (buyReqs as any[]).length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-40" />
+              <p className="text-lg font-bold mb-2">لا توجد طلبات شراء حالياً</p>
+              <p className="text-sm mb-4">هل تبحث عن عقار معين؟ انشر طلبك وسيتواصل معك أصحاب العقارات</p>
+              {user && <Button onClick={() => setBuyOpen(true)} className="gap-2"><ShoppingCart className="w-4 h-4" /> نشر طلب شراء</Button>}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {(buyReqs as any[]).map((req: any) => (
+                <BuyRequestCard
+                  key={req.id}
+                  data={{ ...req, type: req.brand || "عقار" }}
+                  currentUserId={user?.id}
+                  accentColor="cyan"
+                  label="طلب شراء عقار"
+                  onChat={user && req.userId !== user.id ? () => startChat(req.userId, `مرحباً، لديّ عقار قد يناسب طلبك`) : undefined}
+                  chatLoading={startingChat}
+                  onDelete={user && req.userId === user.id ? () => deleteBuyMutation.mutate(req.id) : undefined}
+                  deleteLoading={deleteBuyMutation.isPending}
+                />
+              ))}
+            </div>
+          )
         )}
       </div>
 
@@ -337,6 +438,66 @@ export default function RealEstatePage() {
             <Button className="w-full" onClick={handleSubmit} disabled={createMutation.isPending}>
               {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
               نشر الإعلان
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Buy Request Dialog ── */}
+      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">طلب شراء عقار</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>نوع العقار المطلوب *</Label>
+              <Select value={buyForm.propertyType} onValueChange={v => setBuyForm(p => ({ ...p, propertyType: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="col-span-2">
+                <Label>الميزانية القصوى</Label>
+                <Input type="number" placeholder="أعلى سعر مقبول" style={{ fontSize: 16 }}
+                  value={buyForm.maxPrice} onChange={e => setBuyForm(p => ({ ...p, maxPrice: e.target.value }))} />
+              </div>
+              <div>
+                <Label>العملة</Label>
+                <Select value={buyForm.currency} onValueChange={v => setBuyForm(p => ({ ...p, currency: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="SYP">SYP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>المحافظة *</Label>
+                <Select value={buyForm.province} onValueChange={v => setBuyForm(p => ({ ...p, province: v }))}>
+                  <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
+                  <SelectContent>{SYRIAN_PROVINCES.map(pr => <SelectItem key={pr} value={pr}>{pr}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>المدينة / الحي *</Label>
+                <Input placeholder="مثال: المزة، المهاجرين" style={{ fontSize: 16 }}
+                  value={buyForm.city} onChange={e => setBuyForm(p => ({ ...p, city: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>تفاصيل إضافية</Label>
+              <Textarea placeholder="مثال: أبحث عن شقة بغرفتين قرب مدرسة، لا تزيد عن الطابق الخامس..." rows={3}
+                value={buyForm.description} onChange={e => setBuyForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+            <Button className="w-full gap-2 bg-teal-700 hover:bg-teal-800" onClick={handleBuySubmit} disabled={buyMutation.isPending}>
+              {buyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+              إرسال طلب الشراء
             </Button>
           </div>
         </DialogContent>

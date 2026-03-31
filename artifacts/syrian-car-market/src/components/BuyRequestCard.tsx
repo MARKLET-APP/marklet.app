@@ -70,6 +70,16 @@ export function BuyRequestCard({
       price: "text-amber-700",
       btn: "bg-amber-600 hover:bg-amber-700 text-white",
     },
+    teal: {
+      badge: "border-teal-400 text-teal-700 bg-teal-50",
+      price: "text-teal-700",
+      btn: "bg-teal-600 hover:bg-teal-700 text-white",
+    },
+    cyan: {
+      badge: "border-cyan-400 text-cyan-700 bg-cyan-50",
+      price: "text-cyan-700",
+      btn: "bg-cyan-600 hover:bg-cyan-700 text-white",
+    },
   };
 
   const colors = colorMap[accentColor] ?? colorMap.emerald;
