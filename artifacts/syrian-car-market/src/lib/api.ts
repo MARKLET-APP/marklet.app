@@ -86,6 +86,26 @@ export const api = {
     delete: (id: number) => apiRequest(`/api/missing-cars/${id}`, "DELETE"),
   },
 
+  realEstate: {
+    list: (params?: Record<string, string>) => {
+      const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+      return apiRequest<unknown[]>(`/api/real-estate${qs}`);
+    },
+    create: (data: object) => apiRequest("/api/real-estate", "POST", data),
+    get: (id: number) => apiRequest<unknown>(`/api/real-estate/${id}`),
+    delete: (id: number) => apiRequest(`/api/real-estate/${id}`, "DELETE"),
+  },
+
+  jobs: {
+    list: (params?: Record<string, string>) => {
+      const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+      return apiRequest<unknown[]>(`/api/jobs${qs}`);
+    },
+    create: (data: object) => apiRequest("/api/jobs", "POST", data),
+    get: (id: number) => apiRequest<unknown>(`/api/jobs/${id}`),
+    delete: (id: number) => apiRequest(`/api/jobs/${id}`, "DELETE"),
+  },
+
   support: {
     send: (data: object) => apiRequest("/api/support", "POST", data),
     feedback: (data: object) => apiRequest("/api/feedback", "POST", data),

@@ -58,7 +58,7 @@ function estimateCarPrice(brand: string, year: number, mileage: number, similarP
 
 type PriceEval = { level: "high" | "low" | "good"; market: number; range: [number, number]; text: string } | null;
 
-type ListingType = "car_sale" | "motorcycles" | "car_rent" | "car_parts";
+type ListingType = "car_sale" | "motorcycles" | "car_rent" | "car_parts" | "real_estate" | "jobs";
 
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
@@ -82,6 +82,14 @@ const DEFAULT_FIELDS = {
   city: "", saleType: "cash", condition: "used", category: "sedan", description: "",
   engineCC: "", bikeType: "", dailyPrice: "", weeklyPrice: "",
   rentalDuration: "", partType: "", partCarModel: "", partCarYear: "",
+  // Real Estate fields
+  reTitle: "", reListingType: "sale", reSubCategory: "apartment",
+  rePrice: "", reArea: "", reRooms: "", reBathrooms: "", reFloor: "",
+  reProvince: "Damascus", reCity: "", reLocation: "", rePhone: "",
+  // Jobs fields
+  jobTitle: "", jobSubCategory: "technology", jobCompany: "", jobSalary: "",
+  jobType: "full_time", jobExperience: "any", jobField: "technology",
+  jobProvince: "Damascus", jobCity: "", jobPhone: "", jobRequirements: "",
 };
 
 function loadDraft() {
@@ -320,8 +328,80 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submittingOther, setSubmittingOther] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ── Real Estate submission ──────────────────────────────────────────
+    if (listingType === "real_estate") {
+      if (!fields.reTitle.trim()) {
+        showToast("يجب إدخال عنوان الإعلان", { variant: "destructive" });
+        return;
+      }
+      setSubmittingOther(true);
+      try {
+        await api.realEstate.create({
+          title: fields.reTitle,
+          listingType: fields.reListingType,
+          subCategory: fields.reSubCategory,
+          price: fields.rePrice ? Number(fields.rePrice) : null,
+          area: fields.reArea ? Number(fields.reArea) : null,
+          rooms: fields.reRooms ? Number(fields.reRooms) : null,
+          bathrooms: fields.reBathrooms ? Number(fields.reBathrooms) : null,
+          floor: fields.reFloor ? Number(fields.reFloor) : null,
+          province: fields.reProvince,
+          city: fields.reCity,
+          location: fields.reLocation,
+          phone: fields.rePhone,
+          description: fields.description,
+          images,
+        });
+        localStorage.removeItem(DRAFT_KEY);
+        showToast("تم إرسال إعلان العقار للمراجعة", { description: "سيظهر بعد موافقة الإدارة" });
+        navigate("/real-estate");
+      } catch (err: any) {
+        showToast(err.message ?? "حدث خطأ", { variant: "destructive" });
+      } finally {
+        setSubmittingOther(false);
+      }
+      return;
+    }
+
+    // ── Jobs submission ─────────────────────────────────────────────────
+    if (listingType === "jobs") {
+      if (!fields.jobTitle.trim()) {
+        showToast("يجب إدخال عنوان الوظيفة", { variant: "destructive" });
+        return;
+      }
+      setSubmittingOther(true);
+      try {
+        await api.jobs.create({
+          title: fields.jobTitle,
+          subCategory: fields.jobSubCategory,
+          company: fields.jobCompany,
+          salary: fields.jobSalary ? Number(fields.jobSalary) : null,
+          jobType: fields.jobType,
+          experience: fields.jobExperience,
+          field: fields.jobField,
+          province: fields.jobProvince,
+          city: fields.jobCity,
+          phone: fields.jobPhone,
+          description: fields.description,
+          requirements: fields.jobRequirements,
+        });
+        localStorage.removeItem(DRAFT_KEY);
+        showToast("تم إرسال إعلان الوظيفة للمراجعة", { description: "سيظهر بعد موافقة الإدارة" });
+        navigate("/jobs");
+      } catch (err: any) {
+        showToast(err.message ?? "حدث خطأ", { variant: "destructive" });
+      } finally {
+        setSubmittingOther(false);
+      }
+      return;
+    }
+
+    // ── Vehicle submission (existing logic) ─────────────────────────────
     if (images.length < 1) {
       showToast("يجب إضافة صورة واحدة على الأقل", { variant: "destructive" });
       return;
@@ -518,12 +598,14 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">1</span>
             نوع الإعلان
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {([
               { value: "car_sale",   label: "🚗 سيارة" },
               { value: "motorcycles",label: "🏍️ دراجة نارية" },
               { value: "car_rent",   label: "🔑 تأجير" },
               { value: "car_parts",  label: "🔧 قطع غيار" },
+              { value: "real_estate",label: "🏠 عقارات" },
+              { value: "jobs",       label: "💼 وظائف" },
             ] as const).map(opt => (
               <button
                 key={opt.value}
@@ -726,9 +808,160 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             </div>
           )}
 
+          {/* REAL ESTATE fields */}
+          {listingType === "real_estate" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-bold">عنوان الإعلان</label>
+                <input name="reTitle" value={fields.reTitle} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: شقة فاخرة للبيع في مزة فيلات" required autoComplete="off" autoCorrect="off" spellCheck={false} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع الإعلان</label>
+                <select name="reListingType" value={fields.reListingType} onChange={handleField} className={selectCls}>
+                  <option value="sale">للبيع</option>
+                  <option value="rent">للإيجار</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع العقار</label>
+                <select name="reSubCategory" value={fields.reSubCategory} onChange={handleField} className={selectCls}>
+                  <option value="apartment">شقة</option>
+                  <option value="house">منزل / فيلا</option>
+                  <option value="studio">استوديو</option>
+                  <option value="land">أرض</option>
+                  <option value="office">مكتب / محل تجاري</option>
+                  <option value="farm">مزرعة</option>
+                  <option value="other">أخرى</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">السعر (USD $)</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="rePrice" value={fields.rePrice} onChange={handleField} className={inputCls} placeholder="0" autoComplete="off" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">المساحة (م²)</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="reArea" value={fields.reArea} onChange={handleField} className={inputCls} placeholder="120" autoComplete="off" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">عدد الغرف</label>
+                <select name="reRooms" value={fields.reRooms} onChange={handleField} className={selectCls}>
+                  <option value="">غير محدد</option>
+                  <option value="1">1</option><option value="2">2</option>
+                  <option value="3">3</option><option value="4">4</option>
+                  <option value="5">5</option><option value="6">6+</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">عدد الحمامات</label>
+                <select name="reBathrooms" value={fields.reBathrooms} onChange={handleField} className={selectCls}>
+                  <option value="">غير محدد</option>
+                  <option value="1">1</option><option value="2">2</option>
+                  <option value="3">3</option><option value="4">4+</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">الطابق</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="reFloor" value={fields.reFloor} onChange={handleField} className={inputCls} placeholder="مثال: 3" autoComplete="off" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">المحافظة</label>
+                <select name="reProvince" value={fields.reProvince} onChange={handleField} className={selectCls}>
+                  {["Damascus","Aleppo","Homs","Latakia","Tartus","Hama","Idlib","Deir ez-Zor","Raqqa","Daraa","Sweida","Quneitra","Hasakah"].map(p => (
+                    <option key={p} value={p}>{p === "Damascus" ? "دمشق" : p === "Aleppo" ? "حلب" : p === "Homs" ? "حمص" : p === "Latakia" ? "اللاذقية" : p === "Tartus" ? "طرطوس" : p === "Hama" ? "حماة" : p === "Idlib" ? "إدلب" : p === "Deir ez-Zor" ? "دير الزور" : p === "Raqqa" ? "الرقة" : p === "Daraa" ? "درعا" : p === "Sweida" ? "السويداء" : p === "Quneitra" ? "القنيطرة" : "الحسكة"}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">المنطقة / الحي</label>
+                <input name="reCity" value={fields.reCity} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: مزة فيلات، أبو رمانة..." autoComplete="off" autoCorrect="off" spellCheck={false} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-bold">موقع العقار (رابط خريطة اختياري)</label>
+                <input name="reLocation" value={fields.reLocation} onChange={handleField} {...imeProps} className={inputCls} placeholder="https://maps.google.com/..." autoComplete="off" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">رقم الهاتف / واتساب</label>
+                <input type="tel" name="rePhone" value={fields.rePhone} onChange={handleField} className={inputCls} placeholder="09XXXXXXXX" dir="ltr" autoComplete="off" />
+              </div>
+            </div>
+          )}
+
+          {/* JOBS fields */}
+          {listingType === "jobs" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-bold">المسمى الوظيفي</label>
+                <input name="jobTitle" value={fields.jobTitle} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: مطلوب مهندس برمجيات" required autoComplete="off" autoCorrect="off" spellCheck={false} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">المجال</label>
+                <select name="jobField" value={fields.jobField} onChange={handleField} className={selectCls}>
+                  <option value="technology">تقنية المعلومات</option>
+                  <option value="engineering">هندسة</option>
+                  <option value="medical">طب وصحة</option>
+                  <option value="education">تعليم</option>
+                  <option value="finance">مالية ومحاسبة</option>
+                  <option value="marketing">تسويق ومبيعات</option>
+                  <option value="construction">بناء وإنشاء</option>
+                  <option value="trade">تجارة وخدمات</option>
+                  <option value="transport">نقل وشحن</option>
+                  <option value="other">أخرى</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">نوع العقد</label>
+                <select name="jobType" value={fields.jobType} onChange={handleField} className={selectCls}>
+                  <option value="full_time">دوام كامل</option>
+                  <option value="part_time">دوام جزئي</option>
+                  <option value="freelance">عمل حر</option>
+                  <option value="internship">تدريب</option>
+                  <option value="remote">عن بعد</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">الخبرة المطلوبة</label>
+                <select name="jobExperience" value={fields.jobExperience} onChange={handleField} className={selectCls}>
+                  <option value="any">لا يشترط</option>
+                  <option value="junior">مبتدئ (أقل من سنة)</option>
+                  <option value="1-3">1-3 سنوات</option>
+                  <option value="3-5">3-5 سنوات</option>
+                  <option value="5+">أكثر من 5 سنوات</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">الراتب (USD $) - اختياري</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="jobSalary" value={fields.jobSalary} onChange={handleField} className={inputCls} placeholder="مثال: 500" autoComplete="off" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">اسم الشركة / صاحب العمل</label>
+                <input name="jobCompany" value={fields.jobCompany} onChange={handleField} {...imeProps} className={inputCls} placeholder="اختياري" autoComplete="off" autoCorrect="off" spellCheck={false} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">المحافظة</label>
+                <select name="jobProvince" value={fields.jobProvince} onChange={handleField} className={selectCls}>
+                  {["Damascus","Aleppo","Homs","Latakia","Tartus","Hama","Idlib","Deir ez-Zor","Raqqa","Daraa","Sweida","Quneitra","Hasakah"].map(p => (
+                    <option key={p} value={p}>{p === "Damascus" ? "دمشق" : p === "Aleppo" ? "حلب" : p === "Homs" ? "حمص" : p === "Latakia" ? "اللاذقية" : p === "Tartus" ? "طرطوس" : p === "Hama" ? "حماة" : p === "Idlib" ? "إدلب" : p === "Deir ez-Zor" ? "دير الزور" : p === "Raqqa" ? "الرقة" : p === "Daraa" ? "درعا" : p === "Sweida" ? "السويداء" : p === "Quneitra" ? "القنيطرة" : "الحسكة"}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">المدينة / المنطقة</label>
+                <input name="jobCity" value={fields.jobCity} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: دمشق، المزة..." autoComplete="off" autoCorrect="off" spellCheck={false} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold">رقم الهاتف / واتساب</label>
+                <input type="tel" name="jobPhone" value={fields.jobPhone} onChange={handleField} className={inputCls} placeholder="09XXXXXXXX" dir="ltr" autoComplete="off" />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-bold">المتطلبات والمؤهلات</label>
+                <textarea name="jobRequirements" value={fields.jobRequirements} onChange={handleField} onCompositionStart={handleCompositionStart} onCompositionEnd={handleCompositionEnd} onBlur={handleBlur} rows={3} className="w-full rounded-xl border-2 border-border px-4 py-3 bg-background focus:border-primary transition-all outline-none resize-none leading-relaxed text-sm" placeholder="مثال: بكالوريوس هندسة، خبرة في React..." />
+              </div>
+            </div>
+          )}
+
           {/* Shared: Province / City / Sale Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
-            {listingType !== "car_rent" && (
+            {listingType !== "car_rent" && listingType !== "real_estate" && listingType !== "jobs" && (
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-bold">المحافظة</label>
@@ -776,7 +1009,29 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           </div>
         </div>
 
-        {/* ── Step 3: AI Section ── */}
+        {/* ── Step 3: Description only (for Real Estate & Jobs) ── */}
+        {(listingType === "real_estate" || listingType === "jobs") && (
+          <div className="bg-card p-6 rounded-3xl border shadow-sm space-y-4">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">4</span>
+              {listingType === "jobs" ? "وصف الوظيفة" : "وصف العقار"}
+            </h3>
+            <textarea
+              name="description"
+              value={fields.description}
+              onChange={handleField}
+              onCompositionStart={handleCompositionStart}
+              onCompositionEnd={handleCompositionEnd}
+              onBlur={handleBlur}
+              rows={6}
+              className="w-full rounded-xl border-2 border-border px-4 py-3 bg-background focus:border-primary transition-all outline-none resize-none leading-relaxed text-sm"
+              placeholder={listingType === "jobs" ? "اكتب وصفاً تفصيلياً للوظيفة، المهام، الشروط..." : "اكتب وصفاً تفصيلياً للعقار، المميزات، الخدمات القريبة..."}
+            />
+          </div>
+        )}
+
+        {/* ── Step 3: AI Section (cars only) ── */}
+        {listingType !== "real_estate" && listingType !== "jobs" && (
         <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl space-y-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
             <Sparkles className="w-40 h-40 text-white" />
@@ -877,9 +1132,10 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             </div>
           </div>
         </div>
+        )}
 
-        <Button type="submit" disabled={createMutation.isPending} className="w-full rounded-2xl h-14 text-lg font-bold bg-primary text-white shadow-xl shadow-primary/25 hover:-translate-y-1 transition-all">
-          {createMutation.isPending ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : "نشر الإعلان"}
+        <Button type="submit" disabled={createMutation.isPending || submittingOther} className="w-full rounded-2xl h-14 text-lg font-bold bg-primary text-white shadow-xl shadow-primary/25 hover:-translate-y-1 transition-all">
+          {(createMutation.isPending || submittingOther) ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : "نشر الإعلان"}
         </Button>
       </form>
     </div>
