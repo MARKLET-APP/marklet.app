@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -252,27 +252,18 @@ export default function JobsPage() {
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <Select value={filterSub} onValueChange={setFilterSub}>
-            <SelectTrigger className="h-8 text-xs min-w-[120px]"><SelectValue placeholder="النوع" /></SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="__all__">الكل</SelectItem>
-              {SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterField} onValueChange={setFilterField}>
-            <SelectTrigger className="h-8 text-xs min-w-[120px]"><SelectValue placeholder="المجال" /></SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="__all__">الكل</SelectItem>
-              {FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterProv} onValueChange={setFilterProv}>
-            <SelectTrigger className="h-8 text-xs min-w-[110px]"><SelectValue placeholder="المحافظة" /></SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="__all__">الكل</SelectItem>
-              {SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <NativeSelect value={filterSub} onValueChange={setFilterSub} className="h-8 text-xs min-w-[120px]">
+            <option value="__all__">الكل</option>
+            {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+          </NativeSelect>
+          <NativeSelect value={filterField} onValueChange={setFilterField} className="h-8 text-xs min-w-[120px]">
+            <option value="__all__">الكل</option>
+            {FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
+          </NativeSelect>
+          <NativeSelect value={filterProv} onValueChange={setFilterProv} className="h-8 text-xs min-w-[110px]">
+            <option value="__all__">الكل</option>
+            {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+          </NativeSelect>
           {(activeSub || activeField || activeProv || q) && (
             <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
               onClick={() => { setFilterSub("__all__"); setFilterField("__all__"); setFilterProv("__all__"); setQ(""); setSearch(""); }}>
@@ -410,76 +401,65 @@ export default function JobsPage() {
           <div className="space-y-4">
             <div>
               <Label>نوع الإعلان *</Label>
-              <Select value={form.subCategory} onValueChange={v => f("subCategory", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent position="popper">{SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
+              <NativeSelect value={form.subCategory} onValueChange={v => f("subCategory", v)}>
+                {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+              </NativeSelect>
             </div>
             <div>
               <Label>المسمى الوظيفي *</Label>
-              <Input dir="auto" placeholder="مثال: مطور ويب، معلم رياضيات..." value={form.title} onChange={e => f("title", e.target.value)} />
+              <Input dir="auto" placeholder="مثال: مطور ويب، معلم رياضيات..." value={form.title} onChange={e => f("title", e.target.value)} style={{ fontSize: 16 }} />
             </div>
             <div>
               <Label>الشركة / المؤسسة</Label>
-              <Input placeholder="اسم الشركة أو المؤسسة" value={form.company} onChange={e => f("company", e.target.value)} />
+              <Input placeholder="اسم الشركة أو المؤسسة" value={form.company} onChange={e => f("company", e.target.value)} style={{ fontSize: 16 }} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>نوع الدوام</Label>
-                <Select value={form.jobType} onValueChange={v => f("jobType", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent position="popper">{JOB_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={form.jobType} onValueChange={v => f("jobType", v)}>
+                  {JOB_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </NativeSelect>
               </div>
               <div>
                 <Label>مستوى الخبرة</Label>
-                <Select value={form.experience} onValueChange={v => f("experience", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent position="popper">{EXPERIENCE_LEVELS.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={form.experience} onValueChange={v => f("experience", v)}>
+                  {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
+                </NativeSelect>
               </div>
             </div>
             <div>
               <Label>مجال العمل</Label>
-              <Select value={form.field} onValueChange={v => f("field", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent position="popper">{FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-              </Select>
+              <NativeSelect value={form.field} onValueChange={v => f("field", v)}>
+                {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
+              </NativeSelect>
             </div>
             <div>
               <Label>الراتب</Label>
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-1">
-                  <Input type="number" placeholder="المبلغ" value={form.salary} onChange={e => f("salary", e.target.value)} />
+                  <Input type="number" placeholder="المبلغ" value={form.salary} onChange={e => f("salary", e.target.value)} style={{ fontSize: 16 }} />
                 </div>
                 <div>
-                  <Select value={form.salaryUnit} onValueChange={v => f("salaryUnit", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectItem value="شهري">شهري</SelectItem>
-                      <SelectItem value="يومي">يومي</SelectItem>
-                      <SelectItem value="بالمشروع">بالمشروع</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <NativeSelect value={form.salaryUnit} onValueChange={v => f("salaryUnit", v)}>
+                    <option value="شهري">شهري</option>
+                    <option value="يومي">يومي</option>
+                    <option value="بالمشروع">بالمشروع</option>
+                  </NativeSelect>
                 </div>
                 <div>
-                  <Select value={form.salaryCurrency} onValueChange={v => f("salaryCurrency", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectItem value="USD">USD $</SelectItem>
-                      <SelectItem value="SYP">SYP ل.س</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <NativeSelect value={form.salaryCurrency} onValueChange={v => f("salaryCurrency", v)}>
+                    <option value="USD">USD $</option>
+                    <option value="SYP">SYP ل.س</option>
+                  </NativeSelect>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المحافظة *</Label>
-                <Select value={form.province} onValueChange={v => f("province", v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                  <SelectContent position="popper">{SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={form.province} onValueChange={v => f("province", v)} placeholder="اختر">
+                  {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                </NativeSelect>
               </div>
               <div>
                 <Label>المدينة *</Label>
@@ -527,26 +507,23 @@ export default function JobsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المجال *</Label>
-                <Select value={applyForm.field} onValueChange={v => setApplyForm(p => ({ ...p, field: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent position="popper">{FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={applyForm.field} onValueChange={v => setApplyForm(p => ({ ...p, field: v }))}>
+                  {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
+                </NativeSelect>
               </div>
               <div>
                 <Label>الخبرة *</Label>
-                <Select value={applyForm.experience} onValueChange={v => setApplyForm(p => ({ ...p, experience: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent position="popper">{EXPERIENCE_LEVELS.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={applyForm.experience} onValueChange={v => setApplyForm(p => ({ ...p, experience: v }))}>
+                  {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
+                </NativeSelect>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المحافظة *</Label>
-                <Select value={applyForm.province} onValueChange={v => setApplyForm(p => ({ ...p, province: v }))}>
-                  <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
-                  <SelectContent position="popper">{SYRIAN_PROVINCES.map(pr => <SelectItem key={pr} value={pr}>{pr}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={applyForm.province} onValueChange={v => setApplyForm(p => ({ ...p, province: v }))} placeholder="اختر المحافظة">
+                  {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
+                </NativeSelect>
               </div>
               <div>
                 <Label>المدينة *</Label>

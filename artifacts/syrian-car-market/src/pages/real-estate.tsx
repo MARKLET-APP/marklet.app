@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -230,27 +230,18 @@ export default function RealEstatePage() {
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="h-8 text-xs min-w-[90px]"><SelectValue placeholder="النوع" /></SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="__all__">الكل</SelectItem>
-              {LISTING_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterSub} onValueChange={setFilterSub}>
-            <SelectTrigger className="h-8 text-xs min-w-[110px]"><SelectValue placeholder="الفئة" /></SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="__all__">الكل</SelectItem>
-              {SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterProv} onValueChange={setFilterProv}>
-            <SelectTrigger className="h-8 text-xs min-w-[110px]"><SelectValue placeholder="المحافظة" /></SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="__all__">الكل</SelectItem>
-              {SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <NativeSelect value={filterType} onValueChange={setFilterType} className="h-8 text-xs min-w-[90px]">
+            <option value="__all__">الكل</option>
+            {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </NativeSelect>
+          <NativeSelect value={filterSub} onValueChange={setFilterSub} className="h-8 text-xs min-w-[110px]">
+            <option value="__all__">الكل</option>
+            {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+          </NativeSelect>
+          <NativeSelect value={filterProv} onValueChange={setFilterProv} className="h-8 text-xs min-w-[110px]">
+            <option value="__all__">الكل</option>
+            {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+          </NativeSelect>
           {(activeType || activeSub || activeProv || q) && (
             <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
               onClick={() => { setFilterType("__all__"); setFilterSub("__all__"); setFilterProv("__all__"); setQ(""); setSearch(""); }}>
@@ -394,33 +385,28 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>نوع الإعلان *</Label>
-                <Select value={form.listingType} onValueChange={v => f("listingType", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent position="popper">{LISTING_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={form.listingType} onValueChange={v => f("listingType", v)}>
+                  {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </NativeSelect>
               </div>
               <div>
                 <Label>الفئة *</Label>
-                <Select value={form.subCategory} onValueChange={v => f("subCategory", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent position="popper">{SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={form.subCategory} onValueChange={v => f("subCategory", v)}>
+                  {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+                </NativeSelect>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
                 <Label>السعر *</Label>
-                <Input type="number" placeholder="السعر" value={form.price} onChange={e => f("price", e.target.value)} />
+                <Input type="number" placeholder="السعر" value={form.price} onChange={e => f("price", e.target.value)} style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label>العملة</Label>
-                <Select value={form.currency} onValueChange={v => f("currency", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="SYP">SYP</SelectItem>
-                  </SelectContent>
-                </Select>
+                <NativeSelect value={form.currency} onValueChange={v => f("currency", v)}>
+                  <option value="USD">USD</option>
+                  <option value="SYP">SYP</option>
+                </NativeSelect>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -446,14 +432,13 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المحافظة *</Label>
-                <Select value={form.province} onValueChange={v => f("province", v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                  <SelectContent position="popper">{SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={form.province} onValueChange={v => f("province", v)} placeholder="اختر">
+                  {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                </NativeSelect>
               </div>
               <div>
                 <Label>المدينة *</Label>
-                <Input placeholder="المدينة أو الحي" value={form.city} onChange={e => f("city", e.target.value)} />
+                <Input placeholder="المدينة أو الحي" value={form.city} onChange={e => f("city", e.target.value)} style={{ fontSize: 16 }} />
               </div>
             </div>
             <div>
@@ -495,12 +480,9 @@ export default function RealEstatePage() {
           <div className="space-y-4">
             <div>
               <Label>نوع العقار المطلوب *</Label>
-              <Select value={buyForm.propertyType} onValueChange={v => setBuyForm(p => ({ ...p, propertyType: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent position="popper">
-                  {SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <NativeSelect value={buyForm.propertyType} onValueChange={v => setBuyForm(p => ({ ...p, propertyType: v }))}>
+                {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+              </NativeSelect>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
@@ -510,22 +492,18 @@ export default function RealEstatePage() {
               </div>
               <div>
                 <Label>العملة</Label>
-                <Select value={buyForm.currency} onValueChange={v => setBuyForm(p => ({ ...p, currency: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="SYP">SYP</SelectItem>
-                  </SelectContent>
-                </Select>
+                <NativeSelect value={buyForm.currency} onValueChange={v => setBuyForm(p => ({ ...p, currency: v }))}>
+                  <option value="USD">USD</option>
+                  <option value="SYP">SYP</option>
+                </NativeSelect>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المحافظة *</Label>
-                <Select value={buyForm.province} onValueChange={v => setBuyForm(p => ({ ...p, province: v }))}>
-                  <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
-                  <SelectContent position="popper">{SYRIAN_PROVINCES.map(pr => <SelectItem key={pr} value={pr}>{pr}</SelectItem>)}</SelectContent>
-                </Select>
+                <NativeSelect value={buyForm.province} onValueChange={v => setBuyForm(p => ({ ...p, province: v }))} placeholder="اختر المحافظة">
+                  {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
+                </NativeSelect>
               </div>
               <div>
                 <Label>المدينة / الحي *</Label>
