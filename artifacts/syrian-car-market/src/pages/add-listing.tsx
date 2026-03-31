@@ -10,6 +10,7 @@ import { Sparkles, ImagePlus, Loader2, CheckCircle2, X, ShieldCheck, TrendingUp,
 import { useAuthStore } from "@/lib/auth";
 import { showToast } from "@/lib/toast";
 import { api } from "@/lib/api";
+import { SYRIAN_PROVINCES } from "@/lib/constants";
 
 // ── Market base prices (USD) per car brand ──────────────────────────────────
 const MARKET_PRICES: Record<string, number> = {
@@ -83,13 +84,13 @@ const DEFAULT_FIELDS = {
   engineCC: "", bikeType: "", dailyPrice: "", weeklyPrice: "",
   rentalDuration: "", partType: "", partCarModel: "", partCarYear: "",
   // Real Estate fields
-  reTitle: "", reListingType: "sale", reSubCategory: "apartment",
+  reTitle: "", reListingType: "بيع", reSubCategory: "شقق",
   rePrice: "", reArea: "", reRooms: "", reBathrooms: "", reFloor: "",
-  reProvince: "Damascus", reCity: "", reLocation: "", rePhone: "",
+  reProvince: "دمشق", reCity: "", reLocation: "", rePhone: "",
   // Jobs fields
-  jobTitle: "", jobSubCategory: "technology", jobCompany: "", jobSalary: "",
-  jobType: "full_time", jobExperience: "any", jobField: "technology",
-  jobProvince: "Damascus", jobCity: "", jobPhone: "", jobRequirements: "",
+  jobTitle: "", jobSubCategory: "وظيفة شاغرة", jobCompany: "", jobSalary: "",
+  jobType: "دوام كامل", jobExperience: "بدون خبرة", jobField: "أخرى",
+  jobProvince: "دمشق", jobCity: "", jobPhone: "", jobRequirements: "",
 };
 
 function loadDraft() {
@@ -818,20 +819,21 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع الإعلان</label>
                 <select name="reListingType" value={fields.reListingType} onChange={handleField} className={selectCls}>
-                  <option value="sale">للبيع</option>
-                  <option value="rent">للإيجار</option>
+                  <option value="بيع">للبيع</option>
+                  <option value="إيجار">للإيجار</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع العقار</label>
                 <select name="reSubCategory" value={fields.reSubCategory} onChange={handleField} className={selectCls}>
-                  <option value="apartment">شقة</option>
-                  <option value="house">منزل / فيلا</option>
-                  <option value="studio">استوديو</option>
-                  <option value="land">أرض</option>
-                  <option value="office">مكتب / محل تجاري</option>
-                  <option value="farm">مزرعة</option>
-                  <option value="other">أخرى</option>
+                  <option value="شقق">شقة</option>
+                  <option value="منازل وفيلات">منزل / فيلا</option>
+                  <option value="استديو">استوديو</option>
+                  <option value="غرفة">غرفة</option>
+                  <option value="أراضي">أرض</option>
+                  <option value="مكاتب">مكتب</option>
+                  <option value="محلات تجارية">محل تجاري</option>
+                  <option value="مستودعات">مستودع</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -866,9 +868,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               <div className="space-y-2">
                 <label className="text-sm font-bold">المحافظة</label>
                 <select name="reProvince" value={fields.reProvince} onChange={handleField} className={selectCls}>
-                  {["Damascus","Aleppo","Homs","Latakia","Tartus","Hama","Idlib","Deir ez-Zor","Raqqa","Daraa","Sweida","Quneitra","Hasakah"].map(p => (
-                    <option key={p} value={p}>{p === "Damascus" ? "دمشق" : p === "Aleppo" ? "حلب" : p === "Homs" ? "حمص" : p === "Latakia" ? "اللاذقية" : p === "Tartus" ? "طرطوس" : p === "Hama" ? "حماة" : p === "Idlib" ? "إدلب" : p === "Deir ez-Zor" ? "دير الزور" : p === "Raqqa" ? "الرقة" : p === "Daraa" ? "درعا" : p === "Sweida" ? "السويداء" : p === "Quneitra" ? "القنيطرة" : "الحسكة"}</option>
-                  ))}
+                  {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
@@ -894,38 +894,49 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                 <input name="jobTitle" value={fields.jobTitle} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: مطلوب مهندس برمجيات" required autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
+                <label className="text-sm font-bold">نوع الإعلان</label>
+                <select name="jobSubCategory" value={fields.jobSubCategory} onChange={handleField} className={selectCls}>
+                  <option value="وظيفة شاغرة">وظيفة شاغرة</option>
+                  <option value="طلب توظيف">طلب توظيف</option>
+                </select>
+              </div>
+              <div className="space-y-2">
                 <label className="text-sm font-bold">المجال</label>
                 <select name="jobField" value={fields.jobField} onChange={handleField} className={selectCls}>
-                  <option value="technology">تقنية المعلومات</option>
-                  <option value="engineering">هندسة</option>
-                  <option value="medical">طب وصحة</option>
-                  <option value="education">تعليم</option>
-                  <option value="finance">مالية ومحاسبة</option>
-                  <option value="marketing">تسويق ومبيعات</option>
-                  <option value="construction">بناء وإنشاء</option>
-                  <option value="trade">تجارة وخدمات</option>
-                  <option value="transport">نقل وشحن</option>
-                  <option value="other">أخرى</option>
+                  <option value="تقنية المعلومات">تقنية المعلومات</option>
+                  <option value="هندسة">هندسة</option>
+                  <option value="طب وصحة">طب وصحة</option>
+                  <option value="تعليم">تعليم</option>
+                  <option value="تجارة ومبيعات">تجارة ومبيعات</option>
+                  <option value="مالية ومحاسبة">مالية ومحاسبة</option>
+                  <option value="تصميم وفنون">تصميم وفنون</option>
+                  <option value="قانون">قانون</option>
+                  <option value="إعلام وصحافة">إعلام وصحافة</option>
+                  <option value="خدمة عملاء">خدمة عملاء</option>
+                  <option value="بناء وعقارات">بناء وعقارات</option>
+                  <option value="نقل ولوجستيك">نقل ولوجستيك</option>
+                  <option value="زراعة">زراعة</option>
+                  <option value="سياحة وفنادق">سياحة وفنادق</option>
+                  <option value="أخرى">أخرى</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع العقد</label>
                 <select name="jobType" value={fields.jobType} onChange={handleField} className={selectCls}>
-                  <option value="full_time">دوام كامل</option>
-                  <option value="part_time">دوام جزئي</option>
-                  <option value="freelance">عمل حر</option>
-                  <option value="internship">تدريب</option>
-                  <option value="remote">عن بعد</option>
+                  <option value="دوام كامل">دوام كامل</option>
+                  <option value="دوام جزئي">دوام جزئي</option>
+                  <option value="عن بعد">عن بعد</option>
+                  <option value="عقد مؤقت">عقد مؤقت</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">الخبرة المطلوبة</label>
                 <select name="jobExperience" value={fields.jobExperience} onChange={handleField} className={selectCls}>
-                  <option value="any">لا يشترط</option>
-                  <option value="junior">مبتدئ (أقل من سنة)</option>
-                  <option value="1-3">1-3 سنوات</option>
-                  <option value="3-5">3-5 سنوات</option>
-                  <option value="5+">أكثر من 5 سنوات</option>
+                  <option value="بدون خبرة">بدون خبرة</option>
+                  <option value="أقل من سنة">أقل من سنة</option>
+                  <option value="1-3 سنوات">1-3 سنوات</option>
+                  <option value="3-5 سنوات">3-5 سنوات</option>
+                  <option value="أكثر من 5 سنوات">أكثر من 5 سنوات</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -939,9 +950,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               <div className="space-y-2">
                 <label className="text-sm font-bold">المحافظة</label>
                 <select name="jobProvince" value={fields.jobProvince} onChange={handleField} className={selectCls}>
-                  {["Damascus","Aleppo","Homs","Latakia","Tartus","Hama","Idlib","Deir ez-Zor","Raqqa","Daraa","Sweida","Quneitra","Hasakah"].map(p => (
-                    <option key={p} value={p}>{p === "Damascus" ? "دمشق" : p === "Aleppo" ? "حلب" : p === "Homs" ? "حمص" : p === "Latakia" ? "اللاذقية" : p === "Tartus" ? "طرطوس" : p === "Hama" ? "حماة" : p === "Idlib" ? "إدلب" : p === "Deir ez-Zor" ? "دير الزور" : p === "Raqqa" ? "الرقة" : p === "Daraa" ? "درعا" : p === "Sweida" ? "السويداء" : p === "Quneitra" ? "القنيطرة" : "الحسكة"}</option>
-                  ))}
+                  {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
