@@ -34,7 +34,7 @@ type Job = {
 };
 
 type DetailedJob = Job & {
-  description: string | null; requirements: string | null; posterPhone: string | null;
+  phone: string | null; description: string | null; requirements: string | null; posterPhone: string | null;
 };
 
 const JOBS_QK = (p: object) => ["jobs", p];
@@ -42,7 +42,7 @@ const JOBS_QK = (p: object) => ["jobs", p];
 const emptyForm = {
   title: "", subCategory: "وظيفة شاغرة", company: "", salary: "", salaryUnit: "شهري",
   jobType: "دوام كامل", experience: "بدون خبرة", field: "أخرى",
-  province: "", city: "", description: "", requirements: "",
+  province: "", city: "", phone: "", description: "", requirements: "",
 };
 
 export default function JobsPage() {
@@ -105,6 +105,7 @@ export default function JobsPage() {
       salary: form.salary ? `${form.salary} / ${form.salaryUnit}` : null,
       jobType: form.jobType, experience: form.experience, field: form.field,
       province: form.province, city: form.city,
+      phone: form.phone || null,
       description: form.description || null, requirements: form.requirements || null,
     });
   };
@@ -215,11 +216,13 @@ export default function JobsPage() {
               <div className="border-t pt-3 flex items-center justify-between">
                 <div>
                   <p className="font-semibold">{detailData.posterName || "الناشر"}</p>
-                  {detailData.posterPhone && <p className="text-sm text-muted-foreground">{detailData.posterPhone}</p>}
+                  {(detailData.phone || detailData.posterPhone) && (
+                    <p className="text-sm text-muted-foreground">📞 {detailData.phone || detailData.posterPhone}</p>
+                  )}
                 </div>
                 <div className="flex gap-2">
-                  {detailData.posterPhone && (
-                    <a href={`tel:${detailData.posterPhone}`}>
+                  {(detailData.phone || detailData.posterPhone) && (
+                    <a href={`tel:${detailData.phone || detailData.posterPhone}`}>
                       <Button size="sm" variant="outline">📞 اتصال</Button>
                     </a>
                   )}
@@ -307,6 +310,10 @@ export default function JobsPage() {
                 <Label>المدينة *</Label>
                 <Input placeholder="المدينة أو المنطقة" value={form.city} onChange={e => f("city", e.target.value)} />
               </div>
+            </div>
+            <div>
+              <Label>رقم الهاتف / واتساب</Label>
+              <Input type="tel" placeholder="مثال: 0991234567" value={form.phone} onChange={e => f("phone", e.target.value)} />
             </div>
             <div>
               <Label>وصف الوظيفة</Label>

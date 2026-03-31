@@ -16,6 +16,7 @@ export const realEstateTable = pgTable("real_estate", {
   province: text("province").notNull(),
   city: text("city").notNull(),
   location: text("location"),
+  phone: text("phone"),
   description: text("description"),
   images: text("images").array(),
   status: text("status").notNull().default("pending"),

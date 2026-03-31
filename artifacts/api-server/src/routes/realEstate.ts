@@ -67,6 +67,7 @@ router.get("/real-estate/:id", async (req: any, res): Promise<void> => {
         province: realEstateTable.province,
         city: realEstateTable.city,
         location: realEstateTable.location,
+        phone: realEstateTable.phone,
         description: realEstateTable.description,
         images: realEstateTable.images,
         isFeatured: realEstateTable.isFeatured,
@@ -93,7 +94,7 @@ router.get("/real-estate/:id", async (req: any, res): Promise<void> => {
 router.post("/real-estate", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { title, listingType, subCategory, price, area, rooms, bathrooms, floor, province, city, location, description, images } = req.body;
+    const { title, listingType, subCategory, price, area, rooms, bathrooms, floor, province, city, location, phone, description, images } = req.body;
 
     if (!title || !listingType || !subCategory || !price || !province || !city) {
       res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية" });
@@ -113,6 +114,7 @@ router.post("/real-estate", authMiddleware, async (req: AuthRequest, res): Promi
       province,
       city,
       location: location || null,
+      phone: phone || null,
       description: description || null,
       images: images || [],
       status: "active",

@@ -14,6 +14,7 @@ export const jobsTable = pgTable("jobs", {
   field: text("field"), // مجال العمل
   province: text("province").notNull(),
   city: text("city").notNull(),
+  phone: text("phone"),
   description: text("description"),
   requirements: text("requirements"),
   status: text("status").notNull().default("active"),

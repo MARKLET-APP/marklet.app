@@ -30,7 +30,7 @@ type RealEstate = {
 };
 
 type DetailedRealEstate = RealEstate & {
-  bathrooms: number | null; floor: number | null; location: string | null;
+  phone: string | null; bathrooms: number | null; floor: number | null; location: string | null;
   description: string | null; sellerPhone: string | null;
 };
 
@@ -39,7 +39,7 @@ const RE_QK = (p: object) => ["real-estate", p];
 const emptyForm = {
   title: "", listingType: "بيع", subCategory: "شقق",
   price: "", currency: "USD", area: "", rooms: "", bathrooms: "", floor: "",
-  province: "", city: "", location: "", description: "", images: [] as string[],
+  province: "", city: "", location: "", phone: "", description: "", images: [] as string[],
 };
 
 export default function RealEstatePage() {
@@ -101,7 +101,8 @@ export default function RealEstatePage() {
       price: `${form.price} ${form.currency}`, area: form.area || null,
       rooms: form.rooms ? Number(form.rooms) : null, bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
       floor: form.floor ? Number(form.floor) : null, province: form.province, city: form.city,
-      location: form.location || null, description: form.description || null, images: form.images,
+      location: form.location || null, phone: form.phone || null,
+      description: form.description || null, images: form.images,
     });
   };
 
@@ -214,11 +215,13 @@ export default function RealEstatePage() {
               <div className="border-t pt-3 flex items-center justify-between">
                 <div>
                   <p className="font-semibold">{detailData.sellerName || "البائع"}</p>
-                  {detailData.sellerPhone && <p className="text-sm text-muted-foreground">{detailData.sellerPhone}</p>}
+                  {(detailData.phone || detailData.sellerPhone) && (
+                    <p className="text-sm text-muted-foreground">📞 {detailData.phone || detailData.sellerPhone}</p>
+                  )}
                 </div>
                 <div className="flex gap-2">
-                  {detailData.sellerPhone && (
-                    <a href={`tel:${detailData.sellerPhone}`}>
+                  {(detailData.phone || detailData.sellerPhone) && (
+                    <a href={`tel:${detailData.phone || detailData.sellerPhone}`}>
                       <Button size="sm" variant="outline">📞 اتصال</Button>
                     </a>
                   )}
@@ -311,6 +314,10 @@ export default function RealEstatePage() {
             <div>
               <Label>تفاصيل الموقع</Label>
               <Input placeholder="مثال: قرب مسجد الروضة، شارع الثورة" value={form.location} onChange={e => f("location", e.target.value)} />
+            </div>
+            <div>
+              <Label>رقم الهاتف / واتساب</Label>
+              <Input type="tel" placeholder="مثال: 0991234567" value={form.phone} onChange={e => f("phone", e.target.value)} />
             </div>
             <div>
               <Label>الوصف</Label>

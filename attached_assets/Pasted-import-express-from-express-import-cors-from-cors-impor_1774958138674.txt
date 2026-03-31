@@ -1,0 +1,109 @@
+import express from "express";
+import cors from "cors";
+import { db } from "./db.js";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+/* =========================
+REAL ESTATE
+========================= */
+
+// CREATE
+app.post("/api/real-estate", (req, res) => {
+  const {
+    title,
+    listingType,
+    subCategory,
+    price,
+    description,
+    area,
+    rooms,
+    location,
+    phone
+  } = req.body;
+
+  const stmt = db.prepare(`
+    INSERT INTO real_estate
+    (title, listingType, subCategory, price, description, area, rooms, location, phone, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const result = stmt.run(
+    title,
+    listingType,
+    subCategory,
+    price,
+    description,
+    area,
+    rooms,
+    location,
+    phone,
+    new Date().toISOString()
+  );
+
+  res.json({ id: result.lastInsertRowid });
+});
+
+// GET ALL
+app.get("/api/real-estate", (req, res) => {
+  const data = db.prepare("SELECT * FROM real_estate ORDER BY id DESC").all();
+  res.json(data);
+});
+
+// GET ONE
+app.get("/api/real-estate/:id", (req, res) => {
+  const item = db.prepare("SELECT * FROM real_estate WHERE id = ?").get(req.params.id);
+  res.json(item);
+});
+
+/* =========================
+JOBS
+========================= */
+
+// CREATE
+app.post("/api/jobs", (req, res) => {
+  const {
+    title,
+    subCategory,
+    salary,
+    jobType,
+    experience,
+    description,
+    phone
+  } = req.body;
+
+  const stmt = db.prepare(`
+    INSERT INTO jobs
+    (title, subCategory, salary, jobType, experience, description, phone, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const result = stmt.run(
+    title,
+    subCategory,
+    salary,
+    jobType,
+    experience,
+    description,
+    phone,
+    new Date().toISOString()
+  );
+
+  res.json({ id: result.lastInsertRowid });
+});
+
+// GET ALL
+app.get("/api/jobs", (req, res) => {
+  const data = db.prepare("SELECT * FROM jobs ORDER BY id DESC").all();
+  res.json(data);
+});
+
+// GET ONE
+app.get("/api/jobs/:id", (req, res) => {
+  const item = db.prepare("SELECT * FROM jobs WHERE id = ?").get(req.params.id);
+  res.json(item);
+});
+
+app.listen(3000, () => console.log("Server running on 3000"));

@@ -66,6 +66,7 @@ router.get("/jobs/:id", async (req: any, res): Promise<void> => {
         field: jobsTable.field,
         province: jobsTable.province,
         city: jobsTable.city,
+        phone: jobsTable.phone,
         description: jobsTable.description,
         requirements: jobsTable.requirements,
         isFeatured: jobsTable.isFeatured,
@@ -90,7 +91,7 @@ router.get("/jobs/:id", async (req: any, res): Promise<void> => {
 router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { title, subCategory, company, salary, jobType, experience, field, province, city, description, requirements } = req.body;
+    const { title, subCategory, company, salary, jobType, experience, field, province, city, phone, description, requirements } = req.body;
 
     if (!title || !subCategory || !province || !city) {
       res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية" });
@@ -108,6 +109,7 @@ router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void
       field: field || null,
       province,
       city,
+      phone: phone || null,
       description: description || null,
       requirements: requirements || null,
       status: "active",
