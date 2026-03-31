@@ -129,6 +129,8 @@ export default function Home() {
     { id: 'missing', name: t("home.browse.missing"), icon: 'search', href: '/missing-cars' },
     { id: 'buy-request', name: t("nav.buyRequests"), icon: 'cart', href: '/buy-requests' },
     { id: 'auctions', name: isRTL ? '🏁 مزادات' : '🏁 Auctions', icon: 'auctions', href: '/auctions' },
+    { id: 'real-estate', name: isRTL ? '🏠 العقارات' : '🏠 Real Estate', icon: 'realestate', href: '/real-estate' },
+    { id: 'jobs', name: isRTL ? '💼 الوظائف' : '💼 Jobs', icon: 'jobs', href: '/jobs' },
   ];
 
   return (

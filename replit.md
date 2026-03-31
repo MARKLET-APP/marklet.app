@@ -1,8 +1,24 @@
-# MARKLET — سوق السيارات السوري
+# MARKLET — السوق الشامل السوري
 
 ## Overview
 
-A full-stack mobile-first Arabic RTL marketplace for buying and selling cars in Syria.
+A full-stack mobile-first Arabic RTL multi-category marketplace for Syria covering cars, real estate, jobs, and more.
+
+## Real Estate Module (2026)
+- **DB table**: `real_estate` — sellerId, title, listingType (بيع/إيجار), subCategory (شقق/منازل/أراضي...), price, area, rooms, bathrooms, floor, province, city, location, description, images[], status, isFeatured, isActive, viewCount
+- **API routes**: `GET /api/real-estate`, `GET /api/real-estate/:id`, `POST /api/real-estate`, `DELETE /api/real-estate/:id`
+- **Frontend**: `/real-estate` page — card grid with image, filters (type/category/province), add dialog with image upload, detail dialog with contact/chat buttons
+- **Image upload**: uses `MultiImageUpload` component (reusable, max 6 images, uploads via `/api/upload`)
+
+## Jobs Module (2026)
+- **DB table**: `jobs` — posterId, title, subCategory (وظيفة شاغرة/طلب توظيف), company, salary, jobType, experience, field, province, city, description, requirements, status, isFeatured, isActive, viewCount
+- **API routes**: `GET /api/jobs`, `GET /api/jobs/:id`, `POST /api/jobs`, `DELETE /api/jobs/:id`
+- **Frontend**: `/jobs` page — card list with filters (type/field/province), add dialog, detail dialog
+- **Home categories**: 🏠 العقارات and 💼 الوظائف added to category grid
+
+## Shared utilities
+- `artifacts/syrian-car-market/src/lib/constants.ts` — SYRIAN_PROVINCES array (Arabic names)
+- `artifacts/syrian-car-market/src/components/MultiImageUpload.tsx` — reusable multi-image upload component
 
 ## Reels / Video Carousel
 - **DB table**: `reels` — stores video URL, thumbnail URL, title, desc, price, city, dealerName, dealerId, sponsored, views, likes, status
