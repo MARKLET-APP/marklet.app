@@ -12,15 +12,12 @@ paths = ["/api"]
 [services.development]
 run = "pnpm --filter @workspace/api-server run dev"
 
+[services.env]
+PORT = "8080"
+
 [services.production]
 build = "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/db run push-force && pnpm --filter @workspace/db run seed-admin"
-
-[services.production.run]
-args = ["node", "artifacts/api-server/dist/index.cjs"]
-
-[services.production.run.env]
-PORT = "8080"
-NODE_ENV = "production"
+run = "node artifacts/api-server/dist/index.cjs"
 
 [services.production.health.startup]
 path = "/api/healthz"
