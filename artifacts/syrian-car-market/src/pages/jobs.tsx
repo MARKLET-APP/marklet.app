@@ -1,6 +1,7 @@
 // UI_ID: JOBS_01
 // NAME: الوظائف
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -49,6 +50,7 @@ export default function JobsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
 
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
@@ -175,7 +177,7 @@ export default function JobsPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {jobs.map(job => <JobCard key={job.id} job={job} onOpen={() => setDetail(job as DetailedJob)} />)}
+            {jobs.map(job => <JobCard key={job.id} job={job} onOpen={() => navigate(`/jobs/${job.id}`)} />)}
           </div>
         )}
       </div>

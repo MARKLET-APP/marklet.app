@@ -1,6 +1,7 @@
 // UI_ID: REAL_ESTATE_01
 // NAME: العقارات
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -46,6 +47,7 @@ export default function RealEstatePage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [filterType, setFilterType] = useState("__all__");
@@ -174,7 +176,7 @@ export default function RealEstatePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {listings.map(item => (
-              <RealEstateCard key={item.id} item={item} onOpen={() => setDetail(item)} />
+              <RealEstateCard key={item.id} item={item} onOpen={() => navigate(`/real-estate/${item.id}`)} />
             ))}
           </div>
         )}
