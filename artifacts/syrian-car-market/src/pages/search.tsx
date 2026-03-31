@@ -166,14 +166,9 @@ function FilterPanel({ filters, onChange, onClear }: {
         <label className="text-sm font-bold text-foreground">المحافظة</label>
         <select name="province" value={filters.province} onChange={onChange} className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 focus:border-primary transition-all outline-none">
           <option value="">الكل</option>
-          <option value="Damascus">دمشق</option>
-          <option value="Aleppo">حلب</option>
-          <option value="Homs">حمص</option>
-          <option value="Lattakia">اللاذقية</option>
-          <option value="Hama">حماة</option>
-          <option value="Deir ez-Zor">دير الزور</option>
-          <option value="Tartus">طرطوس</option>
-          <option value="Idlib">إدلب</option>
+          {["دمشق","ريف دمشق","حلب","حمص","حماة","اللاذقية","طرطوس","إدلب","دير الزور","الرقة","الحسكة","درعا","السويداء","القنيطرة"].map(p => (
+            <option key={p} value={p}>{p}</option>
+          ))}
         </select>
       </div>
       <Button variant="outline" onClick={onClear} className="w-full rounded-xl">

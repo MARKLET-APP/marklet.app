@@ -17,6 +17,8 @@ export const jobsTable = pgTable("jobs", {
   phone: text("phone"),
   description: text("description"),
   requirements: text("requirements"),
+  cvUrl: text("cv_url"),
+  salaryCurrency: text("salary_currency").default("USD"),
   status: text("status").notNull().default("active"),
   isFeatured: boolean("is_featured").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),

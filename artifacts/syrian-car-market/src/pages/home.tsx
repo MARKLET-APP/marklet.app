@@ -272,14 +272,9 @@ export default function Home() {
                   className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground text-xs sm:text-sm cursor-pointer"
                 >
                   <option value="">{isRTL ? "كل المحافظات" : "All Regions"}</option>
-                  <option value="Damascus">{isRTL ? "دمشق" : "Damascus"}</option>
-                  <option value="Aleppo">{isRTL ? "حلب" : "Aleppo"}</option>
-                  <option value="Homs">{isRTL ? "حمص" : "Homs"}</option>
-                  <option value="Lattakia">{isRTL ? "اللاذقية" : "Lattakia"}</option>
-                  <option value="Hama">{isRTL ? "حماة" : "Hama"}</option>
-                  <option value="Deir ez-Zor">{isRTL ? "دير الزور" : "Deir ez-Zor"}</option>
-                  <option value="Tartus">{isRTL ? "طرطوس" : "Tartus"}</option>
-                  <option value="Idlib">{isRTL ? "إدلب" : "Idlib"}</option>
+                  {["دمشق","ريف دمشق","حلب","حمص","حماة","اللاذقية","طرطوس","إدلب","دير الزور","الرقة","الحسكة","درعا","السويداء","القنيطرة"].map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
                 </select>
               </div>
             </div>

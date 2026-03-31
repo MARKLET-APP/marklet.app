@@ -280,7 +280,7 @@ export function HeroCategorySlider({ baseUrl }: { baseUrl: string }) {
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
           className="md:hidden absolute pointer-events-none"
-          style={{ top: 16, right: 16, zIndex: 2 }}
+          style={{ top: 16, right: 16, zIndex: 20 }}
         >
           <MobileSlideGraphic slide={slide} />
         </motion.div>

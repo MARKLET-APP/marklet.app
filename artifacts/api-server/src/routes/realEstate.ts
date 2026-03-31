@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, realEstateTable, usersTable } from "@workspace/db";
 import { eq, desc, ilike, or, and, sql } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { generateRealEstateDescription } from "../lib/openai.js";
 
 const router: IRouter = Router();
 
@@ -94,10 +95,16 @@ router.get("/real-estate/:id", async (req: any, res): Promise<void> => {
 router.post("/real-estate", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { title, listingType, subCategory, price, area, rooms, bathrooms, floor, province, city, location, phone, description, images } = req.body;
+    const { title, listingType, subCategory, price, currency, area, rooms, bathrooms, floor, province, city, location, phone, description, images } = req.body;
 
     if (!title || !listingType || !subCategory || !price || !province || !city) {
       res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية" });
+      return;
+    }
+
+    const numericPrice = parseFloat(String(price).replace(/[^0-9.]/g, ""));
+    if (isNaN(numericPrice) || numericPrice <= 0) {
+      res.status(400).json({ error: "يرجى إدخال سعر صحيح" });
       return;
     }
 
@@ -106,7 +113,8 @@ router.post("/real-estate", authMiddleware, async (req: AuthRequest, res): Promi
       title,
       listingType,
       subCategory,
-      price: String(price),
+      price: String(numericPrice),
+      currency: currency || "USD",
       area: area ? String(area) : null,
       rooms: rooms ? Number(rooms) : null,
       bathrooms: bathrooms ? Number(bathrooms) : null,
@@ -124,6 +132,16 @@ router.post("/real-estate", authMiddleware, async (req: AuthRequest, res): Promi
   } catch (err) {
     console.error("POST /real-estate error:", err);
     res.status(500).json({ error: "فشل نشر الإعلان" });
+  }
+});
+
+/* POST generate AI description for real estate */
+router.post("/real-estate/ai-description", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const description = await generateRealEstateDescription(req.body);
+    res.json({ description });
+  } catch (err) {
+    res.status(500).json({ error: "فشل توليد الوصف" });
   }
 });
 

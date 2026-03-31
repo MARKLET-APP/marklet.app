@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Building2, Bed, Ruler, Loader2, Eye, ShoppingCart, MessageCircle, Trash2 } from "lucide-react";
+import { Search, Plus, MapPin, Building2, Bed, Ruler, Loader2, Eye, ShoppingCart, MessageCircle, Trash2, Sparkles } from "lucide-react";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
@@ -137,14 +137,49 @@ export default function RealEstatePage() {
 
   const f = (k: keyof typeof emptyForm, v: string) => setForm(p => ({ ...p, [k]: v }));
 
+  const [aiDescLoading, setAiDescLoading] = useState(false);
+
+  const handleAiDescription = async () => {
+    if (!form.subCategory || !form.province) {
+      toast({ title: "يرجى تحديد نوع العقار والمحافظة أولاً", variant: "destructive" });
+      return;
+    }
+    setAiDescLoading(true);
+    try {
+      const res = await apiRequest<{ description: string }>("/api/real-estate/ai-description", "POST", {
+        title: form.title || `${form.subCategory} للـ${form.listingType}`,
+        listingType: form.listingType,
+        subCategory: form.subCategory,
+        area: form.area || undefined,
+        rooms: form.rooms || undefined,
+        bathrooms: form.bathrooms || undefined,
+        floor: form.floor || undefined,
+        province: form.province,
+        city: form.city,
+        additionalNotes: form.description || undefined,
+      });
+      f("description", res.description);
+      toast({ title: "تم توليد الوصف بنجاح ✨" });
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setAiDescLoading(false);
+    }
+  };
+
   const handleSubmit = () => {
     if (!form.title || !form.price || !form.province || !form.city) {
       toast({ title: "يرجى تعبئة الحقول الإلزامية", variant: "destructive" });
       return;
     }
+    const numPrice = Number(form.price);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      toast({ title: "يرجى إدخال سعر صحيح", variant: "destructive" });
+      return;
+    }
     createMutation.mutate({
       title: form.title, listingType: form.listingType, subCategory: form.subCategory,
-      price: `${form.price} ${form.currency}`, area: form.area || null,
+      price: numPrice, currency: form.currency, area: form.area || null,
       rooms: form.rooms ? Number(form.rooms) : null, bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
       floor: form.floor ? Number(form.floor) : null, province: form.province, city: form.city,
       location: form.location || null, phone: form.phone || null,
@@ -354,7 +389,7 @@ export default function RealEstatePage() {
           <div className="space-y-4">
             <div>
               <Label>العنوان *</Label>
-              <Input placeholder="مثال: شقة للبيع في دمشق - المزة" value={form.title} onChange={e => f("title", e.target.value)} />
+              <Input dir="auto" placeholder="مثال: شقة للبيع في دمشق - المزة" value={form.title} onChange={e => f("title", e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -430,8 +465,14 @@ export default function RealEstatePage() {
               <Input type="tel" placeholder="مثال: 0991234567" value={form.phone} onChange={e => f("phone", e.target.value)} />
             </div>
             <div>
-              <Label>الوصف</Label>
-              <Textarea placeholder="وصف تفصيلي للعقار..." value={form.description} onChange={e => f("description", e.target.value)} rows={3} />
+              <div className="flex items-center justify-between mb-1">
+                <Label>الوصف</Label>
+                <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 px-2" onClick={handleAiDescription} disabled={aiDescLoading}>
+                  {aiDescLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  كتابة بالذكاء الاصطناعي
+                </Button>
+              </div>
+              <Textarea dir="auto" placeholder="وصف تفصيلي للعقار..." value={form.description} onChange={e => f("description", e.target.value)} rows={3} />
             </div>
             <div>
               <Label>الصور</Label>

@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { withApi } from "@/lib/runtimeConfig";
-import { Button } from "@/components/ui/button";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { ImagePlus, X, Loader2, AlertCircle } from "lucide-react";
 
 interface MultiImageUploadProps {
   images: string[];
@@ -25,20 +24,26 @@ async function uploadSingle(file: File): Promise<string> {
 
 export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList) => {
     if (!files.length) return;
     setUploading(true);
+    setError(null);
     try {
       const remaining = max - images.length;
       const toUpload = Array.from(files).slice(0, remaining);
-      const urls = await Promise.all(toUpload.map(uploadSingle));
-      onChange([...images, ...urls]);
+      const results = await Promise.allSettled(toUpload.map(uploadSingle));
+      const urls = results.filter(r => r.status === "fulfilled").map(r => (r as PromiseFulfilledResult<string>).value);
+      const failed = results.filter(r => r.status === "rejected").length;
+      if (urls.length > 0) onChange([...images, ...urls]);
+      if (failed > 0) setError(`فشل رفع ${failed} صورة`);
     } catch {
-      // silently handle upload error
+      setError("فشل رفع الصور، يرجى المحاولة مرة أخرى");
     } finally {
       setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
@@ -50,12 +55,12 @@ export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUpload
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
         {images.map((url, i) => (
-          <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border">
+          <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
             <img src={url} alt="" className="w-full h-full object-cover" />
             <button
               type="button"
               onClick={() => remove(i)}
-              className="absolute top-0.5 right-0.5 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-0.5 right-0.5 bg-black/70 rounded-full p-0.5"
             >
               <X className="w-3 h-3 text-white" />
             </button>
@@ -81,7 +86,14 @@ export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUpload
         className="hidden"
         onChange={e => e.target.files && handleFiles(e.target.files)}
       />
-      <p className="text-xs text-muted-foreground">{images.length}/{max} صور</p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{images.length}/{max} صور</p>
+        {error && (
+          <p className="text-xs text-destructive flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />{error}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

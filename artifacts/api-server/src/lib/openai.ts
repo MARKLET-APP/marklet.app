@@ -249,3 +249,77 @@ export async function generateVehicleAISummary(report: {
     return "تُظهر هذه المركبة تطور طبيعي في قراءات العداد ولا يوجد أضرار هيكلية مسجّلة. حالة جيدة بشكل عام.";
   }
 }
+
+export async function generateRealEstateDescription(params: {
+  title: string;
+  listingType: string;
+  subCategory: string;
+  area?: string;
+  rooms?: string;
+  bathrooms?: string;
+  floor?: string;
+  province: string;
+  city: string;
+  additionalNotes?: string;
+}): Promise<string> {
+  const prompt = `أنت مساعد متخصص في سوق العقارات السوري. اكتب وصفاً احترافياً وجذاباً لإعلان عقاري بالعربية.
+
+معلومات العقار:
+- العنوان: ${params.title}
+- نوع الإعلان: ${params.listingType}
+- نوع العقار: ${params.subCategory}
+${params.area ? `- المساحة: ${params.area} م²` : ""}
+${params.rooms ? `- غرف: ${params.rooms}` : ""}
+${params.bathrooms ? `- حمامات: ${params.bathrooms}` : ""}
+${params.floor ? `- الطابق: ${params.floor}` : ""}
+- الموقع: ${params.city}، ${params.province}
+${params.additionalNotes ? `- ملاحظات: ${params.additionalNotes}` : ""}
+
+اكتب وصفاً من 3-4 جمل يبرز مميزات العقار ويجذب المشترين. باللغة العربية فقط.`;
+
+  try {
+    return await callOpenAI([
+      { role: "system", content: "أنت خبير في سوق العقارات السورية." },
+      { role: "user", content: prompt },
+    ]);
+  } catch {
+    return `${params.subCategory} للـ${params.listingType} في ${params.city}، ${params.province}. ${params.area ? `مساحة ${params.area} م².` : ""} ${params.rooms ? `${params.rooms} غرف.` : ""} موقع متميز وإطلالة رائعة. للاستفسار والمعاينة الرجاء التواصل.`;
+  }
+}
+
+export async function generateJobDescription(params: {
+  title: string;
+  subCategory: string;
+  company?: string;
+  field?: string;
+  jobType?: string;
+  experience?: string;
+  province: string;
+  additionalNotes?: string;
+}): Promise<string> {
+  const isVacancy = params.subCategory === "وظيفة شاغرة";
+  const prompt = `أنت مساعد متخصص في سوق العمل السوري. اكتب ${isVacancy ? "وصفاً احترافياً لإعلان وظيفة شاغرة" : "وصفاً لطلب توظيف"} بالعربية.
+
+المعلومات:
+- المسمى الوظيفي: ${params.title}
+- النوع: ${params.subCategory}
+${params.company ? `- الشركة: ${params.company}` : ""}
+${params.field ? `- المجال: ${params.field}` : ""}
+${params.jobType ? `- نوع الدوام: ${params.jobType}` : ""}
+${params.experience ? `- الخبرة: ${params.experience}` : ""}
+- الموقع: ${params.province}
+${params.additionalNotes ? `- ملاحظات: ${params.additionalNotes}` : ""}
+
+اكتب وصفاً من 3-4 جمل ${isVacancy ? "يبرز متطلبات الوظيفة والمزايا" : "يبرز المهارات والخبرات"}. باللغة العربية فقط.`;
+
+  try {
+    return await callOpenAI([
+      { role: "system", content: "أنت خبير في سوق العمل السوري." },
+      { role: "user", content: prompt },
+    ]);
+  } catch {
+    return isVacancy
+      ? `مطلوب ${params.title} للعمل ${params.jobType ? `بنظام ${params.jobType}` : ""}. ${params.field ? `مجال العمل: ${params.field}.` : ""} ${params.experience ? `الخبرة المطلوبة: ${params.experience}.` : ""} للتقديم والاستفسار الرجاء التواصل.`
+      : `أبحث عن فرصة عمل كـ${params.title}. ${params.field ? `مجال تخصصي: ${params.field}.` : ""} ${params.experience ? `لديّ خبرة ${params.experience}.` : ""} متاح للعمل في ${params.province}.`;
+  }
+}

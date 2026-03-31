@@ -1,6 +1,6 @@
 // UI_ID: JOBS_01
 // NAME: الوظائف
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Briefcase, Loader2, Building, Clock, Star, FileText } from "lucide-react";
+import { Search, Plus, MapPin, Briefcase, Loader2, Building, Clock, Star, FileText, Sparkles, UploadCloud } from "lucide-react";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -43,7 +43,7 @@ const JOBS_QK = (p: object) => ["jobs", p];
 
 const emptyForm = {
   title: "", subCategory: "وظيفة شاغرة", company: "", salary: "", salaryUnit: "شهري",
-  jobType: "دوام كامل", experience: "بدون خبرة", field: "أخرى",
+  salaryCurrency: "USD", jobType: "دوام كامل", experience: "بدون خبرة", field: "أخرى",
   province: "", city: "", phone: "", description: "", requirements: "",
 };
 
@@ -139,6 +139,59 @@ export default function JobsPage() {
 
   const f = (k: keyof typeof emptyForm, v: string) => setForm(p => ({ ...p, [k]: v }));
 
+  const [aiDescLoading, setAiDescLoading] = useState(false);
+  const [cvUploading, setCvUploading] = useState(false);
+  const [cvUrl, setCvUrl] = useState<string | null>(null);
+  const cvRef = useRef<HTMLInputElement>(null);
+
+  const handleAiDescription = async () => {
+    if (!form.subCategory || !form.province) {
+      toast({ title: "يرجى تحديد نوع الإعلان والمحافظة أولاً", variant: "destructive" });
+      return;
+    }
+    setAiDescLoading(true);
+    try {
+      const res = await apiRequest<{ description: string }>("/api/jobs/ai-description", "POST", {
+        title: form.title || form.subCategory,
+        subCategory: form.subCategory,
+        company: form.company || undefined,
+        field: form.field !== "أخرى" ? form.field : undefined,
+        jobType: form.jobType || undefined,
+        experience: form.experience || undefined,
+        province: form.province,
+        additionalNotes: form.description || undefined,
+      });
+      f("description", res.description);
+      toast({ title: "تم توليد الوصف بنجاح ✨" });
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setAiDescLoading(false);
+    }
+  };
+
+  const handleCvUpload = async (file: File) => {
+    setCvUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const token = localStorage.getItem("scm_token");
+      const res = await fetch(import.meta.env.BASE_URL + "api/upload", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setCvUrl(data.url);
+      toast({ title: "تم رفع السيرة الذاتية بنجاح" });
+    } catch {
+      toast({ title: "فشل رفع السيرة الذاتية", variant: "destructive" });
+    } finally {
+      setCvUploading(false);
+    }
+  };
+
   const handleSubmit = () => {
     if (!form.title || !form.province || !form.city) {
       toast({ title: "يرجى تعبئة الحقول الإلزامية", variant: "destructive" });
@@ -147,10 +200,12 @@ export default function JobsPage() {
     createMutation.mutate({
       title: form.title, subCategory: form.subCategory, company: form.company || null,
       salary: form.salary ? `${form.salary} / ${form.salaryUnit}` : null,
+      salaryCurrency: form.salaryCurrency,
       jobType: form.jobType, experience: form.experience, field: form.field,
       province: form.province, city: form.city,
       phone: form.phone || null,
       description: form.description || null, requirements: form.requirements || null,
+      cvUrl: cvUrl || null,
     });
   };
 
@@ -362,7 +417,7 @@ export default function JobsPage() {
             </div>
             <div>
               <Label>المسمى الوظيفي *</Label>
-              <Input placeholder="مثال: مطور ويب، معلم رياضيات..." value={form.title} onChange={e => f("title", e.target.value)} />
+              <Input dir="auto" placeholder="مثال: مطور ويب، معلم رياضيات..." value={form.title} onChange={e => f("title", e.target.value)} />
             </div>
             <div>
               <Label>الشركة / المؤسسة</Label>
@@ -391,21 +446,31 @@ export default function JobsPage() {
                 <SelectContent>{FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-2">
-                <Label>الراتب</Label>
-                <Input type="number" placeholder="المبلغ" value={form.salary} onChange={e => f("salary", e.target.value)} />
-              </div>
-              <div>
-                <Label>الفترة</Label>
-                <Select value={form.salaryUnit} onValueChange={v => f("salaryUnit", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="شهري">شهري</SelectItem>
-                    <SelectItem value="يومي">يومي</SelectItem>
-                    <SelectItem value="بالمشروع">بالمشروع</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div>
+              <Label>الراتب</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-1">
+                  <Input type="number" placeholder="المبلغ" value={form.salary} onChange={e => f("salary", e.target.value)} />
+                </div>
+                <div>
+                  <Select value={form.salaryUnit} onValueChange={v => f("salaryUnit", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="شهري">شهري</SelectItem>
+                      <SelectItem value="يومي">يومي</SelectItem>
+                      <SelectItem value="بالمشروع">بالمشروع</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Select value={form.salaryCurrency} onValueChange={v => f("salaryCurrency", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="USD">USD $</SelectItem>
+                      <SelectItem value="SYP">SYP ل.س</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -426,12 +491,18 @@ export default function JobsPage() {
               <Input type="tel" placeholder="مثال: 0991234567" value={form.phone} onChange={e => f("phone", e.target.value)} />
             </div>
             <div>
-              <Label>وصف الوظيفة</Label>
-              <Textarea placeholder="وصف تفصيلي للوظيفة، المهام والمسؤوليات..." value={form.description} onChange={e => f("description", e.target.value)} rows={3} />
+              <div className="flex items-center justify-between mb-1">
+                <Label>وصف الوظيفة</Label>
+                <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 px-2" onClick={handleAiDescription} disabled={aiDescLoading}>
+                  {aiDescLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  كتابة بالذكاء الاصطناعي
+                </Button>
+              </div>
+              <Textarea dir="auto" placeholder="وصف تفصيلي للوظيفة، المهام والمسؤوليات..." value={form.description} onChange={e => f("description", e.target.value)} rows={3} />
             </div>
             <div>
               <Label>متطلبات الوظيفة</Label>
-              <Textarea placeholder="المؤهلات والمتطلبات المطلوبة..." value={form.requirements} onChange={e => f("requirements", e.target.value)} rows={3} />
+              <Textarea dir="auto" placeholder="المؤهلات والمتطلبات المطلوبة..." value={form.requirements} onChange={e => f("requirements", e.target.value)} rows={3} />
             </div>
             <Button className="w-full" onClick={handleSubmit} disabled={createMutation.isPending}>
               {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
@@ -485,8 +556,27 @@ export default function JobsPage() {
             </div>
             <div>
               <Label>نبذة عن نفسك / مهاراتك</Label>
-              <Textarea placeholder="مثال: خبرة 3 سنوات في البرمجة، أجيد اللغة الإنجليزية، حاصل على شهادة جامعية..." rows={3}
+              <Textarea dir="auto" placeholder="مثال: خبرة 3 سنوات في البرمجة، أجيد اللغة الإنجليزية، حاصل على شهادة جامعية..." rows={3}
                 value={applyForm.description} onChange={e => setApplyForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+            <div>
+              <Label>السيرة الذاتية (PDF أو صورة) - اختياري</Label>
+              <div className="mt-1 flex items-center gap-3">
+                <Button type="button" variant="outline" size="sm" className="gap-2"
+                  onClick={() => cvRef.current?.click()} disabled={cvUploading}>
+                  {cvUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                  {cvUrl ? "تغيير الملف" : "رفع السيرة الذاتية"}
+                </Button>
+                {cvUrl && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                    <FileText className="w-4 h-4" />
+                    <span>تم الرفع ✓</span>
+                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => setCvUrl(null)}>✕</button>
+                  </div>
+                )}
+              </div>
+              <input ref={cvRef} type="file" accept=".pdf,image/*" className="hidden"
+                onChange={e => { if (e.target.files?.[0]) handleCvUpload(e.target.files[0]); e.target.value = ""; }} />
             </div>
             <Button className="w-full gap-2 bg-amber-600 hover:bg-amber-700" onClick={handleApplySubmit} disabled={applyMutation.isPending}>
               {applyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}

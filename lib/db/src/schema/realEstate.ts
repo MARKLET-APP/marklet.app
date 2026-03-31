@@ -9,6 +9,7 @@ export const realEstateTable = pgTable("real_estate", {
   listingType: text("listing_type").notNull(), // بيع | إيجار
   subCategory: text("sub_category").notNull(), // شقق | منازل | أراضي | مكاتب | محلات | مستودعات
   price: numeric("price", { precision: 14, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("USD"),
   area: numeric("area", { precision: 10, scale: 2 }),
   rooms: integer("rooms"),
   bathrooms: integer("bathrooms"),

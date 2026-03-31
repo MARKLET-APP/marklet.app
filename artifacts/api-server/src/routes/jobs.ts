@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, jobsTable, usersTable } from "@workspace/db";
 import { eq, desc, ilike, or, and, sql } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { generateJobDescription } from "../lib/openai.js";
 
 const router: IRouter = Router();
 
@@ -91,7 +92,7 @@ router.get("/jobs/:id", async (req: any, res): Promise<void> => {
 router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { title, subCategory, company, salary, jobType, experience, field, province, city, phone, description, requirements } = req.body;
+    const { title, subCategory, company, salary, salaryCurrency, jobType, experience, field, province, city, phone, description, requirements, cvUrl } = req.body;
 
     if (!title || !subCategory || !province || !city) {
       res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية" });
@@ -104,6 +105,7 @@ router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void
       subCategory,
       company: company || null,
       salary: salary || null,
+      salaryCurrency: salaryCurrency || "USD",
       jobType: jobType || null,
       experience: experience || null,
       field: field || null,
@@ -112,6 +114,7 @@ router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void
       phone: phone || null,
       description: description || null,
       requirements: requirements || null,
+      cvUrl: cvUrl || null,
       status: "active",
     }).returning();
 
@@ -119,6 +122,16 @@ router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void
   } catch (err) {
     console.error("POST /jobs error:", err);
     res.status(500).json({ error: "فشل نشر الوظيفة" });
+  }
+});
+
+/* POST generate AI description for jobs */
+router.post("/jobs/ai-description", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const description = await generateJobDescription(req.body);
+    res.json({ description });
+  } catch (err) {
+    res.status(500).json({ error: "فشل توليد الوصف" });
   }
 });
 
