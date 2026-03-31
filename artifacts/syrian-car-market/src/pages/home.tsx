@@ -49,13 +49,13 @@ export default function Home() {
 
   const { data: latestRealEstate = [] } = useQuery({
     queryKey: ["/real-estate", "home"],
-    queryFn: () => getRealEstate({ limit: "4" }),
+    queryFn: () => getRealEstate({ limit: "6" }),
     staleTime: 60_000,
   });
 
   const { data: latestJobs = [] } = useQuery({
     queryKey: ["/jobs", "home"],
-    queryFn: () => getJobs({ limit: "4" }),
+    queryFn: () => getJobs({ limit: "6" }),
     staleTime: 60_000,
   });
   const { user } = useAuthStore();
@@ -415,7 +415,7 @@ export default function Home() {
       {/* Video Carousel */}
       <VideoCarousel />
 
-      {/* Featured Cars */}
+      {/* ── الإعلانات المميزة — جميع الفئات ── */}
       <section className="py-12 bg-secondary/20 w-full">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-end mb-8">
@@ -424,19 +424,68 @@ export default function Home() {
                 <span className="w-3 h-8 bg-accent rounded-full inline-block"></span>
                 {t("home.featured.title")}
               </h2>
+              <p className="text-muted-foreground mt-1 text-sm">سيارات • عقارات • وظائف وأكثر</p>
             </div>
           </div>
 
           {loadingFeatured ? (
             <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
-          ) : (
-            <>
-              <div className="ads-grid grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
-                {(Array.isArray(featuredCars) ? featuredCars : []).slice(0, 4).map((car) => (
-                  <CarCard key={car.id} car={car} />
-                ))}
-              </div>
-              {(Array.isArray(featuredCars) ? featuredCars : []).length > 0 && (
+          ) : (() => {
+            const cars2   = (Array.isArray(featuredCars) ? featuredCars : []).slice(0, 2);
+            const reals2  = (latestRealEstate as any[]).slice(0, 2);
+            const jobs2   = (latestJobs as any[]).slice(0, 2);
+            const mixed   = [
+              ...cars2.map(c => ({ _type: "car" as const, _id: `car-${c.id}`, data: c })),
+              ...reals2.map(r => ({ _type: "re"  as const, _id: `re-${r.id}`,  data: r })),
+              ...jobs2.map(j  => ({ _type: "job" as const, _id: `job-${j.id}`, data: j })),
+            ];
+            if (mixed.length === 0) return null;
+            return (
+              <>
+                <div className="ads-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                  {mixed.map(item => {
+                    if (item._type === "car") {
+                      return <CarCard key={item._id} car={item.data} />;
+                    }
+                    if (item._type === "re") {
+                      const r = item.data;
+                      return (
+                        <Link key={item._id} href={`/real-estate/${r.id}`}>
+                          <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+                            <div className="relative">
+                              {Array.isArray(r.images) && r.images[0]
+                                ? <img src={r.images[0]} alt={r.title} className="w-full h-28 object-cover" />
+                                : <div className="w-full h-28 bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center"><Building2 size={36} className="text-cyan-400" /></div>
+                              }
+                              <span className="absolute top-2 right-2 bg-cyan-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">عقار</span>
+                            </div>
+                            <div className="p-2.5">
+                              <p className="font-semibold text-xs line-clamp-1">{r.title}</p>
+                              {r.price && <p className="text-primary font-bold text-xs mt-0.5">{Number(r.price).toLocaleString()} ل.س</p>}
+                              {r.province && <p className="text-muted-foreground text-[10px] flex items-center gap-0.5 mt-0.5"><MapPin size={9} />{r.province}</p>}
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    }
+                    const j = item.data;
+                    return (
+                      <Link key={item._id} href={`/jobs/${j.id}`}>
+                        <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+                          <div className="w-full h-28 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                            <Briefcase size={36} className="text-amber-500" />
+                          </div>
+                          <div className="p-2.5">
+                            <span className="inline-block bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">وظيفة</span>
+                            <p className="font-semibold text-xs line-clamp-1">{j.title}</p>
+                            {j.salary && <p className="text-primary font-bold text-xs mt-0.5">{j.salary}</p>}
+                            {j.province && <p className="text-muted-foreground text-[10px] flex items-center gap-0.5 mt-0.5"><MapPin size={9} />{j.province}</p>}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
                 <div className="mt-6 text-center">
                   <Link href="/search?featured=true">
                     <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-200 text-sm">
@@ -445,34 +494,80 @@ export default function Home() {
                     </button>
                   </Link>
                 </div>
-              )}
-            </>
-          )}
+              </>
+            );
+          })()}
         </div>
       </section>
 
       {/* Featured Showrooms */}
       <FeaturedShowrooms />
 
-      {/* Latest Cars */}
+      {/* ── أحدث الإعلانات — جميع الفئات ── */}
       <section className="py-12 max-w-7xl mx-auto px-4 w-full">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">{t("home.recentCars.title")}</h2>
-            <p className="text-muted-foreground mt-1">{isRTL ? "سيارات أضيفت مؤخراً للسوق" : "Cars recently added to the market"}</p>
+            <h2 className="text-2xl font-bold text-foreground">{isRTL ? "أحدث الإعلانات" : "Latest Listings"}</h2>
+            <p className="text-muted-foreground mt-1">{isRTL ? "سيارات، عقارات، وظائف — أضيفت للتو" : "Cars, real estate, jobs — just added"}</p>
           </div>
         </div>
 
         {loadingLatest ? (
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
-        ) : (
-          <>
-            <div className="ads-grid grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
-              {(Array.isArray(latestCars?.cars) ? latestCars!.cars : []).slice(0, 4).map((car) => (
-                <CarCard key={car.id} car={car} />
-              ))}
-            </div>
-            {(Array.isArray(latestCars?.cars) ? latestCars!.cars : []).length > 0 && (
+        ) : (() => {
+          const latestCarsList = (Array.isArray(latestCars?.cars) ? latestCars!.cars : []).slice(0, 2);
+          const latestREList   = (latestRealEstate as any[]).slice(2, 4);
+          const latestJobsList = (latestJobs as any[]).slice(2, 4);
+          const mixed = [
+            ...latestCarsList.map((c: any) => ({ _type: "car" as const, _id: `lcar-${c.id}`, data: c })),
+            ...latestREList.map(r  => ({ _type: "re"  as const, _id: `lre-${r.id}`,   data: r })),
+            ...latestJobsList.map(j => ({ _type: "job" as const, _id: `ljob-${j.id}`, data: j })),
+          ];
+          if (mixed.length === 0) return null;
+          return (
+            <>
+              <div className="ads-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5">
+                {mixed.map(item => {
+                  if (item._type === "car") return <CarCard key={item._id} car={item.data} />;
+                  if (item._type === "re") {
+                    const r = item.data;
+                    return (
+                      <Link key={item._id} href={`/real-estate/${r.id}`}>
+                        <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+                          <div className="relative">
+                            {Array.isArray(r.images) && r.images[0]
+                              ? <img src={r.images[0]} alt={r.title} className="w-full h-28 object-cover" />
+                              : <div className="w-full h-28 bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center"><Building2 size={36} className="text-cyan-400" /></div>
+                            }
+                            <span className="absolute top-2 right-2 bg-cyan-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">عقار</span>
+                          </div>
+                          <div className="p-2.5">
+                            <p className="font-semibold text-xs line-clamp-1">{r.title}</p>
+                            {r.price && <p className="text-primary font-bold text-xs mt-0.5">{Number(r.price).toLocaleString()} ل.س</p>}
+                            {r.province && <p className="text-muted-foreground text-[10px] flex items-center gap-0.5 mt-0.5"><MapPin size={9} />{r.province}</p>}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  }
+                  const j = item.data;
+                  return (
+                    <Link key={item._id} href={`/jobs/${j.id}`}>
+                      <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+                        <div className="w-full h-28 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                          <Briefcase size={36} className="text-amber-500" />
+                        </div>
+                        <div className="p-2.5">
+                          <span className="inline-block bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">وظيفة</span>
+                          <p className="font-semibold text-xs line-clamp-1">{j.title}</p>
+                          {j.salary && <p className="text-primary font-bold text-xs mt-0.5">{j.salary}</p>}
+                          {j.province && <p className="text-muted-foreground text-[10px] flex items-center gap-0.5 mt-0.5"><MapPin size={9} />{j.province}</p>}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
               <div className="mt-6 text-center">
                 <Link href="/search">
                   <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-200 text-sm">
@@ -481,9 +576,9 @@ export default function Home() {
                   </button>
                 </Link>
               </div>
-            )}
-          </>
-        )}
+            </>
+          );
+        })()}
       </section>
 
       {/* Real Estate Section */}
