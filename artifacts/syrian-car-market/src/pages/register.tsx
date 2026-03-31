@@ -62,6 +62,8 @@ export default function Register() {
               data-ui-id="INPUT_TITLE_01"
               data-testid="INPUT_TITLE_01"
               autoComplete="name"
+              dir="auto"
+              style={{ fontSize: 16 }}
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none"
             />
             {errors.name && <p className="text-destructive text-xs">{errors.name.message as string}</p>}

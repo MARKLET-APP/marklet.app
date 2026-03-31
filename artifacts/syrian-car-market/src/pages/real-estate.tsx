@@ -232,21 +232,21 @@ export default function RealEstatePage() {
         <div className="flex gap-2 overflow-x-auto pb-1">
           <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="h-8 text-xs min-w-[90px]"><SelectValue placeholder="النوع" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               <SelectItem value="__all__">الكل</SelectItem>
               {LISTING_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterSub} onValueChange={setFilterSub}>
             <SelectTrigger className="h-8 text-xs min-w-[110px]"><SelectValue placeholder="الفئة" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               <SelectItem value="__all__">الكل</SelectItem>
               {SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterProv} onValueChange={setFilterProv}>
             <SelectTrigger className="h-8 text-xs min-w-[110px]"><SelectValue placeholder="المحافظة" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               <SelectItem value="__all__">الكل</SelectItem>
               {SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
             </SelectContent>
@@ -396,14 +396,14 @@ export default function RealEstatePage() {
                 <Label>نوع الإعلان *</Label>
                 <Select value={form.listingType} onValueChange={v => f("listingType", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{LISTING_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{LISTING_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>الفئة *</Label>
                 <Select value={form.subCategory} onValueChange={v => f("subCategory", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
@@ -416,7 +416,7 @@ export default function RealEstatePage() {
                 <Label>العملة</Label>
                 <Select value={form.currency} onValueChange={v => f("currency", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper">
                     <SelectItem value="USD">USD</SelectItem>
                     <SelectItem value="SYP">SYP</SelectItem>
                   </SelectContent>
@@ -448,7 +448,7 @@ export default function RealEstatePage() {
                 <Label>المحافظة *</Label>
                 <Select value={form.province} onValueChange={v => f("province", v)}>
                   <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                  <SelectContent>{SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
@@ -497,7 +497,7 @@ export default function RealEstatePage() {
               <Label>نوع العقار المطلوب *</Label>
               <Select value={buyForm.propertyType} onValueChange={v => setBuyForm(p => ({ ...p, propertyType: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper">
                   {SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -512,7 +512,7 @@ export default function RealEstatePage() {
                 <Label>العملة</Label>
                 <Select value={buyForm.currency} onValueChange={v => setBuyForm(p => ({ ...p, currency: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper">
                     <SelectItem value="USD">USD</SelectItem>
                     <SelectItem value="SYP">SYP</SelectItem>
                   </SelectContent>
@@ -524,7 +524,7 @@ export default function RealEstatePage() {
                 <Label>المحافظة *</Label>
                 <Select value={buyForm.province} onValueChange={v => setBuyForm(p => ({ ...p, province: v }))}>
                   <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
-                  <SelectContent>{SYRIAN_PROVINCES.map(pr => <SelectItem key={pr} value={pr}>{pr}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{SYRIAN_PROVINCES.map(pr => <SelectItem key={pr} value={pr}>{pr}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>

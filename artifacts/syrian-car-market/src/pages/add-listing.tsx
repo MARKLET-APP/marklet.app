@@ -79,7 +79,7 @@ const DRAFT_KEY = "marklet_listing_draft";
 
 const DEFAULT_FIELDS = {
   brand: "", model: "", year: "2015", price: "", mileage: "0",
-  fuelType: "petrol", transmission: "automatic", province: "Damascus",
+  fuelType: "petrol", transmission: "automatic", province: "دمشق",
   city: "", saleType: "cash", condition: "used", category: "sedan", description: "",
   engineCC: "", bikeType: "", dailyPrice: "", weeklyPrice: "",
   rentalDuration: "", partType: "", partCarModel: "", partCarYear: "",
@@ -976,19 +976,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                 <div className="space-y-2">
                   <label className="text-sm font-bold">المحافظة</label>
                   <select name="province" value={fields.province} onChange={handleField} className={selectCls}>
-                    <option value="Damascus">دمشق</option>
-                    <option value="Aleppo">حلب</option>
-                    <option value="Homs">حمص</option>
-                    <option value="Latakia">اللاذقية</option>
-                    <option value="Tartus">طرطوس</option>
-                    <option value="Hama">حماة</option>
-                    <option value="Idlib">إدلب</option>
-                    <option value="Deir ez-Zor">دير الزور</option>
-                    <option value="Raqqa">الرقة</option>
-                    <option value="Daraa">درعا</option>
-                    <option value="Sweida">السويداء</option>
-                    <option value="Quneitra">القنيطرة</option>
-                    <option value="Hasakah">الحسكة</option>
+                    {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">

@@ -178,7 +178,7 @@ export default function PlatesPage() {
       mileage: 0,
       fuelType: "petrol",
       transmission: "manual",
-      province: "Damascus",
+      province: "دمشق",
       price: sellForm.price ? Number(sellForm.price) : 0,
       city: sellForm.city || "دمشق",
       description: `رقم اللوحة: ${sellForm.plateNumber} | نوع: ${sellForm.plateType}${sellForm.description ? " | " + sellForm.description : ""}`,

@@ -254,21 +254,21 @@ export default function JobsPage() {
         <div className="flex gap-2 overflow-x-auto pb-1">
           <Select value={filterSub} onValueChange={setFilterSub}>
             <SelectTrigger className="h-8 text-xs min-w-[120px]"><SelectValue placeholder="النوع" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               <SelectItem value="__all__">الكل</SelectItem>
               {SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterField} onValueChange={setFilterField}>
             <SelectTrigger className="h-8 text-xs min-w-[120px]"><SelectValue placeholder="المجال" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               <SelectItem value="__all__">الكل</SelectItem>
               {FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterProv} onValueChange={setFilterProv}>
             <SelectTrigger className="h-8 text-xs min-w-[110px]"><SelectValue placeholder="المحافظة" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               <SelectItem value="__all__">الكل</SelectItem>
               {SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
             </SelectContent>
@@ -412,7 +412,7 @@ export default function JobsPage() {
               <Label>نوع الإعلان *</Label>
               <Select value={form.subCategory} onValueChange={v => f("subCategory", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <SelectContent position="popper">{SUB_CATEGORIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
@@ -428,14 +428,14 @@ export default function JobsPage() {
                 <Label>نوع الدوام</Label>
                 <Select value={form.jobType} onValueChange={v => f("jobType", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{JOB_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{JOB_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>مستوى الخبرة</Label>
                 <Select value={form.experience} onValueChange={v => f("experience", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{EXPERIENCE_LEVELS.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{EXPERIENCE_LEVELS.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
@@ -443,7 +443,7 @@ export default function JobsPage() {
               <Label>مجال العمل</Label>
               <Select value={form.field} onValueChange={v => f("field", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                <SelectContent position="popper">{FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
@@ -478,7 +478,7 @@ export default function JobsPage() {
                 <Label>المحافظة *</Label>
                 <Select value={form.province} onValueChange={v => f("province", v)}>
                   <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                  <SelectContent>{SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{SYRIAN_PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
@@ -529,14 +529,14 @@ export default function JobsPage() {
                 <Label>المجال *</Label>
                 <Select value={applyForm.field} onValueChange={v => setApplyForm(p => ({ ...p, field: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{FIELDS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>الخبرة *</Label>
                 <Select value={applyForm.experience} onValueChange={v => setApplyForm(p => ({ ...p, experience: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{EXPERIENCE_LEVELS.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{EXPERIENCE_LEVELS.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
@@ -545,7 +545,7 @@ export default function JobsPage() {
                 <Label>المحافظة *</Label>
                 <Select value={applyForm.province} onValueChange={v => setApplyForm(p => ({ ...p, province: v }))}>
                   <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
-                  <SelectContent>{SYRIAN_PROVINCES.map(pr => <SelectItem key={pr} value={pr}>{pr}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper">{SYRIAN_PROVINCES.map(pr => <SelectItem key={pr} value={pr}>{pr}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
