@@ -206,7 +206,7 @@ export function VideoCarousel() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
             <span className="w-1 h-5 bg-primary rounded-full inline-block" />
-            فيديوهات السيارات
+            إعلانات ممولة
           </h2>
           <button onClick={() => navigate("/reels")} className="text-xs text-primary font-semibold hover:underline">
             عرض الكل ›

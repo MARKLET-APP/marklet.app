@@ -80,6 +80,8 @@ export default function RealEstatePage() {
       if (activeProv) params.set("province", activeProv);
       return apiRequest<RealEstate[]>(`/api/real-estate?${params}`);
     },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: detailData, isLoading: detailLoading } = useQuery<DetailedRealEstate>({

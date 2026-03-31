@@ -83,6 +83,8 @@ export default function JobsPage() {
       if (activeProv) params.set("province", activeProv);
       return apiRequest<Job[]>(`/api/jobs?${params}`);
     },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: detailData, isLoading: detailLoading } = useQuery<DetailedJob>({

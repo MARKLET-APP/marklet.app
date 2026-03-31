@@ -31,7 +31,7 @@ function getAvatarUrl(profilePhoto?: string | null, name?: string, email?: strin
 }
 
 export default function Profile() {
-  const { user, isHydrated, logout } = useAuthStore();
+  const { user, isHydrated, logout, setAuth } = useAuthStore();
   const { toast } = useToast();
   const token = typeof window !== "undefined" ? localStorage.getItem("scm_token") : null;
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -107,14 +107,15 @@ export default function Profile() {
       fd.append("avatar", file);
       const r = await fetch(`${API}/users/${user.id}/avatar`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: fd,
       });
       if (!r.ok) throw new Error("فشل رفع الصورة");
       const { profilePhoto } = await r.json();
       setLocalPhoto(profilePhoto);
+      if (user && token) {
+        setAuth({ ...user, profilePhoto } as any, token);
+      }
       toast({ title: "تم تحديث الصورة الشخصية" });
-      refetchProfile();
     } catch {
       toast({ title: "خطأ", description: "فشل رفع الصورة الشخصية", variant: "destructive" });
     } finally { setUploadingPhoto(false); }
@@ -125,7 +126,7 @@ export default function Profile() {
     try {
       const r = await fetch(`${API}/users/${user.id}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
       });
       if (!r.ok) throw new Error();

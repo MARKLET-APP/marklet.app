@@ -38,6 +38,7 @@ const ShowroomPage = lazy(() => import("@/pages/showroom"));
 const ShowroomsPage = lazy(() => import("@/pages/showrooms"));
 const ShowroomManagePage = lazy(() => import("@/pages/showroom-manage"));
 const ReelsPage = lazy(() => import("@/pages/reels"));
+const NotificationsPage = lazy(() => import("@/pages/notifications"));
 const ReelsUploadPage = lazy(() => import("@/pages/reels-upload"));
 const InspectionCentersPage = lazy(() => import("@/pages/inspection-centers"));
 const InspectionCenterPage = lazy(() => import("@/pages/inspection-center"));
@@ -150,6 +151,7 @@ function Router() {
           <Route path="/real-estate" component={RealEstatePage} />
           <Route path="/jobs/:id" component={JobDetailPage} />
           <Route path="/jobs" component={JobsPage} />
+          <Route path="/notifications" component={NotificationsPage} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

@@ -1,24 +1,19 @@
 // UI_ID: COMP_BOTTOM_NAV_01
 // NAME: شريط التنقل السفلي
 import { Link, useRoute } from "wouter";
-import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings, Building2, Briefcase } from "lucide-react";
+import { Home, Plus, MessageCircle, User, Bell, Settings } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useGetConversations } from "@workspace/api-client-react";
 
 export function BottomNav() {
   const { user } = useAuthStore();
   const [isHome] = useRoute("/");
-  const [isSearch] = useRoute("/search");
   const [isAdd] = useRoute("/add-listing");
-  const [isFavorites] = useRoute("/favorites");
   const [isProfile] = useRoute("/profile");
   const [isMessages] = useRoute("/messages");
   const [isChat] = useRoute("/chat");
-  const [isBuyRequests] = useRoute("/buy-requests");
+  const [isNotifications] = useRoute("/notifications");
   const [isAdmin] = useRoute("/admin");
-  const [isShowroomManage] = useRoute("/showroom/manage");
-  const [isRealEstate] = useRoute("/real-estate");
-  const [isJobs] = useRoute("/jobs");
 
   const { data: conversations } = useGetConversations({
     query: {
@@ -31,25 +26,18 @@ export function BottomNav() {
   const totalUnread = conversations?.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0) ?? 0;
   const isChatActive = isMessages || isChat;
   const isAdminUser = user?.role === "admin";
-  const isDealerUser = user?.role === "dealer";
 
   return (
     <div className="glass-panel border-t pb-safe sm:hidden flex-shrink-0">
       <div className="flex items-center justify-around h-16 px-1">
+
+        {/* الرئيسية */}
         <NavItem href="/" icon={<Home className="w-5 h-5" />} label="الرئيسية" isActive={isHome} />
-        <NavItem href="/real-estate" icon={<Building2 className="w-5 h-5" />} label="عقارات" isActive={isRealEstate} />
 
-        {/* Dealer showroom control button — between search and add */}
-        {isDealerUser && (
-          <NavItem
-            href="/showroom/manage"
-            icon={<Building2 className="w-5 h-5" />}
-            label="معرضي"
-            isActive={isShowroomManage}
-            accent
-          />
-        )}
+        {/* إشعارات */}
+        <NavItem href="/notifications" icon={<Bell className="w-5 h-5" />} label="إشعارات" isActive={isNotifications} />
 
+        {/* نشر — centered floating button */}
         <Link
           href="/add-listing"
           className="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors text-primary"
@@ -60,9 +48,7 @@ export function BottomNav() {
           <span className="text-[10px] font-medium text-primary">نشر</span>
         </Link>
 
-        <NavItem href="/jobs" icon={<Briefcase className="w-5 h-5" />} label="وظائف" isActive={isJobs} />
-
-        {/* Admin gets لوحة التحكم, others get messages or profile */}
+        {/* رسائل (all users) or لوحة التحكم (admin) */}
         {isAdminUser ? (
           <NavItem
             href="/admin"
@@ -71,7 +57,7 @@ export function BottomNav() {
             isActive={isAdmin}
             accent
           />
-        ) : user ? (
+        ) : (
           <NavItem
             href="/messages"
             icon={
@@ -87,11 +73,11 @@ export function BottomNav() {
             label="رسائل"
             isActive={isChatActive}
           />
-        ) : (
-          <NavItem href="/search" icon={<Search className="w-5 h-5" />} label="البحث" isActive={isSearch} />
         )}
 
+        {/* حسابي */}
         <NavItem href="/profile" icon={<User className="w-5 h-5" />} label="حسابي" isActive={isProfile} />
+
       </div>
     </div>
   );
