@@ -7,7 +7,7 @@ import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
   AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag,
-  Building2, Star, Share2, FileSearch2
+  Building2, Star, Share2, FileSearch2, Briefcase, House
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { VehicleReportWidget } from "@/components/VehicleReportWidget";
@@ -391,6 +391,8 @@ export default function Home() {
               'cart': { icon: <CartIcon size={22} />, color: "text-primary", bg: "bg-primary/10" },
               'auctions': { icon: <Flag size={22} />, color: "text-yellow-600", bg: "bg-yellow-100" },
               'showrooms': { icon: <Building2 size={22} />, color: "text-emerald-600", bg: "bg-emerald-100" },
+              'realestate': { icon: <House size={22} />, color: "text-cyan-600", bg: "bg-cyan-100" },
+              'jobs': { icon: <Briefcase size={22} />, color: "text-violet-600", bg: "bg-violet-100" },
             };
             const meta = catMeta[cat.icon] ?? { icon: <Car size={22} />, color: "text-primary", bg: "bg-primary/10" };
             return (

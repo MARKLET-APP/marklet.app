@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Plus, MapPin, Building2, Bed, Ruler, Loader2, Eye } from "lucide-react";
-import { useLocation } from "wouter";
+
 import { useStartChat } from "@/hooks/use-start-chat";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
@@ -46,8 +46,6 @@ export default function RealEstatePage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [, navigate] = useLocation();
-
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [filterType, setFilterType] = useState("__all__");
