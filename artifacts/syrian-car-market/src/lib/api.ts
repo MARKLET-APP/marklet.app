@@ -184,8 +184,14 @@ export const api = {
 export const getRealEstate = (params?: Record<string, string>) =>
   api.realEstate.list(params) as Promise<any[]>;
 
+export const getRealEstateById = (id: number) =>
+  api.realEstate.get(id) as Promise<any>;
+
 export const getJobs = (params?: Record<string, string>) =>
   api.jobs.list(params) as Promise<any[]>;
+
+export const getJobById = (id: number) =>
+  api.jobs.get(id) as Promise<any>;
 
 export const createRealEstate = (data: object) => api.realEstate.create(data);
 export const createJob = (data: object) => api.jobs.create(data);
