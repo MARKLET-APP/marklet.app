@@ -93,7 +93,7 @@ if (process.env.NODE_ENV === "production") {
   const publicPath = candidates.find(p => fs.existsSync(p));
   if (publicPath) {
     app.use(express.static(publicPath, { maxAge: "1d" }));
-    app.get("*", (_req, res) => {
+    app.get("*path", (_req, res) => {
       res.sendFile(path.join(publicPath, "index.html"));
     });
   }
