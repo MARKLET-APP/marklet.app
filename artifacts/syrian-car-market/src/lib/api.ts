@@ -179,3 +179,13 @@ export const api = {
   patch: (url: string, body: unknown) => apiRequest(url, "PATCH", body),
   delete: (url: string) => apiRequest(url, "DELETE"),
 };
+
+// ── Standalone helper exports ─────────────────────────────────────────────
+export const getRealEstate = (params?: Record<string, string>) =>
+  api.realEstate.list(params) as Promise<any[]>;
+
+export const getJobs = (params?: Record<string, string>) =>
+  api.jobs.list(params) as Promise<any[]>;
+
+export const createRealEstate = (data: object) => api.realEstate.create(data);
+export const createJob = (data: object) => api.jobs.create(data);
