@@ -1,5 +1,16 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "ReYl_64L6l86WToudf6OA"
+uri = "file://attached_assets/lazemni_icon_concept1.png"
+type = "image"
+title = "lazemni app icon arabic letter lam"
+
+[[generated]]
+id = "cV5NQPbi5NF-hl0WmKEYB"
+uri = "file://attached_assets/lazemni_logo_horizontal.png"
+type = "image"
+title = "lazemni full logo arabic horizontal"
 
 [[outputs]]
 id = "U4kGT9_NV2-ypI1YiE3JX"
