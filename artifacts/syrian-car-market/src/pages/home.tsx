@@ -26,7 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useLanguage } from "@/lib/i18n";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { VideoCarousel } from "@/components/VideoCarousel";
-import { HeroCategorySlider } from "@/components/HeroCategorySlider";
+import { HeroCategorySlider, SLIDES, SLIDE_DURATION } from "@/components/HeroCategorySlider";
 
 // ── خدمات التطبيق — تتناوب في الزر الحيوي بالـ Hero ──────────────────────────
 const SERVICE_TIPS: Array<{ icon: ReactNode; text: string }> = [
@@ -67,6 +67,8 @@ export default function Home() {
   const [heroProvince, setHeroProvince] = useState("");
   const [tipIdx, setTipIdx] = useState(0);
   const [tipVisible, setTipVisible] = useState(true);
+  const [heroSlideIdx, setHeroSlideIdx] = useState(0);
+  const [heroSlideVisible, setHeroSlideVisible] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -76,6 +78,17 @@ export default function Home() {
         setTipVisible(true);
       }, 400);
     }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroSlideVisible(false);
+      setTimeout(() => {
+        setHeroSlideIdx(i => (i + 1) % SLIDES.length);
+        setHeroSlideVisible(true);
+      }, 350);
+    }, SLIDE_DURATION);
     return () => clearInterval(interval);
   }, []);
 
@@ -198,6 +211,51 @@ export default function Home() {
               {SERVICE_TIPS[tipIdx].text}
             </span>
           </motion.div>
+
+          {/* ── أيقونة الفئة المتغيرة — Mobile فقط، بين النصيحة والعنوان ── */}
+          {(() => {
+            const s = SLIDES[heroSlideIdx];
+            const { Icon } = s;
+            return (
+              <div
+                className="md:hidden flex items-center justify-center gap-3 py-1"
+                style={{
+                  opacity: heroSlideVisible ? 1 : 0,
+                  transform: heroSlideVisible ? "scale(1)" : "scale(0.88)",
+                  transition: "opacity 0.35s ease, transform 0.35s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.08)",
+                    border: `1.5px solid ${s.accentColor}55`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: `0 0 28px ${s.bgColor}`,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon size={38} color={s.accentColor} strokeWidth={1.4} />
+                </div>
+                <span
+                  style={{
+                    color: s.accentColor,
+                    fontWeight: 800,
+                    fontSize: 20,
+                    letterSpacing: 1,
+                    direction: "rtl",
+                    textShadow: `0 2px 10px ${s.bgColor}`,
+                  }}
+                >
+                  {s.label}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Title */}
           <motion.h1

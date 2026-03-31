@@ -15,7 +15,7 @@ interface Slide {
   isCarSlide?: boolean;  // الشريحة الأولى تستخدم صورة hero-car.png
 }
 
-const SLIDES: Slide[] = [
+export const SLIDES: Slide[] = [
   {
     key: "cars",
     label: "سيارات",
@@ -61,7 +61,7 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const SLIDE_DURATION = 4000; // ms بين الشرائح
+export const SLIDE_DURATION = 4000; // ms بين الشرائح
 
 /* ── SVG الهيكل الخلفي لكل فئة ─────────────────────────────── */
 function CategoryOutlineSVG({ slide }: { slide: Slide }) {
@@ -271,26 +271,7 @@ export function HeroCategorySlider({ baseUrl }: { baseUrl: string }) {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── الأيقونة الصغيرة — Mobile فقط — أسفل اليمين بعيداً عن شريط النصائح ── */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`mobile-${slide.key}`}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
-          className="md:hidden absolute pointer-events-none"
-          style={{
-            top: 12,
-            right: 12,
-            zIndex: 5,
-          }}
-        >
-          <MobileSlideGraphic slide={slide} />
-        </motion.div>
-      </AnimatePresence>
-
-      {/* ── نقاط التنقل — منتصف السفلي (الموضع الأصلي) ── */}
+      {/* ── نقاط التنقل — منتصف السفلي ── */}
       <div
         className="absolute flex gap-1.5 pointer-events-none"
         style={{
