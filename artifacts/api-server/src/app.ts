@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import router from "./routes";
@@ -81,5 +82,21 @@ app.get("/app-link", (req, res) => {
     </html>
   `);
 });
+
+// ── Serve built frontend in production ──────────────────────
+if (process.env.NODE_ENV === "production") {
+  // Try the monorepo-relative path first, then a direct dist/public fallback
+  const candidates = [
+    path.join(process.cwd(), "artifacts", "syrian-car-market", "dist", "public"),
+    path.join(process.cwd(), "dist", "public"),
+  ];
+  const publicPath = candidates.find(p => fs.existsSync(p));
+  if (publicPath) {
+    app.use(express.static(publicPath, { maxAge: "1d" }));
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(publicPath, "index.html"));
+    });
+  }
+}
 
 export default app;

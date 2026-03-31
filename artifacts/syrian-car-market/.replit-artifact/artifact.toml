@@ -23,9 +23,3 @@ BASE_PATH = "/"
 
 [services.production]
 build = ["pnpm", "--filter", "@workspace/syrian-car-market", "run", "build"]
-publicDir = "artifacts/syrian-car-market/dist/public"
-serve = "static"
-
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
