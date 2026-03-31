@@ -48,10 +48,15 @@ export default function RealEstatePage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
+
+  const urlParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const initialSub = urlParams.get("subCategory") || "__all__";
+  const initialType = urlParams.get("listingType") || "__all__";
+
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
-  const [filterType, setFilterType] = useState("__all__");
-  const [filterSub, setFilterSub] = useState("__all__");
+  const [filterType, setFilterType] = useState(initialType);
+  const [filterSub, setFilterSub] = useState(initialSub);
   const [filterProv, setFilterProv] = useState("__all__");
   const [addOpen, setAddOpen] = useState(false);
   const [detail, setDetail] = useState<DetailedRealEstate | null>(null);

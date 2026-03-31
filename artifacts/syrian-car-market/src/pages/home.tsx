@@ -8,7 +8,8 @@ import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
   Car, Key, Bike, Hash, Wrench, Package, Shield, SearchIcon, ShoppingCart as CartIcon,
   AlertTriangle, MapPin, DollarSign, MessageCircle, Eye, Send, FileText, Calendar, Flag,
-  Building2, Star, Share2, FileSearch2, Briefcase, House, BedDouble, Banknote
+  Building2, Star, Share2, FileSearch2, Briefcase, House, BedDouble, Banknote,
+  LandPlot, Store, Warehouse, UserCheck, HardHat
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { VehicleReportWidget } from "@/components/VehicleReportWidget";
@@ -485,22 +486,44 @@ export default function Home() {
         )}
       </section>
 
-      {/* Latest Real Estate */}
-      {(latestRealEstate as any[]).length > 0 && (
-        <section className="py-10 bg-cyan-50/40 dark:bg-cyan-950/10 w-full border-y border-cyan-100 dark:border-cyan-900/30">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex justify-between items-end mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                  <span className="w-3 h-8 bg-cyan-500 rounded-full inline-block"></span>
-                  {isRTL ? "أحدث العقارات" : "Latest Real Estate"}
-                </h2>
-                <p className="text-muted-foreground mt-1 text-sm">{isRTL ? "شقق، منازل، وأراضي للبيع والإيجار" : "Apartments, homes and land for sale or rent"}</p>
-              </div>
-              <Link href="/real-estate" className="text-cyan-600 font-semibold flex items-center gap-1 hover:underline text-sm">
-                {isRTL ? "عرض الكل" : "View All"} <ChevronLeft className="w-4 h-4" />
-              </Link>
+      {/* Real Estate Section */}
+      <section className="py-10 bg-cyan-50/40 dark:bg-cyan-950/10 w-full border-y border-cyan-100 dark:border-cyan-900/30">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <span className="w-3 h-8 bg-cyan-500 rounded-full inline-block"></span>
+                {isRTL ? "العقارات" : "Real Estate"}
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">{isRTL ? "شقق، منازل، وأراضي للبيع والإيجار" : "Apartments, homes and land for sale or rent"}</p>
             </div>
+            <Link href="/real-estate" className="text-cyan-600 font-semibold flex items-center gap-1 hover:underline text-sm">
+              {isRTL ? "عرض الكل" : "View All"} <ChevronLeft className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Real Estate Category Icons */}
+          <div className="grid grid-cols-5 gap-2 sm:gap-3 mb-6">
+            {[
+              { label: "شقق", icon: <BedDouble size={20} />, color: "text-cyan-600", bg: "bg-cyan-100", sub: "شقق" },
+              { label: "مكاتب", icon: <Building2 size={20} />, color: "text-blue-600", bg: "bg-blue-100", sub: "مكاتب" },
+              { label: "محلات", icon: <Store size={20} />, color: "text-indigo-600", bg: "bg-indigo-100", sub: "محلات تجارية" },
+              { label: "أراضي", icon: <LandPlot size={20} />, color: "text-green-600", bg: "bg-green-100", sub: "أراضي" },
+              { label: "مستودعات", icon: <Warehouse size={20} />, color: "text-orange-600", bg: "bg-orange-100", sub: "مستودعات" },
+            ].map((cat) => (
+              <Link key={cat.label} href={`/real-estate?subCategory=${encodeURIComponent(cat.sub)}`}>
+                <div className="flex flex-col items-center justify-center p-2 sm:p-3 bg-card border rounded-xl cursor-pointer hover:border-cyan-400 hover:shadow-sm transition-all group text-center">
+                  <span className={`mb-1.5 w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center ${cat.bg} ${cat.color} group-hover:scale-110 transition-transform`}>
+                    {cat.icon}
+                  </span>
+                  <span className="font-semibold text-foreground leading-tight" style={{ fontSize: "10px" }}>{cat.label}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Latest Real Estate Listings */}
+          {(latestRealEstate as any[]).length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(latestRealEstate as any[]).slice(0, 4).map((item: any) => (
                 <Link key={item.id} href={`/real-estate/${item.id}`}>
@@ -515,7 +538,7 @@ export default function Home() {
                     <div className="p-3 space-y-1.5">
                       <p className="font-bold text-sm line-clamp-1">{item.title}</p>
                       {item.price && (
-                        <p className="text-primary font-bold text-sm">${Number(item.price).toLocaleString()}</p>
+                        <p className="text-primary font-bold text-sm">{item.price}</p>
                       )}
                       <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                         {item.province && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.province}</span>}
@@ -529,26 +552,56 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          )}
 
-      {/* Latest Jobs */}
-      {(latestJobs as any[]).length > 0 && (
-        <section className="py-10 bg-violet-50/40 dark:bg-violet-950/10 w-full border-b border-violet-100 dark:border-violet-900/30">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex justify-between items-end mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                  <span className="w-3 h-8 bg-violet-500 rounded-full inline-block"></span>
-                  {isRTL ? "أحدث الوظائف" : "Latest Jobs"}
-                </h2>
-                <p className="text-muted-foreground mt-1 text-sm">{isRTL ? "فرص عمل منشورة مؤخراً في سورية" : "Recently posted job opportunities in Syria"}</p>
-              </div>
-              <Link href="/jobs" className="text-violet-600 font-semibold flex items-center gap-1 hover:underline text-sm">
-                {isRTL ? "عرض الكل" : "View All"} <ChevronLeft className="w-4 h-4" />
-              </Link>
+          <div className="mt-5 text-center">
+            <Link href="/real-estate">
+              <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-cyan-500 text-cyan-600 font-bold hover:bg-cyan-500 hover:text-white transition-all duration-200 text-sm">
+                {isRTL ? "تصفح كل العقارات" : "Browse All Real Estate"}
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Jobs & Labor Section */}
+      <section className="py-10 bg-violet-50/40 dark:bg-violet-950/10 w-full border-b border-violet-100 dark:border-violet-900/30">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <span className="w-3 h-8 bg-violet-500 rounded-full inline-block"></span>
+                {isRTL ? "الوظائف والعمالة" : "Jobs & Labor"}
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">{isRTL ? "فرص عمل، عمالة منزلية، وعمال مهرة في سورية" : "Job opportunities, domestic labor, and skilled workers in Syria"}</p>
             </div>
+            <Link href="/jobs" className="text-violet-600 font-semibold flex items-center gap-1 hover:underline text-sm">
+              {isRTL ? "عرض الكل" : "View All"} <ChevronLeft className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Jobs Category Icons */}
+          <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-6">
+            {[
+              { label: "وظائف شاغرة", icon: <Briefcase size={20} />, color: "text-violet-600", bg: "bg-violet-100", sub: "وظيفة شاغرة" },
+              { label: "طلب توظيف", icon: <UserCheck size={20} />, color: "text-blue-600", bg: "bg-blue-100", sub: "طلب توظيف" },
+              { label: "عمالة منزلية", icon: <House size={20} />, color: "text-pink-600", bg: "bg-pink-100", sub: "عمالة منزلية" },
+              { label: "عمال مهرة", icon: <HardHat size={20} />, color: "text-amber-600", bg: "bg-amber-100", sub: "عمال مهرة" },
+            ].map((cat) => (
+              <Link key={cat.label} href={`/jobs?subCategory=${encodeURIComponent(cat.sub)}`}>
+                <div className="flex flex-col items-center justify-center p-2 sm:p-3 bg-card border rounded-xl cursor-pointer hover:border-violet-400 hover:shadow-sm transition-all group text-center">
+                  <span className={`mb-1.5 w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center ${cat.bg} ${cat.color} group-hover:scale-110 transition-transform`}>
+                    {cat.icon}
+                  </span>
+                  <span className="font-semibold text-foreground leading-tight" style={{ fontSize: "10px" }}>{cat.label}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Latest Jobs Listings */}
+          {(latestJobs as any[]).length > 0 && (
             <div className="flex flex-col gap-3">
               {(latestJobs as any[]).slice(0, 4).map((job: any) => (
                 <Link key={job.id} href={`/jobs/${job.id}`}>
@@ -562,21 +615,32 @@ export default function Home() {
                         {job.company && <span>{job.company}</span>}
                         {job.province && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{job.province}</span>}
                         {job.jobType && <Badge className="text-xs border-0 bg-violet-100 text-violet-800">{job.jobType}</Badge>}
+                        {job.subCategory && !["وظيفة شاغرة"].includes(job.subCategory) && (
+                          <Badge className="text-xs border-0 bg-pink-100 text-pink-800">{job.subCategory}</Badge>
+                        )}
                       </div>
                     </div>
                     {job.salary && (
                       <div className="text-left shrink-0">
-                        <p className="text-primary font-bold text-sm">${Number(job.salary).toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">{isRTL ? "شهرياً" : "/mo"}</p>
+                        <p className="text-primary font-bold text-sm">{job.salary}</p>
                       </div>
                     )}
                   </div>
                 </Link>
               ))}
             </div>
+          )}
+
+          <div className="mt-5 text-center">
+            <Link href="/jobs">
+              <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-violet-500 text-violet-600 font-bold hover:bg-violet-500 hover:text-white transition-all duration-200 text-sm">
+                {isRTL ? "تصفح كل الوظائف والعمالة" : "Browse All Jobs & Labor"}
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </Link>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Buy Requests Section — visible to all logged-in users */}
       {(buyRequests as any[]).length > 0 && (

@@ -1,7 +1,7 @@
 // UI_ID: COMP_BOTTOM_NAV_01
 // NAME: شريط التنقل السفلي
 import { Link, useRoute } from "wouter";
-import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings, Building2, Play } from "lucide-react";
+import { Home, Search, Plus, Bookmark, User, MessageCircle, ShoppingBag, Settings, Building2, Briefcase } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useGetConversations } from "@workspace/api-client-react";
 
@@ -17,7 +17,8 @@ export function BottomNav() {
   const [isBuyRequests] = useRoute("/buy-requests");
   const [isAdmin] = useRoute("/admin");
   const [isShowroomManage] = useRoute("/showroom/manage");
-  const [isReels] = useRoute("/reels");
+  const [isRealEstate] = useRoute("/real-estate");
+  const [isJobs] = useRoute("/jobs");
 
   const { data: conversations } = useGetConversations({
     query: {
@@ -36,8 +37,7 @@ export function BottomNav() {
     <div className="glass-panel border-t pb-safe sm:hidden flex-shrink-0">
       <div className="flex items-center justify-around h-16 px-1">
         <NavItem href="/" icon={<Home className="w-5 h-5" />} label="الرئيسية" isActive={isHome} />
-        <NavItem href="/search" icon={<Search className="w-5 h-5" />} label="البحث" isActive={isSearch} />
-        <NavItem href="/reels" icon={<Play className="w-5 h-5" />} label="ريلز" isActive={isReels} />
+        <NavItem href="/real-estate" icon={<Building2 className="w-5 h-5" />} label="عقارات" isActive={isRealEstate} />
 
         {/* Dealer showroom control button — between search and add */}
         {isDealerUser && (
@@ -60,7 +60,9 @@ export function BottomNav() {
           <span className="text-[10px] font-medium text-primary">نشر</span>
         </Link>
 
-        {/* Admin gets لوحة التحكم, dealer skips favorites to save space, others get المحفوظات */}
+        <NavItem href="/jobs" icon={<Briefcase className="w-5 h-5" />} label="وظائف" isActive={isJobs} />
+
+        {/* Admin gets لوحة التحكم, others get messages or profile */}
         {isAdminUser ? (
           <NavItem
             href="/admin"
@@ -69,11 +71,7 @@ export function BottomNav() {
             isActive={isAdmin}
             accent
           />
-        ) : !isDealerUser ? (
-          <NavItem href="/favorites" icon={<Bookmark className="w-5 h-5" />} label="المحفوظات" isActive={isFavorites} />
-        ) : null}
-
-        {user ? (
+        ) : user ? (
           <NavItem
             href="/messages"
             icon={
@@ -90,7 +88,7 @@ export function BottomNav() {
             isActive={isChatActive}
           />
         ) : (
-          <NavItem href="/buy-requests" icon={<ShoppingBag className="w-5 h-5" />} label="أريد أشتري" isActive={isBuyRequests} />
+          <NavItem href="/search" icon={<Search className="w-5 h-5" />} label="البحث" isActive={isSearch} />
         )}
 
         <NavItem href="/profile" icon={<User className="w-5 h-5" />} label="حسابي" isActive={isProfile} />

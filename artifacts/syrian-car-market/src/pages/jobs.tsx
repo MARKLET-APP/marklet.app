@@ -18,7 +18,7 @@ import { useStartChat } from "@/hooks/use-start-chat";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-const SUB_CATEGORIES = ["وظيفة شاغرة", "طلب توظيف"];
+const SUB_CATEGORIES = ["وظيفة شاغرة", "طلب توظيف", "عمالة منزلية", "عمال مهرة"];
 const JOB_TYPES = ["دوام كامل", "دوام جزئي", "عن بعد", "عقد مؤقت"];
 const EXPERIENCE_LEVELS = ["بدون خبرة", "أقل من سنة", "1-3 سنوات", "3-5 سنوات", "أكثر من 5 سنوات"];
 const FIELDS = [
@@ -52,9 +52,12 @@ export default function JobsPage() {
   const qc = useQueryClient();
   const [, navigate] = useLocation();
 
+  const urlParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const initialSub = urlParams.get("subCategory") || "__all__";
+
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
-  const [filterSub, setFilterSub] = useState("__all__");
+  const [filterSub, setFilterSub] = useState(initialSub);
   const [filterField, setFilterField] = useState("__all__");
   const [filterProv, setFilterProv] = useState("__all__");
   const [addOpen, setAddOpen] = useState(false);
@@ -194,7 +197,7 @@ export default function JobsPage() {
                 {detailData.company && <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1"><Building className="w-4 h-4" />{detailData.company}</p>}
               </DialogHeader>
               <div className="flex flex-wrap gap-2">
-                <Badge variant={detailData.subCategory === "وظيفة شاغرة" ? "default" : "secondary"}>{detailData.subCategory}</Badge>
+                <Badge variant={["وظيفة شاغرة", "عمال مهرة"].includes(detailData.subCategory) ? "default" : "secondary"}>{detailData.subCategory}</Badge>
                 {detailData.jobType && <Badge variant="outline">{detailData.jobType}</Badge>}
                 {detailData.field && <Badge variant="outline">{detailData.field}</Badge>}
               </div>
@@ -352,7 +355,7 @@ function JobCard({ job, onOpen }: { job: Job; onOpen: () => void }) {
           {job.company && <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1"><Building className="w-3 h-3" />{job.company}</p>}
         </div>
         <Badge variant={job.subCategory === "وظيفة شاغرة" ? "default" : "secondary"} className="text-xs shrink-0">
-          {job.subCategory === "وظيفة شاغرة" ? "🏢 شاغرة" : "👤 طلب"}
+          {job.subCategory === "وظيفة شاغرة" ? "🏢 شاغرة" : job.subCategory === "طلب توظيف" ? "👤 طلب" : job.subCategory === "عمالة منزلية" ? "🏠 منزلية" : "🛠️ مهرة"}
         </Badge>
       </div>
       <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">

@@ -2,7 +2,7 @@
 // NAME: الترويسة
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight, Globe, Bookmark, Settings2 } from "lucide-react";
+import { Bell, Menu, User, Crown, MessageSquare, X, LogOut, Car, ChevronRight, Globe, Bookmark, Settings2, Building2, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +42,8 @@ export function Header() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     { href: "/search", label: t("nav.search") },
+    { href: "/real-estate", label: "عقارات", icon: Building2 },
+    { href: "/jobs", label: "وظائف", icon: Briefcase },
     { href: "/vehicle-info", label: t("nav.vehicleReport") },
     { href: "/buy-requests", label: t("nav.buyRequests") },
     { href: "/rental-cars", label: "سيارات للإيجار" },
