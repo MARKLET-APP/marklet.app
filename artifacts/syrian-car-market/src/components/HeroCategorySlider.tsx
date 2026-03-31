@@ -164,46 +164,40 @@ function DesktopSlideGraphic({
   );
 }
 
-/* ── البطاقة المرئية للموبايل (أسفل اليسار، حجم مضغوط) ── */
+/* ── البطاقة المرئية للموبايل (تظهر داخل الـ Hero بدل الإخفاء) ── */
 function MobileSlideGraphic({ slide }: { slide: Slide }) {
   const { Icon, bgColor, accentColor, label } = slide;
   return (
     <div
       style={{
         display: "flex",
-        flexDirection: "row",
+        flexDirection: "column",
         alignItems: "center",
         gap: 8,
-        background: "rgba(0,0,0,0.30)",
-        backdropFilter: "blur(8px)",
-        border: `1px solid ${accentColor}30`,
-        borderRadius: 16,
-        padding: "6px 12px 6px 8px",
       }}
     >
       <div
         style={{
-          width: 40,
-          height: 40,
+          width: 96,
+          height: 96,
           borderRadius: "50%",
-          background: `${bgColor}`,
+          background: "rgba(255,255,255,0.08)",
           border: `1.5px solid ${accentColor}50`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          flexShrink: 0,
+          boxShadow: `0 0 32px ${bgColor}`,
         }}
       >
-        <Icon size={22} color={accentColor} strokeWidth={1.6} />
+        <Icon size={50} color={accentColor} strokeWidth={1.4} />
       </div>
       <span
         style={{
           color: accentColor,
           fontWeight: 700,
-          fontSize: 12,
-          letterSpacing: 0.5,
+          fontSize: 13,
+          letterSpacing: 1,
           direction: "rtl",
-          whiteSpace: "nowrap",
         }}
       >
         {label}
@@ -277,31 +271,32 @@ export function HeroCategorySlider({ baseUrl }: { baseUrl: string }) {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── الأيقونة الصغيرة — Mobile فقط — مركز عمودياً في الجانب الأيسر ── */}
+      {/* ── الأيقونة الصغيرة — Mobile فقط — أسفل اليمين بعيداً عن شريط النصائح ── */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`mobile-${slide.key}`}
-          initial={{ opacity: 0, scale: 0.75, x: -10 }}
-          animate={{ opacity: 1, scale: 1, x: 0 }}
-          exit={{ opacity: 0, scale: 0.75, x: -10 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
           className="md:hidden absolute pointer-events-none"
           style={{
-            bottom: 40,
-            left: 14,
-            zIndex: 20,
+            top: 12,
+            right: 12,
+            zIndex: 5,
           }}
         >
           <MobileSlideGraphic slide={slide} />
         </motion.div>
       </AnimatePresence>
 
-      {/* ── نقاط التنقل — أسفل اليمين لتجنب التداخل مع الأيقونة ── */}
+      {/* ── نقاط التنقل — منتصف السفلي (الموضع الأصلي) ── */}
       <div
         className="absolute flex gap-1.5 pointer-events-none"
         style={{
-          bottom: 14,
-          right: 14,
+          bottom: 12,
+          left: "50%",
+          transform: "translateX(-50%)",
           zIndex: 2,
         }}
       >
