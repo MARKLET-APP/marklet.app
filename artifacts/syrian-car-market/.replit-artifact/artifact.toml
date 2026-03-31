@@ -23,4 +23,3 @@ BASE_PATH = "/"
 
 [services.production]
 build = ["pnpm", "--filter", "@workspace/syrian-car-market", "run", "build"]
-run = ["pnpm", "--filter", "@workspace/syrian-car-market", "run", "serve"]
