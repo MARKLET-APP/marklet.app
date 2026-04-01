@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.marklet.app"
+    namespace = "com.lazemni.app"
     compileSdk = rootProject.ext.compileSdkVersion
 
     signingConfigs {
@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.marklet.app"
+        applicationId "com.lazemni.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

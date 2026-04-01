@@ -1,17 +1,17 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.marklet.app",
-  appName: "MARKLET",
+  appId: "com.lazemni.app",
+  appName: "LAZEMNI",
   webDir: "dist/public",
 
   server: {
-    url: "https://marklet.net",
+    url: "https://lazemni.com",
     cleartext: false,
     allowNavigation: [
-      "marklet.net",
-      "*.marklet.net",
-      "MARKLET.replit.app",
+      "lazemni.com",
+      "*.lazemni.com",
+      "LAZEMNI.replit.app",
       "*.replit.dev",
       "*.spock.replit.dev",
     ],

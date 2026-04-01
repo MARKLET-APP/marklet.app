@@ -1,4 +1,4 @@
-package com.marklet.app;
+package com.lazemni.app;
 
 import android.content.Intent;
 import android.os.Bundle;

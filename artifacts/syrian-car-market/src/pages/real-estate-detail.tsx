@@ -148,7 +148,7 @@ export default function RealEstateDetail() {
     title: item.title,
     price: item.price ? formatPrice(item.price) : null,
     city: [item.city, item.province].filter(Boolean).join("، ") || null,
-    url: `https://marklet.net/real-estate/${id}`,
+    url: `https://lazemni.com/real-estate/${id}`,
     description: item.description || null,
   };
 
