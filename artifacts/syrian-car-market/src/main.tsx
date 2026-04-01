@@ -19,3 +19,27 @@ const rootEl = document.getElementById("root");
 if (rootEl) {
   createRoot(rootEl).render(<App />);
 }
+
+// تسجيل Service Worker — يُفعّل دعم العمل دون اتصال ومنع شاشة 404 عند إعادة تشغيل الخادم
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" })
+      .then((reg) => {
+        // تحديث الـ SW تلقائياً عند وجود نسخة جديدة
+        reg.onupdatefound = () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.onstatechange = () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                // نسخة جديدة متاحة
+                newWorker.postMessage({ type: "SKIP_WAITING" });
+              }
+            };
+          }
+        };
+      })
+      .catch(() => {
+        // SW غير مدعوم أو محجوب — التطبيق يعمل بشكل طبيعي
+      });
+  });
+}

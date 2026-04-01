@@ -1,6 +1,7 @@
-const CACHE_NAME = "lazemni-v2";
+const CACHE_NAME = "lazemni-v3";
 const STATIC_ASSETS = [
   "/",
+  "/index.html",
   "/manifest.json"
 ];
 
@@ -20,14 +21,54 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// هل الطلب navigation (تحميل صفحة HTML)؟
+function isNavigationRequest(request) {
+  return request.mode === "navigate" ||
+    (request.method === "GET" && request.headers.get("accept")?.includes("text/html"));
+}
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
   const url = new URL(event.request.url);
+
+  // لا نتدخل في طلبات API
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/push/")) return;
+
+  // لطلبات التنقل (صفحات HTML): network-first مع fallback إلى index.html المحفوظ
+  if (isNavigationRequest(event.request)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // إذا رجعت نتيجة جيدة، احفظها في الكاش
+          if (response && response.ok && response.type === "basic") {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, clone);
+              // احفظ index.html دائماً للاستخدام كـ fallback
+              if (url.pathname === "/" || url.pathname === "/index.html") {
+                cache.put("/index.html", response.clone());
+              }
+            });
+          }
+          return response;
+        })
+        .catch(async () => {
+          // الخادم غير متاح — ارجع إلى index.html المحفوظ
+          const cached = await caches.match("/index.html") ||
+                         await caches.match("/") ||
+                         await caches.match(event.request);
+          return cached || new Response("App offline", { status: 503 });
+        })
+    );
+    return;
+  }
+
+  // للأصول الأخرى (JS، CSS، صور): network-first مع cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response && response.status === 200 && response.type === "basic") {
+        if (response && response.ok && response.type === "basic") {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
@@ -35,6 +76,15 @@ self.addEventListener("fetch", (event) => {
       })
       .catch(() => caches.match(event.request))
   );
+});
+
+// ─────────────────────────────────────────────────────────
+// تحديث فوري عند طلب main.tsx
+// ─────────────────────────────────────────────────────────
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 // ─────────────────────────────────────────────────────────
@@ -77,20 +127,16 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const targetPath = event.notification.data?.url || "/";
 
-  // Build full absolute URL from the path
   const targetUrl = new URL(targetPath, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      // Try to find an already-open window on our origin
       for (const client of clientList) {
         if (new URL(client.url).origin === self.location.origin) {
-          // Send a message so the SPA navigates without a full page reload
           client.postMessage({ type: "SW_NAVIGATE", url: targetPath });
           return client.focus();
         }
       }
-      // No open window — open a new one with the full URL
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }
