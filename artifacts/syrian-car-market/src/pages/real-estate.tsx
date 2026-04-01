@@ -132,9 +132,19 @@ export default function RealEstatePage() {
 
   // ── form — initialRealEstateForm defined OUTSIDE (never recreated) ─────────
   const [form, setForm] = useState(initialRealEstateForm);
+
+  // BottomSheetSelect: receives value directly
   const update = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
-  console.log("FORM STATE:", form);
+  // Text inputs/textareas: event-based, skips re-render if value unchanged
+  const handleInput = (field: keyof typeof initialRealEstateForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setForm(prev => {
+        if (prev[field] === value) return prev;
+        return { ...prev, [field]: value };
+      });
+    };
 
   // ── Image system — File[] locally, blob preview, upload on submit ────────
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -166,6 +176,14 @@ export default function RealEstatePage() {
     propertyType: "شقة", maxPrice: "", currency: "USD", province: "", city: "", description: "",
   });
   const updateBuy = (k: string, v: string) => setBuyForm(prev => ({ ...prev, [k]: v }));
+  const handleBuyInput = (field: string) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setBuyForm(prev => {
+        if ((prev as any)[field] === value) return prev;
+        return { ...prev, [field]: value };
+      });
+    };
 
   // ── AI description ────────────────────────────────────────────────────────
   const [aiDescLoading, setAiDescLoading] = useState(false);
@@ -473,8 +491,9 @@ export default function RealEstatePage() {
             <div>
               <Label className="mb-1 block">العنوان *</Label>
               <Input
-                value={form.title || ""}
-                onChange={e => update("title", e.target.value)}
+                value={form.title ?? ""}
+                onChange={handleInput("title")}
+                onBlur={(e) => handleInput("title")(e)}
                 placeholder="مثال: شقة للبيع في دمشق - المزة"
                 style={{ fontSize: 16 }}
               />
@@ -484,13 +503,13 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">نوع الإعلان *</Label>
-                <BottomSheetSelect value={form.listingType || ""} onValueChange={v => update("listingType", v)} placeholder="النوع">
+                <BottomSheetSelect value={form.listingType ?? ""} onValueChange={v => update("listingType", v)} placeholder="النوع">
                   {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">الفئة *</Label>
-                <BottomSheetSelect value={form.subCategory || ""} onValueChange={v => update("subCategory", v)} placeholder="الفئة">
+                <BottomSheetSelect value={form.subCategory ?? ""} onValueChange={v => update("subCategory", v)} placeholder="الفئة">
                   {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
                 </BottomSheetSelect>
               </div>
@@ -502,15 +521,16 @@ export default function RealEstatePage() {
                 <Label className="mb-1 block">السعر *</Label>
                 <Input
                   type="number"
-                  value={form.price || ""}
-                  onChange={e => update("price", e.target.value)}
+                  value={form.price ?? ""}
+                  onChange={handleInput("price")}
+                  onBlur={(e) => handleInput("price")(e)}
                   placeholder="السعر"
                   style={{ fontSize: 16 }}
                 />
               </div>
               <div>
                 <Label className="mb-1 block">العملة</Label>
-                <BottomSheetSelect value={form.currency || ""} onValueChange={v => update("currency", v)} placeholder="USD">
+                <BottomSheetSelect value={form.currency ?? ""} onValueChange={v => update("currency", v)} placeholder="USD">
                   <option value="USD">USD</option>
                   <option value="SYP">SYP</option>
                 </BottomSheetSelect>
@@ -521,11 +541,11 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المساحة (م²)</Label>
-                <Input type="number" value={form.area || ""} onChange={e => update("area", e.target.value)} placeholder="المساحة" style={{ fontSize: 16 }} />
+                <Input type="number" value={form.area ?? ""} onChange={handleInput("area")} onBlur={(e) => handleInput("area")(e)} placeholder="المساحة" style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label className="mb-1 block">عدد الغرف</Label>
-                <Input type="number" value={form.rooms || ""} onChange={e => update("rooms", e.target.value)} placeholder="الغرف" style={{ fontSize: 16 }} />
+                <Input type="number" value={form.rooms ?? ""} onChange={handleInput("rooms")} onBlur={(e) => handleInput("rooms")(e)} placeholder="الغرف" style={{ fontSize: 16 }} />
               </div>
             </div>
 
@@ -533,11 +553,11 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">عدد الحمامات</Label>
-                <Input type="number" value={form.bathrooms || ""} onChange={e => update("bathrooms", e.target.value)} placeholder="الحمامات" style={{ fontSize: 16 }} />
+                <Input type="number" value={form.bathrooms ?? ""} onChange={handleInput("bathrooms")} onBlur={(e) => handleInput("bathrooms")(e)} placeholder="الحمامات" style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label className="mb-1 block">رقم الطابق</Label>
-                <Input type="number" value={form.floor || ""} onChange={e => update("floor", e.target.value)} placeholder="الطابق" style={{ fontSize: 16 }} />
+                <Input type="number" value={form.floor ?? ""} onChange={handleInput("floor")} onBlur={(e) => handleInput("floor")(e)} placeholder="الطابق" style={{ fontSize: 16 }} />
               </div>
             </div>
 
@@ -545,15 +565,16 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={form.province || ""} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
+                <BottomSheetSelect value={form.province ?? ""} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">المدينة *</Label>
                 <Input
-                  value={form.city || ""}
-                  onChange={e => update("city", e.target.value)}
+                  value={form.city ?? ""}
+                  onChange={handleInput("city")}
+                  onBlur={(e) => handleInput("city")(e)}
                   placeholder="المدينة أو الحي"
                   style={{ fontSize: 16 }}
                 />
@@ -564,8 +585,9 @@ export default function RealEstatePage() {
             <div>
               <Label className="mb-1 block">تفاصيل الموقع</Label>
               <Input
-                value={form.location || ""}
-                onChange={e => update("location", e.target.value)}
+                value={form.location ?? ""}
+                onChange={handleInput("location")}
+                onBlur={(e) => handleInput("location")(e)}
                 placeholder="مثال: قرب مسجد الروضة، شارع الثورة"
                 style={{ fontSize: 16 }}
               />
@@ -576,8 +598,9 @@ export default function RealEstatePage() {
               <Label className="mb-1 block">رقم الهاتف / واتساب</Label>
               <Input
                 type="tel"
-                value={form.phone || ""}
-                onChange={e => update("phone", e.target.value)}
+                value={form.phone ?? ""}
+                onChange={handleInput("phone")}
+                onBlur={(e) => handleInput("phone")(e)}
                 placeholder="مثال: 0991234567"
                 style={{ fontSize: 16 }}
               />
@@ -593,8 +616,9 @@ export default function RealEstatePage() {
                 </Button>
               </div>
               <Textarea
-                value={form.description || ""}
-                onChange={e => update("description", e.target.value)}
+                value={form.description ?? ""}
+                onChange={handleInput("description")}
+                onBlur={(e) => handleInput("description")(e)}
                 placeholder="وصف تفصيلي للعقار..."
                 rows={3}
                 style={{ fontSize: 16 }}
@@ -648,7 +672,7 @@ export default function RealEstatePage() {
 
             <div>
               <Label className="mb-1 block">نوع العقار المطلوب *</Label>
-              <BottomSheetSelect value={buyForm.propertyType || ""} onValueChange={v => updateBuy("propertyType", v)} placeholder="نوع العقار">
+              <BottomSheetSelect value={buyForm.propertyType ?? ""} onValueChange={v => updateBuy("propertyType", v)} placeholder="نوع العقار">
                 {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
               </BottomSheetSelect>
             </div>
@@ -656,11 +680,11 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
                 <Label className="mb-1 block">الميزانية القصوى</Label>
-                <Input type="number" value={buyForm.maxPrice || ""} onChange={e => updateBuy("maxPrice", e.target.value)} placeholder="أعلى سعر" style={{ fontSize: 16 }} />
+                <Input type="number" value={buyForm.maxPrice ?? ""} onChange={handleBuyInput("maxPrice")} onBlur={(e) => handleBuyInput("maxPrice")(e)} placeholder="أعلى سعر" style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label className="mb-1 block">العملة</Label>
-                <BottomSheetSelect value={buyForm.currency || ""} onValueChange={v => updateBuy("currency", v)} placeholder="USD">
+                <BottomSheetSelect value={buyForm.currency ?? ""} onValueChange={v => updateBuy("currency", v)} placeholder="USD">
                   <option value="USD">USD</option>
                   <option value="SYP">SYP</option>
                 </BottomSheetSelect>
@@ -670,19 +694,19 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={buyForm.province || ""} onValueChange={v => updateBuy("province", v)} placeholder="اختر المحافظة">
+                <BottomSheetSelect value={buyForm.province ?? ""} onValueChange={v => updateBuy("province", v)} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">المدينة / الحي *</Label>
-                <Input value={buyForm.city || ""} onChange={e => updateBuy("city", e.target.value)} placeholder="مثال: المزة، المهاجرين" style={{ fontSize: 16 }} />
+                <Input value={buyForm.city ?? ""} onChange={handleBuyInput("city")} onBlur={(e) => handleBuyInput("city")(e)} placeholder="مثال: المزة، المهاجرين" style={{ fontSize: 16 }} />
               </div>
             </div>
 
             <div>
               <Label className="mb-1 block">تفاصيل إضافية</Label>
-              <Textarea value={buyForm.description || ""} onChange={e => updateBuy("description", e.target.value)} placeholder="مثال: أبحث عن شقة بغرفتين..." rows={3} style={{ fontSize: 16 }} />
+              <Textarea value={buyForm.description ?? ""} onChange={handleBuyInput("description")} onBlur={(e) => handleBuyInput("description")(e)} placeholder="مثال: أبحث عن شقة بغرفتين..." rows={3} style={{ fontSize: 16 }} />
             </div>
 
             <Button className="w-full gap-2 bg-teal-700 hover:bg-teal-800 h-12 text-base font-bold" onClick={handleBuySubmit} disabled={buyMutation.isPending}>

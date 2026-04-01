@@ -682,6 +682,13 @@ body.modal-open {
   overflow: hidden;
 }
 
+/* ── RTL Inputs — enforce RTL direction on all text inputs ── */
+input,
+textarea {
+  direction: rtl;
+  unicode-bidi: plaintext;
+}
+
 /* ── Bottom Sheet — قائمة منسدلة سفلية ── */
 .bottom-sheet {
   position: fixed;
