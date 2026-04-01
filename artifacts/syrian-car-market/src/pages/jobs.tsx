@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Search, Plus, MapPin, Briefcase, Loader2, Building, Clock,
-  Star, FileText, Sparkles, UploadCloud,
+  Search, Plus, Briefcase, Loader2, FileText, Sparkles, UploadCloud,
 } from "lucide-react";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -352,9 +352,19 @@ export default function JobsPage() {
                 </div>
               )
               : (
-                <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {jobs.map(job => (
-                    <JobCard key={job.id} job={job} onOpen={() => navigate(`/jobs/${job.id}`)} />
+                    <ListingCard
+                      key={job.id}
+                      type="jobs"
+                      data={job}
+                      onCardClick={() => navigate(`/jobs/${job.id}`)}
+                      onChat={user && job.posterId !== user.id
+                        ? () => startChat(job.posterId, `مرحباً، رأيت إعلانك عن "${job.title}" وأودّ التواصل`)
+                        : undefined}
+                      chatLoading={startingChat}
+                      currentUserId={user?.id}
+                    />
                   ))}
                 </div>
               )
@@ -686,40 +696,3 @@ export default function JobsPage() {
   );
 }
 
-// ── Job card ──────────────────────────────────────────────────────────────────
-function JobCard({ job, onOpen }: { job: Job; onOpen: () => void }) {
-  const timeAgo = new Date(job.createdAt).toLocaleDateString("ar-SY");
-  return (
-    <div
-      className={cn("bg-card border border-border/60 rounded-xl p-4 cursor-pointer hover:border-primary/50 hover:shadow-sm transition-all", job.isFeatured && "border-yellow-500/50")}
-      onClick={onOpen}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            {job.isFeatured && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />}
-            <p className="font-semibold text-sm">{job.title}</p>
-          </div>
-          {job.company && (
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-              <Building className="w-3 h-3" />{job.company}
-            </p>
-          )}
-        </div>
-        <Badge variant={job.subCategory === "وظيفة شاغرة" ? "default" : "secondary"} className="text-xs shrink-0">
-          {job.subCategory === "وظيفة شاغرة" ? "🏢 شاغرة" : job.subCategory === "طلب توظيف" ? "👤 طلب" : job.subCategory === "عمالة منزلية" ? "🏠 منزلية" : "🛠️ مهرة"}
-        </Badge>
-      </div>
-      <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.province} — {job.city}</span>
-        {job.jobType && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.jobType}</span>}
-        {job.field && <Badge variant="outline" className="text-xs">{job.field}</Badge>}
-        {job.salary && <span className="text-green-500 dark:text-green-400 font-medium">{job.salary}</span>}
-      </div>
-      <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-        <span>{timeAgo}</span>
-        {job.experience && <span>{job.experience}</span>}
-      </div>
-    </div>
-  );
-}

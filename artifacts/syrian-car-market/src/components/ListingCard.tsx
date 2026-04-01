@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, Hash, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye } from "lucide-react";
+import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye, Briefcase, Ruler, Bed, Building } from "lucide-react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { ShareSheet } from "@/components/ShareSheet";
 
-export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate";
+export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate" | "real-estate" | "jobs";
 
 interface ListingCardProps {
   type: ListingCardType;
@@ -24,6 +24,8 @@ const PLACEHOLDER_ICONS: Record<ListingCardType, React.ReactNode> = {
   part: <Wrench className="w-12 h-12 text-muted-foreground/30" />,
   junk: <Car className="w-12 h-12 text-muted-foreground/30" />,
   plate: null,
+  "real-estate": <Building2 className="w-12 h-12 text-muted-foreground/30" />,
+  jobs: <Briefcase className="w-12 h-12 text-muted-foreground/30" />,
 };
 
 const TYPE_BADGE: Record<ListingCardType, { label: string; className: string }> = {
@@ -32,6 +34,8 @@ const TYPE_BADGE: Record<ListingCardType, { label: string; className: string }> 
   part: { label: "قطعة غيار", className: "bg-orange-100 text-orange-700 border-0" },
   junk: { label: "خردة / معطوبة", className: "bg-slate-100 text-slate-700 border-0" },
   plate: { label: "لوحة مرور", className: "bg-amber-100 text-amber-700 border-0" },
+  "real-estate": { label: "عقار", className: "bg-teal-100 text-teal-700 border-0" },
+  jobs: { label: "وظيفة", className: "bg-blue-100 text-blue-700 border-0" },
 };
 
 function getTitle(type: ListingCardType, data: any): string {
@@ -46,15 +50,27 @@ function getTitle(type: ListingCardType, data: any): string {
       return [data.type, data.model, data.year].filter(Boolean).join(" ") || "سيارة معطوبة";
     case "plate":
       return data.brand || "لوحة مميزة";
+    case "real-estate":
+      return data.title || "عقار";
+    case "jobs":
+      return data.title || "وظيفة";
   }
 }
 
 function getImages(type: ListingCardType, data: any): string[] {
   if (type === "plate" && data.primaryImage) return [data.primaryImage];
+  if (type === "jobs") return [];
+  if (type === "real-estate") {
+    return (data.images ?? []).filter(
+      (u: any) => typeof u === "string" && u.trim().length > 0 && !u.startsWith("blob:")
+    );
+  }
   return data.images ?? [];
 }
 
-function getSellerId(data: any): number {
+function getSellerId(data: any, type: ListingCardType): number {
+  if (type === "jobs") return data.posterId ?? 0;
+  if (type === "real-estate") return data.sellerId ?? 0;
   return data.sellerId ?? data.userId ?? 0;
 }
 
@@ -63,10 +79,16 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
   const images = getImages(type, data);
   const currentImg = images[imgIdx] ?? null;
   const hasMultiple = images.length > 1;
-  const sellerId = getSellerId(data);
+  const sellerId = getSellerId(data, type);
   const isOwner = currentUserId != null && currentUserId === sellerId;
   const title = getTitle(type, data);
   const badge = TYPE_BADGE[type];
+
+  // Dynamic badge label for real-estate & jobs
+  const badgeLabel =
+    type === "real-estate" ? (data.listingType || badge.label) :
+    type === "jobs"        ? (data.subCategory  || badge.label) :
+    badge.label;
 
   const goNext = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx(i => (i + 1) % images.length); };
   const goPrev = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx(i => (i - 1 + images.length) % images.length); };
@@ -121,11 +143,11 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
         )}
 
         <div className="absolute top-2 right-2">
-          <Badge className={badge.className}>{badge.label}</Badge>
+          <Badge className={badge.className}>{badgeLabel}</Badge>
         </div>
         {data.isFeatured && (
           <div className="absolute top-2 left-2">
-            <Badge className="bg-amber-500 text-white border-0">مميز</Badge>
+            <Badge className="bg-amber-500 text-white border-0">⭐ مميز</Badge>
           </div>
         )}
         {data.showroomId && !data.isFeatured && (
@@ -141,20 +163,24 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
       <div className="p-3 flex flex-col flex-1 gap-2">
         <h3 className="font-bold text-sm text-foreground line-clamp-1">{title}</h3>
 
+        {/* ── Part metadata ── */}
         {type === "part" && (data.carType || data.model) && (
           <p className="text-xs text-muted-foreground line-clamp-1">{[data.carType, data.model, data.year].filter(Boolean).join(" • ")}</p>
         )}
 
+        {/* ── Junk condition ── */}
         {type === "junk" && data.condition && (
           <Badge className={data.condition === "خردة كاملة" ? "bg-destructive/10 text-destructive text-xs border-0" : "bg-amber-100 text-amber-700 text-xs border-0"}>
             {data.condition}
           </Badge>
         )}
 
+        {/* ── Part condition ── */}
         {type === "part" && data.condition && (
           <Badge variant="secondary" className="text-xs self-start">{data.condition}</Badge>
         )}
 
+        {/* ── Rental prices ── */}
         {type === "rental" && (
           <div className="flex flex-wrap gap-1">
             {data.dailyPrice && (
@@ -175,7 +201,29 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
           </div>
         )}
 
-        {type !== "rental" && (
+        {/* ── Real-estate specs ── */}
+        {type === "real-estate" && (data.area || data.rooms) && (
+          <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
+            {data.area  && <span className="flex items-center gap-1"><Ruler className="w-3 h-3 shrink-0" />{data.area} م²</span>}
+            {data.rooms && <span className="flex items-center gap-1"><Bed   className="w-3 h-3 shrink-0" />{data.rooms} غرف</span>}
+          </div>
+        )}
+
+        {/* ── Jobs metadata ── */}
+        {type === "jobs" && (
+          <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+            {data.company && (
+              <span className="flex items-center gap-1">
+                <Building className="w-3 h-3 shrink-0" />{data.company}
+              </span>
+            )}
+            {data.jobType && <span className="bg-secondary px-2 py-0.5 rounded-full">{data.jobType}</span>}
+            {data.salary  && <span className="text-green-600 dark:text-green-400 font-semibold">{data.salary}</span>}
+          </div>
+        )}
+
+        {/* ── Price (all except rental & jobs) ── */}
+        {type !== "rental" && type !== "jobs" && (
           <div className="flex items-center gap-1">
             {data.price ? (
               <span className="font-bold text-sm text-primary" dir="ltr">${Number(data.price).toLocaleString()}</span>
@@ -185,9 +233,12 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
           </div>
         )}
 
+        {/* ── Location + seller ── */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
           {data.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{data.city}</span>}
-          {data.sellerName && <span className="truncate">{data.sellerName}</span>}
+          {(data.sellerName || data.posterName) && (
+            <span className="truncate">{data.sellerName ?? data.posterName}</span>
+          )}
           {type === "rental" && data.sellerPhone && (
             <span className="flex items-center gap-1" dir="ltr"><Phone className="w-3 h-3 shrink-0" />{data.sellerPhone}</span>
           )}
@@ -197,7 +248,7 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
           <p className="text-xs text-muted-foreground line-clamp-2">{data.description}</p>
         )}
 
-        {/* ── Actions — always pinned to bottom ── */}
+        {/* ── Actions — pinned to bottom ── */}
         <div className="flex gap-1.5 pt-2 border-t mt-auto" onClick={e => e.stopPropagation()}>
           {onCardClick && (
             <button

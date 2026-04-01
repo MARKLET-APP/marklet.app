@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Search, Plus, MapPin, Building2, Bed, Ruler, Loader2, Eye,
+  Search, Plus, Building2, Loader2,
   ShoppingCart, Trash2, Sparkles, ImagePlus, X, Phone, MessageCircle,
 } from "lucide-react";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
@@ -428,7 +429,17 @@ export default function RealEstatePage() {
               : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {listings.map(item => (
-                    <RealEstateCard key={item.id} item={item} onOpen={() => navigate(`/real-estate/${item.id}`)} />
+                    <ListingCard
+                      key={item.id}
+                      type="real-estate"
+                      data={item}
+                      onCardClick={() => navigate(`/real-estate/${item.id}`)}
+                      onChat={user && item.sellerId !== user.id
+                        ? () => startChat(item.sellerId, `مرحباً، رأيت إعلانك عن "${item.title}" وأودّ الاستفسار`)
+                        : undefined}
+                      chatLoading={startingChat}
+                      currentUserId={user?.id}
+                    />
                   ))}
                 </div>
               )
@@ -721,47 +732,6 @@ export default function RealEstatePage() {
   );
 }
 
-// ── Real estate card ──────────────────────────────────────────────────────────
-function RealEstateCard({ item, onOpen }: { item: RealEstate; onOpen: () => void }) {
-  const [imgErr, setImgErr] = useState(false);
-  const img = item.images?.find(
-    u => typeof u === "string" && u.trim().length > 0 && !u.startsWith("blob:")
-  ) ?? null;
-  const formattedPrice = item.price ? `$${Number(item.price).toLocaleString("en-US")}` : "";
-  return (
-    <div
-      className={cn(
-        "bg-card border border-border/60 rounded-2xl overflow-hidden cursor-pointer hover:border-primary/50 hover:shadow-md transition-all",
-        item.isFeatured && "border-yellow-500/50"
-      )}
-      onClick={onOpen}
-    >
-      <div className="relative">
-        {img && !imgErr ? (
-          <img src={img} alt={item.title} className="w-full h-44 object-cover" onError={() => setImgErr(true)} />
-        ) : (
-          <div className="w-full h-44 bg-muted flex items-center justify-center">
-            <Building2 className="w-12 h-12 opacity-30" />
-          </div>
-        )}
-        {item.isFeatured && (
-          <Badge className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold shadow">مميز ⭐</Badge>
-        )}
-        <Badge className="absolute top-2 left-2 text-xs" variant="secondary">{item.listingType}</Badge>
-      </div>
-      <div className="p-3">
-        <p className="font-semibold text-sm line-clamp-2 mb-1">{item.title}</p>
-        {formattedPrice && <p className="text-primary font-bold text-base mb-2">{formattedPrice}</p>}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{item.province}</span>
-          {item.area && <span className="flex items-center gap-1"><Ruler className="w-3 h-3" />{item.area} م²</span>}
-          {item.rooms && <span className="flex items-center gap-1"><Bed className="w-3 h-3" />{item.rooms} غرف</span>}
-          <span className="flex items-center gap-1 mr-auto"><Eye className="w-3 h-3" />{item.viewCount}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function InfoRow({ icon, label, val }: { icon: React.ReactNode; label: string; val: string }) {
   return (
