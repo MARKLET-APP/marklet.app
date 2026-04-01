@@ -114,20 +114,23 @@ export default function JobsPage() {
     setCvUploading(true);
     try {
       const fd = new FormData();
-      fd.append("image", file);
+      fd.append("file", file);
       const token = localStorage.getItem("scm_token");
-      const res = await fetch(import.meta.env.BASE_URL + "api/upload-image?folder=jobs", {
+      const res = await fetch(import.meta.env.BASE_URL + "api/upload-cv", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
       });
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Upload failed");
+      }
       const data = await res.json();
       if (!data.success || !data.url) throw new Error(data.message || "Upload failed");
       setCvUrl(data.url);
       toast({ title: "تم رفع السيرة الذاتية بنجاح" });
-    } catch {
-      toast({ title: "فشل رفع السيرة الذاتية", variant: "destructive" });
+    } catch (e: any) {
+      toast({ title: e?.message || "فشل رفع السيرة الذاتية", variant: "destructive" });
     } finally {
       setCvUploading(false);
     }

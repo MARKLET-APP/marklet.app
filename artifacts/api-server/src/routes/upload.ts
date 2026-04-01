@@ -1,10 +1,47 @@
 import { Router, type IRouter } from "express";
 import fs from "fs";
 import path from "path";
+import multer from "multer";
 import { upload, processImage } from "../middlewares/upload.js";
 import { checkImageSafety, detectCar } from "../lib/openai.js";
 
 const router: IRouter = Router();
+
+// ── CV / document upload (disk storage, PDF+Word only) ───────────────────────
+const cvStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const dir = path.join("uploads", "cv");
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || ".pdf";
+    cb(null, `${Date.now()}${ext}`);
+  },
+});
+
+const cvUpload = multer({
+  storage: cvStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("يُسمح فقط بملفات PDF أو Word"));
+  },
+});
+
+router.post("/upload-cv", cvUpload.single("file"), (req: any, res: any): void => {
+  if (!req.file) {
+    res.status(400).json({ success: false, message: "لم يتم رفع أي ملف" });
+    return;
+  }
+  const url = `/api/uploads/cv/${req.file.filename}`;
+  res.json({ success: true, url });
+});
 
 router.post("/upload", upload.single("image"), async (req, res): Promise<void> => {
   if (!req.file) {
