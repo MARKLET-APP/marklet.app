@@ -269,20 +269,20 @@ function JobsPage() {
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <div className="shrink-0 min-w-[115px]">
-            <NativeSelect value={filterSub} onValueChange={setFilterSub} className="h-8 text-xs">
+          <div style={{ flexShrink: 0, width: 120 }}>
+            <NativeSelect value={filterSub} onValueChange={setFilterSub} className="h-8 text-xs" style={{ paddingRight: 6, width: "100%", fontSize: 16 }}>
               <option value="__all__">الكل</option>
               {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
             </NativeSelect>
           </div>
-          <div className="shrink-0 min-w-[115px]">
-            <NativeSelect value={filterField} onValueChange={setFilterField} className="h-8 text-xs">
+          <div style={{ flexShrink: 0, width: 120 }}>
+            <NativeSelect value={filterField} onValueChange={setFilterField} className="h-8 text-xs" style={{ paddingRight: 6, width: "100%", fontSize: 16 }}>
               <option value="__all__">الكل</option>
               {FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
             </NativeSelect>
           </div>
-          <div className="shrink-0 min-w-[110px]">
-            <NativeSelect value={filterProv} onValueChange={setFilterProv} className="h-8 text-xs">
+          <div style={{ flexShrink: 0, width: 115 }}>
+            <NativeSelect value={filterProv} onValueChange={setFilterProv} className="h-8 text-xs" style={{ paddingRight: 6, width: "100%", fontSize: 16 }}>
               <option value="__all__">الكل</option>
               {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
             </NativeSelect>

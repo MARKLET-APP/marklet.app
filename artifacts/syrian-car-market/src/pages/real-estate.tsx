@@ -255,18 +255,24 @@ function RealEstatePage() {
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <NativeSelect value={filterType} onValueChange={setFilterType} className="h-8 text-xs min-w-[90px]">
-            <option value="__all__">الكل</option>
-            {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </NativeSelect>
-          <NativeSelect value={filterSub} onValueChange={setFilterSub} className="h-8 text-xs min-w-[110px]">
-            <option value="__all__">الكل</option>
-            {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
-          </NativeSelect>
-          <NativeSelect value={filterProv} onValueChange={setFilterProv} className="h-8 text-xs min-w-[110px]">
-            <option value="__all__">الكل</option>
-            {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-          </NativeSelect>
+          <div style={{ flexShrink: 0, width: 100 }}>
+            <NativeSelect value={filterType} onValueChange={setFilterType} className="h-8 text-xs" style={{ paddingRight: 6, width: "100%", fontSize: 16 }}>
+              <option value="__all__">الكل</option>
+              {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </NativeSelect>
+          </div>
+          <div style={{ flexShrink: 0, width: 120 }}>
+            <NativeSelect value={filterSub} onValueChange={setFilterSub} className="h-8 text-xs" style={{ paddingRight: 6, width: "100%", fontSize: 16 }}>
+              <option value="__all__">الكل</option>
+              {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+            </NativeSelect>
+          </div>
+          <div style={{ flexShrink: 0, width: 115 }}>
+            <NativeSelect value={filterProv} onValueChange={setFilterProv} className="h-8 text-xs" style={{ paddingRight: 6, width: "100%", fontSize: 16 }}>
+              <option value="__all__">الكل</option>
+              {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+            </NativeSelect>
+          </div>
           {(activeType || activeSub || activeProv || q) && (
             <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
               onClick={() => { setFilterType("__all__"); setFilterSub("__all__"); setFilterProv("__all__"); setQ(""); setSearch(""); }}>
