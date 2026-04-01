@@ -434,9 +434,7 @@ export default function RealEstatePage() {
                       type="real-estate"
                       data={item}
                       onCardClick={() => navigate(`/real-estate/${item.id}`)}
-                      onChat={user && item.sellerId !== user.id
-                        ? () => startChat(item.sellerId, `مرحباً، رأيت إعلانك عن "${item.title}" وأودّ الاستفسار`)
-                        : undefined}
+                      onChat={item.sellerId ? () => startChat(item.sellerId, `مرحباً، رأيت إعلانك عن "${item.title}" وأودّ الاستفسار`) : undefined}
                       chatLoading={startingChat}
                       currentUserId={user?.id}
                     />

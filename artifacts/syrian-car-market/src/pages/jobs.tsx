@@ -359,9 +359,7 @@ export default function JobsPage() {
                       type="jobs"
                       data={job}
                       onCardClick={() => navigate(`/jobs/${job.id}`)}
-                      onChat={user && job.posterId !== user.id
-                        ? () => startChat(job.posterId, `مرحباً، رأيت إعلانك عن "${job.title}" وأودّ التواصل`)
-                        : undefined}
+                      onChat={job.posterId ? () => startChat(job.posterId, `مرحباً، رأيت إعلانك عن "${job.title}" وأودّ التواصل`) : undefined}
                       chatLoading={startingChat}
                       currentUserId={user?.id}
                     />

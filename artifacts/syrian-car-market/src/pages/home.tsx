@@ -512,6 +512,8 @@ export default function Home() {
                           type="real-estate"
                           data={r}
                           onCardClick={() => navigate(`/real-estate/${r.id}`)}
+                          onChat={r.sellerId ? () => startChat(r.sellerId) : undefined}
+                          currentUserId={user?.id}
                         />
                       );
                     }
@@ -522,6 +524,8 @@ export default function Home() {
                         type="jobs"
                         data={j}
                         onCardClick={() => navigate(`/jobs/${j.id}`)}
+                        onChat={j.posterId ? () => startChat(j.posterId) : undefined}
+                        currentUserId={user?.id}
                       />
                     );
                   })}
@@ -577,6 +581,8 @@ export default function Home() {
                         type="real-estate"
                         data={r}
                         onCardClick={() => navigate(`/real-estate/${r.id}`)}
+                        onChat={r.sellerId ? () => startChat(r.sellerId) : undefined}
+                        currentUserId={user?.id}
                       />
                     );
                   }
@@ -587,6 +593,8 @@ export default function Home() {
                       type="jobs"
                       data={j}
                       onCardClick={() => navigate(`/jobs/${j.id}`)}
+                      onChat={j.posterId ? () => startChat(j.posterId) : undefined}
+                      currentUserId={user?.id}
                     />
                   );
                 })}
@@ -649,6 +657,8 @@ export default function Home() {
                   type="real-estate"
                   data={item}
                   onCardClick={() => navigate(`/real-estate/${item.id}`)}
+                  onChat={item.sellerId ? () => startChat(item.sellerId) : undefined}
+                  currentUserId={user?.id}
                 />
               ))}
             </div>
@@ -709,6 +719,8 @@ export default function Home() {
                   type="jobs"
                   data={job}
                   onCardClick={() => navigate(`/jobs/${job.id}`)}
+                  onChat={job.posterId ? () => startChat(job.posterId) : undefined}
+                  currentUserId={user?.id}
                 />
               ))}
             </div>

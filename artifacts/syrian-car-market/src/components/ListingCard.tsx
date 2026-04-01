@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye, Briefcase, Ruler, Bed, Building } from "lucide-react";
+import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye, Briefcase, Ruler, Bed, Building, Share2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { ShareSheet } from "@/components/ShareSheet";
@@ -202,23 +202,21 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
         )}
 
         {/* ── Real-estate specs ── */}
-        {type === "real-estate" && (data.area || data.rooms) && (
-          <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
-            {data.area  && <span className="flex items-center gap-1"><Ruler className="w-3 h-3 shrink-0" />{data.area} م²</span>}
-            {data.rooms && <span className="flex items-center gap-1"><Bed   className="w-3 h-3 shrink-0" />{data.rooms} غرف</span>}
+        {type === "real-estate" && (
+          <div className="grid grid-cols-2 gap-y-1 gap-x-2 text-xs font-medium text-foreground bg-secondary/50 p-2 rounded-xl">
+            {data.area  && <span className="flex items-center gap-1"><Ruler className="w-3 h-3 text-primary shrink-0" />{data.area} م²</span>}
+            {data.rooms && <span className="flex items-center gap-1"><Bed   className="w-3 h-3 text-primary shrink-0" />{data.rooms} غرف</span>}
+            {data.viewsCount != null && <span className="flex items-center gap-1 col-span-2"><Eye className="w-3 h-3 text-primary shrink-0" />مشاهدات: {data.viewsCount}</span>}
           </div>
         )}
 
         {/* ── Jobs metadata ── */}
         {type === "jobs" && (
-          <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
-            {data.company && (
-              <span className="flex items-center gap-1">
-                <Building className="w-3 h-3 shrink-0" />{data.company}
-              </span>
-            )}
-            {data.jobType && <span className="bg-secondary px-2 py-0.5 rounded-full">{data.jobType}</span>}
-            {data.salary  && <span className="text-green-600 dark:text-green-400 font-semibold">{data.salary}</span>}
+          <div className="grid grid-cols-2 gap-y-1 gap-x-2 text-xs font-medium text-foreground bg-secondary/50 p-2 rounded-xl">
+            {data.company && <span className="flex items-center gap-1 col-span-2"><Building className="w-3 h-3 text-primary shrink-0" />{data.company}</span>}
+            {data.jobType && <span className="flex items-center gap-1"><Briefcase className="w-3 h-3 text-primary shrink-0" />{data.jobType}</span>}
+            {data.salary  && <span className="flex items-center gap-1 text-primary font-bold">{data.salary}</span>}
+            {data.viewsCount != null && <span className="flex items-center gap-1 col-span-2"><Eye className="w-3 h-3 text-primary shrink-0" />مشاهدات: {data.viewsCount}</span>}
           </div>
         )}
 
@@ -249,46 +247,81 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
         )}
 
         {/* ── Actions — pinned to bottom ── */}
-        <div className="flex gap-1.5 pt-2 border-t mt-auto" onClick={e => e.stopPropagation()}>
-          {onCardClick && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onCardClick(); }}
-              className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
-            >
-              <Eye className="w-2.5 h-2.5 shrink-0" /> التفاصيل
-            </button>
-          )}
-          {!isOwner && onChat && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onChat(); }}
-              disabled={chatLoading}
-              className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-bold rounded-lg bg-primary text-primary-foreground active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
-            >
-              {chatLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <MessageCircle className="w-2.5 h-2.5" />}
-              مراسلة
-            </button>
-          )}
-          {isOwner && onDelete && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              disabled={deleteLoading}
-              className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-medium rounded-lg text-destructive border border-destructive/30 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
-            >
-              {deleteLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
-              حذف
-            </button>
-          )}
-          <ShareSheet
-            options={{
-              title,
-              price: data.price ?? data.dailyPrice ?? null,
-              city: data.city ?? null,
-              url: `${window.location.origin}/listing/${data.id}`,
-              description: data.description ?? null,
-            }}
-            className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[10px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
-          />
-        </div>
+        {(() => {
+          const isREorJob = type === "real-estate" || type === "jobs";
+          const shareUrl = isREorJob
+            ? `${window.location.origin}/${type === "real-estate" ? "real-estate" : "jobs"}/${data.id}`
+            : `${window.location.origin}/listing/${data.id}`;
+          return (
+            <div className="flex gap-1.5 pt-2 border-t mt-auto" onClick={e => e.stopPropagation()}>
+              {/* التفاصيل */}
+              {onCardClick && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onCardClick(); }}
+                  className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-medium rounded-lg bg-secondary text-foreground whitespace-nowrap active:scale-95 transition-all"
+                >
+                  <Eye className="w-3 h-3 shrink-0" /> التفاصيل
+                </button>
+              )}
+
+              {/* مراسلة — للعقارات والوظائف دائماً في مكان مشاركة */}
+              {isREorJob ? (
+                !isOwner && onChat ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onChat(); }}
+                    disabled={chatLoading}
+                    className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-bold rounded-lg bg-primary text-primary-foreground active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {chatLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}
+                    مراسلة
+                  </button>
+                ) : isOwner && onDelete ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    disabled={deleteLoading}
+                    className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-medium rounded-lg text-destructive border border-destructive/30 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {deleteLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                    حذف
+                  </button>
+                ) : (
+                  <ShareSheet
+                    options={{ title, price: data.price ?? null, city: data.city ?? null, url: shareUrl, description: data.description ?? null }}
+                    className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+                  />
+                )
+              ) : (
+                /* أنواع أخرى — نفس السلوك القديم */
+                <>
+                  {!isOwner && onChat && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onChat(); }}
+                      disabled={chatLoading}
+                      className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-bold rounded-lg bg-primary text-primary-foreground active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {chatLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageCircle className="w-3 h-3" />}
+                      مراسلة
+                    </button>
+                  )}
+                  {isOwner && onDelete && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                      disabled={deleteLoading}
+                      className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-medium rounded-lg text-destructive border border-destructive/30 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {deleteLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                      حذف
+                    </button>
+                  )}
+                  <ShareSheet
+                    options={{ title, price: data.price ?? data.dailyPrice ?? null, city: data.city ?? null, url: shareUrl, description: data.description ?? null }}
+                    className="flex-1 inline-flex items-center justify-center gap-1 h-8 text-[11px] font-medium rounded-lg bg-background text-muted-foreground border border-border whitespace-nowrap active:scale-95 transition-all"
+                  />
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
