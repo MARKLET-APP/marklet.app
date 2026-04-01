@@ -6,12 +6,14 @@ const config: CapacitorConfig = {
   webDir: "dist/public",
 
   server: {
-    url: "https://lazemni.com",
+    url: "https://marklet.net",
     cleartext: false,
     allowNavigation: [
+      "marklet.net",
+      "*.marklet.net",
       "lazemni.com",
       "*.lazemni.com",
-      "LAZEMNI.replit.app",
+      "*.replit.app",
       "*.replit.dev",
       "*.spock.replit.dev",
     ],

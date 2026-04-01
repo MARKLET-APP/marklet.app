@@ -131,7 +131,7 @@ export default function JobDetail() {
     title: item.title,
     price: item.salary ? `$${item.salary}` : null,
     city: [item.city, item.province].filter(Boolean).join("، ") || null,
-    url: `https://lazemni.com/jobs/${id}`,
+    url: `https://marklet.net/jobs/${id}`,
     description: item.description || null,
   };
 
