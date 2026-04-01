@@ -1,8 +1,9 @@
 // UI_ID: JOBS_01
 // NAME: الوظائف
-import { useState, useRef } from "react";
+import { useState, useRef, memo } from "react";
 import { useLocation } from "wouter";
 import { useScrollFix } from "@/hooks/useScrollFix";
+import { useFormGuard } from "@/hooks/useFormGuard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -48,7 +49,7 @@ const emptyForm = {
   province: "", city: "", phone: "", description: "", requirements: "",
 };
 
-export default function JobsPage() {
+function JobsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -68,7 +69,7 @@ export default function JobsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
   const [detail, setDetail] = useState<DetailedJob | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const { form, setForm, updateField: updateJobField } = useFormGuard(emptyForm);
   const [applyForm, setApplyForm] = useState({ jobTitle: "", field: "أخرى", experience: "بدون خبرة", province: "", city: "", description: "" });
   const { startChat, loading: startingChat } = useStartChat();
 
@@ -140,7 +141,20 @@ export default function JobsPage() {
     });
   };
 
-  const f = (k: keyof typeof emptyForm, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const f = (k: keyof typeof emptyForm, v: string) => updateJobField(k, v);
+
+  // handleInput: composition-safe — يمنع اختفاء النص العربي أثناء الكتابة
+  const handleInput = (field: keyof typeof emptyForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if ((e.nativeEvent as InputEvent).isComposing) return;
+      updateJobField(field, e.target.value);
+    };
+
+  const handleApplyInput = (field: string) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if ((e.nativeEvent as InputEvent).isComposing) return;
+      setApplyForm(prev => ({ ...prev, [field]: e.target.value }));
+    };
 
   const [aiDescLoading, setAiDescLoading] = useState(false);
   const [cvUploading, setCvUploading] = useState(false);
@@ -410,11 +424,17 @@ export default function JobsPage() {
             </div>
             <div>
               <Label>المسمى الوظيفي *</Label>
-              <Input dir="auto" placeholder="مثال: مطور ويب، معلم رياضيات..." value={form.title} onChange={e => f("title", e.target.value)} style={{ fontSize: 16 }} />
+              <Input dir="auto" placeholder="مثال: مطور ويب، معلم رياضيات..." value={form.title}
+                onChange={handleInput("title")}
+                onCompositionEnd={e => updateJobField("title", e.currentTarget.value)}
+                style={{ fontSize: 16 }} />
             </div>
             <div>
               <Label>الشركة / المؤسسة</Label>
-              <Input placeholder="اسم الشركة أو المؤسسة" value={form.company} onChange={e => f("company", e.target.value)} style={{ fontSize: 16 }} />
+              <Input placeholder="اسم الشركة أو المؤسسة" value={form.company}
+                onChange={handleInput("company")}
+                onCompositionEnd={e => updateJobField("company", e.currentTarget.value)}
+                style={{ fontSize: 16 }} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -466,12 +486,18 @@ export default function JobsPage() {
               </div>
               <div>
                 <Label>المدينة *</Label>
-                <Input placeholder="المدينة أو المنطقة" value={form.city} onChange={e => f("city", e.target.value)} />
+                <Input placeholder="المدينة أو المنطقة" value={form.city}
+                  onChange={handleInput("city")}
+                  onCompositionEnd={e => updateJobField("city", e.currentTarget.value)}
+                  style={{ fontSize: 16 }} />
               </div>
             </div>
             <div>
               <Label>رقم الهاتف / واتساب</Label>
-              <Input type="tel" placeholder="مثال: 0991234567" value={form.phone} onChange={e => f("phone", e.target.value)} />
+              <Input type="tel" placeholder="مثال: 0991234567" value={form.phone}
+                onChange={handleInput("phone")}
+                onCompositionEnd={e => updateJobField("phone", e.currentTarget.value)}
+                style={{ fontSize: 16 }} />
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -481,11 +507,17 @@ export default function JobsPage() {
                   كتابة بالذكاء الاصطناعي
                 </Button>
               </div>
-              <Textarea dir="auto" placeholder="وصف تفصيلي للوظيفة، المهام والمسؤوليات..." value={form.description} onChange={e => f("description", e.target.value)} rows={3} />
+              <Textarea dir="auto" placeholder="وصف تفصيلي للوظيفة، المهام والمسؤوليات..." value={form.description}
+                onChange={handleInput("description")}
+                onCompositionEnd={e => updateJobField("description", e.currentTarget.value)}
+                rows={3} style={{ fontSize: 16 }} />
             </div>
             <div>
               <Label>متطلبات الوظيفة</Label>
-              <Textarea dir="auto" placeholder="المؤهلات والمتطلبات المطلوبة..." value={form.requirements} onChange={e => f("requirements", e.target.value)} rows={3} />
+              <Textarea dir="auto" placeholder="المؤهلات والمتطلبات المطلوبة..." value={form.requirements}
+                onChange={handleInput("requirements")}
+                onCompositionEnd={e => updateJobField("requirements", e.currentTarget.value)}
+                rows={3} style={{ fontSize: 16 }} />
             </div>
             <Button className="w-full" onClick={handleSubmit} disabled={createMutation.isPending}>
               {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
@@ -505,7 +537,9 @@ export default function JobsPage() {
             <div>
               <Label>المسمى الوظيفي المطلوب</Label>
               <Input placeholder="مثال: مطور ويب، معلم، محاسب..." style={{ fontSize: 16 }}
-                value={applyForm.jobTitle} onChange={e => setApplyForm(p => ({ ...p, jobTitle: e.target.value }))} />
+                value={applyForm.jobTitle}
+                onChange={handleApplyInput("jobTitle")}
+                onCompositionEnd={e => setApplyForm(p => ({ ...p, jobTitle: e.currentTarget.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -531,13 +565,18 @@ export default function JobsPage() {
               <div>
                 <Label>المدينة *</Label>
                 <Input placeholder="مثال: دمشق، حلب..." style={{ fontSize: 16 }}
-                  value={applyForm.city} onChange={e => setApplyForm(p => ({ ...p, city: e.target.value }))} />
+                  value={applyForm.city}
+                  onChange={handleApplyInput("city")}
+                  onCompositionEnd={e => setApplyForm(p => ({ ...p, city: e.currentTarget.value }))} />
               </div>
             </div>
             <div>
               <Label>نبذة عن نفسك / مهاراتك</Label>
               <Textarea dir="auto" placeholder="مثال: خبرة 3 سنوات في البرمجة، أجيد اللغة الإنجليزية، حاصل على شهادة جامعية..." rows={3}
-                value={applyForm.description} onChange={e => setApplyForm(p => ({ ...p, description: e.target.value }))} />
+                value={applyForm.description}
+                onChange={handleApplyInput("description")}
+                onCompositionEnd={e => setApplyForm(p => ({ ...p, description: e.currentTarget.value }))}
+                style={{ fontSize: 16 }} />
             </div>
             <div>
               <Label>السيرة الذاتية (PDF أو صورة) - اختياري</Label>
@@ -611,3 +650,5 @@ function InfoRow({ icon, label, val }: { icon: React.ReactNode; label: string; v
     </div>
   );
 }
+
+export default memo(JobsPage);

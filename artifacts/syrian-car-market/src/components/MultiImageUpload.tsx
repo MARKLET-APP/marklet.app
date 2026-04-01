@@ -15,6 +15,12 @@ interface PreviewItem {
   error: boolean;
 }
 
+export const getPreview = (file: string | File | null | undefined): string => {
+  if (typeof file === "string") return file;
+  if (file instanceof File) return URL.createObjectURL(file);
+  return "";
+};
+
 async function uploadSingle(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("image", file);

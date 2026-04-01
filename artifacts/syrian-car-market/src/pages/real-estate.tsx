@@ -1,6 +1,6 @@
 // UI_ID: REAL_ESTATE_01
 // NAME: العقارات
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useLocation } from "wouter";
 import { useFormGuard } from "@/hooks/useFormGuard";
 import { useScrollFix } from "@/hooks/useScrollFix";
@@ -47,7 +47,7 @@ const emptyForm = {
   province: "", city: "", location: "", phone: "", description: "", images: [] as string[],
 };
 
-export default function RealEstatePage() {
+function RealEstatePage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -147,6 +147,19 @@ export default function RealEstatePage() {
 
   // f: wrapper حول updateField للحفاظ على توافق الكود الموجود
   const f = (k: keyof typeof emptyForm, v: string) => updateField(k, v);
+
+  // handleInput: composition-safe — يمنع اختفاء النص العربي أثناء الكتابة
+  const handleInput = (field: keyof typeof emptyForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if ((e.nativeEvent as InputEvent).isComposing) return;
+      updateField(field, e.target.value);
+    };
+
+  const handleBuyInput = (field: string) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if ((e.nativeEvent as InputEvent).isComposing) return;
+      setBuyForm(prev => ({ ...prev, [field]: e.target.value }));
+    };
 
   const [aiDescLoading, setAiDescLoading] = useState(false);
 
@@ -402,7 +415,8 @@ export default function RealEstatePage() {
                 dir="auto"
                 placeholder="مثال: شقة للبيع في دمشق - المزة"
                 value={form.title}
-                onChange={e => f("title", e.target.value)}
+                onChange={handleInput("title")}
+                onCompositionEnd={e => updateField("title", e.currentTarget.value)}
                 style={{ fontSize: 16 }}
               />
             </div>
@@ -478,7 +492,8 @@ export default function RealEstatePage() {
                   dir="auto"
                   placeholder="المدينة أو الحي"
                   value={form.city}
-                  onChange={e => f("city", e.target.value)}
+                  onChange={handleInput("city")}
+                  onCompositionEnd={e => updateField("city", e.currentTarget.value)}
                   style={{ fontSize: 16 }}
                 />
               </div>
@@ -490,7 +505,8 @@ export default function RealEstatePage() {
                 dir="auto"
                 placeholder="مثال: قرب مسجد الروضة، شارع الثورة"
                 value={form.location}
-                onChange={e => f("location", e.target.value)}
+                onChange={handleInput("location")}
+                onCompositionEnd={e => updateField("location", e.currentTarget.value)}
                 style={{ fontSize: 16 }}
               />
             </div>
@@ -501,7 +517,8 @@ export default function RealEstatePage() {
                 type="tel"
                 placeholder="مثال: 0991234567"
                 value={form.phone}
-                onChange={e => f("phone", e.target.value)}
+                onChange={handleInput("phone")}
+                onCompositionEnd={e => updateField("phone", e.currentTarget.value)}
                 style={{ fontSize: 16 }}
               />
             </div>
@@ -518,7 +535,8 @@ export default function RealEstatePage() {
                 dir="auto"
                 placeholder="وصف تفصيلي للعقار..."
                 value={form.description}
-                onChange={e => f("description", e.target.value)}
+                onChange={handleInput("description")}
+                onCompositionEnd={e => updateField("description", e.currentTarget.value)}
                 rows={3}
                 style={{ fontSize: 16 }}
               />
@@ -591,7 +609,8 @@ export default function RealEstatePage() {
                   placeholder="مثال: المزة، المهاجرين"
                   style={{ fontSize: 16 }}
                   value={buyForm.city}
-                  onChange={e => setBuyForm(p => ({ ...p, city: e.target.value }))}
+                  onChange={handleBuyInput("city")}
+                  onCompositionEnd={e => setBuyForm(p => ({ ...p, city: e.currentTarget.value }))}
                 />
               </div>
             </div>
@@ -604,7 +623,8 @@ export default function RealEstatePage() {
                 rows={3}
                 style={{ fontSize: 16 }}
                 value={buyForm.description}
-                onChange={e => setBuyForm(p => ({ ...p, description: e.target.value }))}
+                onChange={handleBuyInput("description")}
+                onCompositionEnd={e => setBuyForm(p => ({ ...p, description: e.currentTarget.value }))}
               />
             </div>
 
@@ -662,3 +682,5 @@ function InfoRow({ icon, label, val }: { icon: React.ReactNode; label: string; v
     </div>
   );
 }
+
+export default memo(RealEstatePage);
