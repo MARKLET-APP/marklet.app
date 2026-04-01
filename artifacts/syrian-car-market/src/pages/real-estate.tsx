@@ -25,6 +25,24 @@ import { BuyRequestCard } from "@/components/BuyRequestCard";
 const LISTING_TYPES = ["بيع", "إيجار"];
 const SUB_CATEGORIES = ["شقق", "منازل وفيلات", "أراضي", "مكاتب", "محلات تجارية", "مستودعات", "استديو", "غرفة"];
 
+// ── initialForm defined OUTSIDE component — never recreated on render ────────
+const initialRealEstateForm = {
+  title: "",
+  listingType: "بيع",
+  subCategory: "شقق",
+  price: "",
+  currency: "USD",
+  area: "",
+  rooms: "",
+  bathrooms: "",
+  floor: "",
+  province: "",
+  city: "",
+  location: "",
+  phone: "",
+  description: "",
+};
+
 type RealEstate = {
   id: number; sellerId: number; title: string; listingType: string; subCategory: string;
   price: string; area: string | null; rooms: number | null; province: string; city: string;
@@ -112,25 +130,11 @@ export default function RealEstatePage() {
   const [addOpen, setAddOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
 
-  // ── CLEAN form state — plain useState, no custom hooks ──────────────────
-  const [form, setForm] = useState({
-    title: "",
-    listingType: "بيع",
-    subCategory: "شقق",
-    price: "",
-    currency: "USD",
-    area: "",
-    rooms: "",
-    bathrooms: "",
-    floor: "",
-    province: "",
-    city: "",
-    location: "",
-    phone: "",
-    description: "",
-  });
-
+  // ── form — initialRealEstateForm defined OUTSIDE (never recreated) ─────────
+  const [form, setForm] = useState(initialRealEstateForm);
   const update = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+
+  console.log("FORM STATE:", form);
 
   // ── Image system — File[] locally, blob preview, upload on submit ────────
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -151,7 +155,7 @@ export default function RealEstatePage() {
   };
 
   const resetForm = () => {
-    setForm({ title: "", listingType: "بيع", subCategory: "شقق", price: "", currency: "USD", area: "", rooms: "", bathrooms: "", floor: "", province: "", city: "", location: "", phone: "", description: "" });
+    setForm(initialRealEstateForm);
     imagePreviews.forEach(u => URL.revokeObjectURL(u));
     setImageFiles([]);
     setImagePreviews([]);
@@ -469,7 +473,7 @@ export default function RealEstatePage() {
             <div>
               <Label className="mb-1 block">العنوان *</Label>
               <Input
-                value={form.title}
+                value={form.title || ""}
                 onChange={e => update("title", e.target.value)}
                 placeholder="مثال: شقة للبيع في دمشق - المزة"
                 style={{ fontSize: 16 }}
@@ -480,13 +484,13 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">نوع الإعلان *</Label>
-                <BottomSheetSelect value={form.listingType} onValueChange={v => update("listingType", v)} placeholder="النوع">
+                <BottomSheetSelect value={form.listingType || ""} onValueChange={v => update("listingType", v)} placeholder="النوع">
                   {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">الفئة *</Label>
-                <BottomSheetSelect value={form.subCategory} onValueChange={v => update("subCategory", v)} placeholder="الفئة">
+                <BottomSheetSelect value={form.subCategory || ""} onValueChange={v => update("subCategory", v)} placeholder="الفئة">
                   {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
                 </BottomSheetSelect>
               </div>
@@ -498,7 +502,7 @@ export default function RealEstatePage() {
                 <Label className="mb-1 block">السعر *</Label>
                 <Input
                   type="number"
-                  value={form.price}
+                  value={form.price || ""}
                   onChange={e => update("price", e.target.value)}
                   placeholder="السعر"
                   style={{ fontSize: 16 }}
@@ -506,7 +510,7 @@ export default function RealEstatePage() {
               </div>
               <div>
                 <Label className="mb-1 block">العملة</Label>
-                <BottomSheetSelect value={form.currency} onValueChange={v => update("currency", v)} placeholder="USD">
+                <BottomSheetSelect value={form.currency || ""} onValueChange={v => update("currency", v)} placeholder="USD">
                   <option value="USD">USD</option>
                   <option value="SYP">SYP</option>
                 </BottomSheetSelect>
@@ -517,11 +521,11 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المساحة (م²)</Label>
-                <Input type="number" value={form.area} onChange={e => update("area", e.target.value)} placeholder="المساحة" style={{ fontSize: 16 }} />
+                <Input type="number" value={form.area || ""} onChange={e => update("area", e.target.value)} placeholder="المساحة" style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label className="mb-1 block">عدد الغرف</Label>
-                <Input type="number" value={form.rooms} onChange={e => update("rooms", e.target.value)} placeholder="الغرف" style={{ fontSize: 16 }} />
+                <Input type="number" value={form.rooms || ""} onChange={e => update("rooms", e.target.value)} placeholder="الغرف" style={{ fontSize: 16 }} />
               </div>
             </div>
 
@@ -529,11 +533,11 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">عدد الحمامات</Label>
-                <Input type="number" value={form.bathrooms} onChange={e => update("bathrooms", e.target.value)} placeholder="الحمامات" style={{ fontSize: 16 }} />
+                <Input type="number" value={form.bathrooms || ""} onChange={e => update("bathrooms", e.target.value)} placeholder="الحمامات" style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label className="mb-1 block">رقم الطابق</Label>
-                <Input type="number" value={form.floor} onChange={e => update("floor", e.target.value)} placeholder="الطابق" style={{ fontSize: 16 }} />
+                <Input type="number" value={form.floor || ""} onChange={e => update("floor", e.target.value)} placeholder="الطابق" style={{ fontSize: 16 }} />
               </div>
             </div>
 
@@ -541,14 +545,14 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={form.province} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
+                <BottomSheetSelect value={form.province || ""} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">المدينة *</Label>
                 <Input
-                  value={form.city}
+                  value={form.city || ""}
                   onChange={e => update("city", e.target.value)}
                   placeholder="المدينة أو الحي"
                   style={{ fontSize: 16 }}
@@ -560,7 +564,7 @@ export default function RealEstatePage() {
             <div>
               <Label className="mb-1 block">تفاصيل الموقع</Label>
               <Input
-                value={form.location}
+                value={form.location || ""}
                 onChange={e => update("location", e.target.value)}
                 placeholder="مثال: قرب مسجد الروضة، شارع الثورة"
                 style={{ fontSize: 16 }}
@@ -572,7 +576,7 @@ export default function RealEstatePage() {
               <Label className="mb-1 block">رقم الهاتف / واتساب</Label>
               <Input
                 type="tel"
-                value={form.phone}
+                value={form.phone || ""}
                 onChange={e => update("phone", e.target.value)}
                 placeholder="مثال: 0991234567"
                 style={{ fontSize: 16 }}
@@ -589,7 +593,7 @@ export default function RealEstatePage() {
                 </Button>
               </div>
               <Textarea
-                value={form.description}
+                value={form.description || ""}
                 onChange={e => update("description", e.target.value)}
                 placeholder="وصف تفصيلي للعقار..."
                 rows={3}
@@ -644,7 +648,7 @@ export default function RealEstatePage() {
 
             <div>
               <Label className="mb-1 block">نوع العقار المطلوب *</Label>
-              <BottomSheetSelect value={buyForm.propertyType} onValueChange={v => updateBuy("propertyType", v)} placeholder="نوع العقار">
+              <BottomSheetSelect value={buyForm.propertyType || ""} onValueChange={v => updateBuy("propertyType", v)} placeholder="نوع العقار">
                 {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
               </BottomSheetSelect>
             </div>
@@ -652,11 +656,11 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
                 <Label className="mb-1 block">الميزانية القصوى</Label>
-                <Input type="number" value={buyForm.maxPrice} onChange={e => updateBuy("maxPrice", e.target.value)} placeholder="أعلى سعر" style={{ fontSize: 16 }} />
+                <Input type="number" value={buyForm.maxPrice || ""} onChange={e => updateBuy("maxPrice", e.target.value)} placeholder="أعلى سعر" style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label className="mb-1 block">العملة</Label>
-                <BottomSheetSelect value={buyForm.currency} onValueChange={v => updateBuy("currency", v)} placeholder="USD">
+                <BottomSheetSelect value={buyForm.currency || ""} onValueChange={v => updateBuy("currency", v)} placeholder="USD">
                   <option value="USD">USD</option>
                   <option value="SYP">SYP</option>
                 </BottomSheetSelect>
@@ -666,19 +670,19 @@ export default function RealEstatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={buyForm.province} onValueChange={v => updateBuy("province", v)} placeholder="اختر المحافظة">
+                <BottomSheetSelect value={buyForm.province || ""} onValueChange={v => updateBuy("province", v)} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">المدينة / الحي *</Label>
-                <Input value={buyForm.city} onChange={e => updateBuy("city", e.target.value)} placeholder="مثال: المزة، المهاجرين" style={{ fontSize: 16 }} />
+                <Input value={buyForm.city || ""} onChange={e => updateBuy("city", e.target.value)} placeholder="مثال: المزة، المهاجرين" style={{ fontSize: 16 }} />
               </div>
             </div>
 
             <div>
               <Label className="mb-1 block">تفاصيل إضافية</Label>
-              <Textarea value={buyForm.description} onChange={e => updateBuy("description", e.target.value)} placeholder="مثال: أبحث عن شقة بغرفتين..." rows={3} style={{ fontSize: 16 }} />
+              <Textarea value={buyForm.description || ""} onChange={e => updateBuy("description", e.target.value)} placeholder="مثال: أبحث عن شقة بغرفتين..." rows={3} style={{ fontSize: 16 }} />
             </div>
 
             <Button className="w-full gap-2 bg-teal-700 hover:bg-teal-800 h-12 text-base font-bold" onClick={handleBuySubmit} disabled={buyMutation.isPending}>

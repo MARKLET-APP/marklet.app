@@ -23,6 +23,24 @@ import { cn } from "@/lib/utils";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 
 const SUB_CATEGORIES = ["وظيفة شاغرة", "طلب توظيف", "عمالة منزلية", "عمال مهرة"];
+
+// ── initialForm defined OUTSIDE component — never recreated on render ────────
+const initialJobForm = {
+  title: "",
+  subCategory: "وظيفة شاغرة",
+  company: "",
+  salary: "",
+  salaryUnit: "شهري",
+  salaryCurrency: "USD",
+  jobType: "دوام كامل",
+  experience: "بدون خبرة",
+  field: "أخرى",
+  province: "",
+  city: "",
+  phone: "",
+  description: "",
+  requirements: "",
+};
 const JOB_TYPES = ["دوام كامل", "دوام جزئي", "عن بعد", "عقد مؤقت"];
 const EXPERIENCE_LEVELS = ["بدون خبرة", "أقل من سنة", "1-3 سنوات", "3-5 سنوات", "أكثر من 5 سنوات"];
 const FIELDS = [
@@ -56,32 +74,12 @@ export default function JobsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
 
-  // ── CLEAN job form — plain useState, no custom hooks ────────────────────
-  const [form, setForm] = useState({
-    title: "",
-    subCategory: "وظيفة شاغرة",
-    company: "",
-    salary: "",
-    salaryUnit: "شهري",
-    salaryCurrency: "USD",
-    jobType: "دوام كامل",
-    experience: "بدون خبرة",
-    field: "أخرى",
-    province: "",
-    city: "",
-    phone: "",
-    description: "",
-    requirements: "",
-  });
-
+  // ── form — initialJobForm defined OUTSIDE (never recreated) ────────────────
+  const [form, setForm] = useState(initialJobForm);
   const update = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+  const resetForm = () => setForm(initialJobForm);
 
-  const resetForm = () => setForm({
-    title: "", subCategory: "وظيفة شاغرة", company: "", salary: "",
-    salaryUnit: "شهري", salaryCurrency: "USD", jobType: "دوام كامل",
-    experience: "بدون خبرة", field: "أخرى", province: "", city: "",
-    phone: "", description: "", requirements: "",
-  });
+  console.log("FORM STATE:", form);
 
   // ── CLEAN apply form ─────────────────────────────────────────────────────
   const [applyForm, setApplyForm] = useState({
@@ -400,7 +398,7 @@ export default function JobsPage() {
             {/* نوع الإعلان */}
             <div>
               <Label className="mb-1 block">نوع الإعلان *</Label>
-              <BottomSheetSelect value={form.subCategory} onValueChange={v => update("subCategory", v)} placeholder="نوع الإعلان">
+              <BottomSheetSelect value={form.subCategory || ""} onValueChange={v => update("subCategory", v)} placeholder="نوع الإعلان">
                 {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
               </BottomSheetSelect>
             </div>
@@ -409,7 +407,7 @@ export default function JobsPage() {
             <div>
               <Label className="mb-1 block">المسمى الوظيفي *</Label>
               <Input
-                value={form.title}
+                value={form.title || ""}
                 onChange={e => update("title", e.target.value)}
                 placeholder="مثال: مطور ويب، معلم رياضيات..."
                 style={{ fontSize: 16 }}
@@ -420,7 +418,7 @@ export default function JobsPage() {
             <div>
               <Label className="mb-1 block">الشركة / المؤسسة</Label>
               <Input
-                value={form.company}
+                value={form.company || ""}
                 onChange={e => update("company", e.target.value)}
                 placeholder="اسم الشركة أو المؤسسة"
                 style={{ fontSize: 16 }}
@@ -431,13 +429,13 @@ export default function JobsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">نوع الدوام</Label>
-                <BottomSheetSelect value={form.jobType} onValueChange={v => update("jobType", v)} placeholder="نوع الدوام">
+                <BottomSheetSelect value={form.jobType || ""} onValueChange={v => update("jobType", v)} placeholder="نوع الدوام">
                   {JOB_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">مستوى الخبرة</Label>
-                <BottomSheetSelect value={form.experience} onValueChange={v => update("experience", v)} placeholder="الخبرة">
+                <BottomSheetSelect value={form.experience || ""} onValueChange={v => update("experience", v)} placeholder="الخبرة">
                   {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
                 </BottomSheetSelect>
               </div>
@@ -446,7 +444,7 @@ export default function JobsPage() {
             {/* مجال العمل */}
             <div>
               <Label className="mb-1 block">مجال العمل</Label>
-              <BottomSheetSelect value={form.field} onValueChange={v => update("field", v)} placeholder="المجال">
+              <BottomSheetSelect value={form.field || ""} onValueChange={v => update("field", v)} placeholder="المجال">
                 {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
               </BottomSheetSelect>
             </div>
@@ -458,21 +456,21 @@ export default function JobsPage() {
                 <div className="col-span-1">
                   <Input
                     type="number"
-                    value={form.salary}
+                    value={form.salary || ""}
                     onChange={e => update("salary", e.target.value)}
                     placeholder="المبلغ"
                     style={{ fontSize: 16 }}
                   />
                 </div>
                 <div>
-                  <BottomSheetSelect value={form.salaryUnit} onValueChange={v => update("salaryUnit", v)} placeholder="الوحدة">
+                  <BottomSheetSelect value={form.salaryUnit || ""} onValueChange={v => update("salaryUnit", v)} placeholder="الوحدة">
                     <option value="شهري">شهري</option>
                     <option value="يومي">يومي</option>
                     <option value="بالمشروع">بالمشروع</option>
                   </BottomSheetSelect>
                 </div>
                 <div>
-                  <BottomSheetSelect value={form.salaryCurrency} onValueChange={v => update("salaryCurrency", v)} placeholder="العملة">
+                  <BottomSheetSelect value={form.salaryCurrency || ""} onValueChange={v => update("salaryCurrency", v)} placeholder="العملة">
                     <option value="USD">USD $</option>
                     <option value="SYP">SYP ل.س</option>
                   </BottomSheetSelect>
@@ -484,14 +482,14 @@ export default function JobsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={form.province} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
+                <BottomSheetSelect value={form.province || ""} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">المدينة *</Label>
                 <Input
-                  value={form.city}
+                  value={form.city || ""}
                   onChange={e => update("city", e.target.value)}
                   placeholder="المدينة أو المنطقة"
                   style={{ fontSize: 16 }}
@@ -504,7 +502,7 @@ export default function JobsPage() {
               <Label className="mb-1 block">رقم الهاتف / واتساب</Label>
               <Input
                 type="tel"
-                value={form.phone}
+                value={form.phone || ""}
                 onChange={e => update("phone", e.target.value)}
                 placeholder="مثال: 0991234567"
                 style={{ fontSize: 16 }}
@@ -521,7 +519,7 @@ export default function JobsPage() {
                 </Button>
               </div>
               <Textarea
-                value={form.description}
+                value={form.description || ""}
                 onChange={e => update("description", e.target.value)}
                 placeholder="وصف تفصيلي للوظيفة، المهام والمسؤوليات..."
                 rows={3}
@@ -533,7 +531,7 @@ export default function JobsPage() {
             <div>
               <Label className="mb-1 block">متطلبات الوظيفة</Label>
               <Textarea
-                value={form.requirements}
+                value={form.requirements || ""}
                 onChange={e => update("requirements", e.target.value)}
                 placeholder="المؤهلات والمتطلبات المطلوبة..."
                 rows={3}
@@ -571,7 +569,7 @@ export default function JobsPage() {
             <div>
               <Label className="mb-1 block">المسمى الوظيفي المطلوب</Label>
               <Input
-                value={applyForm.jobTitle}
+                value={applyForm.jobTitle || ""}
                 onChange={e => updateApply("jobTitle", e.target.value)}
                 placeholder="مثال: مطور ويب، معلم، محاسب..."
                 style={{ fontSize: 16 }}
@@ -581,13 +579,13 @@ export default function JobsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المجال *</Label>
-                <BottomSheetSelect value={applyForm.field} onValueChange={v => updateApply("field", v)} placeholder="المجال">
+                <BottomSheetSelect value={applyForm.field || ""} onValueChange={v => updateApply("field", v)} placeholder="المجال">
                   {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">الخبرة *</Label>
-                <BottomSheetSelect value={applyForm.experience} onValueChange={v => updateApply("experience", v)} placeholder="الخبرة">
+                <BottomSheetSelect value={applyForm.experience || ""} onValueChange={v => updateApply("experience", v)} placeholder="الخبرة">
                   {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
                 </BottomSheetSelect>
               </div>
@@ -596,14 +594,14 @@ export default function JobsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={applyForm.province} onValueChange={v => updateApply("province", v)} placeholder="اختر المحافظة">
+                <BottomSheetSelect value={applyForm.province || ""} onValueChange={v => updateApply("province", v)} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
                 </BottomSheetSelect>
               </div>
               <div>
                 <Label className="mb-1 block">المدينة *</Label>
                 <Input
-                  value={applyForm.city}
+                  value={applyForm.city || ""}
                   onChange={e => updateApply("city", e.target.value)}
                   placeholder="مثال: دمشق، حلب..."
                   style={{ fontSize: 16 }}
@@ -614,7 +612,7 @@ export default function JobsPage() {
             <div>
               <Label className="mb-1 block">نبذة عن نفسك / مهاراتك</Label>
               <Textarea
-                value={applyForm.description}
+                value={applyForm.description || ""}
                 onChange={e => updateApply("description", e.target.value)}
                 placeholder="مثال: خبرة 3 سنوات في البرمجة، أجيد اللغة الإنجليزية..."
                 rows={3}
