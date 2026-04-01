@@ -11,7 +11,9 @@ export type ListingSaveType =
   | "plate_numbers"
   | "motorcycles"
   | "buy_request"
-  | "rent_request";
+  | "rent_request"
+  | "real_estate"
+  | "job";
 
 interface SavedId {
   listingType: string;

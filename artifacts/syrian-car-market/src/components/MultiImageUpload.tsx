@@ -71,17 +71,18 @@ export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUpload
     setPreviews(prev => [...prev, ...newPreviews]);
 
     const startIdx = previews.length;
+    const uploadedUrls: (string | null)[] = new Array(toProcess.length).fill(null);
     await Promise.all(
       toProcess.map(async (file, i) => {
         try {
           const url = await uploadSingle(file);
+          uploadedUrls[i] = url;
           setPreviews(prev => {
             const next = [...prev];
             const idx = startIdx + i;
             if (next[idx]) next[idx] = { ...next[idx], serverUrl: url, uploading: false };
             return next;
           });
-          onChange([...images, url]);
         } catch {
           setPreviews(prev => {
             const next = [...prev];
@@ -93,6 +94,10 @@ export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUpload
         }
       })
     );
+    const successUrls = uploadedUrls.filter((u): u is string => u !== null);
+    if (successUrls.length > 0) {
+      onChange([...images, ...successUrls]);
+    }
 
     if (inputRef.current) inputRef.current.value = "";
   };
