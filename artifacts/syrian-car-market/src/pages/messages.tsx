@@ -362,25 +362,45 @@ export default function Messages() {
 
   const handleStartRecording = async () => {
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast({ title: "خطأ", description: "المتصفح لا يدعم التسجيل الصوتي", variant: "destructive" });
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      // Pick a supported MIME type — audio/webm works on desktop Chrome,
+      // Android WebView prefers audio/mp4 or falls back to default
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : MediaRecorder.isTypeSupported("audio/mp4")
+        ? "audio/mp4"
+        : "";
+      const mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       audioChunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       mr.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(audioChunksRef.current, { type: mr.mimeType || "audio/webm" });
         setAudioBlob(blob);
         setAudioPreviewUrl(URL.createObjectURL(blob));
         setIsRecording(false);
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       };
-      mr.start();
+      mr.start(250); // collect data every 250ms
       mediaRecorderRef.current = mr;
       setIsRecording(true);
       setRecordingSeconds(0);
       recordingTimerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
-    } catch {
-      toast({ title: "خطأ", description: "لا يمكن الوصول إلى الميكروفون", variant: "destructive" });
+    } catch (err: any) {
+      const denied = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
+      toast({
+        title: "لا يمكن الوصول إلى الميكروفون",
+        description: denied
+          ? "يرجى السماح للتطبيق بالوصول إلى الميكروفون من إعدادات الهاتف"
+          : "تأكد من أن الميكروفون متاح وجرب مجدداً",
+        variant: "destructive",
+      });
     }
   };
 

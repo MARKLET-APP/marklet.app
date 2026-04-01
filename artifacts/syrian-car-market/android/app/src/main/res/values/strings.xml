@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">MARKLET</string>
-    <string name="title_activity_main">MARKLET</string>
-    <string name="package_name">com.marklet.sy</string>
-    <string name="custom_url_scheme">com.marklet.sy</string>
+    <string name="app_name">LAZEMNI</string>
+    <string name="title_activity_main">LAZEMNI</string>
+    <string name="package_name">com.lazemni.app</string>
+    <string name="custom_url_scheme">com.lazemni.app</string>
 </resources>

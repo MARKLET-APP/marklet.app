@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/lib/i18n";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useFcmPush } from "@/hooks/useFcmPush";
+import { useAndroidPermissions } from "@/hooks/useAndroidPermissions";
 import { IS_NATIVE } from "@/lib/runtimeConfig";
 import { App as CapApp } from "@capacitor/app";
 
@@ -145,6 +146,7 @@ function GlobalHooks() {
 
   usePushNotifications();
   useFcmPush();
+  useAndroidPermissions();
   return null;
 }
 

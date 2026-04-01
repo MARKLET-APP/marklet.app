@@ -54,13 +54,23 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
-    <!-- الكاميرا والمعرض -->
+    <!-- الكاميرا -->
     <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- الصور والوسائط — Android 12 وأقل -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
+
+    <!-- الصور والوسائط — Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <!-- الميكروفون والتسجيل الصوتي -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- الإشعارات -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -70,5 +80,6 @@
     <!-- Hardware features (اختيارية) -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
 </manifest>
