@@ -216,7 +216,7 @@ export default function JobDetail() {
       </div>
 
       {/* Fixed bottom contact bar */}
-      <div className="fixed bottom-0 right-0 left-0 bg-background border-t p-3 flex gap-2 z-20">
+      <div className="fixed bottom-0 right-0 left-0 z-50 lg:hidden bg-background/95 backdrop-blur-sm border-t shadow-lg px-4 py-3 flex gap-2">
         {phone ? (
           <>
             <Button

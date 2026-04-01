@@ -269,18 +269,24 @@ function JobsPage() {
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <NativeSelect value={filterSub} onValueChange={setFilterSub} className="h-8 text-xs min-w-[120px]">
-            <option value="__all__">الكل</option>
-            {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
-          </NativeSelect>
-          <NativeSelect value={filterField} onValueChange={setFilterField} className="h-8 text-xs min-w-[120px]">
-            <option value="__all__">الكل</option>
-            {FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
-          </NativeSelect>
-          <NativeSelect value={filterProv} onValueChange={setFilterProv} className="h-8 text-xs min-w-[110px]">
-            <option value="__all__">الكل</option>
-            {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-          </NativeSelect>
+          <div className="shrink-0 min-w-[115px]">
+            <NativeSelect value={filterSub} onValueChange={setFilterSub} className="h-8 text-xs">
+              <option value="__all__">الكل</option>
+              {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+            </NativeSelect>
+          </div>
+          <div className="shrink-0 min-w-[115px]">
+            <NativeSelect value={filterField} onValueChange={setFilterField} className="h-8 text-xs">
+              <option value="__all__">الكل</option>
+              {FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
+            </NativeSelect>
+          </div>
+          <div className="shrink-0 min-w-[110px]">
+            <NativeSelect value={filterProv} onValueChange={setFilterProv} className="h-8 text-xs">
+              <option value="__all__">الكل</option>
+              {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+            </NativeSelect>
+          </div>
           {(activeSub || activeField || activeProv || q) && (
             <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
               onClick={() => { setFilterSub("__all__"); setFilterField("__all__"); setFilterProv("__all__"); setQ(""); setSearch(""); }}>
