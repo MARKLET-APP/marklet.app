@@ -386,14 +386,14 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           experience: fields.jobExperience,
           field: fields.jobField,
           province: fields.jobProvince,
-          city: fields.jobCity,
+          city: fields.jobCity || undefined,
           phone: fields.jobPhone,
           description: fields.description,
           requirements: fields.jobRequirements,
         });
         localStorage.removeItem(DRAFT_KEY);
-        showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة" });
-        setTimeout(() => navigate("/"), 1200);
+        showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة", duration: 4000 });
+        setTimeout(() => navigate("/"), 2500);
       } catch (err: any) {
         showToast(err.message ?? "حدث خطأ", { variant: "destructive" });
       } finally {

@@ -396,6 +396,18 @@ export default function AdminDashboard() {
     ...qOpts,
   });
 
+  const { data: pendingJobs = [], refetch: refetchPendingJobs } = useQuery<any[]>({
+    queryKey: ["/admin/jobs/pending"],
+    queryFn: () => apiRequest<any[]>("/api/admin/jobs/pending"),
+    ...qOpts,
+  });
+
+  const { data: pendingRealEstate = [], refetch: refetchPendingRealEstate } = useQuery<any[]>({
+    queryKey: ["/admin/real-estate/pending"],
+    queryFn: () => apiRequest<any[]>("/api/admin/real-estate/pending"),
+    ...qOpts,
+  });
+
   const [previewReel, setPreviewReel] = useState<any | null>(null);
   const [reelActionLoading, setReelActionLoading] = useState(false);
 
@@ -489,7 +501,7 @@ export default function AdminDashboard() {
   };
 
   const totalInboxUnread = (supportMessages as any[]).length;
-  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingPartRequests.length + pendingRentals.length + pendingCarParts.length + pendingJunkCars.length + pendingReels.length;
+  const totalReviewPending = (pendingCars?.length ?? 0) + pendingBuyRequests.length + pendingPartRequests.length + pendingRentals.length + pendingCarParts.length + pendingJunkCars.length + pendingReels.length + pendingJobs.length + pendingRealEstate.length;
 
   const handleBuyRequestStatus = async (id: number, status: "approved" | "rejected") => {
     try {
@@ -1667,6 +1679,114 @@ export default function AdminDashboard() {
                 );
               })
             )}
+          </div>
+
+          {/* ===== Pending Jobs sub-section ===== */}
+          <div className="border-t-4 border-border mt-2">
+            <div className="p-5 border-b flex justify-between items-center bg-violet-50/50 dark:bg-violet-950/10">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  💼 وظائف بانتظار المراجعة
+                  {pendingJobs.length > 0 && (
+                    <Badge className="bg-amber-500 hover:bg-amber-600">{pendingJobs.length} معلق</Badge>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">{pendingJobs.length} وظيفة بانتظار الموافقة</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchPendingJobs()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3">
+              {pendingJobs.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">لا توجد وظائف معلقة</div>
+              ) : pendingJobs.map((job: any) => (
+                <div key={job.id} className="border-2 border-violet-200 rounded-2xl p-4 bg-background shadow-sm">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-base">{job.title}</p>
+                      {job.company && <p className="text-sm text-muted-foreground">{job.company}</p>}
+                      <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                        {job.field && <span className="bg-secondary px-2 py-0.5 rounded-full">{job.field}</span>}
+                        {job.jobType && <span className="bg-secondary px-2 py-0.5 rounded-full">{job.jobType}</span>}
+                        {job.province && <span className="bg-secondary px-2 py-0.5 rounded-full">{job.province}{job.city ? ` / ${job.city}` : ""}</span>}
+                        {job.salary && <span className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-0.5 rounded-full">{Number(job.salary).toLocaleString()} ل.س</span>}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">بواسطة: {job.posterName ?? "—"} {job.posterPhone ? `· ${job.posterPhone}` : ""}</p>
+                      {job.description && <p className="text-sm mt-2 text-foreground/80 line-clamp-3">{job.description}</p>}
+                      {job.requirements && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">المتطلبات: {job.requirements}</p>}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1 bg-green-500 hover:bg-green-600 text-white gap-1.5" onClick={async () => {
+                      await apiRequest(`/api/admin/jobs/${job.id}/status`, "PATCH", { status: "approved" });
+                      toast({ title: "تمت الموافقة على الوظيفة ونشرها" });
+                      refetchPendingJobs();
+                    }}>
+                      <CheckCircle className="w-4 h-4" /> موافقة ونشر
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1 border-2 border-red-400 text-red-600 hover:bg-red-50 gap-1.5" onClick={async () => {
+                      await apiRequest(`/api/admin/jobs/${job.id}/status`, "PATCH", { status: "rejected" });
+                      toast({ title: "تم رفض الوظيفة" });
+                      refetchPendingJobs();
+                    }}>
+                      <XCircle className="w-4 h-4" /> رفض
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ===== Pending Real Estate sub-section ===== */}
+          <div className="border-t-4 border-border mt-2">
+            <div className="p-5 border-b flex justify-between items-center bg-orange-50/50 dark:bg-orange-950/10">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  🏠 عقارات بانتظار المراجعة
+                  {pendingRealEstate.length > 0 && (
+                    <Badge className="bg-amber-500 hover:bg-amber-600">{pendingRealEstate.length} معلق</Badge>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">{pendingRealEstate.length} عقار بانتظار الموافقة</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchPendingRealEstate()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
+            </div>
+            <div className="p-4 space-y-3">
+              {pendingRealEstate.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">لا توجد عقارات معلقة</div>
+              ) : pendingRealEstate.map((re: any) => (
+                <div key={re.id} className="border-2 border-orange-200 rounded-2xl p-4 bg-background shadow-sm">
+                  <div className="mb-3">
+                    <p className="font-bold text-base">{re.title}</p>
+                    <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                      {re.subCategory && <span className="bg-secondary px-2 py-0.5 rounded-full">{re.subCategory}</span>}
+                      {re.listingType && <span className="bg-secondary px-2 py-0.5 rounded-full">{re.listingType}</span>}
+                      {re.province && <span className="bg-secondary px-2 py-0.5 rounded-full">{re.province}{re.city ? ` / ${re.city}` : ""}</span>}
+                      {re.area && <span className="bg-secondary px-2 py-0.5 rounded-full">{re.area} م²</span>}
+                      {re.rooms && <span className="bg-secondary px-2 py-0.5 rounded-full">{re.rooms} غرف</span>}
+                      {re.price && <span className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-0.5 rounded-full">{Number(re.price).toLocaleString()} ل.س</span>}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">بواسطة: {re.posterName ?? "—"} {re.posterPhone ? `· ${re.posterPhone}` : ""}</p>
+                    {re.description && <p className="text-sm mt-2 text-foreground/80 line-clamp-3">{re.description}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1 bg-green-500 hover:bg-green-600 text-white gap-1.5" onClick={async () => {
+                      await apiRequest(`/api/admin/real-estate/${re.id}/status`, "PATCH", { status: "approved" });
+                      toast({ title: "تمت الموافقة على العقار ونشره" });
+                      refetchPendingRealEstate();
+                    }}>
+                      <CheckCircle className="w-4 h-4" /> موافقة ونشر
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1 border-2 border-red-400 text-red-600 hover:bg-red-50 gap-1.5" onClick={async () => {
+                      await apiRequest(`/api/admin/real-estate/${re.id}/status`, "PATCH", { status: "rejected" });
+                      toast({ title: "تم رفض العقار" });
+                      refetchPendingRealEstate();
+                    }}>
+                      <XCircle className="w-4 h-4" /> رفض
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ===== Buy Requests sub-section ===== */}

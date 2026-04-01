@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
@@ -52,6 +53,9 @@ public class MainActivity extends BridgeActivity {
         // إخفاء أدوات الزوم
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
+
+        // تعطيل السحب للتحديث (يسبب خطأ 404 عند إعادة التحميل من URL داخلي)
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
         // الكوكيز لحفظ تسجيل الدخول
         CookieManager cookieManager = CookieManager.getInstance();

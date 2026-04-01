@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable, buyRequestsTable, inspectionCentersTable, scrapCentersTable, showroomsTable } from "@workspace/db";
+import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable, buyRequestsTable, inspectionCentersTable, scrapCentersTable, showroomsTable, jobsTable, realEstateTable } from "@workspace/db";
 import { eq, desc, count, sql, ilike, or } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -644,6 +644,106 @@ router.post("/admin/showrooms/:id/link-user", ...guard, async (req: AuthRequest,
   // Always promote to dealer + verify when linked to a showroom
   await db.update(usersTable).set({ role: "dealer", isVerified: true }).where(eq(usersTable.id, user.id));
   res.json({ showroom: updated, user: { id: user.id, name: user.name, email: user.email } });
+});
+
+/* ── Pending Jobs ───────────────────────────────────────────────────── */
+router.get("/admin/jobs/pending", ...guard, async (_req, res): Promise<void> => {
+  try {
+    const jobs = await db
+      .select({
+        id: jobsTable.id,
+        title: jobsTable.title,
+        company: jobsTable.company,
+        jobType: jobsTable.jobType,
+        field: jobsTable.field,
+        province: jobsTable.province,
+        city: jobsTable.city,
+        salary: jobsTable.salary,
+        phone: jobsTable.phone,
+        description: jobsTable.description,
+        requirements: jobsTable.requirements,
+        status: jobsTable.status,
+        createdAt: jobsTable.createdAt,
+        posterId: jobsTable.posterId,
+        posterName: usersTable.name,
+        posterPhone: usersTable.phone,
+      })
+      .from(jobsTable)
+      .leftJoin(usersTable, eq(jobsTable.posterId, usersTable.id))
+      .where(eq(jobsTable.status, "pending"))
+      .orderBy(desc(jobsTable.createdAt));
+    res.json(jobs);
+  } catch (err) {
+    console.error("GET /admin/jobs/pending error:", err);
+    res.status(500).json({ error: "فشل تحميل الوظائف المعلقة" });
+  }
+});
+
+router.patch("/admin/jobs/:id/status", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const id = Number(req.params.id);
+    const { status } = req.body as { status: "approved" | "rejected" };
+    if (!["approved", "rejected"].includes(status)) {
+      res.status(400).json({ error: "status must be approved | rejected" });
+      return;
+    }
+    const isActive = status === "approved";
+    await db.update(jobsTable).set({ status, isActive }).where(eq(jobsTable.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    console.error("PATCH /admin/jobs/:id/status error:", err);
+    res.status(500).json({ error: "فشل تحديث حالة الوظيفة" });
+  }
+});
+
+/* ── Pending Real Estate ─────────────────────────────────────────────── */
+router.get("/admin/real-estate/pending", ...guard, async (_req, res): Promise<void> => {
+  try {
+    const listings = await db
+      .select({
+        id: realEstateTable.id,
+        title: realEstateTable.title,
+        listingType: realEstateTable.listingType,
+        subCategory: realEstateTable.subCategory,
+        price: realEstateTable.price,
+        area: realEstateTable.area,
+        rooms: realEstateTable.rooms,
+        province: realEstateTable.province,
+        city: realEstateTable.city,
+        phone: realEstateTable.phone,
+        description: realEstateTable.description,
+        status: realEstateTable.status,
+        createdAt: realEstateTable.createdAt,
+        posterId: realEstateTable.posterId,
+        posterName: usersTable.name,
+        posterPhone: usersTable.phone,
+      })
+      .from(realEstateTable)
+      .leftJoin(usersTable, eq(realEstateTable.posterId, usersTable.id))
+      .where(eq(realEstateTable.status, "pending"))
+      .orderBy(desc(realEstateTable.createdAt));
+    res.json(listings);
+  } catch (err) {
+    console.error("GET /admin/real-estate/pending error:", err);
+    res.status(500).json({ error: "فشل تحميل العقارات المعلقة" });
+  }
+});
+
+router.patch("/admin/real-estate/:id/status", ...guard, async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const id = Number(req.params.id);
+    const { status } = req.body as { status: "approved" | "rejected" };
+    if (!["approved", "rejected"].includes(status)) {
+      res.status(400).json({ error: "status must be approved | rejected" });
+      return;
+    }
+    const isActive = status === "approved";
+    await db.update(realEstateTable).set({ status, isActive }).where(eq(realEstateTable.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    console.error("PATCH /admin/real-estate/:id/status error:", err);
+    res.status(500).json({ error: "فشل تحديث حالة العقار" });
+  }
 });
 
 export default router;

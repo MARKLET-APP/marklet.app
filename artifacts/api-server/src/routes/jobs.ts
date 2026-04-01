@@ -94,8 +94,8 @@ router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void
     const userId = req.user!.id;
     const { title, subCategory, company, salary, salaryCurrency, jobType, experience, field, province, city, phone, description, requirements, cvUrl } = req.body;
 
-    if (!title || !subCategory || !province || !city) {
-      res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية" });
+    if (!title || !subCategory || !province) {
+      res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية (العنوان، نوع الوظيفة، المحافظة)" });
       return;
     }
 
@@ -110,7 +110,7 @@ router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void
       experience: experience || null,
       field: field || null,
       province,
-      city,
+      city: city || null,
       phone: phone || null,
       description: description || null,
       requirements: requirements || null,
