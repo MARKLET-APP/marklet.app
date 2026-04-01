@@ -1,0 +1,119 @@
+Fix multiple critical UI/UX bugs in SCR_ADD_AD and filters:
+
+=========================================
+BUG 1 — INPUT RESET (CRITICAL)
+=========================================
+Issue:
+When typing Arabic text in fields like (city, address, location),
+the value gets cleared when moving between inputs.
+
+Fix:
+- Ensure all inputs are controlled components
+- Do NOT reset state on re-render
+- Do NOT recreate formData object on every render
+- Use stable useState
+
+Example fix:
+const [formData, setFormData] = useState({...})
+
+onChange:
+setFormData(prev => ({
+  ...prev,
+  field: value
+}))
+
+IMPORTANT:
+- Do NOT use key on form
+- Do NOT reset state when changing category
+- Preserve existing values
+
+=========================================
+BUG 2 — BOTTOM SHEET / DROPDOWN SCROLL
+=========================================
+Issue:
+Dropdown list (city selector) scroll is not smooth
+Touch outside does not close properly
+UI became ugly after change
+
+Fix:
+- Use fixed bottom sheet
+- Enable smooth vertical scroll
+- Prevent page scroll behind modal
+
+Implementation:
+.modal {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #222;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+- Add overlay click to close modal
+- Restore previous clean design (no full screen takeover)
+
+=========================================
+BUG 3 — FORM SCROLL (PAGE NOT SCROLLING)
+=========================================
+Issue:
+Form is long but user cannot scroll down
+
+Fix:
+- Wrap form in scroll container
+
+.container {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+OR:
+Ensure parent div is not blocking scroll (no overflow hidden)
+
+=========================================
+BUG 4 — IMAGE PREVIEW NOT SHOWING
+=========================================
+Issue:
+Images added but preview not visible (only X appears)
+
+Fix:
+- Render preview using URL.createObjectURL
+
+Example:
+<img src={URL.createObjectURL(file)} />
+
+- Ensure state stores File objects
+- Do not store only file name
+
+=========================================
+BUG 5 — FILTER UI CUT FROM TOP
+=========================================
+Issue:
+Filter/search section is not visible from top
+
+Fix:
+- Add padding-top to page
+- Ensure no position:absolute hiding header
+
+.container {
+  padding-top: 60px;
+}
+
+=========================================
+FINAL RULES
+=========================================
+
+- Do NOT change UI design
+- Do NOT rewrite components
+- Only fix bugs
+- Keep same structure
+
+=========================================
+RETURN:
+- Updated SCR_ADD_AD
+- Updated dropdown/modal component
+- Confirm all 5 bugs fixed

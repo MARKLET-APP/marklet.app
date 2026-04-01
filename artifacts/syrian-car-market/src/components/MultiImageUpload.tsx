@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { withApi } from "@/lib/runtimeConfig";
 import { ImagePlus, X, Loader2, AlertCircle } from "lucide-react";
 
@@ -6,6 +6,13 @@ interface MultiImageUploadProps {
   images: string[];
   onChange: (images: string[]) => void;
   max?: number;
+}
+
+interface PreviewItem {
+  localUrl: string;
+  serverUrl: string | null;
+  uploading: boolean;
+  error: boolean;
 }
 
 async function uploadSingle(file: File): Promise<string> {
@@ -23,58 +30,119 @@ async function uploadSingle(file: File): Promise<string> {
 }
 
 export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUploadProps) {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [previews, setPreviews] = useState<PreviewItem[]>([]);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const objectUrlsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (images.length === 0) {
+      setPreviews([]);
+      objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      objectUrlsRef.current = [];
+    }
+  }, [images.length]);
+
+  useEffect(() => {
+    return () => {
+      objectUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   const handleFiles = async (files: FileList) => {
     if (!files.length) return;
-    setUploading(true);
-    setError(null);
-    try {
-      const remaining = max - images.length;
-      const toUpload = Array.from(files).slice(0, remaining);
-      const results = await Promise.allSettled(toUpload.map(uploadSingle));
-      const urls = results.filter(r => r.status === "fulfilled").map(r => (r as PromiseFulfilledResult<string>).value);
-      const failed = results.filter(r => r.status === "rejected").length;
-      if (urls.length > 0) onChange([...images, ...urls]);
-      if (failed > 0) setError(`فشل رفع ${failed} صورة`);
-    } catch {
-      setError("فشل رفع الصور، يرجى المحاولة مرة أخرى");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
+    setGlobalError(null);
+    const remaining = max - images.length - previews.filter(p => p.uploading).length;
+    if (remaining <= 0) return;
+    const toProcess = Array.from(files).slice(0, remaining);
+
+    const newPreviews: PreviewItem[] = toProcess.map(file => {
+      const localUrl = URL.createObjectURL(file);
+      objectUrlsRef.current.push(localUrl);
+      return { localUrl, serverUrl: null, uploading: true, error: false };
+    });
+
+    setPreviews(prev => [...prev, ...newPreviews]);
+
+    const startIdx = previews.length;
+    await Promise.all(
+      toProcess.map(async (file, i) => {
+        try {
+          const url = await uploadSingle(file);
+          setPreviews(prev => {
+            const next = [...prev];
+            const idx = startIdx + i;
+            if (next[idx]) next[idx] = { ...next[idx], serverUrl: url, uploading: false };
+            return next;
+          });
+          onChange([...images, url]);
+        } catch {
+          setPreviews(prev => {
+            const next = [...prev];
+            const idx = startIdx + i;
+            if (next[idx]) next[idx] = { ...next[idx], uploading: false, error: true };
+            return next;
+          });
+          setGlobalError("فشل رفع صورة");
+        }
+      })
+    );
+
+    if (inputRef.current) inputRef.current.value = "";
   };
 
-  const remove = (idx: number) => {
-    onChange(images.filter((_, i) => i !== idx));
+  const remove = (localUrl: string) => {
+    setPreviews(prev => {
+      const item = prev.find(p => p.localUrl === localUrl);
+      if (item?.serverUrl) {
+        onChange(images.filter(u => u !== item.serverUrl));
+      }
+      URL.revokeObjectURL(localUrl);
+      objectUrlsRef.current = objectUrlsRef.current.filter(u => u !== localUrl);
+      return prev.filter(p => p.localUrl !== localUrl);
+    });
   };
+
+  const totalShown = previews.length;
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {images.map((url, i) => (
-          <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-            <img src={url} alt="" className="w-full h-full object-cover" />
+        {previews.map((item) => (
+          <div key={item.localUrl} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border bg-muted">
+            <img
+              src={item.localUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              style={{ display: "block" }}
+            />
+            {item.uploading && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+              </div>
+            )}
+            {item.error && (
+              <div className="absolute inset-0 bg-red-900/70 flex items-center justify-center">
+                <AlertCircle className="w-4 h-4 text-white" />
+              </div>
+            )}
             <button
               type="button"
-              onClick={() => remove(i)}
-              className="absolute top-0.5 right-0.5 bg-black/70 rounded-full p-0.5"
+              onClick={() => remove(item.localUrl)}
+              className="absolute top-0.5 right-0.5 bg-black/80 rounded-full p-1 z-10"
             >
               <X className="w-3 h-3 text-white" />
             </button>
           </div>
         ))}
-        {images.length < max && (
+        {totalShown < max && (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            disabled={uploading}
             className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
           >
-            {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
-            <span className="text-xs mt-1">{uploading ? "..." : "إضافة"}</span>
+            <ImagePlus className="w-5 h-5" />
+            <span className="text-xs mt-1">إضافة</span>
           </button>
         )}
       </div>
@@ -88,9 +156,9 @@ export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUpload
       />
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">{images.length}/{max} صور</p>
-        {error && (
+        {globalError && (
           <p className="text-xs text-destructive flex items-center gap-1">
-            <AlertCircle className="w-3 h-3" />{error}
+            <AlertCircle className="w-3 h-3" />{globalError}
           </p>
         )}
       </div>

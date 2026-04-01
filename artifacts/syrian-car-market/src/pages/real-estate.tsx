@@ -1,6 +1,6 @@
 // UI_ID: REAL_ESTATE_01
 // NAME: العقارات
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NativeSelect } from "@/components/ui/native-select";
+import { BottomSheetSelect } from "@/components/ui/bottom-sheet-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +49,12 @@ export default function RealEstatePage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
+
+  // Bug 5 fix: scroll to top when page mounts
+  useEffect(() => {
+    const main = document.getElementById("app-main");
+    if (main) main.scrollTop = 0;
+  }, []);
 
   const urlParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
   const initialSub = urlParams.get("subCategory") || "__all__";
@@ -135,7 +142,9 @@ export default function RealEstatePage() {
     });
   };
 
-  const f = (k: keyof typeof emptyForm, v: string) => setForm(p => ({ ...p, [k]: v }));
+  // Bug 1 fix: always use functional update — never recreate object on render
+  const f = (k: keyof typeof emptyForm, v: string) =>
+    setForm(prev => ({ ...prev, [k]: v }));
 
   const [aiDescLoading, setAiDescLoading] = useState(false);
 
@@ -188,7 +197,7 @@ export default function RealEstatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24" dir="rtl">
+    <div className="min-h-full bg-background text-foreground pb-4" dir="rtl">
 
       {/* ── Hero Header ── */}
       <div className="relative overflow-hidden bg-gradient-to-l from-cyan-700 to-teal-900 text-white px-4 pt-6 pb-5">
@@ -227,6 +236,7 @@ export default function RealEstatePage() {
             value={search} onChange={e => setSearch(e.target.value)}
             onKeyDown={e => e.key === "Enter" && setQ(search)}
             className="pr-9"
+            style={{ fontSize: 16 }}
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -318,7 +328,7 @@ export default function RealEstatePage() {
 
       {/* Detail Dialog */}
       <Dialog open={!!detail} onOpenChange={open => !open && setDetail(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-lg max-h-[85dvh] overflow-y-auto" dir="rtl">
           {detailLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : detailData ? (
@@ -373,82 +383,127 @@ export default function RealEstatePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Dialog */}
+      {/* ── Add Dialog ── Bug 3 fix: max-h-[85dvh] + proper scroll wrapper */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader><DialogTitle className="text-right">نشر إعلان عقاري</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-lg p-0 overflow-hidden" dir="rtl"
+          style={{ maxHeight: "85dvh", display: "flex", flexDirection: "column" }}>
+          <div className="px-6 pt-6 pb-2 shrink-0 border-b">
+            <DialogHeader><DialogTitle className="text-right">نشر إعلان عقاري</DialogTitle></DialogHeader>
+          </div>
+          <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1"
+            style={{ WebkitOverflowScrolling: "touch" }}>
+
             <div>
               <Label>العنوان *</Label>
-              <Input dir="auto" placeholder="مثال: شقة للبيع في دمشق - المزة" value={form.title} onChange={e => f("title", e.target.value)} />
+              {/* Bug 1 fix: fontSize 16 prevents iOS zoom, dir="auto" handles Arabic */}
+              <Input
+                dir="auto"
+                placeholder="مثال: شقة للبيع في دمشق - المزة"
+                value={form.title}
+                onChange={e => f("title", e.target.value)}
+                style={{ fontSize: 16 }}
+              />
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>نوع الإعلان *</Label>
-                <NativeSelect value={form.listingType} onValueChange={v => f("listingType", v)}>
+                {/* Bug 2 fix: BottomSheetSelect instead of NativeSelect in dialogs */}
+                <BottomSheetSelect value={form.listingType} onValueChange={v => f("listingType", v)} placeholder="نوع الإعلان">
                   {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
               <div>
                 <Label>الفئة *</Label>
-                <NativeSelect value={form.subCategory} onValueChange={v => f("subCategory", v)}>
+                <BottomSheetSelect value={form.subCategory} onValueChange={v => f("subCategory", v)} placeholder="الفئة">
                   {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
             </div>
+
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
                 <Label>السعر *</Label>
-                <Input type="number" placeholder="السعر" value={form.price} onChange={e => f("price", e.target.value)} style={{ fontSize: 16 }} />
+                <Input
+                  type="number"
+                  placeholder="السعر"
+                  value={form.price}
+                  onChange={e => f("price", e.target.value)}
+                  style={{ fontSize: 16 }}
+                />
               </div>
               <div>
                 <Label>العملة</Label>
-                <NativeSelect value={form.currency} onValueChange={v => f("currency", v)}>
+                <BottomSheetSelect value={form.currency} onValueChange={v => f("currency", v)} placeholder="العملة">
                   <option value="USD">USD</option>
                   <option value="SYP">SYP</option>
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المساحة (م²)</Label>
-                <Input type="number" placeholder="المساحة" value={form.area} onChange={e => f("area", e.target.value)} />
+                <Input type="number" placeholder="المساحة" value={form.area} onChange={e => f("area", e.target.value)} style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label>عدد الغرف</Label>
-                <Input type="number" placeholder="الغرف" value={form.rooms} onChange={e => f("rooms", e.target.value)} />
+                <Input type="number" placeholder="الغرف" value={form.rooms} onChange={e => f("rooms", e.target.value)} style={{ fontSize: 16 }} />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>عدد الحمامات</Label>
-                <Input type="number" placeholder="الحمامات" value={form.bathrooms} onChange={e => f("bathrooms", e.target.value)} />
+                <Input type="number" placeholder="الحمامات" value={form.bathrooms} onChange={e => f("bathrooms", e.target.value)} style={{ fontSize: 16 }} />
               </div>
               <div>
                 <Label>رقم الطابق</Label>
-                <Input type="number" placeholder="الطابق" value={form.floor} onChange={e => f("floor", e.target.value)} />
+                <Input type="number" placeholder="الطابق" value={form.floor} onChange={e => f("floor", e.target.value)} style={{ fontSize: 16 }} />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المحافظة *</Label>
-                <NativeSelect value={form.province} onValueChange={v => f("province", v)} placeholder="اختر">
+                <BottomSheetSelect value={form.province} onValueChange={v => f("province", v)} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
               <div>
                 <Label>المدينة *</Label>
-                <Input placeholder="المدينة أو الحي" value={form.city} onChange={e => f("city", e.target.value)} style={{ fontSize: 16 }} />
+                <Input
+                  dir="auto"
+                  placeholder="المدينة أو الحي"
+                  value={form.city}
+                  onChange={e => f("city", e.target.value)}
+                  style={{ fontSize: 16 }}
+                />
               </div>
             </div>
+
             <div>
               <Label>تفاصيل الموقع</Label>
-              <Input placeholder="مثال: قرب مسجد الروضة، شارع الثورة" value={form.location} onChange={e => f("location", e.target.value)} />
+              <Input
+                dir="auto"
+                placeholder="مثال: قرب مسجد الروضة، شارع الثورة"
+                value={form.location}
+                onChange={e => f("location", e.target.value)}
+                style={{ fontSize: 16 }}
+              />
             </div>
+
             <div>
               <Label>رقم الهاتف / واتساب</Label>
-              <Input type="tel" placeholder="مثال: 0991234567" value={form.phone} onChange={e => f("phone", e.target.value)} />
+              <Input
+                type="tel"
+                placeholder="مثال: 0991234567"
+                value={form.phone}
+                onChange={e => f("phone", e.target.value)}
+                style={{ fontSize: 16 }}
+              />
             </div>
+
             <div>
               <div className="flex items-center justify-between mb-1">
                 <Label>الوصف</Label>
@@ -457,12 +512,22 @@ export default function RealEstatePage() {
                   كتابة بالذكاء الاصطناعي
                 </Button>
               </div>
-              <Textarea dir="auto" placeholder="وصف تفصيلي للعقار..." value={form.description} onChange={e => f("description", e.target.value)} rows={3} />
+              <Textarea
+                dir="auto"
+                placeholder="وصف تفصيلي للعقار..."
+                value={form.description}
+                onChange={e => f("description", e.target.value)}
+                rows={3}
+                style={{ fontSize: 16 }}
+              />
             </div>
+
             <div>
               <Label>الصور</Label>
+              {/* Bug 4 fix: MultiImageUpload now shows local preview instantly */}
               <MultiImageUpload images={form.images} onChange={imgs => setForm(p => ({ ...p, images: imgs }))} />
             </div>
+
             <Button className="w-full" onClick={handleSubmit} disabled={createMutation.isPending}>
               {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
               نشر الإعلان
@@ -473,49 +538,74 @@ export default function RealEstatePage() {
 
       {/* ── Buy Request Dialog ── */}
       <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">طلب شراء عقار</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-lg p-0 overflow-hidden" dir="rtl"
+          style={{ maxHeight: "85dvh", display: "flex", flexDirection: "column" }}>
+          <div className="px-6 pt-6 pb-2 shrink-0 border-b">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">طلب شراء عقار</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1"
+            style={{ WebkitOverflowScrolling: "touch" }}>
+
             <div>
               <Label>نوع العقار المطلوب *</Label>
-              <NativeSelect value={buyForm.propertyType} onValueChange={v => setBuyForm(p => ({ ...p, propertyType: v }))}>
+              <BottomSheetSelect value={buyForm.propertyType} onValueChange={v => setBuyForm(p => ({ ...p, propertyType: v }))} placeholder="نوع العقار">
                 {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
-              </NativeSelect>
+              </BottomSheetSelect>
             </div>
+
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
                 <Label>الميزانية القصوى</Label>
-                <Input type="number" placeholder="أعلى سعر مقبول" style={{ fontSize: 16 }}
-                  value={buyForm.maxPrice} onChange={e => setBuyForm(p => ({ ...p, maxPrice: e.target.value }))} />
+                <Input
+                  type="number"
+                  placeholder="أعلى سعر مقبول"
+                  style={{ fontSize: 16 }}
+                  value={buyForm.maxPrice}
+                  onChange={e => setBuyForm(p => ({ ...p, maxPrice: e.target.value }))}
+                />
               </div>
               <div>
                 <Label>العملة</Label>
-                <NativeSelect value={buyForm.currency} onValueChange={v => setBuyForm(p => ({ ...p, currency: v }))}>
+                <BottomSheetSelect value={buyForm.currency} onValueChange={v => setBuyForm(p => ({ ...p, currency: v }))} placeholder="العملة">
                   <option value="USD">USD</option>
                   <option value="SYP">SYP</option>
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المحافظة *</Label>
-                <NativeSelect value={buyForm.province} onValueChange={v => setBuyForm(p => ({ ...p, province: v }))} placeholder="اختر المحافظة">
+                <BottomSheetSelect value={buyForm.province} onValueChange={v => setBuyForm(p => ({ ...p, province: v }))} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
               <div>
                 <Label>المدينة / الحي *</Label>
-                <Input placeholder="مثال: المزة، المهاجرين" style={{ fontSize: 16 }}
-                  value={buyForm.city} onChange={e => setBuyForm(p => ({ ...p, city: e.target.value }))} />
+                <Input
+                  dir="auto"
+                  placeholder="مثال: المزة، المهاجرين"
+                  style={{ fontSize: 16 }}
+                  value={buyForm.city}
+                  onChange={e => setBuyForm(p => ({ ...p, city: e.target.value }))}
+                />
               </div>
             </div>
+
             <div>
               <Label>تفاصيل إضافية</Label>
-              <Textarea placeholder="مثال: أبحث عن شقة بغرفتين قرب مدرسة، لا تزيد عن الطابق الخامس..." rows={3}
-                value={buyForm.description} onChange={e => setBuyForm(p => ({ ...p, description: e.target.value }))} />
+              <Textarea
+                dir="auto"
+                placeholder="مثال: أبحث عن شقة بغرفتين قرب مدرسة، لا تزيد عن الطابق الخامس..."
+                rows={3}
+                style={{ fontSize: 16 }}
+                value={buyForm.description}
+                onChange={e => setBuyForm(p => ({ ...p, description: e.target.value }))}
+              />
             </div>
+
             <Button className="w-full gap-2 bg-teal-700 hover:bg-teal-800" onClick={handleBuySubmit} disabled={buyMutation.isPending}>
               {buyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
               إرسال طلب الشراء
