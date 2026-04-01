@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { withApi } from "@/lib/runtimeConfig";
+import { withApi, imgUrl } from "@/lib/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -179,7 +179,7 @@ export default function MissingCarsPage() {
           {cars.map(c => (
             <div key={c.id} className={`bg-card border-2 rounded-2xl overflow-hidden shadow-sm transition-shadow ${c.isFound === "yes" ? "border-green-200 opacity-70" : "border-amber-200 hover:shadow-md"}`}>
               {c.image ? (
-                <img src={c.image} alt={c.brand ?? "سيارة"} className="w-full h-44 object-cover" />
+                <img src={imgUrl(c.image)} alt={c.brand ?? "سيارة"} className="w-full h-44 object-cover" />
               ) : (
                 <div className="w-full h-44 bg-amber-50 flex items-center justify-center"><AlertTriangle className="w-16 h-16 text-amber-300" /></div>
               )}

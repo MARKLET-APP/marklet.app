@@ -2,7 +2,7 @@
 // NAME: البحث
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
-import { withApi } from "@/lib/runtimeConfig";
+import { withApi, imgUrl } from "@/lib/runtimeConfig";
 import { CarCard } from "@/components/CarCard";
 import { ContactButtons } from "@/components/ContactButtons";
 import { Car, Wrench, Trash2, CalendarDays, Filter, SlidersHorizontal, Search as SearchIcon, X, Plus, ShoppingCart, MapPin, Tag, History, Clock } from "lucide-react";
@@ -192,7 +192,7 @@ function UnifiedCard({ item, onClick }: { item: UnifiedResult; onClick?: () => v
     >
       <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {img ? (
-          <img src={img} alt={title} className="w-full h-full object-cover" />
+          <img src={imgUrl(img)} alt={title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
             {item._type === "part" ? <Wrench className="w-12 h-12 opacity-30" /> :

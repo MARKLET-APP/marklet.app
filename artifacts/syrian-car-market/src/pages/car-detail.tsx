@@ -3,6 +3,7 @@
 import { useRoute, useLocation } from "wouter";
 import { useGetCar } from "@workspace/api-client-react";
 import { api } from "@/lib/api";
+import { imgUrl } from "@/lib/runtimeConfig";
 import { useEffect, useState } from "react";
 import { MapPin, Settings, Calendar, Gauge, Fuel, Eye, EyeOff, Heart, Loader2, MessageCircle, CheckCircle, Pencil, Lock, Crown, Clock, Share2 } from "lucide-react";
 import { ShareSheet } from "@/components/ShareSheet";
@@ -304,7 +305,7 @@ export default function CarDetail() {
             {images.length > 0 ? (
               <>
                 <img
-                  src={typeof images[activeImg] === "string" ? images[activeImg] : images[activeImg]?.imageUrl}
+                  src={imgUrl(typeof images[activeImg] === "string" ? images[activeImg] : images[activeImg]?.imageUrl)}
                   alt={`${car.brand} ${car.model}`}
                   className="w-full h-full object-cover"
                 />
@@ -443,7 +444,7 @@ export default function CarDetail() {
             <h3 className="font-bold text-lg mb-6 border-b pb-4">معلومات البائع</h3>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 bg-muted rounded-full overflow-hidden shrink-0 border-2 border-primary/20">
-                <img src={(car as any).sellerPhoto || `https://ui-avatars.com/api/?name=${(car as any).sellerName}&background=random`} alt={(car as any).sellerName} className="w-full h-full object-cover" />
+                <img src={imgUrl((car as any).sellerPhoto) || `https://ui-avatars.com/api/?name=${(car as any).sellerName}&background=random`} alt={(car as any).sellerName} className="w-full h-full object-cover" />
               </div>
               <div>
                 <p className="font-bold text-lg">{(car as any).sellerName}</p>

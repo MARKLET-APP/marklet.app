@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { imgUrl } from "@/lib/runtimeConfig";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -85,7 +86,7 @@ export function ListingDetailDialog({
             </div>
           ) : images.length > 0 ? (
             <div className="relative aspect-[4/3] overflow-hidden">
-              <img src={images[imgIdx]} alt={title} className="w-full h-full object-cover" />
+              <img src={imgUrl(images[imgIdx])} alt={title} className="w-full h-full object-cover" />
               {images.length > 1 && (
                 <>
                   <button

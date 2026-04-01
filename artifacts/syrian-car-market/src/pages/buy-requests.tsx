@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { imgUrl } from "@/lib/runtimeConfig";
 import { useLocation } from "wouter";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { Button } from "@/components/ui/button";
@@ -372,7 +373,7 @@ export default function BuyRequests() {
               return (
                 <div key={item.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   {img ? (
-                    <img src={img} alt={title} className="w-full h-40 object-cover border-b" />
+                    <img src={imgUrl(img)} alt={title} className="w-full h-40 object-cover border-b" />
                   ) : (
                     <div className="w-full h-40 bg-muted flex items-center justify-center border-b">
                       <Car className="w-12 h-12 text-muted-foreground/30" />

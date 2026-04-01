@@ -3,6 +3,7 @@ import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, 
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { ShareSheet } from "@/components/ShareSheet";
+import { imgUrl } from "@/lib/runtimeConfig";
 
 export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate" | "real-estate" | "jobs";
 
@@ -110,7 +111,7 @@ export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoa
         ) : currentImg ? (
           <div className="relative aspect-[4/3] overflow-hidden">
             <img
-              src={currentImg}
+              src={imgUrl(currentImg)}
               alt={title}
               className="w-full h-full object-cover"
             />

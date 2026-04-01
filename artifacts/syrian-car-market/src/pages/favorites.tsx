@@ -1,6 +1,7 @@
 // UI_ID: FAVORITES_01
 // NAME: المفضلة
 import { useAuthStore } from "@/lib/auth";
+import { imgUrl } from "@/lib/runtimeConfig";
 import { Loader2, Bookmark, MapPin, Trash2, Car, Bike, Wrench, Package, Hash } from "lucide-react";
 import { Link, Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -143,7 +144,7 @@ export default function Favorites() {
                 <Link href={link}>
                   <div className="relative aspect-[4/3] bg-muted overflow-hidden">
                     {img ? (
-                      <img src={img} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={imgUrl(img)} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
                         {TYPE_ICONS[item.listingType]}

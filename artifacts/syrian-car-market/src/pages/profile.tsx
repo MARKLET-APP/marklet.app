@@ -2,7 +2,7 @@
 // NAME: الملف الشخصي
 import { useState, useRef } from "react";
 import { useAuthStore } from "@/lib/auth";
-import { API_BASE, withApi } from "@/lib/runtimeConfig";
+import { API_BASE, withApi, imgUrl } from "@/lib/runtimeConfig";
 import {
   useGetUser,
   useListCars,
@@ -163,7 +163,7 @@ export default function Profile() {
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   ) : (
                     <img
-                      src={photoUrl}
+                      src={imgUrl(photoUrl)}
                       alt={cp.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
-import { API_BASE, SOCKET_URL } from "@/lib/runtimeConfig";
+import { API_BASE, SOCKET_URL, imgUrl } from "@/lib/runtimeConfig";
 
 const API = `${API_BASE}/api`;
 
@@ -791,15 +791,15 @@ export default function Messages() {
                                   >
                                     {msg.messageType === "image" && msg.imageUrl && !msg.isDeleted ? (
                                       <img
-                                        src={msg.imageUrl}
+                                        src={imgUrl(msg.imageUrl)}
                                         alt="صورة"
                                         className="rounded-xl max-w-52 max-h-52 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                        onClick={() => window.open(msg.imageUrl!, "_blank")}
+                                        onClick={() => window.open(imgUrl(msg.imageUrl)!, "_blank")}
                                       />
                                     ) : msg.messageType === "audio" && msg.imageUrl && !msg.isDeleted ? (
                                       <div className="flex items-center gap-2 min-w-[160px]">
                                         <Play className="w-4 h-4 shrink-0 opacity-70" />
-                                        <audio controls src={msg.imageUrl} className="h-8 max-w-[190px]" style={{ minWidth: 140 }} />
+                                        <audio controls src={imgUrl(msg.imageUrl)} className="h-8 max-w-[190px]" style={{ minWidth: 140 }} />
                                       </div>
                                     ) : (
                                       <p className="leading-relaxed whitespace-pre-wrap">

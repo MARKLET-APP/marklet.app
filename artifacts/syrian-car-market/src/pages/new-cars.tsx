@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { imgUrl } from "@/lib/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -137,7 +138,7 @@ export default function NewCarsPage() {
               {cars.map(c => (
                 <div key={c.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/cars/${c.id}`)}>
                   {c.images?.[0] ? (
-                    <img src={c.images[0]} alt={`${c.brand} ${c.model}`} className="w-full h-44 object-cover" />
+                    <img src={imgUrl(c.images[0])} alt={`${c.brand} ${c.model}`} className="w-full h-44 object-cover" />
                   ) : (
                     <div className="w-full h-44 bg-muted flex items-center justify-center"><Car className="w-12 h-12 text-muted-foreground/30" /></div>
                   )}

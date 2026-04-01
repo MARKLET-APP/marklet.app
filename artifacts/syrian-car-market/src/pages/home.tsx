@@ -3,7 +3,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useScrollFix } from "@/hooks/useScrollFix";
-import { withApi } from "@/lib/runtimeConfig";
+import { withApi, imgUrl } from "@/lib/runtimeConfig";
 import { getRealEstate, getJobs } from "@/lib/api";
 import {
   Search, ChevronLeft, ShieldCheck, Zap, Sparkles, PlusCircle, ShoppingCart,
@@ -875,7 +875,7 @@ export default function Home() {
             {(missingCars as any[]).filter((c: any) => c.isFound !== "yes").slice(0, 4).map((c: any) => (
               <div key={c.id} className="bg-card border-2 border-amber-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 {c.image ? (
-                  <img src={c.image} alt={c.brand ?? (isRTL ? "سيارة" : "Car")} className="w-full h-36 object-cover" />
+                  <img src={imgUrl(c.image)} alt={c.brand ?? (isRTL ? "سيارة" : "Car")} className="w-full h-36 object-cover" />
                 ) : (
                   <div className="w-full h-36 bg-amber-50 flex items-center justify-center">
                     <AlertTriangle className="w-12 h-12 text-amber-300" />
