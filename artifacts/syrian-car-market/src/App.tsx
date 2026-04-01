@@ -8,6 +8,8 @@ import { LanguageProvider } from "@/lib/i18n";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useFcmPush } from "@/hooks/useFcmPush";
+import { IS_NATIVE } from "@/lib/runtimeConfig";
+import { App as CapApp } from "@capacitor/app";
 
 const Home = lazy(() => import("@/pages/home"));
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -96,6 +98,23 @@ function GlobalHooks() {
     };
     navigator.serviceWorker?.addEventListener("message", handleSwMessage);
     return () => navigator.serviceWorker?.removeEventListener("message", handleSwMessage);
+  }, [navigate]);
+
+  // Android hardware back button — navigate back in history, exit only on root "/"
+  useEffect(() => {
+    if (!IS_NATIVE) return;
+    let listener: { remove: () => void } | null = null;
+    CapApp.addListener("backButton", ({ canGoBack }) => {
+      const onHome = window.location.pathname === "/" || window.location.pathname === "";
+      if (canGoBack && !onHome) {
+        window.history.back();
+      } else if (onHome) {
+        CapApp.exitApp();
+      } else {
+        navigate("/");
+      }
+    }).then((l) => { listener = l; });
+    return () => { listener?.remove(); };
   }, [navigate]);
 
   usePushNotifications();

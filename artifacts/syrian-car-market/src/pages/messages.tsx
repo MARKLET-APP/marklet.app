@@ -209,8 +209,12 @@ export default function Messages() {
 
     socket.on("new_message", ({ message }: { convId: number; message: MessageItem }) => {
       setMessages((prev) => {
-        if (prev.find((m) => m.id === message.id)) return prev;
-        return [...prev, { ...message, reactions: message.reactions ?? {} }];
+        // Remove optimistic placeholder (negative id, same sender + content)
+        const withoutTemp = prev.filter(
+          (m) => !(m.id < 0 && m.senderId === message.senderId && m.content === message.content)
+        );
+        if (withoutTemp.find((m) => m.id === message.id)) return withoutTemp;
+        return [...withoutTemp, { ...message, reactions: message.reactions ?? {} }];
       });
       setConversations((prev) => prev.map((c) =>
         c.id === message.conversationId
@@ -269,6 +273,25 @@ export default function Messages() {
     setSending(true);
     setShowEmojiPicker(false);
 
+    // Clear input immediately for snappy UX
+    setNewMessage("");
+    if (chatInputRef.current) chatInputRef.current.value = "";
+    socketRef.current?.emit("typing_stop", { convId: activeChatId });
+
+    // Optimistic message — appears instantly before server confirms
+    const tempId = Date.now() * -1;
+    if (messageText && user) {
+      const optimistic: MessageItem = {
+        id: tempId, conversationId: activeChatId, senderId: user.id,
+        content: messageText, messageType: "text", status: "sent",
+        imageUrl: null, isRead: false, isDeleted: false,
+        reactions: {}, editedAt: null, createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        senderName: user.name ?? "", senderPhoto: user.photo ?? null,
+      };
+      setMessages((prev) => [...prev, optimistic]);
+    }
+
     try {
       if (imageFile) {
         const formData = new FormData();
@@ -291,15 +314,16 @@ export default function Messages() {
         });
         if (!r.ok) {
           const err = await r.json();
+          // Remove optimistic message on failure
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
           if (err.error === "Blocked") { toast({ title: "لا يمكن إرسال الرسالة", description: "أنت محظور من قبل هذا المستخدم أو قمت بحظره", variant: "destructive" }); return; }
           throw new Error("فشل الإرسال");
         }
-        setNewMessage("");
-        if (chatInputRef.current) chatInputRef.current.value = "";
+        // Real message will arrive via socket and replace the optimistic one
       }
-      socketRef.current?.emit("typing_stop", { convId: activeChatId });
       await fetchConversations();
     } catch (err) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       toast({ title: "خطأ", description: String(err), variant: "destructive" });
     } finally { setSending(false); }
   };
@@ -994,7 +1018,6 @@ export default function Messages() {
                       data-testid="INPUT_CHAT_MESSAGE_01"
                       value={newMessage}
                       onChange={(e) => { setNewMessage(e.target.value); handleTyping(); if (showEmojiPicker) setShowEmojiPicker(false); }}
-                      onInput={(e) => { const v = (e.target as HTMLInputElement).value; if (v !== newMessage) { setNewMessage(v); handleTyping(); } }}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                       placeholder={
                         blockedByOther ? "لا يمكنك الرد (تم حظرك)" :
