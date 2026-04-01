@@ -359,8 +359,8 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           images,
         });
         localStorage.removeItem(DRAFT_KEY);
-        showToast("تم إرسال إعلان العقار للمراجعة", { description: "سيظهر بعد موافقة الإدارة" });
-        navigate("/real-estate");
+        showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة" });
+        setTimeout(() => navigate("/"), 1200);
       } catch (err: any) {
         showToast(err.message ?? "حدث خطأ", { variant: "destructive" });
       } finally {
@@ -392,8 +392,8 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           requirements: fields.jobRequirements,
         });
         localStorage.removeItem(DRAFT_KEY);
-        showToast("تم إرسال إعلان الوظيفة للمراجعة", { description: "سيظهر بعد موافقة الإدارة" });
-        navigate("/jobs");
+        showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة" });
+        setTimeout(() => navigate("/"), 1200);
       } catch (err: any) {
         showToast(err.message ?? "حدث خطأ", { variant: "destructive" });
       } finally {
@@ -453,10 +453,10 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     }
 
     createMutation.mutate({ data } as any, {
-      onSuccess: (res) => {
+      onSuccess: () => {
         localStorage.removeItem(DRAFT_KEY);
-        showToast("تم إرسال الإعلان للمراجعة", { description: "سيظهر بعد موافقة الإدارة" });
-        navigate(`/cars/${(res as any).id}`);
+        showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة" });
+        setTimeout(() => navigate("/"), 1200);
       },
       onError: (err: any) => showToast(err.message ?? "حدث خطأ", { variant: "destructive" }),
     });
