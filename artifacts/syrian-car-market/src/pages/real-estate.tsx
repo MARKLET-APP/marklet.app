@@ -646,28 +646,37 @@ function RealEstatePage() {
 }
 
 function RealEstateCard({ item, onOpen }: { item: RealEstate; onOpen: () => void }) {
-  const img = item.images?.[0];
+  const [imgErr, setImgErr] = useState(false);
+  const img = item.images?.find(
+    (u) => typeof u === "string" && u.trim().length > 0 && !u.startsWith("blob:")
+  ) ?? null;
+  const formattedPrice = item.price ? `$${Number(item.price).toLocaleString("en-US")}` : "";
   return (
     <div
-      className={cn("bg-card border border-border/60 rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 transition-colors", item.isFeatured && "border-yellow-500/50")}
+      className={cn("bg-card border border-border/60 rounded-2xl overflow-hidden cursor-pointer hover:border-primary/50 hover:shadow-md transition-all", item.isFeatured && "border-yellow-500/50")}
       onClick={onOpen}
     >
       <div className="relative">
-        {img ? (
-          <img src={img} alt={item.title} className="w-full h-44 object-cover" />
+        {img && !imgErr ? (
+          <img
+            src={img}
+            alt={item.title}
+            className="w-full h-44 object-cover"
+            onError={() => setImgErr(true)}
+          />
         ) : (
           <div className="w-full h-44 bg-muted flex items-center justify-center">
             <Building2 className="w-12 h-12 opacity-30" />
           </div>
         )}
         {item.isFeatured && (
-          <Badge className="absolute top-2 right-2 bg-yellow-500 text-black text-xs">مميز ⭐</Badge>
+          <Badge className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold shadow">مميز ⭐</Badge>
         )}
         <Badge className="absolute top-2 left-2 text-xs" variant="secondary">{item.listingType}</Badge>
       </div>
       <div className="p-3">
-        <p className="font-semibold text-sm line-clamp-1 mb-1">{item.title}</p>
-        <p className="text-primary font-bold mb-2">{item.price}</p>
+        <p className="font-semibold text-sm line-clamp-2 mb-1">{item.title}</p>
+        {formattedPrice && <p className="text-primary font-bold text-base mb-2">{formattedPrice}</p>}
         <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{item.province}</span>
           {item.area && <span className="flex items-center gap-1"><Ruler className="w-3 h-3" />{item.area} م²</span>}

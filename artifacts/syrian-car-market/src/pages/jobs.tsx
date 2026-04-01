@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NativeSelect } from "@/components/ui/native-select";
+import { BottomSheetSelect } from "@/components/ui/bottom-sheet-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -419,14 +420,18 @@ function JobsPage() {
 
       {/* Add Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader><DialogTitle className="text-right">نشر إعلان وظيفي</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-lg p-0 overflow-hidden" dir="rtl"
+          style={{ maxHeight: "85dvh", display: "flex", flexDirection: "column" }}>
+          <div className="px-6 pt-6 pb-2 shrink-0 border-b">
+            <DialogHeader><DialogTitle className="text-right">نشر إعلان وظيفي</DialogTitle></DialogHeader>
+          </div>
+          <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1"
+            style={{ WebkitOverflowScrolling: "touch" }}>
             <div>
               <Label>نوع الإعلان *</Label>
-              <NativeSelect value={form.subCategory} onValueChange={v => f("subCategory", v)}>
+              <BottomSheetSelect value={form.subCategory} onValueChange={v => f("subCategory", v)} placeholder="نوع الإعلان">
                 {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
-              </NativeSelect>
+              </BottomSheetSelect>
             </div>
             <div>
               <Label>المسمى الوظيفي *</Label>
@@ -445,22 +450,22 @@ function JobsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>نوع الدوام</Label>
-                <NativeSelect value={form.jobType} onValueChange={v => f("jobType", v)}>
+                <BottomSheetSelect value={form.jobType} onValueChange={v => f("jobType", v)} placeholder="نوع الدوام">
                   {JOB_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
               <div>
                 <Label>مستوى الخبرة</Label>
-                <NativeSelect value={form.experience} onValueChange={v => f("experience", v)}>
+                <BottomSheetSelect value={form.experience} onValueChange={v => f("experience", v)} placeholder="الخبرة">
                   {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
             </div>
             <div>
               <Label>مجال العمل</Label>
-              <NativeSelect value={form.field} onValueChange={v => f("field", v)}>
+              <BottomSheetSelect value={form.field} onValueChange={v => f("field", v)} placeholder="المجال">
                 {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
-              </NativeSelect>
+              </BottomSheetSelect>
             </div>
             <div>
               <Label>الراتب</Label>
@@ -469,26 +474,26 @@ function JobsPage() {
                   <Input type="number" placeholder="المبلغ" value={form.salary} onChange={e => f("salary", e.target.value)} style={{ fontSize: 16 }} />
                 </div>
                 <div>
-                  <NativeSelect value={form.salaryUnit} onValueChange={v => f("salaryUnit", v)}>
+                  <BottomSheetSelect value={form.salaryUnit} onValueChange={v => f("salaryUnit", v)} placeholder="الوحدة">
                     <option value="شهري">شهري</option>
                     <option value="يومي">يومي</option>
                     <option value="بالمشروع">بالمشروع</option>
-                  </NativeSelect>
+                  </BottomSheetSelect>
                 </div>
                 <div>
-                  <NativeSelect value={form.salaryCurrency} onValueChange={v => f("salaryCurrency", v)}>
+                  <BottomSheetSelect value={form.salaryCurrency} onValueChange={v => f("salaryCurrency", v)} placeholder="العملة">
                     <option value="USD">USD $</option>
                     <option value="SYP">SYP ل.س</option>
-                  </NativeSelect>
+                  </BottomSheetSelect>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المحافظة *</Label>
-                <NativeSelect value={form.province} onValueChange={v => f("province", v)} placeholder="اختر">
+                <BottomSheetSelect value={form.province} onValueChange={v => f("province", v)} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
               <div>
                 <Label>المدينة *</Label>
@@ -535,11 +540,15 @@ function JobsPage() {
 
       {/* ── Apply Request Dialog ── */}
       <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">طلب توظيف</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-lg p-0 overflow-hidden" dir="rtl"
+          style={{ maxHeight: "85dvh", display: "flex", flexDirection: "column" }}>
+          <div className="px-6 pt-6 pb-2 shrink-0 border-b">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">طلب توظيف</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1"
+            style={{ WebkitOverflowScrolling: "touch" }}>
             <div>
               <Label>المسمى الوظيفي المطلوب</Label>
               <Input placeholder="مثال: مطور ويب، معلم، محاسب..." style={{ fontSize: 16 }}
@@ -550,23 +559,23 @@ function JobsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المجال *</Label>
-                <NativeSelect value={applyForm.field} onValueChange={v => setApplyForm(p => ({ ...p, field: v }))}>
+                <BottomSheetSelect value={applyForm.field} onValueChange={v => setApplyForm(p => ({ ...p, field: v }))} placeholder="المجال">
                   {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
               <div>
                 <Label>الخبرة *</Label>
-                <NativeSelect value={applyForm.experience} onValueChange={v => setApplyForm(p => ({ ...p, experience: v }))}>
+                <BottomSheetSelect value={applyForm.experience} onValueChange={v => setApplyForm(p => ({ ...p, experience: v }))} placeholder="الخبرة">
                   {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>المحافظة *</Label>
-                <NativeSelect value={applyForm.province} onValueChange={v => setApplyForm(p => ({ ...p, province: v }))} placeholder="اختر المحافظة">
+                <BottomSheetSelect value={applyForm.province} onValueChange={v => setApplyForm(p => ({ ...p, province: v }))} placeholder="اختر المحافظة">
                   {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
-                </NativeSelect>
+                </BottomSheetSelect>
               </div>
               <div>
                 <Label>المدينة *</Label>
