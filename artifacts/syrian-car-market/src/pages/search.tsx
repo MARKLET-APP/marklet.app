@@ -338,6 +338,7 @@ export default function SearchPage() {
 
   const clearAll = () => {
     setSearchText("");
+    if (searchInputRef.current) searchInputRef.current.value = "";
     setListingType("all");
     setFilters({ brand: "", minYear: "", maxYear: "", minPrice: "", maxPrice: "", province: "", saleType: "", category: "", condition: "" });
   };
@@ -397,12 +398,13 @@ export default function SearchPage() {
             <input
               ref={searchInputRef}
               type="text"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              defaultValue={searchText}
+              onInput={(e) => setSearchText((e.target as HTMLInputElement).value)}
               onFocus={() => setShowHistory(true)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && searchText.trim().length >= 2) {
-                  addSearch(searchText);
+                const val = (e.currentTarget as HTMLInputElement).value;
+                if (e.key === "Enter" && val.trim().length >= 2) {
+                  addSearch(val);
                   setShowHistory(false);
                 }
                 if (e.key === "Escape") setShowHistory(false);
@@ -412,7 +414,7 @@ export default function SearchPage() {
               autoComplete="off"
             />
             {searchText && (
-              <button onClick={() => { setSearchText(""); searchInputRef.current?.focus(); }} className="absolute start-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <button onClick={() => { setSearchText(""); if (searchInputRef.current) { searchInputRef.current.value = ""; searchInputRef.current.focus(); } }} className="absolute start-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                 <X className="w-4 h-4" />
               </button>
             )}

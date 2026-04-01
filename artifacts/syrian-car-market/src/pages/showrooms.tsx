@@ -1,6 +1,6 @@
 // UI_ID: SHOWROOMS_01
 // NAME: المعارض
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
@@ -161,6 +161,7 @@ function ShowroomCard({ showroom }: { showroom: any }) {
 
 export default function ShowroomsPage() {
   const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const [cityFilter, setCityFilter] = useState("");
 
   const { data: showrooms = [], isLoading } = useQuery<any[]>({
@@ -203,10 +204,12 @@ export default function ShowroomsPage() {
           <div className="relative flex-1">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+              ref={searchRef}
+              defaultValue={search}
+              onInput={e => setSearch((e.target as HTMLInputElement).value)}
               placeholder="ابحث عن معرض..."
               className="w-full border rounded-xl pr-9 pl-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+              style={{ fontSize: 16 }}
             />
           </div>
           <select

@@ -1,6 +1,6 @@
 // UI_ID: CAR_PARTS_01
 // NAME: قطع السيارات
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -44,6 +44,7 @@ export default function CarPartsPage() {
 
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
   const [sellOpen, setSellOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
@@ -193,9 +194,9 @@ export default function CarPartsPage() {
       {tab === "sell" && (
         <>
           <form onSubmit={e => { e.preventDefault(); setQ(search); }} className="flex gap-2">
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث باسم القطعة، النوع، الموديل..." className="rounded-xl" />
+            <Input ref={searchRef} defaultValue={search} onInput={e => setSearch((e.target as HTMLInputElement).value)} onKeyDown={e => { if (e.key === "Enter") setQ((e.currentTarget as HTMLInputElement).value); }} placeholder="ابحث باسم القطعة، النوع، الموديل..." className="rounded-xl" />
             <Button type="submit" size="icon" className="rounded-xl shrink-0"><Search className="w-4 h-4" /></Button>
-            {q && <Button type="button" variant="ghost" onClick={() => { setQ(""); setSearch(""); }} className="rounded-xl">مسح</Button>}
+            {q && <Button type="button" variant="ghost" onClick={() => { setQ(""); setSearch(""); if (searchRef.current) searchRef.current.value = ""; }} className="rounded-xl">مسح</Button>}
           </form>
           {isLoading ? (
             <div className="flex justify-center py-24"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" /></div>

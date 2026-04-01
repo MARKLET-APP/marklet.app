@@ -114,6 +114,7 @@ export default function AddListing() {
   const draft = loadDraft();
   const [listingType, setListingType] = useState<ListingType>(draft?.listingType ?? "car_sale");
   const [fields, setFields] = useState(draft?.fields ?? { ...DEFAULT_FIELDS });
+  const [resetKey, setResetKey] = useState(0);
 
   // ── Stable ref mirrors ──────────────────────────────────────────────────
   // fieldsRef always holds the LATEST fields synchronously — used inside
@@ -139,8 +140,7 @@ export default function AddListing() {
     } catch {}
   }, []);
 
-  // Called on every keystroke — updates ref + localStorage always,
-  // but skips React setState if IME is actively composing (Arabic mode).
+  // For SELECT elements only — must stay controlled for instant re-render.
   const handleField = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const name = e.target.name;
     const value = e.target.value;
@@ -148,10 +148,20 @@ export default function AddListing() {
     fieldsRef.current = next;
     saveDraft(next, listingTypeRef.current);
     if (name === "price") setPriceEval(null);
-    // Skip re-render while IME is composing Arabic — prevents composition break
-    if (!composingRef.current) {
-      setFields(next);
-    }
+    setFields(next);
+  };
+
+  // For TEXT inputs / textareas — update ref + localStorage only.
+  // No React setState → no re-render → Android IME composition never broken.
+  // React state is synced via onBlur (handleBlur) when the field loses focus.
+  const handleFieldRaw = (e: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const target = e.currentTarget;
+    const name = target.name;
+    const value = target.value;
+    const next = { ...fieldsRef.current, [name]: value };
+    fieldsRef.current = next;
+    saveDraft(next, listingTypeRef.current);
+    if (name === "price") setPriceEval(null);
   };
 
   // IME composition handlers — attach to every text input
@@ -333,6 +343,8 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Always read from ref — covers uncontrolled inputs the user never blurred
+    const fields = fieldsRef.current;
 
     // ── Real Estate submission ──────────────────────────────────────────
     if (listingType === "real_estate") {
@@ -574,6 +586,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     setListingType("car_sale");
     setImages([]);
     setPriceEval(null);
+    setResetKey(k => k + 1); // Remount all uncontrolled inputs with fresh defaultValues
   };
 
   return (
@@ -592,7 +605,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8" autoComplete="off" data-form-type="other">
+      <form key={resetKey} onSubmit={handleSubmit} className="space-y-8" autoComplete="off" data-form-type="other">
 
         {/* ── Step 0: Listing Type ── */}
         <div className="bg-card p-6 rounded-3xl border shadow-sm">
@@ -692,19 +705,19 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">الشركة (Brand)</label>
-                <input name="brand" value={fields.brand} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: تويوتا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
+                <input name="brand" defaultValue={fields.brand} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: تويوتا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">الموديل (Model)</label>
-                <input name="model" value={fields.model} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: كورولا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
+                <input name="model" defaultValue={fields.model} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: كورولا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">سنة الصنع</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="year" value={fields.year} onChange={handleField} className={inputCls} placeholder="مثال: 2015" required autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="year" defaultValue={fields.year} onInput={handleFieldRaw} className={inputCls} placeholder="مثال: 2015" required autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">عدد الكيلومترات</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="mileage" value={fields.mileage} onChange={handleField} className={inputCls} placeholder="0" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="mileage" defaultValue={fields.mileage} onInput={handleFieldRaw} className={inputCls} placeholder="0" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">ناقل الحركة</label>
@@ -730,15 +743,15 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">الشركة</label>
-                <input name="brand" value={fields.brand} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: هوندا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
+                <input name="brand" defaultValue={fields.brand} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: هوندا" required autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">سعة المحرك (CC)</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="engineCC" value={fields.engineCC} onChange={handleField} className={inputCls} placeholder="مثال: 125" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="engineCC" defaultValue={fields.engineCC} onInput={handleFieldRaw} className={inputCls} placeholder="مثال: 125" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">سنة الصنع</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="year" value={fields.year} onChange={handleField} className={inputCls} placeholder="مثال: 2015" required autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="year" defaultValue={fields.year} onInput={handleFieldRaw} className={inputCls} placeholder="مثال: 2015" required autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع الدراجة</label>
@@ -758,23 +771,23 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع السيارة</label>
-                <input name="brand" value={fields.brand} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: تويوتا كامري" required autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="brand" defaultValue={fields.brand} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: تويوتا كامري" required autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">الموديل</label>
-                <input name="model" value={fields.model} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: 2022" autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="model" defaultValue={fields.model} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: 2022" autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">السعر اليومي (USD)</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="dailyPrice" value={fields.dailyPrice} onChange={handleField} className={inputCls} placeholder="مثال: 30" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="dailyPrice" defaultValue={fields.dailyPrice} onInput={handleFieldRaw} className={inputCls} placeholder="مثال: 30" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">السعر الأسبوعي (USD)</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="weeklyPrice" value={fields.weeklyPrice} onChange={handleField} className={inputCls} placeholder="مثال: 180" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="weeklyPrice" defaultValue={fields.weeklyPrice} onInput={handleFieldRaw} className={inputCls} placeholder="مثال: 180" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">المدينة</label>
-                <input name="city" value={fields.city} onChange={handleField} {...imeProps} className={inputCls} placeholder="دمشق" required />
+                <input name="city" defaultValue={fields.city} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="دمشق" required />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">مدة الإيجار</label>
@@ -793,19 +806,19 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع القطعة</label>
-                <input name="partType" value={fields.partType} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: محرك، ناقل حركة، صدام..." required autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="partType" defaultValue={fields.partType} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: محرك، ناقل حركة، صدام..." required autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع السيارة</label>
-                <input name="brand" value={fields.brand} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: تويوتا" autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="brand" defaultValue={fields.brand} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: تويوتا" autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">موديل السيارة</label>
-                <input name="partCarModel" value={fields.partCarModel} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: كامري" autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="partCarModel" defaultValue={fields.partCarModel} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: كامري" autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">سنة السيارة</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="partCarYear" value={fields.partCarYear} onChange={handleField} className={inputCls} placeholder="مثال: 2015" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="partCarYear" defaultValue={fields.partCarYear} onInput={handleFieldRaw} className={inputCls} placeholder="مثال: 2015" autoComplete="off" />
               </div>
             </div>
           )}
@@ -815,7 +828,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-bold">عنوان الإعلان</label>
-                <input name="reTitle" value={fields.reTitle} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: شقة فاخرة للبيع في مزة فيلات" required autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="reTitle" defaultValue={fields.reTitle} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: شقة فاخرة للبيع في مزة فيلات" required autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع الإعلان</label>
@@ -839,11 +852,11 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">السعر (USD $)</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="rePrice" value={fields.rePrice} onChange={handleField} className={inputCls} placeholder="0" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="rePrice" defaultValue={fields.rePrice} onInput={handleFieldRaw} className={inputCls} placeholder="0" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">المساحة (م²)</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="reArea" value={fields.reArea} onChange={handleField} className={inputCls} placeholder="120" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="reArea" defaultValue={fields.reArea} onInput={handleFieldRaw} className={inputCls} placeholder="120" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">عدد الغرف</label>
@@ -864,7 +877,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">الطابق</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="reFloor" value={fields.reFloor} onChange={handleField} className={inputCls} placeholder="مثال: 3" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="reFloor" defaultValue={fields.reFloor} onInput={handleFieldRaw} className={inputCls} placeholder="مثال: 3" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">المحافظة</label>
@@ -874,15 +887,15 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">المنطقة / الحي</label>
-                <input name="reCity" value={fields.reCity} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: مزة فيلات، أبو رمانة..." autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="reCity" defaultValue={fields.reCity} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: مزة فيلات، أبو رمانة..." autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-bold">موقع العقار (رابط خريطة اختياري)</label>
-                <input name="reLocation" value={fields.reLocation} onChange={handleField} {...imeProps} className={inputCls} placeholder="https://maps.google.com/..." autoComplete="off" />
+                <input name="reLocation" defaultValue={fields.reLocation} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="https://maps.google.com/..." autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">رقم الهاتف / واتساب</label>
-                <input type="tel" name="rePhone" value={fields.rePhone} onChange={handleField} className={inputCls} placeholder="09XXXXXXXX" dir="ltr" autoComplete="off" />
+                <input type="tel" name="rePhone" defaultValue={fields.rePhone} onInput={handleFieldRaw} className={inputCls} placeholder="09XXXXXXXX" dir="ltr" autoComplete="off" />
               </div>
             </div>
           )}
@@ -892,7 +905,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-bold">المسمى الوظيفي</label>
-                <input name="jobTitle" value={fields.jobTitle} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: مطلوب مهندس برمجيات" required autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="jobTitle" defaultValue={fields.jobTitle} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: مطلوب مهندس برمجيات" required autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">نوع الإعلان</label>
@@ -942,11 +955,11 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">الراتب (USD $) - اختياري</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" name="jobSalary" value={fields.jobSalary} onChange={handleField} className={inputCls} placeholder="مثال: 500" autoComplete="off" />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" name="jobSalary" defaultValue={fields.jobSalary} onInput={handleFieldRaw} className={inputCls} placeholder="مثال: 500" autoComplete="off" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">اسم الشركة / صاحب العمل</label>
-                <input name="jobCompany" value={fields.jobCompany} onChange={handleField} {...imeProps} className={inputCls} placeholder="اختياري" autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="jobCompany" defaultValue={fields.jobCompany} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="اختياري" autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">المحافظة</label>
@@ -956,15 +969,15 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">المدينة / المنطقة</label>
-                <input name="jobCity" value={fields.jobCity} onChange={handleField} {...imeProps} className={inputCls} placeholder="مثال: دمشق، المزة..." autoComplete="off" autoCorrect="off" spellCheck={false} />
+                <input name="jobCity" defaultValue={fields.jobCity} onInput={handleFieldRaw} {...imeProps} className={inputCls} placeholder="مثال: دمشق، المزة..." autoComplete="off" autoCorrect="off" spellCheck={false} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">رقم الهاتف / واتساب</label>
-                <input type="tel" name="jobPhone" value={fields.jobPhone} onChange={handleField} className={inputCls} placeholder="09XXXXXXXX" dir="ltr" autoComplete="off" />
+                <input type="tel" name="jobPhone" defaultValue={fields.jobPhone} onInput={handleFieldRaw} className={inputCls} placeholder="09XXXXXXXX" dir="ltr" autoComplete="off" />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-bold">المتطلبات والمؤهلات</label>
-                <textarea name="jobRequirements" value={fields.jobRequirements} onChange={handleField} onCompositionStart={handleCompositionStart} onCompositionEnd={handleCompositionEnd} onBlur={handleBlur} rows={3} className="w-full rounded-xl border-2 border-border px-4 py-3 bg-background focus:border-primary transition-all outline-none resize-none leading-relaxed text-sm" placeholder="مثال: بكالوريوس هندسة، خبرة في React..." />
+                <textarea name="jobRequirements" defaultValue={fields.jobRequirements} onInput={handleFieldRaw} onCompositionStart={handleCompositionStart} onCompositionEnd={handleCompositionEnd} onBlur={handleBlur} rows={3} className="w-full rounded-xl border-2 border-border px-4 py-3 bg-background focus:border-primary transition-all outline-none resize-none leading-relaxed text-sm" placeholder="مثال: بكالوريوس هندسة، خبرة في React..." />
               </div>
             </div>
           )}
@@ -981,7 +994,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold">المدينة/المنطقة</label>
-                  <input name="city" value={fields.city} onChange={handleField} {...imeProps} className={inputCls} />
+                  <input name="city" defaultValue={fields.city} onInput={handleFieldRaw} {...imeProps} className={inputCls} />
                 </div>
               </>
             )}
@@ -1016,10 +1029,8 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             </h3>
             <textarea
               name="description"
-              value={fields.description}
-              onChange={handleField}
-              onCompositionStart={handleCompositionStart}
-              onCompositionEnd={handleCompositionEnd}
+              defaultValue={fields.description}
+              onInput={handleFieldRaw}
               onBlur={handleBlur}
               rows={6}
               className="w-full rounded-xl border-2 border-border px-4 py-3 bg-background focus:border-primary transition-all outline-none resize-none leading-relaxed text-sm"
@@ -1052,8 +1063,9 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                     inputMode="numeric"
                     pattern="[0-9]*"
                     name="price"
-                    value={fields.price}
-                    onChange={handleField}
+                    defaultValue={fields.price}
+                    onInput={handleFieldRaw}
+                    onBlur={handleBlur}
                     placeholder="مثال: 8500"
                     required
                     autoComplete="off"
@@ -1113,10 +1125,8 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
               </div>
               <textarea
                 name="description"
-                value={fields.description}
-                onChange={handleField}
-                onCompositionStart={handleCompositionStart}
-                onCompositionEnd={handleCompositionEnd}
+                defaultValue={fields.description}
+                onInput={handleFieldRaw}
                 onBlur={handleBlur}
                 rows={6}
                 className="w-full rounded-xl border-2 border-white/20 px-4 py-3 bg-white text-gray-900 focus:border-accent transition-all outline-none resize-none leading-relaxed placeholder:text-gray-400"

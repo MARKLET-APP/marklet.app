@@ -159,6 +159,7 @@ export default function Messages() {
     const msg = pendingInitialMsgRef.current;
     pendingInitialMsgRef.current = null;
     setNewMessage("");
+    if (chatInputRef.current) chatInputRef.current.value = "";
     const timer = setTimeout(async () => {
       try {
         await fetch(`${API}/chats/${activeChatId}/messages`, {
@@ -1000,6 +1001,7 @@ export default function Messages() {
                       previewPosition="none"
                       skinTonePosition="none"
                       onEmojiSelect={(e: { native: string }) => {
+                        if (chatInputRef.current) chatInputRef.current.value += e.native;
                         setNewMessage((prev) => prev + e.native);
                       }}
                     />
@@ -1039,8 +1041,7 @@ export default function Messages() {
                       ref={chatInputRef}
                       data-ui-id="INPUT_CHAT_MESSAGE_01"
                       data-testid="INPUT_CHAT_MESSAGE_01"
-                      value={newMessage}
-                      onChange={(e) => { setNewMessage(e.target.value); handleTyping(); if (showEmojiPicker) setShowEmojiPicker(false); }}
+                      onInput={(e) => { setNewMessage((e.target as HTMLInputElement).value); handleTyping(); if (showEmojiPicker) setShowEmojiPicker(false); }}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                       placeholder={
                         blockedByOther ? "لا يمكنك الرد (تم حظرك)" :

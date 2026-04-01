@@ -1,6 +1,6 @@
 // UI_ID: SCRAP_CENTERS_01
 // NAME: مراكز الخردة
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { withApi } from "@/lib/runtimeConfig";
@@ -158,6 +158,7 @@ function CenterCard({ center }: { center: any }) {
 
 export default function ScrapCentersPage() {
   const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const [cityFilter, setCityFilter] = useState("");
 
   const { data: centers = [], isLoading } = useQuery<any[]>({
@@ -198,10 +199,12 @@ export default function ScrapCentersPage() {
           <div className="relative flex-1">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+              ref={searchRef}
+              defaultValue={search}
+              onInput={e => setSearch((e.target as HTMLInputElement).value)}
               placeholder="ابحث عن مركز خردة..."
               className="w-full border rounded-xl pr-9 pl-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+              style={{ fontSize: 16 }}
             />
           </div>
           <select

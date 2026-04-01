@@ -124,6 +124,7 @@ export default function RealEstatePage() {
 
   // Filter state
   const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
   const [filterType, setFilterType] = useState("__all__");
   const [filterSub, setFilterSub] = useState("__all__");
@@ -362,10 +363,11 @@ export default function RealEstatePage() {
         <div className="relative mb-2">
           <Search className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground" />
           <Input
+            ref={searchRef}
             placeholder="ابحث في العقارات..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && setQ(search)}
+            defaultValue={search}
+            onInput={e => setSearch((e.target as HTMLInputElement).value)}
+            onKeyDown={e => { if (e.key === "Enter") setQ((e.currentTarget as HTMLInputElement).value); }}
             className="pr-9"
             style={{ fontSize: 16 }}
           />
@@ -391,7 +393,7 @@ export default function RealEstatePage() {
           </div>
           {(activeType || activeSub || activeProv || q) && (
             <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
-              onClick={() => { setFilterType("__all__"); setFilterSub("__all__"); setFilterProv("__all__"); setQ(""); setSearch(""); }}>
+              onClick={() => { setFilterType("__all__"); setFilterSub("__all__"); setFilterProv("__all__"); setQ(""); setSearch(""); if (searchRef.current) searchRef.current.value = ""; }}>
               مسح
             </Button>
           )}
