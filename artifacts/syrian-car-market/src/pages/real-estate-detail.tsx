@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Bed, Bath, Ruler, Layers, ChevronRight,
   Loader2, Building2, Calendar, Eye, Heart, Share2,
-  MessageCircle, Crown, Lock,
+  MessageCircle, Crown, Lock, Star,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,50 @@ function SpecItem({ icon, label, value }: { icon: React.ReactNode; label: string
       <div className="text-primary">{icon}</div>
       <p className="text-xs text-muted-foreground font-medium">{label}</p>
       <p className="font-bold text-foreground text-sm">{value}</p>
+    </div>
+  );
+}
+
+function RatingCard({ listingId }: { listingId: number }) {
+  const [selected, setSelected] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const labels = ["", "سيئ", "مقبول", "جيد", "جيد جداً", "ممتاز"];
+  const stars = [1, 2, 3, 4, 5];
+  if (submitted) {
+    return (
+      <div className="bg-card rounded-3xl border shadow-sm p-5 mb-6 flex flex-col items-center gap-2">
+        <Star className="w-8 h-8 text-amber-400 fill-amber-400" />
+        <p className="font-bold text-base">شكراً على تقييمك!</p>
+        <p className="text-xs text-muted-foreground">تقييمك: {labels[selected]} ({selected}/5)</p>
+      </div>
+    );
+  }
+  return (
+    <div className="bg-card rounded-3xl border shadow-sm p-5 mb-6">
+      <h3 className="font-bold text-base mb-3 flex items-center gap-2">
+        <Star className="w-4 h-4 text-amber-400" /> قيّم هذا الإعلان
+      </h3>
+      <div className="flex items-center gap-2 justify-center mb-3">
+        {stars.map(n => (
+          <button key={n} onClick={() => setSelected(n)} className="transition-transform hover:scale-110">
+            <Star
+              className={cn("w-8 h-8 transition-colors", n <= selected ? "text-amber-400 fill-amber-400" : "text-muted-foreground/40")}
+            />
+          </button>
+        ))}
+      </div>
+      {selected > 0 && (
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-sm font-medium text-amber-600">{labels[selected]}</p>
+          <Button
+            size="sm"
+            className="bg-amber-500 hover:bg-amber-600 text-white px-6"
+            onClick={() => setSubmitted(true)}
+          >
+            إرسال التقييم
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -286,6 +330,9 @@ export default function RealEstateDetail() {
             <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{item.description}</p>
           </div>
         )}
+
+        {/* ── Rating placeholder ── */}
+        <RatingCard listingId={id} />
 
         {/* ── Location link ── */}
         {item.location && item.location.startsWith("http") && (
