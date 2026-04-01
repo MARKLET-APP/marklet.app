@@ -116,13 +116,14 @@ export default function JobsPage() {
       const fd = new FormData();
       fd.append("image", file);
       const token = localStorage.getItem("scm_token");
-      const res = await fetch(import.meta.env.BASE_URL + "api/upload", {
+      const res = await fetch(import.meta.env.BASE_URL + "api/upload-image?folder=jobs", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
       });
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
+      if (!data.success || !data.url) throw new Error(data.message || "Upload failed");
       setCvUrl(data.url);
       toast({ title: "تم رفع السيرة الذاتية بنجاح" });
     } catch {

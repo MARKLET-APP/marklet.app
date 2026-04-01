@@ -55,13 +55,14 @@ async function uploadImage(file: File): Promise<string> {
   const token = localStorage.getItem("scm_token");
   const fd = new FormData();
   fd.append("image", file);
-  const res = await fetch(import.meta.env.BASE_URL + "api/upload", {
+  const res = await fetch(import.meta.env.BASE_URL + "api/upload-image?folder=real-estate", {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: fd,
   });
   if (!res.ok) throw new Error("upload failed");
   const data = await res.json();
+  if (!data.success || !data.url) throw new Error(data.message || "upload failed");
   return data.url as string;
 }
 

@@ -42,4 +42,24 @@ router.post("/upload", upload.single("image"), async (req, res): Promise<void> =
   }
 });
 
+// ── General image upload — no car detection, any folder ──────────────────────
+// POST /api/upload-image?folder=real-estate|jobs|listings
+router.post("/upload-image", upload.single("image"), async (req, res): Promise<void> => {
+  if (!req.file) {
+    res.status(400).json({ success: false, message: "لم يتم رفع أي ملف" });
+    return;
+  }
+
+  const rawFolder = (req.query["folder"] as string) || "listings";
+  const folder = rawFolder.replace(/[^a-z0-9_-]/gi, "").slice(0, 32) || "listings";
+
+  try {
+    const url = await processImage(req.file, folder);
+    res.json({ success: true, url });
+  } catch (err) {
+    console.error("[Upload-Image] Error:", err);
+    res.status(500).json({ success: false, message: "فشل رفع الصورة" });
+  }
+});
+
 export default router;
