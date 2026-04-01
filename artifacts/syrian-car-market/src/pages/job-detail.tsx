@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getJobById } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { useStartChat } from "@/hooks/use-start-chat";
+import { useSaves } from "@/hooks/use-saves";
 import { ContactButtons } from "@/components/ContactButtons";
 import AppRatingPopup from "@/components/AppRatingPopup";
 import { ShareSheet } from "@/components/ShareSheet";
@@ -13,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Briefcase, ChevronRight, Loader2, Clock, Star,
   Building, DollarSign, Eye, Calendar, MessageCircle,
-  Crown, Lock, Share2, ThumbsUp,
+  Crown, Lock, Share2, ThumbsUp, Heart,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -81,6 +82,7 @@ export default function JobDetail() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const { startChat, loading: chatLoading } = useStartChat();
+  const { isSaved, toggleSave } = useSaves();
 
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -212,6 +214,20 @@ export default function JobDetail() {
                 </button>
               }
             />
+            {user && !isPoster && (
+              <button
+                onClick={() => toggleSave("job", id)}
+                className={cn(
+                  "flex items-center gap-1.5 text-sm transition-colors px-3 py-1.5 rounded-xl",
+                  isSaved("job", id)
+                    ? "text-rose-500 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                    : "text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                )}
+              >
+                <Heart className={cn("w-4 h-4", isSaved("job", id) && "fill-rose-500 text-rose-500")} />
+                {isSaved("job", id) ? "محفوظ" : "حفظ"}
+              </button>
+            )}
             {(item.viewCount ?? 0) > 0 && (
               <span className="text-xs text-muted-foreground ms-auto flex items-center gap-1">
                 <Eye className="w-3.5 h-3.5" /> {item.viewCount} مشاهدة

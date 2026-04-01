@@ -115,7 +115,7 @@ router.post("/jobs", authMiddleware, async (req: AuthRequest, res): Promise<void
       description: description || null,
       requirements: requirements || null,
       cvUrl: cvUrl || null,
-      status: "active",
+      status: "pending",
     }).returning();
 
     res.status(201).json(created);

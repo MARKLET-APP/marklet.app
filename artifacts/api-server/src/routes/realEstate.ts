@@ -125,7 +125,7 @@ router.post("/real-estate", authMiddleware, async (req: AuthRequest, res): Promi
       phone: phone || null,
       description: description || null,
       images: images || [],
-      status: "active",
+      status: "pending",
     }).returning();
 
     res.status(201).json(created);
