@@ -17,6 +17,7 @@ import { VehicleReportWidget } from "@/components/VehicleReportWidget";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CarCard } from "@/components/CarCard";
+import { ListingCard } from "@/components/ListingCard";
 import { useGetFeaturedCars, useListCars } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -506,39 +507,22 @@ export default function Home() {
                     if (item._type === "re") {
                       const r = item.data;
                       return (
-                        <Link key={item._id} href={`/real-estate/${r.id}`}>
-                          <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full">
-                            <div className="relative">
-                              {Array.isArray(r.images) && r.images[0]
-                                ? <img src={r.images[0]} alt={r.title} className="w-full h-28 object-cover" />
-                                : <div className="w-full h-28 bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center"><Building2 size={36} className="text-cyan-400" /></div>
-                              }
-                              <span className="absolute top-2 right-2 bg-cyan-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">عقار</span>
-                            </div>
-                            <div className="p-2.5">
-                              <p className="font-semibold text-xs line-clamp-1">{r.title}</p>
-                              {r.price && <p className="text-primary font-bold text-xs mt-0.5">{Number(r.price).toLocaleString()} ل.س</p>}
-                              {r.province && <p className="text-muted-foreground text-[10px] flex items-center gap-0.5 mt-0.5"><MapPin size={9} />{r.province}</p>}
-                            </div>
-                          </div>
-                        </Link>
+                        <ListingCard
+                          key={item._id}
+                          type="real-estate"
+                          data={r}
+                          onCardClick={() => navigate(`/real-estate/${r.id}`)}
+                        />
                       );
                     }
                     const j = item.data;
                     return (
-                      <Link key={item._id} href={`/jobs/${j.id}`}>
-                        <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full">
-                          <div className="w-full h-28 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-                            <Briefcase size={36} className="text-amber-500" />
-                          </div>
-                          <div className="p-2.5">
-                            <span className="inline-block bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">وظيفة</span>
-                            <p className="font-semibold text-xs line-clamp-1">{j.title}</p>
-                            {j.salary && <p className="text-primary font-bold text-xs mt-0.5">{j.salary}</p>}
-                            {j.province && <p className="text-muted-foreground text-[10px] flex items-center gap-0.5 mt-0.5"><MapPin size={9} />{j.province}</p>}
-                          </div>
-                        </div>
-                      </Link>
+                      <ListingCard
+                        key={item._id}
+                        type="jobs"
+                        data={j}
+                        onCardClick={() => navigate(`/jobs/${j.id}`)}
+                      />
                     );
                   })}
                 </div>
@@ -588,39 +572,22 @@ export default function Home() {
                   if (item._type === "re") {
                     const r = item.data;
                     return (
-                      <Link key={item._id} href={`/real-estate/${r.id}`}>
-                        <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full">
-                          <div className="relative">
-                            {Array.isArray(r.images) && r.images[0]
-                              ? <img src={r.images[0]} alt={r.title} className="w-full h-28 object-cover" />
-                              : <div className="w-full h-28 bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center"><Building2 size={36} className="text-cyan-400" /></div>
-                            }
-                            <span className="absolute top-2 right-2 bg-cyan-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">عقار</span>
-                          </div>
-                          <div className="p-2.5">
-                            <p className="font-semibold text-xs line-clamp-1">{r.title}</p>
-                            {r.price && <p className="text-primary font-bold text-xs mt-0.5">{Number(r.price).toLocaleString()} ل.س</p>}
-                            {r.province && <p className="text-muted-foreground text-[10px] flex items-center gap-0.5 mt-0.5"><MapPin size={9} />{r.province}</p>}
-                          </div>
-                        </div>
-                      </Link>
+                      <ListingCard
+                        key={item._id}
+                        type="real-estate"
+                        data={r}
+                        onCardClick={() => navigate(`/real-estate/${r.id}`)}
+                      />
                     );
                   }
                   const j = item.data;
                   return (
-                    <Link key={item._id} href={`/jobs/${j.id}`}>
-                      <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full">
-                        <div className="w-full h-28 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-                          <Briefcase size={36} className="text-amber-500" />
-                        </div>
-                        <div className="p-2.5">
-                          <span className="inline-block bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">وظيفة</span>
-                          <p className="font-semibold text-xs line-clamp-1">{j.title}</p>
-                          {j.salary && <p className="text-primary font-bold text-xs mt-0.5">{j.salary}</p>}
-                          {j.province && <p className="text-muted-foreground text-[10px] flex items-center gap-0.5 mt-0.5"><MapPin size={9} />{j.province}</p>}
-                        </div>
-                      </div>
-                    </Link>
+                    <ListingCard
+                      key={item._id}
+                      type="jobs"
+                      data={j}
+                      onCardClick={() => navigate(`/jobs/${j.id}`)}
+                    />
                   );
                 })}
               </div>
@@ -677,30 +644,12 @@ export default function Home() {
           {(latestRealEstate as any[]).length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(latestRealEstate as any[]).slice(0, 4).map((item: any) => (
-                <Link key={item.id} href={`/real-estate/${item.id}`}>
-                  <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer h-full">
-                    {Array.isArray(item.images) && item.images[0] ? (
-                      <img src={item.images[0]} alt={item.title} className="w-full h-28 object-cover" />
-                    ) : (
-                      <div className="w-full h-28 bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center">
-                        <House className="w-10 h-10 text-cyan-300" />
-                      </div>
-                    )}
-                    <div className="p-3 space-y-1.5">
-                      <p className="font-bold text-sm line-clamp-1">{item.title}</p>
-                      {item.price && (
-                        <p className="text-primary font-bold text-sm">{item.price}</p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                        {item.province && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.province}</span>}
-                        {item.area && <span><BedDouble className="w-3 h-3 inline" /> {item.area} م²</span>}
-                      </div>
-                      <Badge className={`text-xs border-0 ${item.listingType === "بيع" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}`}>
-                        {item.listingType}
-                      </Badge>
-                    </div>
-                  </div>
-                </Link>
+                <ListingCard
+                  key={item.id}
+                  type="real-estate"
+                  data={item}
+                  onCardClick={() => navigate(`/real-estate/${item.id}`)}
+                />
               ))}
             </div>
           )}
@@ -753,31 +702,14 @@ export default function Home() {
 
           {/* Latest Jobs Listings */}
           {(latestJobs as any[]).length > 0 && (
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(latestJobs as any[]).slice(0, 4).map((job: any) => (
-                <Link key={job.id} href={`/jobs/${job.id}`}>
-                  <div className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                      <Briefcase className="w-6 h-6 text-violet-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm line-clamp-1">{job.title}</p>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                        {job.company && <span>{job.company}</span>}
-                        {job.province && <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{job.province}</span>}
-                        {job.jobType && <Badge className="text-xs border-0 bg-violet-100 text-violet-800">{job.jobType}</Badge>}
-                        {job.subCategory && !["وظيفة شاغرة"].includes(job.subCategory) && (
-                          <Badge className="text-xs border-0 bg-pink-100 text-pink-800">{job.subCategory}</Badge>
-                        )}
-                      </div>
-                    </div>
-                    {job.salary && (
-                      <div className="text-left shrink-0">
-                        <p className="text-primary font-bold text-sm">{job.salary}</p>
-                      </div>
-                    )}
-                  </div>
-                </Link>
+                <ListingCard
+                  key={job.id}
+                  type="jobs"
+                  data={job}
+                  onCardClick={() => navigate(`/jobs/${job.id}`)}
+                />
               ))}
             </div>
           )}
