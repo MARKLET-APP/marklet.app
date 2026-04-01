@@ -10,12 +10,13 @@ export const API_BASE: string = import.meta.env.VITE_API_URL || "";
 // The production server URL — used to resolve relative image/media URLs in native Capacitor builds
 const NATIVE_SERVER = "https://marklet.net";
 
-// Socket.io URL: same server as API in production, undefined = relative in dev
+// Socket.io URL: use explicit server for native, else relative (undefined = same origin)
 export const SOCKET_URL: string | undefined =
-  import.meta.env.VITE_API_URL || undefined;
+  import.meta.env.VITE_API_URL || (IS_NATIVE ? NATIVE_SERVER : undefined);
 
 export function withApi(path: string): string {
   if (!path.startsWith("/")) path = `/${path}`;
+  if (IS_NATIVE && !API_BASE) return `${NATIVE_SERVER}${path}`;
   return `${API_BASE}${path}`;
 }
 

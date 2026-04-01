@@ -99,4 +99,17 @@ router.post("/upload-image", upload.single("image"), async (req, res): Promise<v
   }
 });
 
+// Multer error handler — must be 4-arg to be treated as an error middleware
+router.use((err: any, _req: any, res: any, next: any) => {
+  if (err && err.code === "LIMIT_FILE_SIZE") {
+    res.status(400).json({ success: false, message: "حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)" });
+    return;
+  }
+  if (err && err.message) {
+    res.status(400).json({ success: false, message: err.message });
+    return;
+  }
+  next(err);
+});
+
 export default router;
