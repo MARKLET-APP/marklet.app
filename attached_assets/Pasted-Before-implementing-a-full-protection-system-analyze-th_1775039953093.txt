@@ -1,0 +1,83 @@
+Before implementing a full protection system, analyze the project and return full technical details.
+
+=========================================
+PROJECT ANALYSIS REQUIRED
+=========================================
+
+1) FRONTEND
+- Framework used (React / Next.js / plain JS / other)
+- Is it web, mobile, or both?
+- State management (useState / Context / Redux / other)
+- Routing system used
+
+-----------------------------------------
+
+2) MOBILE APP
+- Is it React Native / Expo / WebView / other?
+- Does it share code with web or separate?
+
+-----------------------------------------
+
+3) BACKEND
+- Framework (Express / Node / other)
+- Database (SQLite / MongoDB / other)
+- API structure
+
+-----------------------------------------
+
+4) FORM SYSTEM (IMPORTANT)
+- Where is SCR_ADD_AD located?
+- How form state is handled
+- Show full code of form component
+- Are inputs controlled or uncontrolled?
+
+-----------------------------------------
+
+5) MODAL / DROPDOWN SYSTEM
+- How dropdowns are implemented
+- Are you using any UI library?
+- Show code for city selector
+
+-----------------------------------------
+
+6) IMAGE HANDLING
+- How images are stored (File / base64 / URL)
+- Show upload + preview code
+
+-----------------------------------------
+
+7) STYLING SYSTEM
+- CSS / Tailwind / Styled Components / other
+- Any global layout container?
+
+-----------------------------------------
+
+8) SCROLL STRUCTURE
+- What is the main container?
+- Any overflow: hidden used?
+- Show layout wrapper
+
+-----------------------------------------
+
+9) KNOWN ISSUES (CONFIRM)
+- Input reset on typing Arabic
+- Dropdown scroll broken
+- Page not scrolling
+- Images not previewing
+- Filter hidden from top
+
+-----------------------------------------
+
+OUTPUT REQUIRED
+=========================================
+
+Return:
+- File structure (important files only)
+- Key components code:
+  - SCR_ADD_AD
+  - Dropdown / modal
+  - Image upload
+- Short explanation of current setup
+
+DO NOT FIX ANYTHING YET
+ONLY ANALYZE
