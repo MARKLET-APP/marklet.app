@@ -154,7 +154,12 @@ export default function CarDetail() {
   if (isError || !car) return <div className="text-center py-32 font-bold text-xl text-destructive">عذراً، لم نتمكن من العثور على هذه السيارة.</div>;
 
   const formattedPrice = "$" + Number(car.price ?? 0).toLocaleString("en-US");
-  const images = (car as any).images ?? [];
+  const _rawImages = (car as any).images;
+  const images: any[] = Array.isArray(_rawImages)
+    ? _rawImages
+    : typeof _rawImages === "string"
+      ? (() => { try { const p = JSON.parse(_rawImages); return Array.isArray(p) ? p : []; } catch { return []; } })()
+      : [];
 
   return (
     <>
@@ -329,14 +334,14 @@ export default function CarDetail() {
           {images.length > 1 && (
             <div className="flex gap-2 p-3 overflow-x-auto">
               {images.map((img: any, idx: number) => {
-                const src = typeof img === "string" ? img : img?.imageUrl;
+                const rawSrc = typeof img === "string" ? img : img?.imageUrl;
                 return (
                   <button
                     key={idx}
                     onClick={() => setActiveImg(idx)}
                     className={`w-16 h-12 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${activeImg === idx ? "border-primary shadow-md" : "border-transparent opacity-60 hover:opacity-90"}`}
                   >
-                    <img src={src} className="w-full h-full object-cover" alt="" />
+                    <img src={imgUrl(rawSrc)} className="w-full h-full object-cover" alt="" />
                   </button>
                 );
               })}

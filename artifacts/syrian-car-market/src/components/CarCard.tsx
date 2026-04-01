@@ -6,7 +6,7 @@ import { MapPin, Settings, Calendar, Gauge, Eye, ChevronLeft, ChevronRight, Mess
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { withApi } from "@/lib/runtimeConfig";
+import { withApi, imgUrl } from "@/lib/runtimeConfig";
 import type { Car } from "@workspace/api-client-react";
 
 function formatUSD(price: number): string {
@@ -21,13 +21,17 @@ export function CarCard({ car }: { car: Car }) {
   const [imgIndex, setImgIndex] = useState(0);
   const [chatLoading, setChatLoading] = useState(false);
 
-  const images: string[] = (car as any).images?.length
-    ? (car as any).images
-    : car.primaryImage
-    ? [car.primaryImage]
-    : [];
+  const _rawImgs = (car as any).images;
+  const images: string[] = (() => {
+    const arr = Array.isArray(_rawImgs)
+      ? _rawImgs
+      : typeof _rawImgs === "string"
+        ? (() => { try { const p = JSON.parse(_rawImgs); return Array.isArray(p) ? p : []; } catch { return []; } })()
+        : [];
+    return arr.length ? arr : car.primaryImage ? [car.primaryImage] : [];
+  })();
 
-  const currentImage = images[imgIndex] ?? car.primaryImage ?? null;
+  const currentImage = imgUrl(images[imgIndex] ?? car.primaryImage ?? null);
   const hasMultiple = images.length > 1;
 
   useEffect(() => {

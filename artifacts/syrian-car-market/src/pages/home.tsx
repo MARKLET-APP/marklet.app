@@ -1,6 +1,6 @@
 // UI_ID: HOME_01
 // NAME: الصفحة الرئيسية
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useScrollFix } from "@/hooks/useScrollFix";
 import { withApi, imgUrl } from "@/lib/runtimeConfig";
@@ -67,6 +67,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { t, isRTL } = useLanguage();
 
+  const heroSearchRef = useRef<HTMLInputElement>(null);
   const [heroSearch, setHeroSearch] = useState("");
   const [heroProvince, setHeroProvince] = useState("");
   const [tipIdx, setTipIdx] = useState(0);
@@ -306,8 +307,9 @@ export default function Home() {
             transition={{ delay: 0.3 }}
             onSubmit={(e) => {
               e.preventDefault();
+              const q = heroSearchRef.current?.value.trim() ?? "";
               const params = new URLSearchParams();
-              if (heroSearch) params.set("q", heroSearch);
+              if (q) params.set("q", q);
               if (heroProvince) params.set("province", heroProvince);
               navigate(`/search${params.toString() ? `?${params.toString()}` : ""}`);
             }}
@@ -318,9 +320,10 @@ export default function Home() {
               <div className="flex-1 flex items-center bg-muted/50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 min-w-0">
                 <Search className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground shrink-0 ms-1 sm:ms-2" />
                 <input
+                  ref={heroSearchRef}
                   type="text"
-                  value={heroSearch}
-                  onChange={(e) => setHeroSearch(e.target.value)}
+                  defaultValue={heroSearch}
+                  onInput={(e) => setHeroSearch((e.target as HTMLInputElement).value)}
                   placeholder={isRTL ? "ابحث عن ماركة، موديل..." : "Brand, model..."}
                   className="w-full bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground text-xs sm:text-sm"
                 />
