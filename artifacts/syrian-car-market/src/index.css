@@ -676,3 +676,18 @@ div[data-page] .flex-shrink-0 {
   background-image: none !important;
   background-color: hsl(138deg 12% 97%) !important;
 }
+
+/* ── Modal Guard — يمنع تمرير الخلفية عند فتح الحوارات ── */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* ── Bottom Sheet — قائمة منسدلة سفلية ── */
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-height: 70vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}

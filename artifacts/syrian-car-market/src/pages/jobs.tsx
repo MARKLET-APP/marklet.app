@@ -2,6 +2,7 @@
 // NAME: الوظائف
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
+import { useScrollFix } from "@/hooks/useScrollFix";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -52,6 +53,8 @@ export default function JobsPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
+
+  useScrollFix();
 
   const urlParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
   const initialSub = urlParams.get("subCategory") || "__all__";

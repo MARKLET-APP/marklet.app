@@ -1,7 +1,10 @@
 // UI_ID: REAL_ESTATE_01
 // NAME: العقارات
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
+import { useFormGuard } from "@/hooks/useFormGuard";
+import { useScrollFix } from "@/hooks/useScrollFix";
+import { useModalGuard } from "@/hooks/useModalGuard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -50,11 +53,7 @@ export default function RealEstatePage() {
   const qc = useQueryClient();
   const [, navigate] = useLocation();
 
-  // Bug 5 fix: scroll to top when page mounts
-  useEffect(() => {
-    const main = document.getElementById("app-main");
-    if (main) main.scrollTop = 0;
-  }, []);
+  useScrollFix();
 
   const urlParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
   const initialSub = urlParams.get("subCategory") || "__all__";
@@ -68,8 +67,12 @@ export default function RealEstatePage() {
   const [tab, setTab] = useState<"listings" | "requests">("listings");
   const [addOpen, setAddOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
+
+  // prevent body scroll while any dialog is open
+  useModalGuard(addOpen || buyOpen);
   const [detail, setDetail] = useState<DetailedRealEstate | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  // useFormGuard: حماية الحقول من إعادة الضبط عند التنقل بين الحقول
+  const { form, setForm, updateField } = useFormGuard(emptyForm);
   const [buyForm, setBuyForm] = useState({ propertyType: "شقة", maxPrice: "", currency: "USD", province: "", city: "", description: "" });
   const { startChat, loading: startingChat } = useStartChat();
 
@@ -142,9 +145,8 @@ export default function RealEstatePage() {
     });
   };
 
-  // Bug 1 fix: always use functional update — never recreate object on render
-  const f = (k: keyof typeof emptyForm, v: string) =>
-    setForm(prev => ({ ...prev, [k]: v }));
+  // f: wrapper حول updateField للحفاظ على توافق الكود الموجود
+  const f = (k: keyof typeof emptyForm, v: string) => updateField(k, v);
 
   const [aiDescLoading, setAiDescLoading] = useState(false);
 

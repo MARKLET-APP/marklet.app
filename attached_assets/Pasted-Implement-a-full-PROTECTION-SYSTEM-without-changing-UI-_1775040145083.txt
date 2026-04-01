@@ -1,0 +1,163 @@
+Implement a full PROTECTION SYSTEM without changing UI or structure.
+
+=========================================
+1) CREATE FILE: src/hooks/useFormGuard.ts
+=========================================
+
+import { useRef, useState } from "react";
+
+export function useFormGuard<T>(initialState: T) {
+  const [form, setForm] = useState(initialState);
+  const isUpdating = useRef(false);
+
+  const updateField = (key: keyof T, value: any) => {
+    if (isUpdating.current) return;
+
+    isUpdating.current = true;
+
+    setForm(prev => ({
+      ...prev,
+      [key]: value
+    }));
+
+    setTimeout(() => {
+      isUpdating.current = false;
+    }, 0);
+  };
+
+  return {
+    form,
+    setForm,
+    updateField
+  };
+}
+
+=========================================
+2) CREATE FILE: src/hooks/useScrollFix.ts
+=========================================
+
+import { useEffect } from "react";
+
+export function useScrollFix() {
+  useEffect(() => {
+    const el = document.getElementById("app-main");
+    if (!el) return;
+
+    el.scrollTop = 0;
+  }, []);
+}
+
+=========================================
+3) CREATE FILE: src/hooks/useModalGuard.ts
+=========================================
+
+import { useEffect } from "react";
+
+export function useModalGuard(isOpen: boolean) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("modal-open");
+    } else {
+      document.body.classList.remove("modal-open");
+    }
+
+    return () => {
+      document.body.classList.remove("modal-open");
+    };
+  }, [isOpen]);
+}
+
+=========================================
+4) UPDATE CSS (index.css)
+=========================================
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-height: 70vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+=========================================
+5) UPDATE SCR_ADD_AD (real-estate.tsx)
+=========================================
+
+REPLACE:
+
+const [form, setForm] = useState(emptyForm);
+
+WITH:
+
+import { useFormGuard } from "@/hooks/useFormGuard";
+
+const { form, updateField, setForm } = useFormGuard(emptyForm);
+
+-----------------------------------------
+
+REPLACE ALL:
+
+onChange={(e) => f("field", e.target.value)}
+
+WITH:
+
+onChange={(e) => updateField("field", e.target.value)}
+
+-----------------------------------------
+
+IMPORTANT:
+- Do NOT reset form when category changes
+- Do NOT recreate state
+- Keep all values persistent
+
+=========================================
+6) UPDATE IMAGE PREVIEW (MultiImageUpload.tsx)
+=========================================
+
+ADD:
+
+const getPreview = (file: File | string) => {
+  if (typeof file === "string") return file;
+  return URL.createObjectURL(file);
+};
+
+USE:
+
+<img src={getPreview(file)} />
+
+=========================================
+7) APPLY SCROLL FIX ON PAGES
+=========================================
+
+IN:
+- real-estate.tsx
+- jobs.tsx
+- home.tsx
+
+ADD:
+
+import { useScrollFix } from "@/hooks/useScrollFix";
+
+useScrollFix();
+
+=========================================
+RULES
+=========================================
+
+- DO NOT change UI
+- DO NOT refactor structure
+- DO NOT modify logic outside this scope
+- ONLY apply protection layer
+
+=========================================
+RETURN
+=========================================
+
+- list of modified files
+- confirmation all guards applied
+- confirm no regression

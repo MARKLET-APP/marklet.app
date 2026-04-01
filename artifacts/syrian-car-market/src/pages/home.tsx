@@ -2,6 +2,7 @@
 // NAME: الصفحة الرئيسية
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
+import { useScrollFix } from "@/hooks/useScrollFix";
 import { withApi } from "@/lib/runtimeConfig";
 import { getRealEstate, getJobs } from "@/lib/api";
 import {
@@ -44,6 +45,8 @@ const SERVICE_TIPS: Array<{ icon: ReactNode; text: string }> = [
 ];
 
 export default function Home() {
+  useScrollFix();
+
   const { data: featuredCars, isLoading: loadingFeatured } = useGetFeaturedCars();
   const { data: latestCars, isLoading: loadingLatest } = useListCars({ limit: 6, sortBy: 'createdAt:desc' });
 
