@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, Component, ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, useRoute } from "wouter";
 import { setGlobalNavigate } from "@/lib/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -64,6 +64,32 @@ function PageLoader() {
   );
 }
 
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error) { console.error("[ErrorBoundary]", error); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-6 text-center">
+          <p className="text-xl font-bold text-foreground">حدث خطأ غير متوقع</p>
+          <p className="text-sm text-muted-foreground">يرجى العودة والمحاولة مجدداً</p>
+          <button
+            onClick={() => { this.setState({ hasError: false }); window.history.back(); }}
+            className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-medium text-sm"
+          >
+            رجوع
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function ListingRedirect() {
   const [, params] = useRoute("/listing/:id");
   const [, navigate] = useLocation();
@@ -125,6 +151,7 @@ function GlobalHooks() {
 function Router() {
   return (
     <AppLayout>
+      <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <Switch>
           <Route path="/reels" component={ReelsPage} />
@@ -174,6 +201,7 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </Suspense>
+      </ErrorBoundary>
     </AppLayout>
   );
 }

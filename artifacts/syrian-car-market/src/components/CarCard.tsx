@@ -67,7 +67,8 @@ export function CarCard({ car }: { car: Car }) {
       });
       if (res.ok) {
         const conv = await res.json().catch(() => null);
-        navigate(conv?.id ? `/messages?conversationId=${conv.id}` : "/messages");
+        const initialMsg = `مرحباً، أنا مهتم بـ ${[car.brand, car.model, car.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`;
+        navigate(conv?.id ? `/messages?conversationId=${conv.id}&initial=${encodeURIComponent(initialMsg)}` : "/messages");
       }
     } catch {
     } finally {

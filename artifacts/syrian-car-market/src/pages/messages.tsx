@@ -111,6 +111,7 @@ export default function Messages() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingInitialMsgRef = useRef<string | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("scm_token") : null;
   const isAdmin = user?.role === "admin";
@@ -126,9 +127,13 @@ export default function Messages() {
     const convId = params.get("conversationId");
     if (convId) { setActiveChatId(Number(convId)); }
 
-    // Pre-fill message
+    // Pre-fill message + mark for auto-send
     const initial = params.get("initial");
-    if (initial) setNewMessage(decodeURIComponent(initial));
+    if (initial) {
+      const decoded = decodeURIComponent(initial);
+      setNewMessage(decoded);
+      pendingInitialMsgRef.current = decoded;
+    }
 
     // Start conversation with a specific user
     const targetUserId = params.get("userId");
@@ -147,6 +152,24 @@ export default function Messages() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Auto-send initial message once conversation is active (from ?initial= URL param)
+  useEffect(() => {
+    if (!activeChatId || !pendingInitialMsgRef.current || !token) return;
+    const msg = pendingInitialMsgRef.current;
+    pendingInitialMsgRef.current = null;
+    setNewMessage("");
+    const timer = setTimeout(async () => {
+      try {
+        await fetch(`${API}/chats/${activeChatId}/messages`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ content: msg }),
+        });
+      } catch { /* ignore */ }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [activeChatId, token]);
 
   const fetchConversations = useCallback(async () => {
     if (!token) return;
