@@ -6,7 +6,6 @@ const config: CapacitorConfig = {
   webDir: "dist/public",
 
   server: {
-    url: "https://marklet.net",
     cleartext: false,
     allowNavigation: [
       "marklet.net",
