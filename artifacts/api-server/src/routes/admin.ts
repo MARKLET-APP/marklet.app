@@ -714,12 +714,12 @@ router.get("/admin/real-estate/pending", ...guard, async (_req, res): Promise<vo
         description: realEstateTable.description,
         status: realEstateTable.status,
         createdAt: realEstateTable.createdAt,
-        posterId: realEstateTable.posterId,
+        sellerId: realEstateTable.sellerId,
         posterName: usersTable.name,
         posterPhone: usersTable.phone,
       })
       .from(realEstateTable)
-      .leftJoin(usersTable, eq(realEstateTable.posterId, usersTable.id))
+      .leftJoin(usersTable, eq(realEstateTable.sellerId, usersTable.id))
       .where(eq(realEstateTable.status, "pending"))
       .orderBy(desc(realEstateTable.createdAt));
     res.json(listings);
