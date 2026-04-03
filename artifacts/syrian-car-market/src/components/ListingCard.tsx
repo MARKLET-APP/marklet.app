@@ -8,8 +8,9 @@ import { imgUrl } from "@/lib/runtimeConfig";
 export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate" | "real-estate" | "jobs";
 
 interface ListingCardProps {
-  type: ListingCardType;
-  data: any;
+  type?: ListingCardType;
+  data?: any;
+  ad?: { type: ListingCardType; data: any };
   onChat?: () => void;
   onDelete?: () => void;
   onCardClick?: () => void;
@@ -75,7 +76,9 @@ function getSellerId(data: any, type: ListingCardType): number {
   return data.sellerId ?? data.userId ?? 0;
 }
 
-export function ListingCard({ type, data, onChat, onDelete, onCardClick, chatLoading, deleteLoading, currentUserId }: ListingCardProps) {
+export function ListingCard({ type: typeProp, data: dataProp, ad, onChat, onDelete, onCardClick, chatLoading, deleteLoading, currentUserId }: ListingCardProps) {
+  const type = (ad?.type ?? typeProp) as ListingCardType;
+  const data = ad?.data ?? dataProp;
   const [imgIdx, setImgIdx] = useState(0);
   const images = getImages(type, data);
   const currentImg = images[imgIdx] ?? null;

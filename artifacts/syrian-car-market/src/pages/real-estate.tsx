@@ -430,11 +430,22 @@ export default function RealEstatePage() {
               )
               : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {listings.map(item => (
-                    <ListingCard
-                      key={item.id}
-                      type="real-estate"
-                      data={item}
+                      {listings.map(item => (
+                        <ListingCard
+                          key={item.id}
+                          ad={{
+                            id: item.id,
+                            title: item.title,
+                            price: item.price,
+                            image: item.images?.[0] || "/placeholder.png",
+                            city: item.city,
+                          }}
+                          onCardClick={() => navigate(`/real-estate/${item.id}`)}
+                          onChat={item.sellerId ? () => startChat(item.sellerId, `مرحباً، رأيت إعلانك عن "${item.title}" وأودّ الاستفسار`) : undefined}
+                          chatLoading={startingChat}
+                          currentUserId={user?.id}
+                        />
+                      ))}
                       onCardClick={() => navigate(`/real-estate/${item.id}`)}
                       onChat={item.sellerId ? () => startChat(item.sellerId, `مرحباً، رأيت إعلانك عن "${item.title}" وأودّ الاستفسار`) : undefined}
                       chatLoading={startingChat}
