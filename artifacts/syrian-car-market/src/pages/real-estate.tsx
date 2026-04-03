@@ -446,7 +446,7 @@ export default function RealEstatePage() {
                       data={item}
                       onCardClick={() => navigate(`/real-estate/${item.id}`)}
                       onChat={item.sellerId ? () => startChat(item.sellerId, `مرحباً، رأيت إعلانك عن "${item.title}" وأودّ الاستفسار`) : undefined}
-                      onDelete={user?.id === item.sellerId ? () => deleteListingMutation.mutate(item.id) : undefined}
+                      onDelete={user?.id === item.sellerId ? () => { if (window.confirm("هل تريد حذف هذا الإعلان؟ لا يمكن التراجع.")) deleteListingMutation.mutate(item.id); } : undefined}
                       chatLoading={startingChat}
                       deleteLoading={deleteListingMutation.isPending}
                       currentUserId={user?.id}

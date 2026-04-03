@@ -374,7 +374,7 @@ export default function JobsPage() {
                       data={job}
                       onCardClick={() => navigate(`/jobs/${job.id}`)}
                       onChat={job.posterId ? () => startChat(job.posterId, `مرحباً، رأيت إعلانك عن "${job.title}" وأودّ التواصل`) : undefined}
-                      onDelete={user?.id === job.posterId ? () => deleteJobMutation.mutate(job.id) : undefined}
+                      onDelete={user?.id === job.posterId ? () => { if (window.confirm("هل تريد حذف هذا الإعلان؟ لا يمكن التراجع.")) deleteJobMutation.mutate(job.id); } : undefined}
                       chatLoading={startingChat}
                       deleteLoading={deleteJobMutation.isPending}
                       currentUserId={user?.id}

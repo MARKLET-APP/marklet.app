@@ -49,14 +49,21 @@ const images = Array.isArray(item.images)
 // ثم استخدم images[idx] مباشرة في src={...}
 ```
 
-### 4. دائماً أضف mutation للحذف في كل صفحة
+### 4. دائماً أضف mutation للحذف في كل صفحة قائمة + صفحة تفاصيل
 ```tsx
-// يجب وجود mutation للحذف للإعلانات الرئيسية (ليس فقط لـ buy-requests)
+// في صفحة القائمة (LISTING PAGE) — عبر onDelete في ListingCard (مع confirm)
 const deleteListingMutation = useMutation({
   mutationFn: (id: number) => apiRequest(`/api/CATEGORY/${id}`, "DELETE"),
-  onSuccess: () => { toast({ title: "تم حذف الإعلان" }); qc.invalidateQueries(...); },
+  onSuccess: () => { toast({ title: "تم حذف الإعلان" }); qc.invalidateQueries({queryKey: ["CATEGORY"]}); },
   onError: () => toast({ title: "فشل الحذف", variant: "destructive" }),
 });
+// الاستخدام في ListingCard:
+// onDelete={user?.id === item.sellerId ? () => { if (window.confirm("هل تريد حذف هذا الإعلان؟ لا يمكن التراجع.")) deleteListingMutation.mutate(item.id); } : undefined}
+
+// في صفحة التفاصيل (DETAIL PAGE) — في "Owner Panel" مع تأكيد inline
+// 1. أضف state: const [deleteConfirm, setDeleteConfirm] = useState(false);
+// 2. أضف mutation مع navigate("/CATEGORY") بعد onSuccess
+// 3. اجعل الزر يضبط deleteConfirm=true أولاً، ثم يُظهر زر التأكيد
 ```
 
 ### 5. viewCount في ListingCard
@@ -93,6 +100,61 @@ const res = await fetch(import.meta.env.BASE_URL + "api/upload-image?folder=CATE
 - `TYPE_LABELS` في `ListingDetailDialog.tsx`
 - `TYPE_COLORS` في `ListingDetailDialog.tsx`
 - `getTitle` في `ListingDetailDialog.tsx`
+
+### 10. قالب Owner Panel الموحّد (في صفحات التفاصيل)
+```tsx
+// في imports: إضافة Trash2 من lucide-react، useMutation من @tanstack/react-query
+// في imports API: apiRequest من @/lib/api
+
+// داخل الكومبوننت:
+const [deleteConfirm, setDeleteConfirm] = useState(false);
+const qc = useQueryClient();
+
+const deleteListingMutation = useMutation({
+  mutationFn: () => apiRequest(`/api/CATEGORY/${id}`, "DELETE"),
+  onSuccess: () => {
+    toast({ title: "تم حذف الإعلان بنجاح" });
+    qc.invalidateQueries({ queryKey: ["CATEGORY"] });
+    navigate("/CATEGORY");
+  },
+  onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
+});
+
+// في JSX (بعد بطاقة بيانات البائع/الناشر):
+{isOwner && (
+  <div className="bg-card p-5 rounded-3xl border shadow-sm">
+    <h3 className="font-bold text-base border-b pb-3 mb-4">إجراءات المالك</h3>
+    {!deleteConfirm ? (
+      <Button variant="destructive" className="w-full rounded-xl gap-2" onClick={() => setDeleteConfirm(true)}>
+        <Trash2 className="w-4 h-4" /> حذف الإعلان
+      </Button>
+    ) : (
+      <div className="space-y-3">
+        <p className="text-sm text-center text-muted-foreground">هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع.</p>
+        <div className="flex gap-2">
+          <Button variant="destructive" className="flex-1 rounded-xl gap-2"
+            onClick={() => deleteListingMutation.mutate()} disabled={deleteListingMutation.isPending}>
+            {deleteListingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            نعم، احذف
+          </Button>
+          <Button variant="outline" className="flex-1 rounded-xl"
+            onClick={() => setDeleteConfirm(false)} disabled={deleteListingMutation.isPending}>
+            إلغاء
+          </Button>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+```
+**ملاحظة**: `isOwner` = `user?.id === item.sellerId` (للعقارات والسيارات) أو `user?.id === item.posterId` (للوظائف)
+
+### 11. صفحة التفاصيل — الحقول الصحيحة
+| الصفحة | تحقق الملكية | حقل المالك في DB |
+|---------|-------------|-----------------|
+| `car-detail.tsx` | `user?.id === car.sellerId` | `sellerId` |
+| `real-estate-detail.tsx` | `user?.id === item.sellerId` | `sellerId` |
+| `job-detail.tsx` | `user?.id === item.posterId` | `posterId` |
 
 ---
 

@@ -2,10 +2,11 @@
 // NAME: تفاصيل الوظيفة
 import { useRoute, useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { getJobById } from "@/lib/api";
+import { getJobById, apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { useSaves } from "@/hooks/use-saves";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ContactButtons } from "@/components/ContactButtons";
 import AppRatingPopup from "@/components/AppRatingPopup";
 import { ShareSheet } from "@/components/ShareSheet";
@@ -14,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Briefcase, ChevronRight, Loader2, Clock, Star,
   Building, DollarSign, Eye, Calendar, MessageCircle,
-  Crown, Lock, Share2, ThumbsUp, Heart,
+  Crown, Lock, Share2, ThumbsUp, Heart, Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -81,6 +82,7 @@ export default function JobDetail() {
   const [, navigate] = useLocation();
   const { user } = useAuthStore();
   const { toast } = useToast();
+  const qc = useQueryClient();
   const { startChat, loading: chatLoading } = useStartChat();
   const { isSaved, toggleSave } = useSaves();
 
@@ -88,6 +90,17 @@ export default function JobDetail() {
   const [loading, setLoading] = useState(true);
   const [showPhone, setShowPhone] = useState(false);
   const [showRatingPopup, setShowRatingPopup] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const deleteJobMutation = useMutation({
+    mutationFn: () => apiRequest(`/api/jobs/${id}`, "DELETE"),
+    onSuccess: () => {
+      toast({ title: "تم حذف الإعلان بنجاح" });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+      navigate("/jobs");
+    },
+    onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -372,8 +385,39 @@ export default function JobDetail() {
         {/* ── Poster panel ── */}
         {isPoster && (
           <div className="bg-card p-5 rounded-3xl border shadow-sm">
-            <h3 className="font-bold text-base border-b pb-3">إجراءات الناشر</h3>
-            <p className="text-sm text-center text-muted-foreground py-4">هذا إعلانك — يمكن إدارته من لوحة التحكم.</p>
+            <h3 className="font-bold text-base border-b pb-3 mb-4">إجراءات الناشر</h3>
+            {!deleteConfirm ? (
+              <Button
+                variant="destructive"
+                className="w-full rounded-xl gap-2"
+                onClick={() => setDeleteConfirm(true)}
+              >
+                <Trash2 className="w-4 h-4" /> حذف الإعلان
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-center text-muted-foreground">هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع.</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    className="flex-1 rounded-xl gap-2"
+                    onClick={() => deleteJobMutation.mutate()}
+                    disabled={deleteJobMutation.isPending}
+                  >
+                    {deleteJobMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    نعم، احذف
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-xl"
+                    onClick={() => setDeleteConfirm(false)}
+                    disabled={deleteJobMutation.isPending}
+                  >
+                    إلغاء
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

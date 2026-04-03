@@ -2,10 +2,11 @@
 // NAME: تفاصيل العقار
 import { useRoute, useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { getRealEstateById } from "@/lib/api";
+import { getRealEstateById, apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { useSaves } from "@/hooks/use-saves";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShareSheet } from "@/components/ShareSheet";
 import AppRatingPopup from "@/components/AppRatingPopup";
 import { ContactButtons } from "@/components/ContactButtons";
@@ -14,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Bed, Bath, Ruler, Layers, ChevronRight,
   Loader2, Building2, Calendar, Eye, Heart, Share2,
-  MessageCircle, Crown, Lock, Star,
+  MessageCircle, Crown, Lock, Star, Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -91,6 +92,7 @@ export default function RealEstateDetail() {
   const [, navigate] = useLocation();
   const { user } = useAuthStore();
   const { toast } = useToast();
+  const qc = useQueryClient();
   const { startChat, loading: chatLoading } = useStartChat();
   const { isSaved, toggleSave } = useSaves();
 
@@ -100,6 +102,17 @@ export default function RealEstateDetail() {
   const [showRatingPopup, setShowRatingPopup] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [brokenImgs, setBrokenImgs] = useState<Set<number>>(new Set());
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const deleteListingMutation = useMutation({
+    mutationFn: () => apiRequest(`/api/real-estate/${id}`, "DELETE"),
+    onSuccess: () => {
+      toast({ title: "تم حذف الإعلان بنجاح" });
+      qc.invalidateQueries({ queryKey: ["real-estate"] });
+      navigate("/real-estate");
+    },
+    onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -438,8 +451,39 @@ export default function RealEstateDetail() {
         {/* ── Owner panel ── */}
         {isOwner && (
           <div className="bg-card p-5 rounded-3xl border shadow-sm">
-            <h3 className="font-bold text-base border-b pb-3">إجراءات المالك</h3>
-            <p className="text-sm text-center text-muted-foreground py-4">يمكنك تعديل إعلانك من خلال لوحة التحكم.</p>
+            <h3 className="font-bold text-base border-b pb-3 mb-4">إجراءات المالك</h3>
+            {!deleteConfirm ? (
+              <Button
+                variant="destructive"
+                className="w-full rounded-xl gap-2"
+                onClick={() => setDeleteConfirm(true)}
+              >
+                <Trash2 className="w-4 h-4" /> حذف الإعلان
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-center text-muted-foreground">هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع.</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    className="flex-1 rounded-xl gap-2"
+                    onClick={() => deleteListingMutation.mutate()}
+                    disabled={deleteListingMutation.isPending}
+                  >
+                    {deleteListingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    نعم، احذف
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-xl"
+                    onClick={() => setDeleteConfirm(false)}
+                    disabled={deleteListingMutation.isPending}
+                  >
+                    إلغاء
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
