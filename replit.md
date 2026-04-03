@@ -4,6 +4,98 @@
 
 A full-stack mobile-first Arabic RTL multi-category marketplace for Syria covering cars, real estate, jobs, and more.
 
+---
+
+## ⚠️ قواعد حرجة يجب التطبيق في كل صفحة جديدة (NEW PAGE CHECKLIST)
+
+### 1. حقول قاعدة البيانات — Field Names (لا تخلط بينها)
+| الجدول | حقل صاحب الإعلان | ملاحظات |
+|--------|------------------|---------|
+| `carsTable` | `sellerId` | |
+| `realEstateTable` | `sellerId` | ليس posterId |
+| `jobsTable` | `posterId` | ليس sellerId |
+| `junkCarsTable` | `sellerId` | |
+| `buyRequestsTable` | `userId` | |
+
+### 2. عرض الإعلانات في ListingCard — الطريقة الصحيحة
+```tsx
+// ✅ صحيح — مثل jobs.tsx
+<ListingCard
+  key={item.id}
+  type="real-estate"   // أو "jobs" أو "moto" أو "rental" إلخ
+  data={item}          // الكائن كاملاً — ListingCard تعالج imgUrl داخلياً
+  onCardClick={() => navigate(`/real-estate/${item.id}`)}
+  onChat={item.sellerId ? () => startChat(item.sellerId, "...") : undefined}
+  onDelete={user?.id === item.sellerId ? () => deleteMutation.mutate(item.id) : undefined}
+  chatLoading={startingChat}
+  deleteLoading={deleteMutation.isPending}
+  currentUserId={user?.id}
+/>
+
+// ❌ خاطئ — لا تستخدم ad={{id, title, image, ...}} (صيغة يتيمة)
+// ❌ خاطئ — لا تضع imgUrl() يدوياً على الصور إذا أعطيت data كاملاً لـ ListingCard
+```
+
+### 3. الصور في صفحات التفاصيل (Detail Pages)
+```tsx
+// ✅ صحيح — في real-estate-detail.tsx وما شابهها
+import { imgUrl } from "@/lib/runtimeConfig";
+
+const images = Array.isArray(item.images)
+  ? item.images
+      .filter((u: any) => typeof u === "string" && u.trim() && !u.startsWith("blob:"))
+      .map((u: string) => imgUrl(u) ?? u)
+  : [];
+// ثم استخدم images[idx] مباشرة في src={...}
+```
+
+### 4. دائماً أضف mutation للحذف في كل صفحة
+```tsx
+// يجب وجود mutation للحذف للإعلانات الرئيسية (ليس فقط لـ buy-requests)
+const deleteListingMutation = useMutation({
+  mutationFn: (id: number) => apiRequest(`/api/CATEGORY/${id}`, "DELETE"),
+  onSuccess: () => { toast({ title: "تم حذف الإعلان" }); qc.invalidateQueries(...); },
+  onError: () => toast({ title: "فشل الحذف", variant: "destructive" }),
+});
+```
+
+### 5. viewCount في ListingCard
+- البيانات من قاعدة البيانات تُعيد `viewCount` (بدون s)  
+- ListingCard تدعم كلاً من `viewCount` و `viewsCount` تلقائياً (تم الإصلاح)
+
+### 6. onChat مع الوظائف — استخدم posterId دائماً
+```tsx
+// ✅ للوظائف
+onChat={job.posterId ? () => startChat(job.posterId, "...") : undefined}
+// ❌ خاطئ
+onChat={job.sellerId ? () => startChat(job.sellerId, "...") : undefined}
+```
+
+### 7. normalizeAd للصفحة الرئيسية home.tsx
+```tsx
+// ✅ للعقارات: normalizeAd(item, "real_estate")
+// ✅ للوظائف: normalizeAd(item, "job")
+// ثم startChat مع posterId للوظائف، sellerId للعقارات
+```
+
+### 8. رفع الصور (Upload)
+```tsx
+// ✅ النمط الصحيح — يعمل في dev وproduction
+const res = await fetch(import.meta.env.BASE_URL + "api/upload-image?folder=CATEGORY", {
+  method: "POST",
+  headers: token ? { Authorization: `Bearer ${token}` } : {},
+  body: fd,
+});
+```
+
+### 9. ListingDetailDialog — يجب إضافة الأنواع الجديدة
+إذا أضفت نوعاً جديداً لـ `ListingCardType`، يجب تحديث:
+- `TYPE_LABELS` في `ListingDetailDialog.tsx`
+- `TYPE_COLORS` في `ListingDetailDialog.tsx`
+- `getTitle` في `ListingDetailDialog.tsx`
+
+---
+
 ## Real Estate Module (2026)
 - **DB table**: `real_estate` — sellerId, title, listingType (بيع/إيجار), subCategory (شقق/منازل/أراضي...), price, area, rooms, bathrooms, floor, province, city, location, description, images[], status, isFeatured, isActive, viewCount
 - **API routes**: `GET /api/real-estate`, `GET /api/real-estate/:id`, `POST /api/real-estate`, `DELETE /api/real-estate/:id`

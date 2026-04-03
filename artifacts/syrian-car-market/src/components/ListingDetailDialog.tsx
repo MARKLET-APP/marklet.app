@@ -22,6 +22,8 @@ const TYPE_LABELS: Record<ListingCardType, string> = {
   part: "قطعة غيار",
   junk: "خردة / معطوبة",
   plate: "لوحة مرور",
+  "real-estate": "عقار",
+  jobs: "وظيفة",
 };
 
 const TYPE_COLORS: Record<ListingCardType, string> = {
@@ -30,6 +32,8 @@ const TYPE_COLORS: Record<ListingCardType, string> = {
   part: "bg-orange-100 text-orange-700",
   junk: "bg-slate-100 text-slate-700",
   plate: "bg-amber-100 text-amber-700",
+  "real-estate": "bg-cyan-100 text-cyan-700",
+  jobs: "bg-emerald-100 text-emerald-700",
 };
 
 function getTitle(type: ListingCardType, data: any): string {
@@ -39,6 +43,9 @@ function getTitle(type: ListingCardType, data: any): string {
     case "part": return data.name || "قطعة غيار";
     case "junk": return [data.type, data.model, data.year].filter(Boolean).join(" ") || "سيارة معطوبة";
     case "plate": return data.brand || "لوحة مميزة";
+    case "real-estate": return data.title || "عقار";
+    case "jobs": return data.title || "وظيفة";
+    default: return data.title || "";
   }
 }
 

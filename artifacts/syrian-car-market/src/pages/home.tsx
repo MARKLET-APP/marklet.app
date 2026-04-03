@@ -836,7 +836,7 @@ export default function Home() {
                             key={item._id}
                             ad={normalizeAd(j, "job")}
                             onCardClick={() => navigate(`/jobs/${j.id}`)}
-                            onChat={j.sellerId ? () => startChat(j.sellerId) : undefined}
+                            onChat={j.posterId ? () => startChat(j.posterId) : undefined}
                             currentUserId={user?.id}
                           />
                         );
@@ -935,7 +935,7 @@ export default function Home() {
                           key={item._id}
                           ad={normalizeAd(j, "job")}
                           onCardClick={() => navigate(`/jobs/${j.id}`)}
-                          onChat={j.sellerId ? () => startChat(j.sellerId) : undefined}
+                          onChat={j.posterId ? () => startChat(j.posterId) : undefined}
                           currentUserId={user?.id}
                         />
                       );
@@ -1155,7 +1155,7 @@ export default function Home() {
                 ad={normalizeAd(item, "job")}
                 onCardClick={() => navigate(`/jobs/${item.id}`)}
                 onChat={
-                  item.sellerId ? () => startChat(item.sellerId) : undefined
+                  item.posterId ? () => startChat(item.posterId) : undefined
                 }
                 currentUserId={user?.id}
               />

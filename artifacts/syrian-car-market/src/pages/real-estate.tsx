@@ -267,6 +267,15 @@ export default function RealEstatePage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["buy-requests", "real-estate"] }),
   });
 
+  const deleteListingMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/real-estate/${id}`, "DELETE"),
+    onSuccess: () => {
+      toast({ title: "تم حذف الإعلان بنجاح" });
+      qc.invalidateQueries({ queryKey: ["real-estate"] });
+    },
+    onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
+  });
+
   // ── Submit listing (upload images first) ─────────────────────────────────
   const handleSubmit = async () => {
     if (!form.title || !form.price || !form.province || !form.city) {
@@ -430,25 +439,16 @@ export default function RealEstatePage() {
               )
               : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {listings.map(item => (
-                        <ListingCard
-                          key={item.id}
-                          ad={{
-                            id: item.id,
-                            title: item.title,
-                            price: item.price,
-                            image: item.images?.[0] || "/placeholder.png",
-                            city: item.city,
-                          }}
-                          onCardClick={() => navigate(`/real-estate/${item.id}`)}
-                          onChat={item.sellerId ? () => startChat(item.sellerId, `مرحباً، رأيت إعلانك عن "${item.title}" وأودّ الاستفسار`) : undefined}
-                          chatLoading={startingChat}
-                          currentUserId={user?.id}
-                        />
-                      ))}
+                  {listings.map(item => (
+                    <ListingCard
+                      key={item.id}
+                      type="real-estate"
+                      data={item}
                       onCardClick={() => navigate(`/real-estate/${item.id}`)}
                       onChat={item.sellerId ? () => startChat(item.sellerId, `مرحباً، رأيت إعلانك عن "${item.title}" وأودّ الاستفسار`) : undefined}
+                      onDelete={user?.id === item.sellerId ? () => deleteListingMutation.mutate(item.id) : undefined}
                       chatLoading={startingChat}
+                      deleteLoading={deleteListingMutation.isPending}
                       currentUserId={user?.id}
                     />
                   ))}

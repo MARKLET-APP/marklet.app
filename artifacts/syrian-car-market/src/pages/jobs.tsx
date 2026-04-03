@@ -217,6 +217,15 @@ export default function JobsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["buy-requests", "jobs"] }),
   });
 
+  const deleteJobMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/jobs/${id}`, "DELETE"),
+    onSuccess: () => {
+      toast({ title: "تم حذف الإعلان بنجاح" });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
+  });
+
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleSubmit = () => {
     if (!form.title || !form.province || !form.city) {
@@ -365,7 +374,9 @@ export default function JobsPage() {
                       data={job}
                       onCardClick={() => navigate(`/jobs/${job.id}`)}
                       onChat={job.posterId ? () => startChat(job.posterId, `مرحباً، رأيت إعلانك عن "${job.title}" وأودّ التواصل`) : undefined}
+                      onDelete={user?.id === job.posterId ? () => deleteJobMutation.mutate(job.id) : undefined}
                       chatLoading={startingChat}
+                      deleteLoading={deleteJobMutation.isPending}
                       currentUserId={user?.id}
                     />
                   ))}

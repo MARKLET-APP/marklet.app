@@ -210,7 +210,7 @@ export function ListingCard({ type: typeProp, data: dataProp, ad, onChat, onDele
           <div className="grid grid-cols-2 gap-y-1 gap-x-2 text-xs font-medium text-foreground bg-secondary/50 p-2 rounded-xl">
             {data.area  && <span className="flex items-center gap-1"><Ruler className="w-3 h-3 text-primary shrink-0" />{data.area} م²</span>}
             {data.rooms && <span className="flex items-center gap-1"><Bed   className="w-3 h-3 text-primary shrink-0" />{data.rooms} غرف</span>}
-            {data.viewsCount != null && <span className="flex items-center gap-1 col-span-2"><Eye className="w-3 h-3 text-primary shrink-0" />مشاهدات: {data.viewsCount}</span>}
+            {(data.viewCount ?? data.viewsCount) != null && <span className="flex items-center gap-1 col-span-2"><Eye className="w-3 h-3 text-primary shrink-0" />مشاهدات: {data.viewCount ?? data.viewsCount}</span>}
           </div>
         )}
 
@@ -220,7 +220,7 @@ export function ListingCard({ type: typeProp, data: dataProp, ad, onChat, onDele
             {data.company && <span className="flex items-center gap-1 col-span-2"><Building className="w-3 h-3 text-primary shrink-0" />{data.company}</span>}
             {data.jobType && <span className="flex items-center gap-1"><Briefcase className="w-3 h-3 text-primary shrink-0" />{data.jobType}</span>}
             {data.salary  && <span className="flex items-center gap-1 text-primary font-bold">{data.salary}</span>}
-            {data.viewsCount != null && <span className="flex items-center gap-1 col-span-2"><Eye className="w-3 h-3 text-primary shrink-0" />مشاهدات: {data.viewsCount}</span>}
+            {(data.viewCount ?? data.viewsCount) != null && <span className="flex items-center gap-1 col-span-2"><Eye className="w-3 h-3 text-primary shrink-0" />مشاهدات: {data.viewCount ?? data.viewsCount}</span>}
           </div>
         )}
 

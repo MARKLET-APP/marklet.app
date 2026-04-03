@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { imgUrl } from "@/lib/runtimeConfig";
 
 function formatPrice(p: any) {
   if (!p) return null;
@@ -134,7 +135,9 @@ export default function RealEstateDetail() {
   }
 
   const images: string[] = Array.isArray(item.images)
-    ? item.images.filter((u: any) => typeof u === "string" && u.trim().length > 0 && !u.startsWith("blob:"))
+    ? item.images
+        .filter((u: any) => typeof u === "string" && u.trim().length > 0 && !u.startsWith("blob:"))
+        .map((u: string) => imgUrl(u) ?? u)
     : [];
   const visibleImages = images.filter((_, i) => !brokenImgs.has(i));
   const safeIdx = Math.min(activeImg, Math.max(0, visibleImages.length - 1));
