@@ -27,3 +27,4 @@ export * from "./pushSubscriptions";
 export * from "./reels";
 export * from "./realEstate";
 export * from "./jobs";
+export * from "./marketplace";

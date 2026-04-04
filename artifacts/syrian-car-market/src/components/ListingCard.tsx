@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye, Briefcase, Ruler, Bed, Building, Share2 } from "lucide-react";
+import { MapPin, MessageCircle, Trash2, Loader2, DollarSign, Bike, Car, Wrench, ChevronLeft, ChevronRight, Phone, Calendar, Clock, Building2, Eye, Briefcase, Ruler, Bed, Building, Share2, ShoppingBag, Truck } from "lucide-react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { ShareSheet } from "@/components/ShareSheet";
 import { imgUrl } from "@/lib/runtimeConfig";
 
-export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate" | "real-estate" | "jobs";
+export type ListingCardType = "moto" | "rental" | "part" | "junk" | "plate" | "real-estate" | "jobs" | "marketplace";
 
 interface ListingCardProps {
   type?: ListingCardType;
@@ -28,6 +28,7 @@ const PLACEHOLDER_ICONS: Record<ListingCardType, React.ReactNode> = {
   plate: null,
   "real-estate": <Building2 className="w-12 h-12 text-muted-foreground/30" />,
   jobs: <Briefcase className="w-12 h-12 text-muted-foreground/30" />,
+  marketplace: <ShoppingBag className="w-12 h-12 text-muted-foreground/30" />,
 };
 
 const TYPE_BADGE: Record<ListingCardType, { label: string; className: string }> = {
@@ -38,6 +39,7 @@ const TYPE_BADGE: Record<ListingCardType, { label: string; className: string }> 
   plate: { label: "لوحة مرور", className: "bg-amber-100 text-amber-700 border-0" },
   "real-estate": { label: "عقار", className: "bg-teal-100 text-teal-700 border-0" },
   jobs: { label: "وظيفة", className: "bg-blue-100 text-blue-700 border-0" },
+  marketplace: { label: "مستعمل", className: "bg-orange-100 text-orange-700 border-0" },
 };
 
 function getTitle(type: ListingCardType, data: any): string {
@@ -56,13 +58,15 @@ function getTitle(type: ListingCardType, data: any): string {
       return data.title || "عقار";
     case "jobs":
       return data.title || "وظيفة";
+    case "marketplace":
+      return data.title || "سلعة مستعملة";
   }
 }
 
 function getImages(type: ListingCardType, data: any): string[] {
   if (type === "plate" && data.primaryImage) return [data.primaryImage];
   if (type === "jobs") return [];
-  if (type === "real-estate") {
+  if (type === "real-estate" || type === "marketplace") {
     return (data.images ?? []).filter(
       (u: any) => typeof u === "string" && u.trim().length > 0 && !u.startsWith("blob:")
     );
@@ -72,7 +76,7 @@ function getImages(type: ListingCardType, data: any): string[] {
 
 function getSellerId(data: any, type: ListingCardType): number {
   if (type === "jobs") return data.posterId ?? 0;
-  if (type === "real-estate") return data.sellerId ?? 0;
+  if (type === "real-estate" || type === "marketplace") return data.sellerId ?? 0;
   return data.sellerId ?? data.userId ?? 0;
 }
 
@@ -214,6 +218,23 @@ export function ListingCard({ type: typeProp, data: dataProp, ad, onChat, onDele
           </div>
         )}
 
+        {/* ── Marketplace metadata ── */}
+        {type === "marketplace" && (
+          <div className="flex flex-wrap gap-1">
+            {data.condition && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">{data.condition}</Badge>
+            )}
+            {data.category && (
+              <Badge className="bg-orange-50 text-orange-700 border-orange-200 text-[10px] px-1.5 py-0.5">{data.category}</Badge>
+            )}
+            {data.shippingAvailable && (
+              <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0.5 gap-0.5 flex items-center">
+                <Truck className="w-2.5 h-2.5" /> شحن متاح
+              </Badge>
+            )}
+          </div>
+        )}
+
         {/* ── Jobs metadata ── */}
         {type === "jobs" && (
           <div className="grid grid-cols-2 gap-y-1 gap-x-2 text-xs font-medium text-foreground bg-secondary/50 p-2 rounded-xl">
@@ -228,7 +249,9 @@ export function ListingCard({ type: typeProp, data: dataProp, ad, onChat, onDele
         {type !== "rental" && type !== "jobs" && (
           <div className="flex items-center gap-1">
             {data.price ? (
-              <span className="font-bold text-sm text-primary" dir="ltr">${Number(data.price).toLocaleString()}</span>
+              type === "marketplace"
+                ? <span className="font-bold text-sm text-orange-600">{Number(data.price).toLocaleString()} ل.س</span>
+                : <span className="font-bold text-sm text-primary" dir="ltr">${Number(data.price).toLocaleString()}</span>
             ) : (
               <span className="text-muted-foreground text-xs">السعر قابل للتفاوض</span>
             )}
@@ -252,9 +275,13 @@ export function ListingCard({ type: typeProp, data: dataProp, ad, onChat, onDele
 
         {/* ── Actions — pinned to bottom ── */}
         {(() => {
-          const isREorJob = type === "real-estate" || type === "jobs";
-          const shareUrl = isREorJob
-            ? `${window.location.origin}/${type === "real-estate" ? "real-estate" : "jobs"}/${data.id}`
+          const isREorJob = type === "real-estate" || type === "jobs" || type === "marketplace";
+          const shareUrl = type === "real-estate"
+            ? `${window.location.origin}/real-estate/${data.id}`
+            : type === "jobs"
+            ? `${window.location.origin}/jobs/${data.id}`
+            : type === "marketplace"
+            ? `${window.location.origin}/marketplace/${data.id}`
             : `${window.location.origin}/listing/${data.id}`;
           return (
             <div className="flex gap-1.5 pt-2 border-t mt-auto" onClick={e => e.stopPropagation()}>

@@ -8,7 +8,7 @@ import {
   useAdminListUsers, useAdminUpdateUser, useAdminDeleteUser,
   useGetSettings, useUpdateSettings
 } from "@workspace/api-client-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, apiRequest } from "@/lib/api";
 import { Redirect, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play, Send, Megaphone } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play, Send, Megaphone, ShoppingBag, Package, Truck, Upload, Clock } from "lucide-react";
 
 // ─── Video Preview Modal ─────────────────────────────────────────────────────
 // Fixed overlay — guaranteed to render above everything with z-[9999]
@@ -248,6 +248,189 @@ function ShowroomDialog({ open, onClose, editing, onSaved }: {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Admin Marketplace Tab ─────────────────────────────────────────────────────
+function AdminMarketplaceTab() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  type MOrder = {
+    id: number; status: string; totalPrice: string; deliveryType: string;
+    itemTitle: string | null; buyerName: string | null; sellerName: string | null;
+    buyerPhone: string | null; receiptImageUrl: string | null;
+    trackingNumber: string | null; createdAt: string;
+  };
+
+  const { data: orders = [], isLoading } = useQuery<MOrder[]>({
+    queryKey: ["admin", "marketplace-orders"],
+    queryFn: () => apiRequest("/api/admin/marketplace-orders"),
+  });
+
+  const confirmPayment = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/admin/marketplace-orders/${id}/confirm-payment`, "PATCH"),
+    onSuccess: () => { toast({ title: "تم تأكيد الدفع ✅" }); qc.invalidateQueries({ queryKey: ["admin", "marketplace-orders"] }); },
+    onError: () => toast({ title: "فشل التأكيد", variant: "destructive" }),
+  });
+
+  const rejectPayment = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/admin/marketplace-orders/${id}/reject-payment`, "PATCH"),
+    onSuccess: () => { toast({ title: "تم رفض الدفع" }); qc.invalidateQueries({ queryKey: ["admin", "marketplace-orders"] }); },
+    onError: () => toast({ title: "فشل الرفض", variant: "destructive" }),
+  });
+
+  const [trackingOrderId, setTrackingOrderId] = useState<number | null>(null);
+  const [trackingInput, setTrackingInput] = useState("");
+
+  const addTracking = useMutation({
+    mutationFn: ({ id, tracking }: { id: number; tracking: string }) =>
+      apiRequest(`/api/admin/marketplace-orders/${id}/tracking`, "PATCH", { trackingNumber: tracking }),
+    onSuccess: () => {
+      toast({ title: "تم إضافة رقم التتبع ✅" });
+      setTrackingOrderId(null);
+      setTrackingInput("");
+      qc.invalidateQueries({ queryKey: ["admin", "marketplace-orders"] });
+    },
+    onError: () => toast({ title: "فشل إضافة التتبع", variant: "destructive" }),
+  });
+
+  const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+    pending_payment:   { label: "في انتظار الدفع",      color: "amber" },
+    payment_uploaded:  { label: "إيصال مرفوع",          color: "blue" },
+    payment_confirmed: { label: "دفع مؤكد",             color: "green" },
+    preparing:         { label: "قيد التحضير",           color: "violet" },
+    shipped:           { label: "تم الشحن",              color: "blue" },
+    delivered:         { label: "تم التسليم",            color: "green" },
+    cancelled:         { label: "ملغى",                  color: "red" },
+    rejected:          { label: "مرفوض",                 color: "red" },
+  };
+
+  const badgeColor: Record<string, string> = {
+    amber: "bg-amber-100 text-amber-700",
+    blue: "bg-blue-100 text-blue-700",
+    green: "bg-green-100 text-green-700",
+    violet: "bg-violet-100 text-violet-700",
+    red: "bg-red-100 text-red-700",
+  };
+
+  return (
+    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+      <div className="p-6 border-b bg-muted/20 flex items-center gap-3">
+        <ShoppingBag className="w-6 h-6 text-orange-500" />
+        <div>
+          <h2 className="text-xl font-bold">إدارة السوق — كل شيء</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">مراجعة الطلبات وتأكيد المدفوعات وإدارة الشحن</p>
+        </div>
+        <Badge className="mr-auto bg-orange-100 text-orange-700 border-0 font-bold">{orders.length} طلب</Badge>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <Package className="w-14 h-14 mx-auto mb-3 opacity-30" />
+          <p className="text-lg font-bold">لا توجد طلبات بعد</p>
+        </div>
+      ) : (
+        <div className="divide-y">
+          {orders.map(order => {
+            const statusInfo = STATUS_LABELS[order.status] ?? { label: order.status, color: "amber" };
+            return (
+              <div key={order.id} className="p-5 hover:bg-muted/20 transition-colors">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="font-bold text-sm">#{order.id}</span>
+                      <Badge className={`border-0 text-xs ${badgeColor[statusInfo.color] ?? "bg-muted text-muted-foreground"}`}>
+                        {statusInfo.label}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{order.deliveryType === "shipping" ? "🚚 شحن" : "📍 استلام"}</span>
+                    </div>
+                    <p className="font-semibold text-sm">{order.itemTitle ?? "سلعة"}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                      <span>المشتري: {order.buyerName ?? "—"} {order.buyerPhone ? `(${order.buyerPhone})` : ""}</span>
+                      <span>البائع: {order.sellerName ?? "—"}</span>
+                    </div>
+                  </div>
+                  <div className="text-left shrink-0">
+                    <p className="text-lg font-extrabold text-orange-600">{Number(order.totalPrice).toLocaleString()} ل.س</p>
+                  </div>
+                </div>
+
+                {/* Receipt */}
+                {order.receiptImageUrl && (
+                  <div className="mb-3 flex items-center gap-2">
+                    <a href={order.receiptImageUrl.startsWith("http") ? order.receiptImageUrl : `${window.location.origin}${order.receiptImageUrl}`}
+                      target="_blank" rel="noreferrer"
+                      className="text-xs text-blue-600 font-medium underline flex items-center gap-1">
+                      <Upload className="w-3.5 h-3.5" /> عرض الإيصال
+                    </a>
+                  </div>
+                )}
+
+                {/* Tracking */}
+                {order.trackingNumber && (
+                  <div className="mb-3 flex items-center gap-2 text-xs text-blue-600 font-medium">
+                    <Truck className="w-3.5 h-3.5" />
+                    <span>رقم التتبع: <span dir="ltr" className="font-mono">{order.trackingNumber}</span></span>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 flex-wrap">
+                  {order.status === "payment_uploaded" && (
+                    <>
+                      <Button size="sm" className="h-8 text-xs bg-green-500 hover:bg-green-600 text-white rounded-xl gap-1"
+                        disabled={confirmPayment.isPending}
+                        onClick={() => confirmPayment.mutate(order.id)}>
+                        {confirmPayment.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                        تأكيد الدفع
+                      </Button>
+                      <Button size="sm" variant="outline"
+                        className="h-8 text-xs rounded-xl text-red-600 border-red-200 hover:bg-red-50 gap-1"
+                        disabled={rejectPayment.isPending}
+                        onClick={() => rejectPayment.mutate(order.id)}>
+                        {rejectPayment.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                        رفض الإيصال
+                      </Button>
+                    </>
+                  )}
+                  {["payment_confirmed", "preparing"].includes(order.status) && !order.trackingNumber && order.deliveryType === "shipping" && (
+                    trackingOrderId === order.id ? (
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          placeholder="رقم التتبع"
+                          value={trackingInput}
+                          onChange={e => setTrackingInput(e.target.value)}
+                          className="h-8 text-xs border rounded-xl px-3 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                          style={{ fontSize: 14 }}
+                          dir="ltr"
+                        />
+                        <Button size="sm" className="h-8 text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+                          disabled={!trackingInput || addTracking.isPending}
+                          onClick={() => addTracking.mutate({ id: order.id, tracking: trackingInput })}>
+                          {addTracking.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "حفظ"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs rounded-xl" onClick={() => setTrackingOrderId(null)}>إلغاء</Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" variant="outline" className="h-8 text-xs rounded-xl gap-1"
+                        onClick={() => { setTrackingOrderId(order.id); setTrackingInput(""); }}>
+                        <Truck className="w-3 h-3" /> إضافة رقم التتبع
+                      </Button>
+                    )
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -931,6 +1114,10 @@ export default function AdminDashboard() {
           <TabsTrigger data-ui-id="ADMIN_TAB_NOTIFICATIONS_01" data-testid="ADMIN_TAB_NOTIFICATIONS_01" value="notifications" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5" onClick={fetchPushStats}>
             <Megaphone className="w-4 h-4 text-rose-500" />
             <span>الإشعارات</span>
+          </TabsTrigger>
+          <TabsTrigger data-ui-id="ADMIN_TAB_MARKETPLACE_01" data-testid="ADMIN_TAB_MARKETPLACE_01" value="marketplace" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+            <ShoppingBag className="w-4 h-4 text-orange-500" />
+            <span>السوق</span>
           </TabsTrigger>
           <TabsTrigger data-ui-id="ADMIN_TAB_SETTINGS_01" data-testid="ADMIN_TAB_SETTINGS_01" value="settings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
             <Settings className="w-4 h-4" />
@@ -2536,6 +2723,13 @@ export default function AdminDashboard() {
         </TabsContent>
 
         {/* Settings Tab */}
+        {/* ══════════════════════════════════════════════════════════════
+            Marketplace Admin Tab
+        ══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="marketplace">
+          <AdminMarketplaceTab />
+        </TabsContent>
+
         <TabsContent value="settings" className="bg-card border rounded-2xl shadow-sm">
           <div className="p-6 border-b bg-muted/20">
             <h2 className="text-xl font-bold">إعدادات المنصة</h2>

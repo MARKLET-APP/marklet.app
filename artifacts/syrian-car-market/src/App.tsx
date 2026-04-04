@@ -54,6 +54,9 @@ const TermsPage = lazy(() => import("@/pages/terms"));
 const RealEstatePage = lazy(() => import("@/pages/real-estate"));
 const RealEstateDetailPage = lazy(() => import("@/pages/real-estate-detail"));
 const JobsPage = lazy(() => import("@/pages/jobs"));
+const MarketplacePage = lazy(() => import("@/pages/marketplace"));
+const MarketplaceDetailPage = lazy(() => import("@/pages/marketplace-detail"));
+const MarketplaceOrdersPage = lazy(() => import("@/pages/marketplace-orders"));
 const JobDetailPage = lazy(() => import("@/pages/job-detail"));
 import AppRatingPopup from "@/components/AppRatingPopup";
 
@@ -199,6 +202,9 @@ function Router() {
           <Route path="/real-estate" component={RealEstatePage} />
           <Route path="/jobs/:id" component={JobDetailPage} />
           <Route path="/jobs" component={JobsPage} />
+          <Route path="/marketplace/:id" component={MarketplaceDetailPage} />
+          <Route path="/marketplace-orders" component={MarketplaceOrdersPage} />
+          <Route path="/marketplace" component={MarketplacePage} />
           <Route path="/notifications" component={NotificationsPage} />
           <Route component={NotFound} />
         </Switch>

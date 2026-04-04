@@ -35,6 +35,7 @@ import reelsRouter from "./reels";
 import ogRouter from "./og";
 import realEstateRouter from "./realEstate";
 import jobsRouter from "./jobs";
+import marketplaceRouter from "./marketplace";
 
 const router: IRouter = Router();
 
@@ -74,5 +75,6 @@ router.use(reelsRouter);
 router.use(ogRouter);
 router.use(realEstateRouter);
 router.use(jobsRouter);
+router.use(marketplaceRouter);
 
 export default router;

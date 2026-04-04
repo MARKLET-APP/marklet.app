@@ -24,6 +24,7 @@ const TYPE_LABELS: Record<ListingCardType, string> = {
   plate: "لوحة مرور",
   "real-estate": "عقار",
   jobs: "وظيفة",
+  marketplace: "مستعمل",
 };
 
 const TYPE_COLORS: Record<ListingCardType, string> = {
@@ -34,6 +35,7 @@ const TYPE_COLORS: Record<ListingCardType, string> = {
   plate: "bg-amber-100 text-amber-700",
   "real-estate": "bg-cyan-100 text-cyan-700",
   jobs: "bg-emerald-100 text-emerald-700",
+  marketplace: "bg-orange-100 text-orange-700",
 };
 
 function getTitle(type: ListingCardType, data: any): string {

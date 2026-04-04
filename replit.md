@@ -2,7 +2,20 @@
 
 ## Overview
 
-A full-stack mobile-first Arabic RTL multi-category marketplace for Syria covering cars, real estate, jobs, and more.
+A full-stack mobile-first Arabic RTL multi-category marketplace for Syria covering cars, real estate, jobs, used-goods marketplace (كل شيء), and more.
+
+## 🛍️ Marketplace "كل شيء" Feature (NEW)
+- **DB**: `marketplaceItemsTable`, `marketplaceOrdersTable`, `shippingRatesTable` in `lib/db/src/schema/marketplace.ts`
+- **API**: `artifacts/api-server/src/routes/marketplace.ts` — full CRUD + orders + shipping rates + admin endpoints
+- **Frontend pages**: `marketplace.tsx`, `marketplace-detail.tsx`, `marketplace-orders.tsx`
+- **Currency**: SYP (ل.س) — prices displayed as `X,XXX ل.س`
+- **Payment**: شام كاش (manual receipt upload + admin confirmation)
+- **Shipping**: القدموس (tracking number added by admin)
+- **Categories**: أثاث ومنزل، ملابس وأحذية، إلكترونيات، أدوات ومعدات، كتب وتعليم، مستلزمات أطفال، فنون وتحف، رياضة وترفيه، أجهزة منزلية، أخرى
+- **Conditions**: ممتاز، جيد جداً، جيد، مقبول
+- **Routes**: `/marketplace`, `/marketplace/:id`, `/marketplace-orders`
+- **Admin tab**: "السوق" — view all orders, confirm/reject payments, add tracking numbers
+- **Home section**: "كل شيء" section with category grid + CTA banner (orange/amber gradient)
 
 ---
 

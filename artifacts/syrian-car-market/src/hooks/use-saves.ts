@@ -13,7 +13,8 @@ export type ListingSaveType =
   | "buy_request"
   | "rent_request"
   | "real_estate"
-  | "job";
+  | "job"
+  | "marketplace";
 
 interface SavedId {
   listingType: string;
