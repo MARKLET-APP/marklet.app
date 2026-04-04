@@ -23,5 +23,5 @@ kind = "web"
 
     [services.production]
     build = ["pnpm", "--filter", "@workspace/syrian-car-market", "run", "build"]
-    run = ["sh", "-c", "pnpm exec serve --single dist/public --listen tcp://0.0.0.0:${PORT:-20307}"]
+    run = ["node", "artifacts/syrian-car-market/serve-prod.mjs"]
   
