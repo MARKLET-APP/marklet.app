@@ -1,5 +1,5 @@
 // UI_ID: MARKETPLACE_01 — كل شيء
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, memo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
@@ -8,7 +8,6 @@ import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NativeSelect } from "@/components/ui/native-select";
 import { BottomSheetSelect } from "@/components/ui/bottom-sheet-select";
@@ -27,19 +26,6 @@ const MARKETPLACE_CATEGORIES = [
   "فنون وتحف", "رياضة وترفيه", "أجهزة منزلية", "أخرى",
 ];
 const CONDITIONS = ["ممتاز", "جيد جداً", "جيد", "مقبول"];
-
-// ── initialForm OUTSIDE component ────────────────────────────────────────────
-const initialMarketForm = {
-  title: "",
-  category: MARKETPLACE_CATEGORIES[0],
-  condition: "جيد",
-  price: "",
-  province: "",
-  city: "",
-  phone: "",
-  shippingAvailable: false,
-  description: "",
-};
 
 type MarketItem = {
   id: number; sellerId: number; title: string; price: string; currency: string;
@@ -63,8 +49,23 @@ async function uploadImage(file: File): Promise<string> {
   return data.url as string;
 }
 
-function ImagePicker({ previews, onAdd, onRemove }: {
-  previews: string[]; onAdd: (files: FileList) => void; onRemove: (idx: number) => void;
+/** قراءة الصورة كـ base64 — يعمل في WebView و Capacitor Android */
+function readAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ImagePicker — مكوّن مستقل لرفع الصور بدون إعادة رندر خارجية
+// ═══════════════════════════════════════════════════════════════════
+const ImagePicker = memo(function ImagePicker({ previews, onAdd, onRemove }: {
+  previews: string[];
+  onAdd: (files: FileList) => void;
+  onRemove: (idx: number) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
@@ -91,8 +92,208 @@ function ImagePicker({ previews, onAdd, onRemove }: {
         onChange={(e) => { if (e.target.files?.length) { onAdd(e.target.files); e.target.value = ""; } }} />
     </div>
   );
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// AddMarketItemForm — مكوّن مستقل بحالته الخاصة (يمنع تطاير الأحرف)
+// ═══════════════════════════════════════════════════════════════════
+interface AddFormProps {
+  onSubmit: (data: {
+    title: string; category: string; condition: string; price: number;
+    province: string; city: string; phone: string | null;
+    shippingAvailable: boolean; description: string | null; imageFiles: File[];
+  }) => void;
+  isBusy: boolean;
 }
 
+const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: AddFormProps) {
+  const { toast } = useToast();
+
+  // ── uncontrolled refs (منع تطاير الأحرف في Android WebView) ──
+  const titleRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── select/toggle state (لا تسبب مشكلة لأنها ليست حقول نص) ──
+  const [category, setCategory] = useState(MARKETPLACE_CATEGORIES[0]);
+  const [condition, setCondition] = useState("جيد");
+  const [province, setProvince] = useState("");
+  const [shipping, setShipping] = useState(false);
+
+  // ── image state (base64 للمعاينة بدلاً من blob URLs) ──
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const addImages = useCallback(async (files: FileList) => {
+    const arr = Array.from(files);
+    // قراءة كـ base64 — يعمل في Capacitor Android على خلاف blob URLs
+    const previews = await Promise.all(arr.map(readAsDataURL));
+    setImageFiles(prev => [...prev, ...arr]);
+    setImagePreviews(prev => [...prev, ...previews]);
+  }, []);
+
+  const removeImage = useCallback((idx: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const handleSubmit = () => {
+    const title = titleRef.current?.value.trim() ?? "";
+    const priceStr = priceRef.current?.value.trim() ?? "";
+    const city = cityRef.current?.value.trim() ?? "";
+    const phone = phoneRef.current?.value.trim() || null;
+    const description = descRef.current?.value.trim() || null;
+
+    if (!title || !priceStr || !province || !city || !category) {
+      toast({ title: "يرجى تعبئة الحقول الإلزامية", variant: "destructive" });
+      return;
+    }
+    const numPrice = Number(priceStr);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      toast({ title: "يرجى إدخال سعر صحيح", variant: "destructive" });
+      return;
+    }
+    onSubmit({ title, category, condition, price: numPrice, province, city, phone, shippingAvailable: shipping, description, imageFiles });
+  };
+
+  return (
+    <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+
+      {/* العنوان */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">عنوان الإعلان <span className="text-destructive">*</span></Label>
+        <Input
+          ref={titleRef}
+          placeholder="مثال: أريكة جلدية بحالة ممتازة"
+          defaultValue=""
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* الفئة */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">الفئة <span className="text-destructive">*</span></Label>
+        <BottomSheetSelect value={category} onValueChange={setCategory} placeholder="اختر الفئة">
+          {MARKETPLACE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </BottomSheetSelect>
+      </div>
+
+      {/* الحالة */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">حالة السلعة <span className="text-destructive">*</span></Label>
+        <BottomSheetSelect value={condition} onValueChange={setCondition} placeholder="اختر الحالة">
+          {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+        </BottomSheetSelect>
+      </div>
+
+      {/* السعر */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">السعر (ل.س) <span className="text-destructive">*</span></Label>
+        <Input
+          ref={priceRef}
+          type="number"
+          inputMode="numeric"
+          placeholder="مثال: 50000"
+          defaultValue=""
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* المحافظة */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">المحافظة <span className="text-destructive">*</span></Label>
+        <BottomSheetSelect value={province} onValueChange={setProvince} placeholder="اختر المحافظة">
+          {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+        </BottomSheetSelect>
+      </div>
+
+      {/* المدينة */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">المدينة / الحي <span className="text-destructive">*</span></Label>
+        <Input
+          ref={cityRef}
+          placeholder="مثال: المزة، باب توما..."
+          defaultValue=""
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* رقم الهاتف */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">رقم للتواصل</Label>
+        <Input
+          ref={phoneRef}
+          type="tel"
+          inputMode="tel"
+          placeholder="09xxxxxxxx"
+          defaultValue=""
+          style={{ fontSize: 16 }}
+          dir="ltr"
+        />
+      </div>
+
+      {/* إتاحة الشحن */}
+      <div className="flex items-center justify-between bg-secondary/50 rounded-xl p-3">
+        <div>
+          <p className="text-sm font-semibold">إتاحة الشحن عبر القدموس</p>
+          <p className="text-xs text-muted-foreground mt-0.5">السماح للمشترين بطلب الشحن إلى محافظتهم</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShipping(v => !v)}
+          className={cn(
+            "relative w-12 h-6 rounded-full transition-colors shrink-0",
+            shipping ? "bg-green-500" : "bg-muted"
+          )}
+        >
+          <span className={cn(
+            "absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform",
+            shipping ? "translate-x-1" : "translate-x-6"
+          )} />
+        </button>
+      </div>
+
+      {/* الوصف */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">وصف السلعة</Label>
+        <Textarea
+          ref={descRef}
+          placeholder="صف السلعة بالتفصيل: حجمها، لونها، سبب البيع..."
+          defaultValue=""
+          rows={4}
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* الصور */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold">صور السلعة (حتى 8 صور)</Label>
+        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} />
+      </div>
+
+      {/* زر النشر */}
+      <div className="pt-1 pb-2">
+        <Button
+          className="w-full h-12 text-base font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-2xl gap-2"
+          onClick={handleSubmit}
+          disabled={isBusy}
+        >
+          {isBusy
+            ? <><Loader2 className="w-5 h-5 animate-spin" /> جاري النشر...</>
+            : <><Plus className="w-5 h-5" /> نشر الإعلان</>
+          }
+        </Button>
+      </div>
+
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// MarketplacePage — الصفحة الرئيسية
+// ═══════════════════════════════════════════════════════════════════
 export default function MarketplacePage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
@@ -101,46 +302,18 @@ export default function MarketplacePage() {
   const { startChat, loading: startingChat } = useStartChat();
 
   // filters
-  const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [filterCat, setFilterCat] = useState("__all__");
   const [filterCond, setFilterCond] = useState("__all__");
   const [filterProv, setFilterProv] = useState("__all__");
   const [filterShipping, setFilterShipping] = useState(false);
 
-  // form
+  // dialog
   const [addOpen, setAddOpen] = useState(false);
-  const [form, setForm] = useState(initialMarketForm);
-  const update = useCallback((k: string, v: string | boolean) => setForm(prev => ({ ...prev, [k]: v })), []);
-  const handleInput = useCallback((field: string) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setForm(prev => { if ((prev as any)[field] === value) return prev; return { ...prev, [field]: value }; });
-    }, []);
-
-  // images
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploadingImgs, setUploadingImgs] = useState(false);
-
-  const addImages = (files: FileList) => {
-    const arr = Array.from(files);
-    const previews = arr.map(f => URL.createObjectURL(f));
-    setImageFiles(p => [...p, ...arr]);
-    setImagePreviews(p => [...p, ...previews]);
-  };
-  const removeImage = (idx: number) => {
-    URL.revokeObjectURL(imagePreviews[idx]);
-    setImageFiles(p => p.filter((_, i) => i !== idx));
-    setImagePreviews(p => p.filter((_, i) => i !== idx));
-  };
-  const resetForm = () => {
-    setForm(initialMarketForm);
-    imagePreviews.forEach(u => URL.revokeObjectURL(u));
-    setImageFiles([]);
-    setImagePreviews([]);
-  };
+  const formKey = useRef(0); // مفتاح لإعادة تهيئة النموذج عند الإغلاق
 
   // query
   const { data: items = [], isLoading } = useQuery<MarketItem[]>({
@@ -162,8 +335,8 @@ export default function MarketplacePage() {
     mutationFn: (body: object) => apiRequest("/api/marketplace", "POST", body),
     onSuccess: () => {
       toast({ title: "تم نشر إعلانك بنجاح ✅" });
+      formKey.current += 1;
       setAddOpen(false);
-      resetForm();
       qc.invalidateQueries({ queryKey: ["marketplace"] });
     },
     onError: () => toast({ title: "فشل نشر الإعلان", variant: "destructive" }),
@@ -178,35 +351,37 @@ export default function MarketplacePage() {
     onError: () => toast({ title: "فشل الحذف", variant: "destructive" }),
   });
 
-  const handleSubmit = async () => {
-    if (!form.title || !form.price || !form.province || !form.city || !form.category) {
-      toast({ title: "يرجى تعبئة الحقول الإلزامية", variant: "destructive" }); return;
-    }
-    const numPrice = Number(form.price);
-    if (isNaN(numPrice) || numPrice <= 0) {
-      toast({ title: "يرجى إدخال سعر صحيح", variant: "destructive" }); return;
-    }
+  const handleFormSubmit = useCallback(async (data: {
+    title: string; category: string; condition: string; price: number;
+    province: string; city: string; phone: string | null;
+    shippingAvailable: boolean; description: string | null; imageFiles: File[];
+  }) => {
     let uploadedUrls: string[] = [];
-    if (imageFiles.length > 0) {
+    if (data.imageFiles.length > 0) {
       setUploadingImgs(true);
-      try { uploadedUrls = await Promise.all(imageFiles.map(f => uploadImage(f))); }
-      catch { toast({ title: "فشل رفع الصور، حاول مجدداً", variant: "destructive" }); setUploadingImgs(false); return; }
+      try {
+        uploadedUrls = await Promise.all(data.imageFiles.map(f => uploadImage(f)));
+      } catch {
+        toast({ title: "فشل رفع الصور، حاول مجدداً", variant: "destructive" });
+        setUploadingImgs(false);
+        return;
+      }
       setUploadingImgs(false);
     }
     createMutation.mutate({
-      title: form.title,
-      category: form.category,
-      condition: form.condition,
-      price: numPrice,
+      title: data.title,
+      category: data.category,
+      condition: data.condition,
+      price: data.price,
       currency: "SYP",
-      province: form.province,
-      city: form.city,
-      phone: form.phone || null,
-      shippingAvailable: form.shippingAvailable,
-      description: form.description || null,
+      province: data.province,
+      city: data.city,
+      phone: data.phone,
+      shippingAvailable: data.shippingAvailable,
+      description: data.description,
       images: uploadedUrls,
     });
-  };
+  }, [createMutation, toast]);
 
   const isBusy = createMutation.isPending || uploadingImgs;
   const hasFilters = filterCat !== "__all__" || filterCond !== "__all__" || filterProv !== "__all__" || filterShipping || q;
@@ -363,7 +538,7 @@ export default function MarketplacePage() {
       {/* ══════════════════════════════════════════════════════════════
           ADD LISTING DIALOG
       ══════════════════════════════════════════════════════════════ */}
-      <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
+      <Dialog open={addOpen} onOpenChange={(open) => { if (!open) formKey.current += 1; setAddOpen(open); }}>
         <DialogContent
           className="max-w-lg p-0 overflow-hidden"
           dir="rtl"
@@ -379,131 +554,13 @@ export default function MarketplacePage() {
             </DialogHeader>
           </div>
 
-          <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+          {/* مكوّن النموذج المستقل — له حالته الخاصة كاملاً */}
+          <AddMarketItemForm
+            key={formKey.current}
+            onSubmit={handleFormSubmit}
+            isBusy={isBusy}
+          />
 
-            {/* العنوان */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">عنوان الإعلان <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="مثال: أريكة جلدية بحالة ممتازة"
-                value={form.title}
-                onChange={handleInput("title")}
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* الفئة */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">الفئة <span className="text-destructive">*</span></Label>
-              <BottomSheetSelect value={form.category} onValueChange={v => update("category", v)} placeholder="اختر الفئة">
-                {MARKETPLACE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </BottomSheetSelect>
-            </div>
-
-            {/* الحالة */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">حالة السلعة <span className="text-destructive">*</span></Label>
-              <BottomSheetSelect value={form.condition} onValueChange={v => update("condition", v)} placeholder="اختر الحالة">
-                {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
-              </BottomSheetSelect>
-            </div>
-
-            {/* السعر */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">السعر (ل.س) <span className="text-destructive">*</span></Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                placeholder="مثال: 50000"
-                value={form.price}
-                onChange={handleInput("price")}
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* المحافظة */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">المحافظة <span className="text-destructive">*</span></Label>
-              <BottomSheetSelect value={form.province} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
-                {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-              </BottomSheetSelect>
-            </div>
-
-            {/* المدينة */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">المدينة / الحي <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="مثال: المزة، باب توما..."
-                value={form.city}
-                onChange={handleInput("city")}
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* رقم الهاتف */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">رقم للتواصل</Label>
-              <Input
-                type="tel"
-                inputMode="tel"
-                placeholder="09xxxxxxxx"
-                value={form.phone}
-                onChange={handleInput("phone")}
-                style={{ fontSize: 16 }}
-                dir="ltr"
-              />
-            </div>
-
-            {/* إتاحة الشحن */}
-            <div className="flex items-center justify-between bg-secondary/50 rounded-xl p-3">
-              <div>
-                <p className="text-sm font-semibold">إتاحة الشحن عبر القدموس</p>
-                <p className="text-xs text-muted-foreground mt-0.5">السماح للمشترين بطلب الشحن إلى محافظتهم</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => update("shippingAvailable", !form.shippingAvailable)}
-                className={cn(
-                  "relative w-12 h-6 rounded-full transition-colors shrink-0",
-                  form.shippingAvailable ? "bg-green-500" : "bg-muted"
-                )}
-              >
-                <span className={cn(
-                  "absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform",
-                  form.shippingAvailable ? "translate-x-1" : "translate-x-6"
-                )} />
-              </button>
-            </div>
-
-            {/* الوصف */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">وصف السلعة</Label>
-              <Textarea
-                placeholder="صف السلعة بالتفصيل: حجمها، لونها، سبب البيع..."
-                value={form.description}
-                onChange={handleInput("description")}
-                rows={4}
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* الصور */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">صور السلعة (حتى 8 صور)</Label>
-              <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} />
-            </div>
-
-          </div>
-
-          <div className="px-5 pb-5 pt-3 shrink-0 border-t">
-            <Button
-              className="w-full h-12 text-base font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-2xl gap-2"
-              onClick={handleSubmit}
-              disabled={isBusy}
-            >
-              {isBusy ? <><Loader2 className="w-5 h-5 animate-spin" /> جاري النشر...</> : <><Plus className="w-5 h-5" /> نشر الإعلان</>}
-            </Button>
-          </div>
         </DialogContent>
       </Dialog>
     </div>

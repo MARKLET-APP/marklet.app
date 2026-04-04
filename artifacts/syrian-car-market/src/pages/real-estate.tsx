@@ -1,5 +1,5 @@
 // UI_ID: REAL_ESTATE_01 — CLEAN REBUILD
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, memo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
@@ -8,7 +8,6 @@ import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NativeSelect } from "@/components/ui/native-select";
 import { BottomSheetSelect } from "@/components/ui/bottom-sheet-select";
@@ -17,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   Search, Plus, Building2, Loader2,
-  ShoppingCart, Trash2, Sparkles, ImagePlus, X, Phone, MessageCircle,
+  ShoppingCart, Sparkles, ImagePlus, X,
 } from "lucide-react";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -25,24 +24,6 @@ import { BuyRequestCard } from "@/components/BuyRequestCard";
 
 const LISTING_TYPES = ["بيع", "إيجار"];
 const SUB_CATEGORIES = ["شقق", "منازل وفيلات", "أراضي", "مكاتب", "محلات تجارية", "مستودعات", "استديو", "غرفة"];
-
-// ── initialForm defined OUTSIDE component — never recreated on render ────────
-const initialRealEstateForm = {
-  title: "",
-  listingType: "بيع",
-  subCategory: "شقق",
-  price: "",
-  currency: "USD",
-  area: "",
-  rooms: "",
-  bathrooms: "",
-  floor: "",
-  province: "",
-  city: "",
-  location: "",
-  phone: "",
-  description: "",
-};
 
 type RealEstate = {
   id: number; sellerId: number; title: string; listingType: string; subCategory: string;
@@ -67,8 +48,18 @@ async function uploadImage(file: File): Promise<string> {
   return data.url as string;
 }
 
-// ── Image preview strip (inline, no custom hooks) ───────────────────────────
-function ImagePicker({
+/** قراءة الصورة كـ base64 — يعمل في WebView و Capacitor Android */
+function readAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── ImagePicker مستقل ───────────────────────────────────────────────────────
+const ImagePicker = memo(function ImagePicker({
   previews, onAdd, onRemove,
 }: {
   previews: string[];
@@ -112,9 +103,391 @@ function ImagePicker({
       />
     </div>
   );
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// AddRealEstateForm — مكوّن مستقل (يمنع تطاير الأحرف + صور base64)
+// ═══════════════════════════════════════════════════════════════════
+interface AddListingData {
+  title: string; listingType: string; subCategory: string;
+  price: number; currency: string;
+  area: string | null; rooms: number | null; bathrooms: number | null; floor: number | null;
+  province: string; city: string; location: string | null; phone: string | null;
+  description: string | null; imageFiles: File[];
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
+const AddRealEstateForm = memo(function AddRealEstateForm({
+  onSubmit, isBusy,
+}: { onSubmit: (data: AddListingData) => void; isBusy: boolean }) {
+  const { toast } = useToast();
+
+  // uncontrolled refs
+  const titleRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const areaRef = useRef<HTMLInputElement>(null);
+  const roomsRef = useRef<HTMLInputElement>(null);
+  const bathroomsRef = useRef<HTMLInputElement>(null);
+  const floorRef = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLInputElement>(null);
+  const locationRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  // select state
+  const [listingType, setListingType] = useState("بيع");
+  const [subCategory, setSubCategory] = useState("شقق");
+  const [currency, setCurrency] = useState("USD");
+  const [province, setProvince] = useState("");
+
+  // image state (base64 للمعاينة بدلاً من blob URLs)
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const addImages = useCallback(async (files: FileList) => {
+    const arr = Array.from(files);
+    const previews = await Promise.all(arr.map(readAsDataURL));
+    setImageFiles(prev => [...prev, ...arr]);
+    setImagePreviews(prev => [...prev, ...previews]);
+  }, []);
+
+  const removeImage = useCallback((idx: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  // AI description
+  const [aiLoading, setAiLoading] = useState(false);
+  const handleAiDescription = async () => {
+    if (!subCategory || !province) {
+      toast({ title: "يرجى تحديد نوع العقار والمحافظة أولاً", variant: "destructive" });
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await apiRequest<{ description: string }>("/api/real-estate/ai-description", "POST", {
+        title: titleRef.current?.value || `${subCategory} للـ${listingType}`,
+        listingType,
+        subCategory,
+        area: areaRef.current?.value || undefined,
+        rooms: roomsRef.current?.value || undefined,
+        province,
+        city: cityRef.current?.value || undefined,
+      });
+      // تعيين قيمة الـ textarea مباشرة بدون state (uncontrolled)
+      if (descRef.current) descRef.current.value = res.description;
+      toast({ title: "تم توليد الوصف بنجاح ✨" });
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    const title = titleRef.current?.value.trim() ?? "";
+    const priceStr = priceRef.current?.value.trim() ?? "";
+    const city = cityRef.current?.value.trim() ?? "";
+
+    if (!title || !priceStr || !province || !city) {
+      toast({ title: "يرجى تعبئة الحقول الإلزامية (العنوان، السعر، المحافظة، المدينة)", variant: "destructive" });
+      return;
+    }
+    const numPrice = Number(priceStr);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      toast({ title: "يرجى إدخال سعر صحيح", variant: "destructive" });
+      return;
+    }
+    const areaVal = areaRef.current?.value.trim();
+    const roomsVal = roomsRef.current?.value.trim();
+    const bathroomsVal = bathroomsRef.current?.value.trim();
+    const floorVal = floorRef.current?.value.trim();
+
+    onSubmit({
+      title,
+      listingType,
+      subCategory,
+      price: numPrice,
+      currency,
+      area: areaVal || null,
+      rooms: roomsVal ? Number(roomsVal) : null,
+      bathrooms: bathroomsVal ? Number(bathroomsVal) : null,
+      floor: floorVal ? Number(floorVal) : null,
+      province,
+      city,
+      location: locationRef.current?.value.trim() || null,
+      phone: phoneRef.current?.value.trim() || null,
+      description: descRef.current?.value.trim() || null,
+      imageFiles,
+    });
+  };
+
+  return (
+    <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+
+      {/* العنوان */}
+      <div>
+        <Label className="mb-1 block">العنوان *</Label>
+        <Input
+          ref={titleRef}
+          placeholder="مثال: شقة للبيع في دمشق - المزة"
+          defaultValue=""
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* نوع + فئة */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">نوع الإعلان *</Label>
+          <BottomSheetSelect value={listingType} onValueChange={setListingType} placeholder="النوع">
+            {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </BottomSheetSelect>
+        </div>
+        <div>
+          <Label className="mb-1 block">الفئة *</Label>
+          <BottomSheetSelect value={subCategory} onValueChange={setSubCategory} placeholder="الفئة">
+            {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+          </BottomSheetSelect>
+        </div>
+      </div>
+
+      {/* السعر + العملة */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-2">
+          <Label className="mb-1 block">السعر *</Label>
+          <Input
+            ref={priceRef}
+            type="number"
+            inputMode="numeric"
+            placeholder="السعر"
+            defaultValue=""
+            style={{ fontSize: 16 }}
+          />
+        </div>
+        <div>
+          <Label className="mb-1 block">العملة</Label>
+          <BottomSheetSelect value={currency} onValueChange={setCurrency} placeholder="USD">
+            <option value="USD">USD</option>
+            <option value="SYP">SYP</option>
+          </BottomSheetSelect>
+        </div>
+      </div>
+
+      {/* المساحة + الغرف */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">المساحة (م²)</Label>
+          <Input ref={areaRef} type="number" inputMode="numeric" placeholder="المساحة" defaultValue="" style={{ fontSize: 16 }} />
+        </div>
+        <div>
+          <Label className="mb-1 block">عدد الغرف</Label>
+          <Input ref={roomsRef} type="number" inputMode="numeric" placeholder="الغرف" defaultValue="" style={{ fontSize: 16 }} />
+        </div>
+      </div>
+
+      {/* الحمامات + الطابق */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">عدد الحمامات</Label>
+          <Input ref={bathroomsRef} type="number" inputMode="numeric" placeholder="الحمامات" defaultValue="" style={{ fontSize: 16 }} />
+        </div>
+        <div>
+          <Label className="mb-1 block">رقم الطابق</Label>
+          <Input ref={floorRef} type="number" inputMode="numeric" placeholder="الطابق" defaultValue="" style={{ fontSize: 16 }} />
+        </div>
+      </div>
+
+      {/* المحافظة + المدينة */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">المحافظة *</Label>
+          <BottomSheetSelect value={province} onValueChange={setProvince} placeholder="اختر المحافظة">
+            {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+          </BottomSheetSelect>
+        </div>
+        <div>
+          <Label className="mb-1 block">المدينة *</Label>
+          <Input
+            ref={cityRef}
+            placeholder="المدينة أو الحي"
+            defaultValue=""
+            style={{ fontSize: 16 }}
+          />
+        </div>
+      </div>
+
+      {/* تفاصيل الموقع */}
+      <div>
+        <Label className="mb-1 block">تفاصيل الموقع</Label>
+        <Input
+          ref={locationRef}
+          placeholder="مثال: قرب مسجد الروضة، شارع الثورة"
+          defaultValue=""
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* رقم الهاتف */}
+      <div>
+        <Label className="mb-1 block">رقم الهاتف / واتساب</Label>
+        <Input
+          ref={phoneRef}
+          type="tel"
+          placeholder="مثال: 0991234567"
+          defaultValue=""
+          style={{ fontSize: 16 }}
+          dir="ltr"
+        />
+      </div>
+
+      {/* الوصف */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <Label>الوصف</Label>
+          <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 px-2"
+            onClick={handleAiDescription} disabled={aiLoading}>
+            {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            كتابة بالذكاء الاصطناعي
+          </Button>
+        </div>
+        <Textarea
+          ref={descRef}
+          placeholder="وصف تفصيلي للعقار..."
+          defaultValue=""
+          rows={3}
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* الصور */}
+      <div>
+        <Label className="mb-2 block">الصور</Label>
+        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} />
+        {imageFiles.length > 0 && (
+          <p className="text-xs text-muted-foreground mt-1">{imageFiles.length} صورة — سيتم رفعها عند النشر</p>
+        )}
+      </div>
+
+      <Button className="w-full h-12 text-base font-bold" onClick={handleSubmit} disabled={isBusy}>
+        {isBusy
+          ? <><Loader2 className="w-4 h-4 animate-spin ml-2" /> جارٍ النشر...</>
+          : "نشر الإعلان"
+        }
+      </Button>
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// BuyRequestForm — نموذج طلب شراء عقار المستقل
+// ═══════════════════════════════════════════════════════════════════
+interface BuyRequestData {
+  propertyType: string; maxPrice: string; currency: string; province: string; city: string; description: string;
+}
+
+const BuyRequestForm = memo(function BuyRequestForm({
+  onSubmit, isBusy,
+}: { onSubmit: (data: BuyRequestData) => void; isBusy: boolean }) {
+  const { toast } = useToast();
+
+  // uncontrolled refs
+  const maxPriceRef = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  // select state
+  const [propertyType, setPropertyType] = useState("شقق");
+  const [currency, setCurrency] = useState("USD");
+  const [province, setProvince] = useState("");
+
+  const handleSubmit = () => {
+    const city = cityRef.current?.value.trim() ?? "";
+    if (!province || !city) {
+      toast({ title: "يرجى تحديد المحافظة والمدينة", variant: "destructive" });
+      return;
+    }
+    onSubmit({
+      propertyType,
+      maxPrice: maxPriceRef.current?.value.trim() ?? "",
+      currency,
+      province,
+      city,
+      description: descRef.current?.value.trim() ?? "",
+    });
+  };
+
+  return (
+    <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+
+      <div>
+        <Label className="mb-1 block">نوع العقار المطلوب *</Label>
+        <BottomSheetSelect value={propertyType} onValueChange={setPropertyType} placeholder="نوع العقار">
+          {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+        </BottomSheetSelect>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-2">
+          <Label className="mb-1 block">الميزانية القصوى</Label>
+          <Input
+            ref={maxPriceRef}
+            type="number"
+            inputMode="numeric"
+            placeholder="أعلى سعر"
+            defaultValue=""
+            style={{ fontSize: 16 }}
+          />
+        </div>
+        <div>
+          <Label className="mb-1 block">العملة</Label>
+          <BottomSheetSelect value={currency} onValueChange={setCurrency} placeholder="USD">
+            <option value="USD">USD</option>
+            <option value="SYP">SYP</option>
+          </BottomSheetSelect>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">المحافظة *</Label>
+          <BottomSheetSelect value={province} onValueChange={setProvince} placeholder="اختر المحافظة">
+            {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
+          </BottomSheetSelect>
+        </div>
+        <div>
+          <Label className="mb-1 block">المدينة / الحي *</Label>
+          <Input
+            ref={cityRef}
+            placeholder="مثال: المزة، المهاجرين"
+            defaultValue=""
+            style={{ fontSize: 16 }}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label className="mb-1 block">تفاصيل إضافية</Label>
+        <Textarea
+          ref={descRef}
+          placeholder="مثال: أبحث عن شقة بغرفتين..."
+          defaultValue=""
+          rows={3}
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      <Button className="w-full gap-2 bg-teal-700 hover:bg-teal-800 h-12 text-base font-bold"
+        onClick={handleSubmit} disabled={isBusy}>
+        {isBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+        إرسال طلب الشراء
+      </Button>
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// RealEstatePage — الصفحة الرئيسية
+// ═══════════════════════════════════════════════════════════════════
 export default function RealEstatePage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
@@ -123,99 +496,22 @@ export default function RealEstatePage() {
   const { startChat, loading: startingChat } = useStartChat();
 
   // Filter state
-  const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [filterType, setFilterType] = useState("__all__");
   const [filterSub, setFilterSub] = useState("__all__");
   const [filterProv, setFilterProv] = useState("__all__");
   const [tab, setTab] = useState<"listings" | "requests">("listings");
+
+  // dialogs — formKey forces remount (reset) on open/close
   const [addOpen, setAddOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
-
-  // ── form — initialRealEstateForm defined OUTSIDE (never recreated) ─────────
-  const [form, setForm] = useState(initialRealEstateForm);
-
-  // BottomSheetSelect: receives value directly
-  const update = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
-
-  // Text inputs/textareas: event-based, skips re-render if value unchanged
-  const handleInput = (field: keyof typeof initialRealEstateForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setForm(prev => {
-        if (prev[field] === value) return prev;
-        return { ...prev, [field]: value };
-      });
-    };
-
-  // ── Image system — File[] locally, blob preview, upload on submit ────────
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const addFormKey = useRef(0);
+  const buyFormKey = useRef(0);
   const [uploadingImgs, setUploadingImgs] = useState(false);
 
-  const addImages = (files: FileList) => {
-    const arr = Array.from(files);
-    const previews = arr.map(f => URL.createObjectURL(f));
-    setImageFiles(p => [...p, ...arr]);
-    setImagePreviews(p => [...p, ...previews]);
-  };
-
-  const removeImage = (idx: number) => {
-    URL.revokeObjectURL(imagePreviews[idx]);
-    setImageFiles(p => p.filter((_, i) => i !== idx));
-    setImagePreviews(p => p.filter((_, i) => i !== idx));
-  };
-
-  const resetForm = () => {
-    setForm(initialRealEstateForm);
-    imagePreviews.forEach(u => URL.revokeObjectURL(u));
-    setImageFiles([]);
-    setImagePreviews([]);
-  };
-
-  // ── Buy request form ─────────────────────────────────────────────────────
-  const [buyForm, setBuyForm] = useState({
-    propertyType: "شقة", maxPrice: "", currency: "USD", province: "", city: "", description: "",
-  });
-  const updateBuy = (k: string, v: string) => setBuyForm(prev => ({ ...prev, [k]: v }));
-  const handleBuyInput = (field: string) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setBuyForm(prev => {
-        if ((prev as any)[field] === value) return prev;
-        return { ...prev, [field]: value };
-      });
-    };
-
-  // ── AI description ────────────────────────────────────────────────────────
-  const [aiDescLoading, setAiDescLoading] = useState(false);
-  const handleAiDescription = async () => {
-    if (!form.subCategory || !form.province) {
-      toast({ title: "يرجى تحديد نوع العقار والمحافظة أولاً", variant: "destructive" });
-      return;
-    }
-    setAiDescLoading(true);
-    try {
-      const res = await apiRequest<{ description: string }>("/api/real-estate/ai-description", "POST", {
-        title: form.title || `${form.subCategory} للـ${form.listingType}`,
-        listingType: form.listingType,
-        subCategory: form.subCategory,
-        area: form.area || undefined,
-        rooms: form.rooms || undefined,
-        province: form.province,
-        city: form.city || undefined,
-      });
-      update("description", res.description);
-      toast({ title: "تم توليد الوصف بنجاح ✨" });
-    } catch {
-      toast({ title: "فشل توليد الوصف", variant: "destructive" });
-    } finally {
-      setAiDescLoading(false);
-    }
-  };
-
-  // ── Queries ───────────────────────────────────────────────────────────────
+  // ── Queries ──────────────────────────────────────────────────────
   const activeType = filterType === "__all__" ? "" : filterType;
   const activeSub = filterSub === "__all__" ? "" : filterSub;
   const activeProv = filterProv === "__all__" ? "" : filterProv;
@@ -239,13 +535,13 @@ export default function RealEstatePage() {
     queryFn: () => apiRequest<any[]>("/api/buy-requests?category=real-estate"),
   });
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
+  // ── Mutations ────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: (body: object) => apiRequest("/api/real-estate", "POST", body),
     onSuccess: () => {
       toast({ title: "تم نشر إعلانك بنجاح" });
+      addFormKey.current += 1;
       setAddOpen(false);
-      resetForm();
       qc.invalidateQueries({ queryKey: ["real-estate"] });
     },
     onError: () => toast({ title: "فشل نشر الإعلان", variant: "destructive" }),
@@ -255,8 +551,8 @@ export default function RealEstatePage() {
     mutationFn: (body: object) => apiRequest("/api/buy-requests", "POST", body),
     onSuccess: () => {
       toast({ title: "تم إرسال طلبك بنجاح" });
+      buyFormKey.current += 1;
       setBuyOpen(false);
-      setBuyForm({ propertyType: "شقة", maxPrice: "", currency: "USD", province: "", city: "", description: "" });
       qc.invalidateQueries({ queryKey: ["buy-requests", "real-estate"] });
     },
     onError: () => toast({ title: "فشل إرسال الطلب", variant: "destructive" }),
@@ -276,23 +572,13 @@ export default function RealEstatePage() {
     onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
   });
 
-  // ── Submit listing (upload images first) ─────────────────────────────────
-  const handleSubmit = async () => {
-    if (!form.title || !form.price || !form.province || !form.city) {
-      toast({ title: "يرجى تعبئة الحقول الإلزامية (العنوان، السعر، المحافظة، المدينة)", variant: "destructive" });
-      return;
-    }
-    const numPrice = Number(form.price);
-    if (isNaN(numPrice) || numPrice <= 0) {
-      toast({ title: "يرجى إدخال سعر صحيح", variant: "destructive" });
-      return;
-    }
-    // Upload images
+  // ── Callbacks ────────────────────────────────────────────────────
+  const handleAddSubmit = useCallback(async (data: AddListingData) => {
     let uploadedUrls: string[] = [];
-    if (imageFiles.length > 0) {
+    if (data.imageFiles.length > 0) {
       setUploadingImgs(true);
       try {
-        uploadedUrls = await Promise.all(imageFiles.map(f => uploadImage(f)));
+        uploadedUrls = await Promise.all(data.imageFiles.map(f => uploadImage(f)));
       } catch {
         toast({ title: "فشل رفع بعض الصور، حاول مجدداً", variant: "destructive" });
         setUploadingImgs(false);
@@ -301,38 +587,34 @@ export default function RealEstatePage() {
       setUploadingImgs(false);
     }
     createMutation.mutate({
-      title: form.title,
-      listingType: form.listingType,
-      subCategory: form.subCategory,
-      price: numPrice,
-      currency: form.currency,
-      area: form.area || null,
-      rooms: form.rooms ? Number(form.rooms) : null,
-      bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
-      floor: form.floor ? Number(form.floor) : null,
-      province: form.province,
-      city: form.city,
-      location: form.location || null,
-      phone: form.phone || null,
-      description: form.description || null,
+      title: data.title,
+      listingType: data.listingType,
+      subCategory: data.subCategory,
+      price: data.price,
+      currency: data.currency,
+      area: data.area,
+      rooms: data.rooms,
+      bathrooms: data.bathrooms,
+      floor: data.floor,
+      province: data.province,
+      city: data.city,
+      location: data.location,
+      phone: data.phone,
+      description: data.description,
       images: uploadedUrls,
     });
-  };
+  }, [createMutation, toast]);
 
-  const handleBuySubmit = () => {
-    if (!buyForm.province || !buyForm.city) {
-      toast({ title: "يرجى تحديد المحافظة والمدينة", variant: "destructive" });
-      return;
-    }
+  const handleBuySubmit = useCallback((data: BuyRequestData) => {
     buyMutation.mutate({
-      brand: buyForm.propertyType,
-      maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : null,
-      currency: buyForm.currency,
-      city: buyForm.city,
-      description: `المحافظة: ${buyForm.province}${buyForm.description ? `\n${buyForm.description}` : ""}`,
+      brand: data.propertyType,
+      maxPrice: data.maxPrice ? Number(data.maxPrice) : null,
+      currency: data.currency,
+      city: data.city,
+      description: `المحافظة: ${data.province}${data.description ? `\n${data.description}` : ""}`,
       category: "real-estate",
     });
-  };
+  }, [buyMutation]);
 
   const isBusy = createMutation.isPending || uploadingImgs;
 
@@ -489,12 +771,9 @@ export default function RealEstatePage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          ADD LISTING DIALOG — clean form, no guards, no composition
+          ADD LISTING DIALOG
       ══════════════════════════════════════════════════════════════ */}
-      <Dialog
-        open={addOpen}
-        onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}
-      >
+      <Dialog open={addOpen} onOpenChange={(open) => { if (!open) addFormKey.current += 1; setAddOpen(open); }}>
         <DialogContent
           className="max-w-lg p-0 overflow-hidden"
           dir="rtl"
@@ -507,178 +786,18 @@ export default function RealEstatePage() {
               <DialogTitle className="text-right text-lg font-bold">نشر إعلان عقاري</DialogTitle>
             </DialogHeader>
           </div>
-
-          <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
-
-            {/* العنوان */}
-            <div>
-              <Label className="mb-1 block">العنوان *</Label>
-              <Input
-                value={form.title ?? ""}
-                onChange={handleInput("title")}
-                onBlur={(e) => handleInput("title")(e)}
-                placeholder="مثال: شقة للبيع في دمشق - المزة"
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* نوع + فئة */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">نوع الإعلان *</Label>
-                <BottomSheetSelect value={form.listingType ?? ""} onValueChange={v => update("listingType", v)} placeholder="النوع">
-                  {LISTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </BottomSheetSelect>
-              </div>
-              <div>
-                <Label className="mb-1 block">الفئة *</Label>
-                <BottomSheetSelect value={form.subCategory ?? ""} onValueChange={v => update("subCategory", v)} placeholder="الفئة">
-                  {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
-                </BottomSheetSelect>
-              </div>
-            </div>
-
-            {/* السعر + العملة */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-2">
-                <Label className="mb-1 block">السعر *</Label>
-                <Input
-                  type="number"
-                  value={form.price ?? ""}
-                  onChange={handleInput("price")}
-                  onBlur={(e) => handleInput("price")(e)}
-                  placeholder="السعر"
-                  style={{ fontSize: 16 }}
-                />
-              </div>
-              <div>
-                <Label className="mb-1 block">العملة</Label>
-                <BottomSheetSelect value={form.currency ?? ""} onValueChange={v => update("currency", v)} placeholder="USD">
-                  <option value="USD">USD</option>
-                  <option value="SYP">SYP</option>
-                </BottomSheetSelect>
-              </div>
-            </div>
-
-            {/* المساحة + الغرف */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">المساحة (م²)</Label>
-                <Input type="number" value={form.area ?? ""} onChange={handleInput("area")} onBlur={(e) => handleInput("area")(e)} placeholder="المساحة" style={{ fontSize: 16 }} />
-              </div>
-              <div>
-                <Label className="mb-1 block">عدد الغرف</Label>
-                <Input type="number" value={form.rooms ?? ""} onChange={handleInput("rooms")} onBlur={(e) => handleInput("rooms")(e)} placeholder="الغرف" style={{ fontSize: 16 }} />
-              </div>
-            </div>
-
-            {/* الحمامات + الطابق */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">عدد الحمامات</Label>
-                <Input type="number" value={form.bathrooms ?? ""} onChange={handleInput("bathrooms")} onBlur={(e) => handleInput("bathrooms")(e)} placeholder="الحمامات" style={{ fontSize: 16 }} />
-              </div>
-              <div>
-                <Label className="mb-1 block">رقم الطابق</Label>
-                <Input type="number" value={form.floor ?? ""} onChange={handleInput("floor")} onBlur={(e) => handleInput("floor")(e)} placeholder="الطابق" style={{ fontSize: 16 }} />
-              </div>
-            </div>
-
-            {/* المحافظة + المدينة */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={form.province ?? ""} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
-                  {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                </BottomSheetSelect>
-              </div>
-              <div>
-                <Label className="mb-1 block">المدينة *</Label>
-                <Input
-                  value={form.city ?? ""}
-                  onChange={handleInput("city")}
-                  onBlur={(e) => handleInput("city")(e)}
-                  placeholder="المدينة أو الحي"
-                  style={{ fontSize: 16 }}
-                />
-              </div>
-            </div>
-
-            {/* تفاصيل الموقع */}
-            <div>
-              <Label className="mb-1 block">تفاصيل الموقع</Label>
-              <Input
-                value={form.location ?? ""}
-                onChange={handleInput("location")}
-                onBlur={(e) => handleInput("location")(e)}
-                placeholder="مثال: قرب مسجد الروضة، شارع الثورة"
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* رقم الهاتف */}
-            <div>
-              <Label className="mb-1 block">رقم الهاتف / واتساب</Label>
-              <Input
-                type="tel"
-                value={form.phone ?? ""}
-                onChange={handleInput("phone")}
-                onBlur={(e) => handleInput("phone")(e)}
-                placeholder="مثال: 0991234567"
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* الوصف */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <Label>الوصف</Label>
-                <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 px-2" onClick={handleAiDescription} disabled={aiDescLoading}>
-                  {aiDescLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  كتابة بالذكاء الاصطناعي
-                </Button>
-              </div>
-              <Textarea
-                value={form.description ?? ""}
-                onChange={handleInput("description")}
-                onBlur={(e) => handleInput("description")(e)}
-                placeholder="وصف تفصيلي للعقار..."
-                rows={3}
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* الصور — inline image picker */}
-            <div>
-              <Label className="mb-2 block">الصور</Label>
-              <ImagePicker
-                previews={imagePreviews}
-                onAdd={addImages}
-                onRemove={removeImage}
-              />
-              {imageFiles.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">{imageFiles.length} صورة — سيتم رفعها عند النشر</p>
-              )}
-            </div>
-
-            <Button
-              className="w-full h-12 text-base font-bold"
-              onClick={handleSubmit}
-              disabled={isBusy}
-            >
-              {isBusy
-                ? <><Loader2 className="w-4 h-4 animate-spin ml-2" />{uploadingImgs ? "جارٍ رفع الصور..." : "جارٍ النشر..."}</>
-                : "نشر الإعلان"
-              }
-            </Button>
-          </div>
+          <AddRealEstateForm
+            key={addFormKey.current}
+            onSubmit={handleAddSubmit}
+            isBusy={isBusy}
+          />
         </DialogContent>
       </Dialog>
 
       {/* ══════════════════════════════════════════════════════════════
           BUY REQUEST DIALOG
       ══════════════════════════════════════════════════════════════ */}
-      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
+      <Dialog open={buyOpen} onOpenChange={(open) => { if (!open) buyFormKey.current += 1; setBuyOpen(open); }}>
         <DialogContent
           className="max-w-lg p-0 overflow-hidden"
           dir="rtl"
@@ -691,52 +810,11 @@ export default function RealEstatePage() {
               <DialogTitle className="text-xl font-bold">طلب شراء عقار</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
-
-            <div>
-              <Label className="mb-1 block">نوع العقار المطلوب *</Label>
-              <BottomSheetSelect value={buyForm.propertyType ?? ""} onValueChange={v => updateBuy("propertyType", v)} placeholder="نوع العقار">
-                {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
-              </BottomSheetSelect>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-2">
-                <Label className="mb-1 block">الميزانية القصوى</Label>
-                <Input type="number" value={buyForm.maxPrice ?? ""} onChange={handleBuyInput("maxPrice")} onBlur={(e) => handleBuyInput("maxPrice")(e)} placeholder="أعلى سعر" style={{ fontSize: 16 }} />
-              </div>
-              <div>
-                <Label className="mb-1 block">العملة</Label>
-                <BottomSheetSelect value={buyForm.currency ?? ""} onValueChange={v => updateBuy("currency", v)} placeholder="USD">
-                  <option value="USD">USD</option>
-                  <option value="SYP">SYP</option>
-                </BottomSheetSelect>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={buyForm.province ?? ""} onValueChange={v => updateBuy("province", v)} placeholder="اختر المحافظة">
-                  {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
-                </BottomSheetSelect>
-              </div>
-              <div>
-                <Label className="mb-1 block">المدينة / الحي *</Label>
-                <Input value={buyForm.city ?? ""} onChange={handleBuyInput("city")} onBlur={(e) => handleBuyInput("city")(e)} placeholder="مثال: المزة، المهاجرين" style={{ fontSize: 16 }} />
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-1 block">تفاصيل إضافية</Label>
-              <Textarea value={buyForm.description ?? ""} onChange={handleBuyInput("description")} onBlur={(e) => handleBuyInput("description")(e)} placeholder="مثال: أبحث عن شقة بغرفتين..." rows={3} style={{ fontSize: 16 }} />
-            </div>
-
-            <Button className="w-full gap-2 bg-teal-700 hover:bg-teal-800 h-12 text-base font-bold" onClick={handleBuySubmit} disabled={buyMutation.isPending}>
-              {buyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
-              إرسال طلب الشراء
-            </Button>
-          </div>
+          <BuyRequestForm
+            key={buyFormKey.current}
+            onSubmit={handleBuySubmit}
+            isBusy={buyMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
     </div>

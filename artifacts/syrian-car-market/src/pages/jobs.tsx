@@ -1,5 +1,5 @@
 // UI_ID: JOBS_01 — CLEAN REBUILD
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, memo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
@@ -8,7 +8,6 @@ import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NativeSelect } from "@/components/ui/native-select";
 import { BottomSheetSelect } from "@/components/ui/bottom-sheet-select";
@@ -23,24 +22,6 @@ import { cn } from "@/lib/utils";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 
 const SUB_CATEGORIES = ["وظيفة شاغرة", "طلب توظيف", "عمالة منزلية", "عمال مهرة"];
-
-// ── initialForm defined OUTSIDE component — never recreated on render ────────
-const initialJobForm = {
-  title: "",
-  subCategory: "وظيفة شاغرة",
-  company: "",
-  salary: "",
-  salaryUnit: "شهري",
-  salaryCurrency: "USD",
-  jobType: "دوام كامل",
-  experience: "بدون خبرة",
-  field: "أخرى",
-  province: "",
-  city: "",
-  phone: "",
-  description: "",
-  requirements: "",
-};
 const JOB_TYPES = ["دوام كامل", "دوام جزئي", "عن بعد", "عقد مؤقت"];
 const EXPERIENCE_LEVELS = ["بدون خبرة", "أقل من سنة", "1-3 سنوات", "3-5 سنوات", "أكثر من 5 سنوات"];
 const FIELDS = [
@@ -56,57 +37,274 @@ type Job = {
   isFeatured: boolean; viewCount: number; createdAt: string; posterName: string | null;
 };
 
-// ── Main page ────────────────────────────────────────────────────────────────
-export default function JobsPage() {
-  const { user } = useAuthStore();
+// ═══════════════════════════════════════════════════════════════════
+// AddJobForm — مكوّن مستقل بحالته الخاصة (يمنع تطاير الأحرف)
+// ═══════════════════════════════════════════════════════════════════
+interface AddJobData {
+  title: string; subCategory: string; company: string | null; salary: string | null;
+  salaryCurrency: string; jobType: string; experience: string; field: string;
+  province: string; city: string; phone: string | null;
+  description: string | null; requirements: string | null; cvUrl: string | null;
+}
+
+const AddJobForm = memo(function AddJobForm({
+  onSubmit, isBusy,
+}: { onSubmit: (data: AddJobData) => void; isBusy: boolean }) {
   const { toast } = useToast();
-  const qc = useQueryClient();
-  const [, navigate] = useLocation();
-  const { startChat, loading: startingChat } = useStartChat();
 
-  // Filter state
-  const [search, setSearch] = useState("");
-  const [q, setQ] = useState("");
-  const searchRef = useRef<HTMLInputElement>(null);
-  const [filterSub, setFilterSub] = useState("__all__");
-  const [filterField, setFilterField] = useState("__all__");
-  const [filterProv, setFilterProv] = useState("__all__");
-  const [tab, setTab] = useState<"listings" | "requests">("listings");
-  const [addOpen, setAddOpen] = useState(false);
-  const [applyOpen, setApplyOpen] = useState(false);
+  // uncontrolled refs
+  const titleRef = useRef<HTMLInputElement>(null);
+  const companyRef = useRef<HTMLInputElement>(null);
+  const salaryRef = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+  const reqRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── form — initialJobForm defined OUTSIDE (never recreated) ────────────────
-  const [form, setForm] = useState(initialJobForm);
+  // select state
+  const [subCategory, setSubCategory] = useState("وظيفة شاغرة");
+  const [jobType, setJobType] = useState("دوام كامل");
+  const [experience, setExperience] = useState("بدون خبرة");
+  const [field, setField] = useState("أخرى");
+  const [province, setProvince] = useState("");
+  const [salaryUnit, setSalaryUnit] = useState("شهري");
+  const [salaryCurrency, setSalaryCurrency] = useState("USD");
 
-  // BottomSheetSelect: receives value directly
-  const update = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
-  const resetForm = () => setForm(initialJobForm);
-
-  // Text inputs/textareas: event-based, skips re-render if value unchanged
-  const handleInput = (field: keyof typeof initialJobForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setForm(prev => {
-        if (prev[field] === value) return prev;
-        return { ...prev, [field]: value };
+  // AI description
+  const [aiLoading, setAiLoading] = useState(false);
+  const handleAiDescription = async () => {
+    if (!subCategory || !province) {
+      toast({ title: "يرجى تحديد نوع الإعلان والمحافظة أولاً", variant: "destructive" });
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await apiRequest<{ description: string }>("/api/jobs/ai-description", "POST", {
+        title: titleRef.current?.value || subCategory,
+        subCategory,
+        company: companyRef.current?.value || undefined,
+        field: field !== "أخرى" ? field : undefined,
+        jobType,
+        experience,
+        province,
       });
-    };
+      // تحديث الـ textarea مباشرة بدون إعادة رندر
+      if (descRef.current) descRef.current.value = res.description;
+      toast({ title: "تم توليد الوصف بنجاح ✨" });
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
-  // ── CLEAN apply form ─────────────────────────────────────────────────────
-  const [applyForm, setApplyForm] = useState({
-    jobTitle: "", field: "أخرى", experience: "بدون خبرة", province: "", city: "", description: "",
-  });
-  const updateApply = (k: string, v: string) => setApplyForm(prev => ({ ...prev, [k]: v }));
-  const handleApplyInput = (field: string) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setApplyForm(prev => {
-        if ((prev as any)[field] === value) return prev;
-        return { ...prev, [field]: value };
-      });
-    };
+  const handleSubmit = () => {
+    const title = titleRef.current?.value.trim() ?? "";
+    const city = cityRef.current?.value.trim() ?? "";
+    if (!title || !province || !city) {
+      toast({ title: "يرجى تعبئة الحقول الإلزامية", variant: "destructive" });
+      return;
+    }
+    const salaryVal = salaryRef.current?.value.trim();
+    onSubmit({
+      title,
+      subCategory,
+      company: companyRef.current?.value.trim() || null,
+      salary: salaryVal ? `${salaryVal} / ${salaryUnit}` : null,
+      salaryCurrency,
+      jobType,
+      experience,
+      field,
+      province,
+      city,
+      phone: phoneRef.current?.value.trim() || null,
+      description: descRef.current?.value.trim() || null,
+      requirements: reqRef.current?.value.trim() || null,
+      cvUrl: null,
+    });
+  };
 
-  // ── CV upload ────────────────────────────────────────────────────────────
+  return (
+    <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+
+      {/* نوع الإعلان */}
+      <div>
+        <Label className="mb-1 block">نوع الإعلان *</Label>
+        <BottomSheetSelect value={subCategory} onValueChange={setSubCategory} placeholder="نوع الإعلان">
+          {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+        </BottomSheetSelect>
+      </div>
+
+      {/* المسمى الوظيفي */}
+      <div>
+        <Label className="mb-1 block">المسمى الوظيفي *</Label>
+        <Input
+          ref={titleRef}
+          placeholder="مثال: مطور ويب، معلم رياضيات..."
+          defaultValue=""
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* الشركة */}
+      <div>
+        <Label className="mb-1 block">الشركة / المؤسسة</Label>
+        <Input
+          ref={companyRef}
+          placeholder="اسم الشركة أو المؤسسة"
+          defaultValue=""
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* نوع الدوام + الخبرة */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">نوع الدوام</Label>
+          <BottomSheetSelect value={jobType} onValueChange={setJobType} placeholder="نوع الدوام">
+            {JOB_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </BottomSheetSelect>
+        </div>
+        <div>
+          <Label className="mb-1 block">مستوى الخبرة</Label>
+          <BottomSheetSelect value={experience} onValueChange={setExperience} placeholder="الخبرة">
+            {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
+          </BottomSheetSelect>
+        </div>
+      </div>
+
+      {/* مجال العمل */}
+      <div>
+        <Label className="mb-1 block">مجال العمل</Label>
+        <BottomSheetSelect value={field} onValueChange={setField} placeholder="المجال">
+          {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
+        </BottomSheetSelect>
+      </div>
+
+      {/* الراتب */}
+      <div>
+        <Label className="mb-1 block">الراتب</Label>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="col-span-1">
+            <Input
+              ref={salaryRef}
+              type="number"
+              placeholder="المبلغ"
+              defaultValue=""
+              style={{ fontSize: 16 }}
+            />
+          </div>
+          <div>
+            <BottomSheetSelect value={salaryUnit} onValueChange={setSalaryUnit} placeholder="الوحدة">
+              <option value="شهري">شهري</option>
+              <option value="يومي">يومي</option>
+              <option value="بالمشروع">بالمشروع</option>
+            </BottomSheetSelect>
+          </div>
+          <div>
+            <BottomSheetSelect value={salaryCurrency} onValueChange={setSalaryCurrency} placeholder="العملة">
+              <option value="USD">USD $</option>
+              <option value="SYP">SYP ل.س</option>
+            </BottomSheetSelect>
+          </div>
+        </div>
+      </div>
+
+      {/* المحافظة + المدينة */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">المحافظة *</Label>
+          <BottomSheetSelect value={province} onValueChange={setProvince} placeholder="اختر المحافظة">
+            {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+          </BottomSheetSelect>
+        </div>
+        <div>
+          <Label className="mb-1 block">المدينة *</Label>
+          <Input
+            ref={cityRef}
+            placeholder="المدينة أو المنطقة"
+            defaultValue=""
+            style={{ fontSize: 16 }}
+          />
+        </div>
+      </div>
+
+      {/* رقم الهاتف */}
+      <div>
+        <Label className="mb-1 block">رقم الهاتف / واتساب</Label>
+        <Input
+          ref={phoneRef}
+          type="tel"
+          placeholder="مثال: 0991234567"
+          defaultValue=""
+          style={{ fontSize: 16 }}
+          dir="ltr"
+        />
+      </div>
+
+      {/* وصف الوظيفة */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <Label>وصف الوظيفة</Label>
+          <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 px-2"
+            onClick={handleAiDescription} disabled={aiLoading}>
+            {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            كتابة بالذكاء الاصطناعي
+          </Button>
+        </div>
+        <Textarea
+          ref={descRef}
+          placeholder="وصف تفصيلي للوظيفة، المهام والمسؤوليات..."
+          defaultValue=""
+          rows={3}
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* المتطلبات */}
+      <div>
+        <Label className="mb-1 block">متطلبات الوظيفة</Label>
+        <Textarea
+          ref={reqRef}
+          placeholder="المؤهلات والمتطلبات المطلوبة..."
+          defaultValue=""
+          rows={3}
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      <Button className="w-full h-12 text-base font-bold" onClick={handleSubmit} disabled={isBusy}>
+        {isBusy ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+        نشر الإعلان
+      </Button>
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ApplyJobForm — نموذج طلب التوظيف المستقل
+// ═══════════════════════════════════════════════════════════════════
+interface ApplyJobData {
+  jobTitle: string; field: string; experience: string;
+  province: string; city: string; description: string; cvUrl: string | null;
+}
+
+const ApplyJobForm = memo(function ApplyJobForm({
+  onSubmit, isBusy,
+}: { onSubmit: (data: ApplyJobData) => void; isBusy: boolean }) {
+  const { toast } = useToast();
+
+  // uncontrolled refs
+  const jobTitleRef = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  // select state
+  const [field, setField] = useState("أخرى");
+  const [experience, setExperience] = useState("بدون خبرة");
+  const [province, setProvince] = useState("");
+
+  // CV upload
   const [cvUploading, setCvUploading] = useState(false);
   const [cvUrl, setCvUrl] = useState<string | null>(null);
   const cvRef = useRef<HTMLInputElement>(null);
@@ -137,34 +335,141 @@ export default function JobsPage() {
     }
   };
 
-  // ── AI description ────────────────────────────────────────────────────────
-  const [aiDescLoading, setAiDescLoading] = useState(false);
-  const handleAiDescription = async () => {
-    if (!form.subCategory || !form.province) {
-      toast({ title: "يرجى تحديد نوع الإعلان والمحافظة أولاً", variant: "destructive" });
+  const handleSubmit = () => {
+    const city = cityRef.current?.value.trim() ?? "";
+    if (!province || !city) {
+      toast({ title: "يرجى تحديد المحافظة والمدينة", variant: "destructive" });
       return;
     }
-    setAiDescLoading(true);
-    try {
-      const res = await apiRequest<{ description: string }>("/api/jobs/ai-description", "POST", {
-        title: form.title || form.subCategory,
-        subCategory: form.subCategory,
-        company: form.company || undefined,
-        field: form.field !== "أخرى" ? form.field : undefined,
-        jobType: form.jobType || undefined,
-        experience: form.experience || undefined,
-        province: form.province,
-      });
-      update("description", res.description);
-      toast({ title: "تم توليد الوصف بنجاح ✨" });
-    } catch {
-      toast({ title: "فشل توليد الوصف", variant: "destructive" });
-    } finally {
-      setAiDescLoading(false);
-    }
+    onSubmit({
+      jobTitle: jobTitleRef.current?.value.trim() ?? "",
+      field,
+      experience,
+      province,
+      city,
+      description: descRef.current?.value.trim() ?? "",
+      cvUrl,
+    });
   };
 
-  // ── Queries ───────────────────────────────────────────────────────────────
+  return (
+    <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+
+      <div>
+        <Label className="mb-1 block">المسمى الوظيفي المطلوب</Label>
+        <Input
+          ref={jobTitleRef}
+          placeholder="مثال: مطور ويب، معلم، محاسب..."
+          defaultValue=""
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">المجال *</Label>
+          <BottomSheetSelect value={field} onValueChange={setField} placeholder="المجال">
+            {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
+          </BottomSheetSelect>
+        </div>
+        <div>
+          <Label className="mb-1 block">الخبرة *</Label>
+          <BottomSheetSelect value={experience} onValueChange={setExperience} placeholder="الخبرة">
+            {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
+          </BottomSheetSelect>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="mb-1 block">المحافظة *</Label>
+          <BottomSheetSelect value={province} onValueChange={setProvince} placeholder="اختر المحافظة">
+            {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
+          </BottomSheetSelect>
+        </div>
+        <div>
+          <Label className="mb-1 block">المدينة *</Label>
+          <Input
+            ref={cityRef}
+            placeholder="مثال: دمشق، حلب..."
+            defaultValue=""
+            style={{ fontSize: 16 }}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label className="mb-1 block">نبذة عن نفسك / مهاراتك</Label>
+        <Textarea
+          ref={descRef}
+          placeholder="مثال: خبرة 3 سنوات في البرمجة، أجيد اللغة الإنجليزية..."
+          defaultValue=""
+          rows={3}
+          style={{ fontSize: 16 }}
+        />
+      </div>
+
+      {/* CV upload */}
+      <div>
+        <Label className="mb-1 block">السيرة الذاتية (PDF أو صورة) — اختياري</Label>
+        <div className="mt-1 flex items-center gap-3">
+          <Button type="button" variant="outline" size="sm" className="gap-2"
+            onClick={() => cvRef.current?.click()} disabled={cvUploading}>
+            {cvUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+            {cvUrl ? "تغيير الملف" : "رفع السيرة الذاتية"}
+          </Button>
+          {cvUrl && (
+            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+              <FileText className="w-4 h-4" />
+              <span>تم الرفع ✓</span>
+              <button type="button" onClick={() => setCvUrl(null)} className="text-muted-foreground hover:text-destructive">✕</button>
+            </div>
+          )}
+        </div>
+        <input
+          ref={cvRef}
+          type="file"
+          accept=".pdf,image/*"
+          className="hidden"
+          onChange={e => { if (e.target.files?.[0]) handleCvUpload(e.target.files[0]); e.target.value = ""; }}
+        />
+      </div>
+
+      <Button className="w-full gap-2 bg-amber-600 hover:bg-amber-700 h-12 text-base font-bold"
+        onClick={handleSubmit} disabled={isBusy}>
+        {isBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+        إرسال طلب التوظيف
+      </Button>
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// JobsPage — الصفحة الرئيسية
+// ═══════════════════════════════════════════════════════════════════
+export default function JobsPage() {
+  const { user } = useAuthStore();
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [, navigate] = useLocation();
+  const { startChat, loading: startingChat } = useStartChat();
+
+  // Filter state
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [q, setQ] = useState("");
+  const [filterSub, setFilterSub] = useState("__all__");
+  const [filterField, setFilterField] = useState("__all__");
+  const [filterProv, setFilterProv] = useState("__all__");
+  const [tab, setTab] = useState<"listings" | "requests">("listings");
+
+  // dialogs — formKey forces remount (reset) on open/close
+  const [addOpen, setAddOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
+  const addFormKey = useRef(0);
+  const applyFormKey = useRef(0);
+
+  // ── Queries ──────────────────────────────────────────────────────
   const activeSub = filterSub === "__all__" ? "" : filterSub;
   const activeField = filterField === "__all__" ? "" : filterField;
   const activeProv = filterProv === "__all__" ? "" : filterProv;
@@ -188,13 +493,13 @@ export default function JobsPage() {
     queryFn: () => apiRequest<any[]>("/api/buy-requests?category=jobs"),
   });
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
+  // ── Mutations ────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: (body: object) => apiRequest("/api/jobs", "POST", body),
     onSuccess: () => {
       toast({ title: "تم نشر الإعلان بنجاح" });
+      addFormKey.current += 1;
       setAddOpen(false);
-      resetForm();
       qc.invalidateQueries({ queryKey: ["jobs"] });
     },
     onError: () => toast({ title: "فشل نشر الإعلان", variant: "destructive" }),
@@ -204,9 +509,8 @@ export default function JobsPage() {
     mutationFn: (body: object) => apiRequest("/api/buy-requests", "POST", body),
     onSuccess: () => {
       toast({ title: "تم إرسال طلب التوظيف بنجاح" });
+      applyFormKey.current += 1;
       setApplyOpen(false);
-      setApplyForm({ jobTitle: "", field: "أخرى", experience: "بدون خبرة", province: "", city: "", description: "" });
-      setCvUrl(null);
       qc.invalidateQueries({ queryKey: ["buy-requests", "jobs"] });
     },
     onError: () => toast({ title: "فشل إرسال الطلب", variant: "destructive" }),
@@ -226,43 +530,35 @@ export default function JobsPage() {
     onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
   });
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
-  const handleSubmit = () => {
-    if (!form.title || !form.province || !form.city) {
-      toast({ title: "يرجى تعبئة الحقول الإلزامية", variant: "destructive" });
-      return;
-    }
+  // ── Callbacks ────────────────────────────────────────────────────
+  const handleAddJobSubmit = useCallback((data: AddJobData) => {
     createMutation.mutate({
-      title: form.title,
-      subCategory: form.subCategory,
-      company: form.company || null,
-      salary: form.salary ? `${form.salary} / ${form.salaryUnit}` : null,
-      salaryCurrency: form.salaryCurrency,
-      jobType: form.jobType,
-      experience: form.experience,
-      field: form.field,
-      province: form.province,
-      city: form.city,
-      phone: form.phone || null,
-      description: form.description || null,
-      requirements: form.requirements || null,
-      cvUrl: cvUrl || null,
+      title: data.title,
+      subCategory: data.subCategory,
+      company: data.company,
+      salary: data.salary,
+      salaryCurrency: data.salaryCurrency,
+      jobType: data.jobType,
+      experience: data.experience,
+      field: data.field,
+      province: data.province,
+      city: data.city,
+      phone: data.phone,
+      description: data.description,
+      requirements: data.requirements,
+      cvUrl: data.cvUrl,
     });
-  };
+  }, [createMutation]);
 
-  const handleApplySubmit = () => {
-    if (!applyForm.province || !applyForm.city) {
-      toast({ title: "يرجى تحديد المحافظة والمدينة", variant: "destructive" });
-      return;
-    }
+  const handleApplySubmit = useCallback((data: ApplyJobData) => {
     applyMutation.mutate({
-      brand: applyForm.jobTitle || applyForm.field,
-      model: applyForm.experience,
-      city: applyForm.city,
-      description: `المحافظة: ${applyForm.province} | المجال: ${applyForm.field}${applyForm.description ? `\n${applyForm.description}` : ""}`,
+      brand: data.jobTitle || data.field,
+      model: data.experience,
+      city: data.city,
+      description: `المحافظة: ${data.province} | المجال: ${data.field}${data.description ? `\n${data.description}` : ""}`,
       category: "jobs",
     });
-  };
+  }, [applyMutation]);
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24" dir="rtl">
@@ -417,12 +713,9 @@ export default function JobsPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          ADD JOB DIALOG — clean form, no guards, no composition
+          ADD JOB DIALOG
       ══════════════════════════════════════════════════════════════ */}
-      <Dialog
-        open={addOpen}
-        onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}
-      >
+      <Dialog open={addOpen} onOpenChange={(open) => { if (!open) addFormKey.current += 1; setAddOpen(open); }}>
         <DialogContent
           className="max-w-lg p-0 overflow-hidden"
           dir="rtl"
@@ -435,172 +728,18 @@ export default function JobsPage() {
               <DialogTitle className="text-right text-lg font-bold">نشر إعلان وظيفي</DialogTitle>
             </DialogHeader>
           </div>
-
-          <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
-
-            {/* نوع الإعلان */}
-            <div>
-              <Label className="mb-1 block">نوع الإعلان *</Label>
-              <BottomSheetSelect value={form.subCategory ?? ""} onValueChange={v => update("subCategory", v)} placeholder="نوع الإعلان">
-                {SUB_CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
-              </BottomSheetSelect>
-            </div>
-
-            {/* المسمى الوظيفي */}
-            <div>
-              <Label className="mb-1 block">المسمى الوظيفي *</Label>
-              <Input
-                value={form.title ?? ""}
-                onChange={handleInput("title")}
-                onBlur={(e) => handleInput("title")(e)}
-                placeholder="مثال: مطور ويب، معلم رياضيات..."
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* الشركة */}
-            <div>
-              <Label className="mb-1 block">الشركة / المؤسسة</Label>
-              <Input
-                value={form.company ?? ""}
-                onChange={handleInput("company")}
-                onBlur={(e) => handleInput("company")(e)}
-                placeholder="اسم الشركة أو المؤسسة"
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* نوع الدوام + الخبرة */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">نوع الدوام</Label>
-                <BottomSheetSelect value={form.jobType ?? ""} onValueChange={v => update("jobType", v)} placeholder="نوع الدوام">
-                  {JOB_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </BottomSheetSelect>
-              </div>
-              <div>
-                <Label className="mb-1 block">مستوى الخبرة</Label>
-                <BottomSheetSelect value={form.experience ?? ""} onValueChange={v => update("experience", v)} placeholder="الخبرة">
-                  {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
-                </BottomSheetSelect>
-              </div>
-            </div>
-
-            {/* مجال العمل */}
-            <div>
-              <Label className="mb-1 block">مجال العمل</Label>
-              <BottomSheetSelect value={form.field ?? ""} onValueChange={v => update("field", v)} placeholder="المجال">
-                {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
-              </BottomSheetSelect>
-            </div>
-
-            {/* الراتب */}
-            <div>
-              <Label className="mb-1 block">الراتب</Label>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="col-span-1">
-                  <Input
-                    type="number"
-                    value={form.salary ?? ""}
-                    onChange={handleInput("salary")}
-                    onBlur={(e) => handleInput("salary")(e)}
-                    placeholder="المبلغ"
-                    style={{ fontSize: 16 }}
-                  />
-                </div>
-                <div>
-                  <BottomSheetSelect value={form.salaryUnit ?? ""} onValueChange={v => update("salaryUnit", v)} placeholder="الوحدة">
-                    <option value="شهري">شهري</option>
-                    <option value="يومي">يومي</option>
-                    <option value="بالمشروع">بالمشروع</option>
-                  </BottomSheetSelect>
-                </div>
-                <div>
-                  <BottomSheetSelect value={form.salaryCurrency ?? ""} onValueChange={v => update("salaryCurrency", v)} placeholder="العملة">
-                    <option value="USD">USD $</option>
-                    <option value="SYP">SYP ل.س</option>
-                  </BottomSheetSelect>
-                </div>
-              </div>
-            </div>
-
-            {/* المحافظة + المدينة */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={form.province ?? ""} onValueChange={v => update("province", v)} placeholder="اختر المحافظة">
-                  {SYRIAN_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                </BottomSheetSelect>
-              </div>
-              <div>
-                <Label className="mb-1 block">المدينة *</Label>
-                <Input
-                  value={form.city ?? ""}
-                  onChange={handleInput("city")}
-                  onBlur={(e) => handleInput("city")(e)}
-                  placeholder="المدينة أو المنطقة"
-                  style={{ fontSize: 16 }}
-                />
-              </div>
-            </div>
-
-            {/* رقم الهاتف */}
-            <div>
-              <Label className="mb-1 block">رقم الهاتف / واتساب</Label>
-              <Input
-                type="tel"
-                value={form.phone ?? ""}
-                onChange={handleInput("phone")}
-                onBlur={(e) => handleInput("phone")(e)}
-                placeholder="مثال: 0991234567"
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* وصف الوظيفة */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <Label>وصف الوظيفة</Label>
-                <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 px-2" onClick={handleAiDescription} disabled={aiDescLoading}>
-                  {aiDescLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  كتابة بالذكاء الاصطناعي
-                </Button>
-              </div>
-              <Textarea
-                value={form.description ?? ""}
-                onChange={handleInput("description")}
-                onBlur={(e) => handleInput("description")(e)}
-                placeholder="وصف تفصيلي للوظيفة، المهام والمسؤوليات..."
-                rows={3}
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* المتطلبات */}
-            <div>
-              <Label className="mb-1 block">متطلبات الوظيفة</Label>
-              <Textarea
-                value={form.requirements ?? ""}
-                onChange={handleInput("requirements")}
-                onBlur={(e) => handleInput("requirements")(e)}
-                placeholder="المؤهلات والمتطلبات المطلوبة..."
-                rows={3}
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            <Button className="w-full h-12 text-base font-bold" onClick={handleSubmit} disabled={createMutation.isPending}>
-              {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
-              نشر الإعلان
-            </Button>
-          </div>
+          <AddJobForm
+            key={addFormKey.current}
+            onSubmit={handleAddJobSubmit}
+            isBusy={createMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
 
       {/* ══════════════════════════════════════════════════════════════
           APPLY REQUEST DIALOG
       ══════════════════════════════════════════════════════════════ */}
-      <Dialog open={applyOpen} onOpenChange={(open) => { setApplyOpen(open); if (!open) { setCvUrl(null); } }}>
+      <Dialog open={applyOpen} onOpenChange={(open) => { if (!open) applyFormKey.current += 1; setApplyOpen(open); }}>
         <DialogContent
           className="max-w-lg p-0 overflow-hidden"
           dir="rtl"
@@ -613,100 +752,13 @@ export default function JobsPage() {
               <DialogTitle className="text-xl font-bold">طلب توظيف</DialogTitle>
             </DialogHeader>
           </div>
-
-          <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
-
-            <div>
-              <Label className="mb-1 block">المسمى الوظيفي المطلوب</Label>
-              <Input
-                value={applyForm.jobTitle ?? ""}
-                onChange={handleApplyInput("jobTitle")}
-                onBlur={(e) => handleApplyInput("jobTitle")(e)}
-                placeholder="مثال: مطور ويب، معلم، محاسب..."
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">المجال *</Label>
-                <BottomSheetSelect value={applyForm.field ?? ""} onValueChange={v => updateApply("field", v)} placeholder="المجال">
-                  {FIELDS.map(fi => <option key={fi} value={fi}>{fi}</option>)}
-                </BottomSheetSelect>
-              </div>
-              <div>
-                <Label className="mb-1 block">الخبرة *</Label>
-                <BottomSheetSelect value={applyForm.experience ?? ""} onValueChange={v => updateApply("experience", v)} placeholder="الخبرة">
-                  {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
-                </BottomSheetSelect>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="mb-1 block">المحافظة *</Label>
-                <BottomSheetSelect value={applyForm.province ?? ""} onValueChange={v => updateApply("province", v)} placeholder="اختر المحافظة">
-                  {SYRIAN_PROVINCES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
-                </BottomSheetSelect>
-              </div>
-              <div>
-                <Label className="mb-1 block">المدينة *</Label>
-                <Input
-                  value={applyForm.city ?? ""}
-                  onChange={handleApplyInput("city")}
-                  onBlur={(e) => handleApplyInput("city")(e)}
-                  placeholder="مثال: دمشق، حلب..."
-                  style={{ fontSize: 16 }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-1 block">نبذة عن نفسك / مهاراتك</Label>
-              <Textarea
-                value={applyForm.description ?? ""}
-                onChange={handleApplyInput("description")}
-                onBlur={(e) => handleApplyInput("description")(e)}
-                placeholder="مثال: خبرة 3 سنوات في البرمجة، أجيد اللغة الإنجليزية..."
-                rows={3}
-                style={{ fontSize: 16 }}
-              />
-            </div>
-
-            {/* CV upload */}
-            <div>
-              <Label className="mb-1 block">السيرة الذاتية (PDF أو صورة) — اختياري</Label>
-              <div className="mt-1 flex items-center gap-3">
-                <Button type="button" variant="outline" size="sm" className="gap-2"
-                  onClick={() => cvRef.current?.click()} disabled={cvUploading}>
-                  {cvUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
-                  {cvUrl ? "تغيير الملف" : "رفع السيرة الذاتية"}
-                </Button>
-                {cvUrl && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                    <FileText className="w-4 h-4" />
-                    <span>تم الرفع ✓</span>
-                    <button type="button" onClick={() => setCvUrl(null)} className="text-muted-foreground hover:text-destructive">✕</button>
-                  </div>
-                )}
-              </div>
-              <input
-                ref={cvRef}
-                type="file"
-                accept=".pdf,image/*"
-                className="hidden"
-                onChange={e => { if (e.target.files?.[0]) handleCvUpload(e.target.files[0]); e.target.value = ""; }}
-              />
-            </div>
-
-            <Button className="w-full gap-2 bg-amber-600 hover:bg-amber-700 h-12 text-base font-bold" onClick={handleApplySubmit} disabled={applyMutation.isPending}>
-              {applyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              إرسال طلب التوظيف
-            </Button>
-          </div>
+          <ApplyJobForm
+            key={applyFormKey.current}
+            onSubmit={handleApplySubmit}
+            isBusy={applyMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-
