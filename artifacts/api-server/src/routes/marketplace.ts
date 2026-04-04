@@ -124,7 +124,6 @@ router.get("/marketplace/:id", async (req, res): Promise<void> => {
     createdAt: marketplaceItemsTable.createdAt,
     sellerName: usersTable.name,
     sellerPhone: usersTable.phone,
-    sellerAvatar: usersTable.avatar,
   })
     .from(marketplaceItemsTable)
     .leftJoin(usersTable, eq(marketplaceItemsTable.sellerId, usersTable.id))
