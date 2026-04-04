@@ -62,39 +62,20 @@ function readAsDataURL(file: File): Promise<string> {
   });
 }
 
-/** تحويل HEIC/HEIF → JPEG في المتصفح عبر canvas */
+/** تحويل HEIC/HEIF → JPEG في المتصفح باستخدام heic2any */
 async function convertToJpeg(file: File): Promise<File> {
-  const nativeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
-  if (nativeTypes.includes(file.type.toLowerCase())) return file;
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) { resolve(file); return; }
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
-            } else {
-              resolve(file);
-            }
-          },
-          "image/jpeg",
-          0.85,
-        );
-      };
-      img.onerror = () => resolve(file);
-      img.src = reader.result as string;
-    };
-    reader.onerror = () => resolve(file);
-    reader.readAsDataURL(file);
-  });
+  const t = file.type.toLowerCase();
+  const n = file.name.toLowerCase();
+  const isHeic = t.includes("heic") || t.includes("heif") || n.endsWith(".heic") || n.endsWith(".heif");
+  if (!isHeic) return file;
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+    const blob = Array.isArray(result) ? result[0] : result;
+    return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
 }
 
 // ── ImagePicker مستقل ───────────────────────────────────────────────────────

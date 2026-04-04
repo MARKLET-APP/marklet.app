@@ -65,45 +65,35 @@ function readAsDataURL(file: File): Promise<string> {
 }
 
 /**
- * تحويل أي صورة (بما في ذلك HEIC) إلى JPEG في المتصفح
+ * تحويل HEIC/HEIF → JPEG في المتصفح باستخدام heic2any
  * يحل مشكلة كاميرات Android/iOS التي تحفظ بتنسيق HEIC
  */
 async function convertToJpeg(file: File): Promise<File> {
-  // إذا كانت الصورة JPEG/PNG/WebP بالفعل أعدها كما هي
-  const nativeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
-  if (nativeTypes.includes(file.type.toLowerCase())) return file;
+  const t = file.type.toLowerCase();
+  const n = file.name.toLowerCase();
 
-  // تحويل عبر canvas: اقرأ كـ data URL → img → canvas → blob JPEG
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) { resolve(file); return; }
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const name = file.name.replace(/\.[^.]+$/, ".jpg");
-              resolve(new File([blob], name, { type: "image/jpeg" }));
-            } else {
-              resolve(file);
-            }
-          },
-          "image/jpeg",
-          0.85,
-        );
-      };
-      img.onerror = () => resolve(file); // إذا فشل التحميل أعد الملف الأصلي
-      img.src = reader.result as string;
-    };
-    reader.onerror = () => resolve(file);
-    reader.readAsDataURL(file);
-  });
+  // إذا كانت صورة مدعومة مباشرةً — لا تحويل
+  const nativeOk = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"].includes(t);
+  if (nativeOk) return file;
+
+  // HEIC: بالنوع أو بالامتداد أو بالنوع المجهول (octet-stream/empty)
+  const isHeic =
+    t.includes("heic") || t.includes("heif") ||
+    n.endsWith(".heic") || n.endsWith(".heif") ||
+    t === "" || t === "application/octet-stream";
+
+  if (!isHeic) return file;
+
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+    const blob = Array.isArray(result) ? result[0] : result;
+    const name = file.name.replace(/\.[^.]+$/, ".jpg");
+    return new File([blob], name, { type: "image/jpeg" });
+  } catch {
+    // إذا فشل heic2any أعد الملف الأصلي (سيتولى الخادم التحويل)
+    return file;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════

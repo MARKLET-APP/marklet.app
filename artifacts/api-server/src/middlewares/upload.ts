@@ -11,28 +11,51 @@ const IMAGE_EXT  = /\.(jpe?g|png|gif|webp|heic|heif)$/i;
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10 MB
+    fileSize: 20 * 1024 * 1024, // 20 MB — كاميرات Android/iOS تنتج ملفات كبيرة
   },
   fileFilter: (_req, file, cb) => {
     const mimeOk = IMAGE_MIME.test(file.mimetype);
     const extOk  = IMAGE_EXT.test(file.originalname);
-    const isGeneric = file.mimetype === "application/octet-stream" || file.mimetype === "application/unknown";
-    if (mimeOk || (isGeneric && extOk)) cb(null, true);
-    else cb(new Error("نوع الملف غير مدعوم — يُسمح فقط بصور JPEG/PNG/WebP"));
+    const isGeneric =
+      file.mimetype === "application/octet-stream" ||
+      file.mimetype === "application/unknown" ||
+      file.mimetype === "";
+    if (mimeOk || (isGeneric && extOk) || isGeneric) cb(null, true);
+    else cb(new Error("نوع الملف غير مدعوم — يُسمح فقط بصور JPEG/PNG/WebP/HEIC"));
   },
 });
 
-/** تحقق ما إذا كان البافر JPEG بالبايتات السحرية */
+/** تحقق إذا كان البافر HEIC/HEIF بالبايتات السحرية */
+function isHeicBuffer(buf: Buffer): boolean {
+  if (buf.length < 12) return false;
+  // ftyp box header at offset 4
+  const ftyp = buf.slice(4, 8).toString("ascii");
+  if (ftyp !== "ftyp") return false;
+  const brand = buf.slice(8, 12).toString("ascii").toLowerCase();
+  return brand.startsWith("heic") || brand.startsWith("heif") || brand.startsWith("mif1") || brand.startsWith("msf1");
+}
+
+/** تحقق ما إذا كان البافر JPEG */
 function isJpegBuffer(buf: Buffer): boolean {
   return buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8;
 }
 
-/** تحقق ما إذا كان البافر PNG */
-function isPngBuffer(buf: Buffer): boolean {
-  return buf.length > 3 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+/** تحويل HEIC → JPEG بافر باستخدام heic-convert */
+async function convertHeicToJpeg(buffer: Buffer): Promise<Buffer> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const heicConvert = require("heic-convert");
+  const outputBuffer = await heicConvert({
+    buffer: buffer,
+    format: "JPEG",
+    quality: 0.82,
+  });
+  return Buffer.from(outputBuffer);
 }
 
-export const processImage = async (file: Express.Multer.File, folder = "uploads"): Promise<string> => {
+export const processImage = async (
+  file: Express.Multer.File,
+  folder = "uploads",
+): Promise<string> => {
   const fileName = Date.now() + ".jpg";
   const uploadPath = path.join("uploads", folder);
 
@@ -42,32 +65,31 @@ export const processImage = async (file: Express.Multer.File, folder = "uploads"
 
   const finalPath = path.join(uploadPath, fileName);
 
+  let inputBuffer = file.buffer;
+
+  // إذا كانت الصورة HEIC/HEIF → حوّلها لـ JPEG أولاً على الخادم
+  if (isHeicBuffer(inputBuffer) || /heic|heif/i.test(file.mimetype) || /heic|heif/i.test(file.originalname)) {
+    try {
+      inputBuffer = await convertHeicToJpeg(inputBuffer);
+    } catch (heicErr: any) {
+      console.error("[Upload] HEIC convert error:", heicErr.message);
+      throw new Error("فشل تحويل صورة HEIC — يرجى التقاط الصورة بصيغة JPEG من إعدادات الكاميرا");
+    }
+  }
+
   try {
-    // المحاولة الأولى: معالجة sharp (تدعم JPEG/PNG/WebP/GIF)
-    await sharp(file.buffer)
-      .rotate()
+    await sharp(inputBuffer)
+      .rotate() // إصلاح الاتجاه تلقائياً
       .resize({ width: 1600, withoutEnlargement: true })
       .jpeg({ quality: 82, progressive: true })
       .toFile(finalPath);
   } catch (sharpErr: any) {
-    // Fallback: إذا فشل sharp (مثلاً صور HEIC/HEIF غير مدعومة في هذا الخادم)
-    const buf = file.buffer;
-
-    if (isJpegBuffer(buf)) {
-      // الملف JPEG فعلاً — احفظه مباشرة
-      fs.writeFileSync(finalPath, buf);
-    } else if (isPngBuffer(buf)) {
-      // PNG — حوّله بشكل بسيط بدون ميزات متقدمة
-      try {
-        await sharp(buf).jpeg({ quality: 82 }).toFile(finalPath);
-      } catch {
-        fs.writeFileSync(finalPath, buf);
-      }
+    // إذا فشل sharp والملف JPEG — احفظه مباشرة كـ fallback
+    if (isJpegBuffer(inputBuffer)) {
+      fs.writeFileSync(finalPath, inputBuffer);
     } else {
-      // HEIC أو صيغة غير مدعومة — أعد خطأ واضحاً للمستخدم
-      throw new Error(
-        "صيغة الصورة (HEIC) غير مدعومة على هذا الخادم. يرجى تحويل الصورة إلى JPEG أو PNG قبل الرفع."
-      );
+      console.error("[Upload] Sharp error:", sharpErr.message);
+      throw new Error("فشل معالجة الصورة — يرجى استخدام صور JPEG أو PNG");
     }
   }
 
