@@ -431,7 +431,9 @@ const ApplyJobForm = memo(function ApplyJobForm({
           ref={cvRef}
           type="file"
           accept=".pdf,image/*"
-          className="hidden"
+          tabIndex={-1}
+          aria-hidden="true"
+          style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
           onChange={e => { if (e.target.files?.[0]) handleCvUpload(e.target.files[0]); e.target.value = ""; }}
         />
       </div>

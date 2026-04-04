@@ -82,7 +82,7 @@ function ImageUploadBtn({
 
   return (
     <>
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <input ref={fileRef} type="file" accept="image/*" tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} onChange={handleFile} />
       <button
         type="button"
         onClick={() => fileRef.current?.click()}

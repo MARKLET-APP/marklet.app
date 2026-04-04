@@ -149,7 +149,7 @@ export default function MissingCarsPage() {
                     ))}
                   </div>
                 )}
-                <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
+                <input ref={fileRef} type="file" accept="image/*" multiple tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} onChange={handleFileChange} />
                 <Button
                   type="button"
                   variant="outline"

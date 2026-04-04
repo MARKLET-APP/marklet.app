@@ -135,7 +135,7 @@ const ImagePicker = memo(function ImagePicker({ previews, onAdd, onRemove, loadi
           </button>
         )}
       </div>
-      <input ref={ref} type="file" accept="image/*" multiple className="hidden"
+      <input ref={ref} type="file" accept="image/*" multiple tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
         onChange={(e) => { if (e.target.files?.length) { onAdd(e.target.files); e.target.value = ""; } }} />
     </div>
   );

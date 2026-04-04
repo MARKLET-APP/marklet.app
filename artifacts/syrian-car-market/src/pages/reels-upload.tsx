@@ -77,9 +77,11 @@ function FilePicker({ onFile }: { onFile: (f: File) => void }) {
         </div>
       </button>
 
-      <input ref={cameraRef} type="file" accept="video/*" capture="environment" className="hidden"
+      <input ref={cameraRef} type="file" accept="video/*" capture="environment" tabIndex={-1} aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
         onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
-      <input ref={galleryRef} type="file" accept="video/*" className="hidden"
+      <input ref={galleryRef} type="file" accept="video/*" tabIndex={-1} aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
         onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
     </div>
   );

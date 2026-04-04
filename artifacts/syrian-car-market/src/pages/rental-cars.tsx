@@ -413,7 +413,7 @@ export default function RentalCarsPage() {
               <label className="flex items-center gap-2 border-2 border-dashed border-muted-foreground/30 rounded-xl p-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-colors">
                 <ImageIcon className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">{uploadingImages ? "جاري رفع الصور..." : "اضغط لرفع الصور"}</span>
-                <input type="file" multiple accept="image/*" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleImageUpload} disabled={uploadingImages} />
+                <input type="file" multiple accept="image/*" tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} onChange={handleImageUpload} disabled={uploadingImages} />
               </label>
               {previewImages.length > 0 && (
                 <div className="flex gap-2 mt-2 flex-wrap">
