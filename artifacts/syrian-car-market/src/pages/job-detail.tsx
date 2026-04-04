@@ -18,6 +18,7 @@ import {
   Crown, Lock, Share2, ThumbsUp, Heart, Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import SellerRating from "@/components/SellerRating";
 import { cn } from "@/lib/utils";
 
 const JOB_TYPE_COLOR: Record<string, string> = {
@@ -37,44 +38,6 @@ function SpecItem({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-function RatingCard({ listingId }: { listingId: number }) {
-  const [selected, setSelected] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
-  const labels = ["", "سيئ", "مقبول", "جيد", "جيد جداً", "ممتاز"];
-  if (submitted) {
-    return (
-      <div className="bg-card rounded-3xl border shadow-sm p-5 mb-6 flex flex-col items-center gap-2">
-        <ThumbsUp className="w-8 h-8 text-amber-400" />
-        <p className="font-bold text-base">شكراً على تقييمك!</p>
-        <p className="text-xs text-muted-foreground">تقييمك: {labels[selected]} ({selected}/5)</p>
-      </div>
-    );
-  }
-  return (
-    <div className="bg-card rounded-3xl border shadow-sm p-5 mb-6">
-      <h3 className="font-bold text-base mb-3 flex items-center gap-2">
-        <Star className="w-4 h-4 text-amber-400" /> قيّم هذا الإعلان
-      </h3>
-      <div className="flex items-center gap-2 justify-center mb-3">
-        {[1, 2, 3, 4, 5].map(n => (
-          <button key={n} onClick={() => setSelected(n)} className="transition-transform hover:scale-110">
-            <Star
-              className={cn("w-8 h-8 transition-colors", n <= selected ? "text-amber-400 fill-amber-400" : "text-muted-foreground/40")}
-            />
-          </button>
-        ))}
-      </div>
-      {selected > 0 && (
-        <div className="flex flex-col items-center gap-3">
-          <p className="text-sm font-medium text-amber-600">{labels[selected]}</p>
-          <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white px-6" onClick={() => setSubmitted(true)}>
-            إرسال التقييم
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function JobDetail() {
   const [, params] = useRoute("/jobs/:id");
@@ -293,8 +256,8 @@ export default function JobDetail() {
           </div>
         )}
 
-        {/* ── Rating placeholder ── */}
-        <RatingCard listingId={id} />
+        {/* ── تقييم ناشر الإعلان (مرئي للجميع، قابل للإرسال للمسجّلين) ── */}
+        <SellerRating sellerId={item.posterId} isOwner={isPoster} />
 
         {/* ── Contact card (visitors only) ── */}
         {!isPoster && (

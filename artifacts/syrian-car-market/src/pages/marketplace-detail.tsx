@@ -23,6 +23,7 @@ import {
   Package, Truck, CheckCircle2, Clock, Star, Trash2, ChevronLeft,
   ChevronDown, Phone, Eye, Share2, AlertCircle, Pencil,
 } from "lucide-react";
+import SellerRating from "@/components/SellerRating";
 
 const MARKETPLACE_CATEGORIES = [
   "أثاث ومنزل","ملابس وأحذية","إلكترونيات","أدوات ومعدات",
@@ -58,37 +59,6 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge className={s.className}>{s.label}</Badge>;
 }
 
-function RatingCard() {
-  const [selected, setSelected] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
-  const labels = ["","سيئ","مقبول","جيد","جيد جداً","ممتاز"];
-  if (submitted) return (
-    <div className="bg-card rounded-3xl border shadow-sm p-5 mb-6 flex flex-col items-center gap-2">
-      <Star className="w-8 h-8 text-amber-400 fill-amber-400" />
-      <p className="font-bold text-base">شكراً على تقييمك!</p>
-      <p className="text-xs text-muted-foreground">تقييمك: {labels[selected]} ({selected}/5)</p>
-    </div>
-  );
-  return (
-    <div className="bg-card rounded-3xl border shadow-sm p-5 mb-6">
-      <h3 className="font-bold text-base mb-3 flex items-center gap-2"><Star className="w-4 h-4 text-amber-400" /> قيّم هذا الإعلان</h3>
-      <div className="flex items-center gap-2 justify-center mb-3">
-        {[1,2,3,4,5].map(n => (
-          <button key={n} onClick={() => setSelected(n)} className="transition-transform hover:scale-110 active:scale-95">
-            <Star className={cn("w-8 h-8 transition-colors", n<=selected ? "text-amber-400 fill-amber-400" : "text-muted-foreground/40")} />
-          </button>
-        ))}
-      </div>
-      {selected > 0 && (
-        <div className="flex flex-col items-center gap-3">
-          <p className="text-sm font-medium text-amber-600">{labels[selected]}</p>
-          <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white px-6"
-            onClick={() => setSubmitted(true)}>إرسال التقييم</Button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function MarketplaceDetailPage() {
   const [, params] = useRoute<{ id: string }>("/marketplace/:id");
@@ -341,8 +311,8 @@ export default function MarketplaceDetailPage() {
           )}
         </div>
 
-        {/* ── Rating ── */}
-        {!isOwner && <RatingCard />}
+        {/* ── تقييم صاحب الإعلان (مرئي للجميع، قابل للإرسال للمسجّلين) ── */}
+        <SellerRating sellerId={item.sellerId} isOwner={isOwner} />
 
         {/* ── Share ── */}
         <div className="bg-card rounded-3xl border shadow-sm p-4">

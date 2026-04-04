@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { useAuthStore } from "@/lib/auth";
-import { withApi } from "@/lib/runtimeConfig";
+import { withApi, imgUrl } from "@/lib/runtimeConfig";
 import { 
   useAdminListUsers, useAdminUpdateUser, useAdminDeleteUser,
   useGetSettings, useUpdateSettings
@@ -256,6 +256,34 @@ function AdminMarketplaceTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  // ── إعلانات بانتظار مراجعة الأدمن ──
+  type PendingItem = {
+    id: number; sellerId: number; title: string; description: string | null;
+    price: string; currency: string; category: string; condition: string;
+    images: string[]; province: string | null; city: string | null;
+    status: string; createdAt: string;
+    sellerName: string | null; sellerPhone: string | null;
+  };
+
+  const { data: pendingItems = [], isLoading: pendingLoading } = useQuery<PendingItem[]>({
+    queryKey: ["admin", "marketplace-pending"],
+    queryFn: () => apiRequest("/api/admin/marketplace/pending"),
+    refetchInterval: 30_000,
+  });
+
+  const approveItem = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/admin/marketplace/${id}/status`, "PATCH", { status: "available" }),
+    onSuccess: () => { toast({ title: "تم قبول الإعلان ✅" }); qc.invalidateQueries({ queryKey: ["admin", "marketplace-pending"] }); },
+    onError: () => toast({ title: "فشل قبول الإعلان", variant: "destructive" }),
+  });
+
+  const rejectItem = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/admin/marketplace/${id}/status`, "PATCH", { status: "rejected" }),
+    onSuccess: () => { toast({ title: "تم رفض الإعلان" }); qc.invalidateQueries({ queryKey: ["admin", "marketplace-pending"] }); },
+    onError: () => toast({ title: "فشل رفض الإعلان", variant: "destructive" }),
+  });
+
+  // ── الطلبات ──
   type MOrder = {
     id: number; status: string; totalPrice: string; deliveryType: string;
     itemTitle: string | null; buyerName: string | null; sellerName: string | null;
@@ -315,15 +343,104 @@ function AdminMarketplaceTab() {
   };
 
   return (
-    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
-      <div className="p-6 border-b bg-muted/20 flex items-center gap-3">
-        <ShoppingBag className="w-6 h-6 text-orange-500" />
-        <div>
-          <h2 className="text-xl font-bold">إدارة السوق — كل شيء</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">مراجعة الطلبات وتأكيد المدفوعات وإدارة الشحن</p>
+    <div className="space-y-6">
+
+      {/* ══ قسم الإعلانات المعلّقة — تحتاج موافقة ══ */}
+      <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-5 border-b bg-amber-50 dark:bg-amber-950/20 flex items-center gap-3">
+          <Clock className="w-5 h-5 text-amber-600 shrink-0" />
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-amber-800 dark:text-amber-300">إعلانات تنتظر الموافقة</h2>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">راجع كل إعلان ثم اقبله أو ارفضه</p>
+          </div>
+          {pendingItems.length > 0 && (
+            <Badge className="bg-amber-500 text-white border-0 font-bold shrink-0">{pendingItems.length}</Badge>
+          )}
         </div>
-        <Badge className="mr-auto bg-orange-100 text-orange-700 border-0 font-bold">{orders.length} طلب</Badge>
+
+        {pendingLoading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-7 h-7 animate-spin text-amber-500" />
+          </div>
+        ) : pendingItems.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-30 text-green-500" />
+            <p className="font-medium">لا توجد إعلانات معلّقة — كل شيء تمام!</p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {pendingItems.map(item => (
+              <div key={item.id} className="p-5 hover:bg-muted/10">
+                <div className="flex items-start gap-3">
+                  {/* صورة مصغّرة */}
+                  {item.images?.[0] ? (
+                    <img
+                      src={imgUrl(item.images[0])}
+                      alt={item.title}
+                      className="w-16 h-16 rounded-xl object-cover shrink-0 border"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                      <Package className="w-7 h-7 text-muted-foreground opacity-40" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm truncate">{item.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-amber-600 font-semibold text-sm">{Number(item.price).toLocaleString("ar-SY")} {item.currency}</span>
+                      <span className="text-xs text-muted-foreground">|</span>
+                      <span className="text-xs text-muted-foreground">{item.category}</span>
+                      <span className="text-xs text-muted-foreground">|</span>
+                      <span className="text-xs text-muted-foreground">{item.condition}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                      <span>البائع: <span className="font-medium text-foreground">{item.sellerName ?? "—"}</span></span>
+                      {item.sellerPhone && <span dir="ltr">{item.sellerPhone}</span>}
+                      {(item.province || item.city) && <span>{[item.city, item.province].filter(Boolean).join(", ")}</span>}
+                    </div>
+                    {item.description && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* أزرار القبول والرفض */}
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    className="flex-1 rounded-xl bg-green-600 hover:bg-green-700 text-white"
+                    disabled={approveItem.isPending || rejectItem.isPending}
+                    onClick={() => approveItem.mutate(item.id)}
+                  >
+                    {approveItem.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "✅ قبول ونشر"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 rounded-xl border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                    disabled={approveItem.isPending || rejectItem.isPending}
+                    onClick={() => rejectItem.mutate(item.id)}
+                  >
+                    {rejectItem.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "❌ رفض"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* ══ قسم طلبات الشراء ══ */}
+      <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-6 border-b bg-muted/20 flex items-center gap-3">
+          <ShoppingBag className="w-6 h-6 text-orange-500" />
+          <div>
+            <h2 className="text-xl font-bold">إدارة السوق — كل شيء</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">مراجعة الطلبات وتأكيد المدفوعات وإدارة الشحن</p>
+          </div>
+          <Badge className="mr-auto bg-orange-100 text-orange-700 border-0 font-bold">{orders.length} طلب</Badge>
+        </div>
 
       {isLoading ? (
         <div className="flex justify-center py-16">
@@ -430,6 +547,8 @@ function AdminMarketplaceTab() {
           })}
         </div>
       )}
+      </div>
+
     </div>
   );
 }

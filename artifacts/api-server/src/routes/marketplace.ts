@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   marketplaceItemsTable, marketplaceOrdersTable, shippingRatesTable,
-  usersTable, notificationsTable,
+  usersTable, notificationsTable, reviewsTable,
 } from "@workspace/db/schema";
 import { eq, desc, and, ilike, or, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth";
@@ -167,9 +167,13 @@ router.post("/marketplace", ...authGuard, async (req: AuthRequest, res): Promise
     province, city,
     phone: phone || null,
     shippingAvailable: Boolean(shippingAvailable),
+    status: "pending", // ← يخضع لمراجعة الأدمن قبل النشر
   }).returning();
 
-  res.status(201).json(item);
+  // إشعار للمستخدم بأن إعلانه قيد المراجعة
+  await notify(req.user!.id, "إعلانك قيد المراجعة ⏳", "تم استلام إعلانك وسيتم مراجعته ونشره قريباً", "marketplace_pending", item.id);
+
+  res.status(201).json({ ...item, message: "تم إرسال إعلانك للمراجعة" });
 });
 
 // PUT /marketplace/:id — update item (seller only)
@@ -447,6 +451,54 @@ router.get("/admin/marketplace", ...adminGuard, async (_req, res): Promise<void>
     .orderBy(desc(marketplaceItemsTable.createdAt))
     .limit(100);
   res.json(items);
+});
+
+// GET /admin/marketplace/pending — items awaiting review
+router.get("/admin/marketplace/pending", ...adminGuard, async (_req, res): Promise<void> => {
+  const items = await db.select({
+    id: marketplaceItemsTable.id,
+    sellerId: marketplaceItemsTable.sellerId,
+    title: marketplaceItemsTable.title,
+    description: marketplaceItemsTable.description,
+    price: marketplaceItemsTable.price,
+    currency: marketplaceItemsTable.currency,
+    category: marketplaceItemsTable.category,
+    condition: marketplaceItemsTable.condition,
+    images: marketplaceItemsTable.images,
+    province: marketplaceItemsTable.province,
+    city: marketplaceItemsTable.city,
+    status: marketplaceItemsTable.status,
+    createdAt: marketplaceItemsTable.createdAt,
+    sellerName: usersTable.name,
+    sellerPhone: usersTable.phone,
+  })
+    .from(marketplaceItemsTable)
+    .leftJoin(usersTable, eq(marketplaceItemsTable.sellerId, usersTable.id))
+    .where(eq(marketplaceItemsTable.status, "pending"))
+    .orderBy(desc(marketplaceItemsTable.createdAt));
+  res.json(items);
+});
+
+// PATCH /admin/marketplace/:id/status — approve or reject
+router.patch("/admin/marketplace/:id/status", ...adminGuard, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { status } = req.body as { status: string };
+  if (!["available", "rejected"].includes(status)) {
+    res.status(400).json({ error: "status must be 'available' or 'rejected'" }); return;
+  }
+  const [updated] = await db.update(marketplaceItemsTable)
+    .set({ status })
+    .where(eq(marketplaceItemsTable.id, id))
+    .returning({ id: marketplaceItemsTable.id, sellerId: marketplaceItemsTable.sellerId, title: marketplaceItemsTable.title, status: marketplaceItemsTable.status });
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  // إشعار للبائع
+  const notifTitle = status === "available" ? "تم قبول إعلانك ✅" : "تم رفض إعلانك ❌";
+  const notifBody  = status === "available"
+    ? `إعلانك "${updated.title}" تم قبوله ونشره على المنصة`
+    : `إعلانك "${updated.title}" لم يُقبل من قِبَل الإدارة`;
+  await notify(updated.sellerId, notifTitle, notifBody, "marketplace_status", updated.id);
+  res.json(updated);
 });
 
 // DELETE /admin/marketplace/:id
