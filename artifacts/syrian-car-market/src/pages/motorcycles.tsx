@@ -66,6 +66,12 @@ export default function MotorcyclesPage() {
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
   });
 
+  const deleteMoto = useMutation({
+    mutationFn: (id: number) => api.delete(`${BASE}/api/cars/${id}`),
+    onSuccess: () => { toast({ title: "تم حذف الإعلان بنجاح" }); qc.invalidateQueries({ queryKey: MOTO_QK }); },
+    onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
+  });
+
   const handleBuySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) { navigate("/login"); return; }
@@ -135,8 +141,10 @@ export default function MotorcyclesPage() {
                   data={m}
                   currentUserId={user?.id}
                   onCardClick={() => setSelectedMoto(m)}
-                  onChat={() => startChat(m.sellerId, `مرحباً، أنا مهتم بـ ${[m.brand, m.model, m.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`)}
+                  onChat={user?.id !== m.sellerId ? () => startChat(m.sellerId, `مرحباً، أنا مهتم بـ ${[m.brand, m.model, m.year].filter(Boolean).join(" ")}. هل ما زالت متوفرة؟`) : undefined}
+                  onDelete={user?.id === m.sellerId ? () => { if (window.confirm("هل تريد حذف هذا الإعلان؟ لا يمكن التراجع.")) deleteMoto.mutate(m.id); } : undefined}
                   chatLoading={startingChat}
+                  deleteLoading={deleteMoto.isPending}
                 />
               ))}
             </div>
