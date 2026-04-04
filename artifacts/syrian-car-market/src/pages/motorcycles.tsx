@@ -1,6 +1,6 @@
 // UI_ID: MOTORCYCLES_01
 // NAME: الدراجات النارية
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, MapPin, ShoppingCart, MessageCircle, Loader2, Bike, Info } from "lucide-react";
+import { Plus, MapPin, ShoppingCart, MessageCircle, Loader2, Bike, Info, Wand2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
@@ -42,6 +42,10 @@ export default function MotorcyclesPage() {
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<MotoItem | null>(null);
+  const [generatingBuyDesc, setGeneratingBuyDesc] = useState(false);
+  const buyBrandRef = useRef<HTMLInputElement>(null);
+  const buyModelRef = useRef<HTMLInputElement>(null);
+  const buyDescRef = useRef<HTMLTextAreaElement>(null);
   const { startChat, loading: startingChat } = useStartChat();
 
   const { data: motos = [], isLoading } = useQuery<MotoItem[]>({
@@ -70,6 +74,27 @@ export default function MotorcyclesPage() {
     onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
   });
 
+  const handleGenerateBuyDesc = async () => {
+    const brand = buyBrandRef.current?.value || "";
+    const model = buyModelRef.current?.value || "";
+    if (!brand && !model) {
+      toast({ title: "الرجاء إدخال الماركة أو الموديل أولاً", variant: "destructive" });
+      return;
+    }
+    setGeneratingBuyDesc(true);
+    try {
+      const res = await api.post(`${BASE}/api/ai/generate-description`, {
+        brand: brand || model, model: model || brand, year: 2020, additionalNotes: "طلب شراء دراجة نارية",
+      });
+      const data = await res.json();
+      if (buyDescRef.current) buyDescRef.current.value = data.description ?? "";
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setGeneratingBuyDesc(false);
+    }
+  };
+
   const handleBuySubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) { navigate("/login"); return; }
@@ -80,7 +105,7 @@ export default function MotorcyclesPage() {
       model: g("model"),
       maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined,
       city: g("city"),
-      description: g("description") || undefined,
+      description: buyDescRef.current?.value || g("description") || undefined,
       category: "motorcycle",
     });
   };
@@ -205,15 +230,25 @@ export default function MotorcyclesPage() {
           <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء دراجة نارية</DialogTitle></DialogHeader>
           <form key={buyOpen ? "open" : "closed"} onSubmit={handleBuySubmit} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <Input name="brand" defaultValue="" placeholder="الماركة (هوندا، ياماها...)" autoComplete="off" />
-              <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
+              <Input ref={buyBrandRef} name="brand" defaultValue="" placeholder="الماركة (هوندا، ياماها...)" autoComplete="off" />
+              <Input ref={buyModelRef} name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
             </div>
             <div className="relative">
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
               <Input type="number" name="maxPrice" defaultValue="" placeholder="أقصى سعر (USD)" className="pr-7" />
             </div>
             <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
-            <textarea name="description" rows={3} placeholder="تفاصيل إضافية (السعة، النوع، الحالة...)" className="w-full border rounded-xl p-3 text-sm resize-none bg-background" />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">تفاصيل إضافية</label>
+                <button type="button" onClick={handleGenerateBuyDesc} disabled={generatingBuyDesc}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50 font-medium">
+                  {generatingBuyDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                  توليد بالذكاء الاصطناعي
+                </button>
+              </div>
+              <textarea ref={buyDescRef} name="description" defaultValue="" rows={3} placeholder="السعة، النوع، الحالة، السنة..." className="w-full border rounded-xl p-3 text-sm resize-none bg-background" />
+            </div>
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold bg-rose-600 hover:bg-rose-700">
               {createBuy.isPending ? "جاري الإرسال..." : "إرسال الطلب"}
             </Button>
