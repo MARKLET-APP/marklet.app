@@ -166,6 +166,9 @@ router.get("/admin/cars", ...guard, async (_req, res): Promise<void> => {
     description: carsTable.description,
     status: carsTable.status,
     createdAt: carsTable.createdAt,
+    isFeatured: carsTable.isFeatured,
+    isHighlighted: carsTable.isHighlighted,
+    isActive: carsTable.isActive,
     sellerName: usersTable.name,
     sellerPhone: usersTable.phone,
   })
@@ -273,10 +276,10 @@ router.patch("/admin/cars/:id/feature", ...guard, async (req: AuthRequest, res):
   const { isFeatured, isHighlighted, isActive } = req.body as {
     isFeatured?: boolean; isHighlighted?: boolean; isActive?: boolean;
   };
-  const updateData: Record<string, boolean> = {};
-  if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
-  if (isHighlighted !== undefined) updateData.isHighlighted = isHighlighted;
-  if (isActive !== undefined) updateData.isActive = isActive;
+  const updateData: { isFeatured?: boolean; isHighlighted?: boolean; isActive?: boolean } = {};
+  if (isFeatured !== undefined) updateData.isFeatured = Boolean(isFeatured);
+  if (isHighlighted !== undefined) updateData.isHighlighted = Boolean(isHighlighted);
+  if (isActive !== undefined) updateData.isActive = Boolean(isActive);
   if (!Object.keys(updateData).length) { res.status(400).json({ error: "No fields to update" }); return; }
   const [updated] = await db.update(carsTable).set(updateData).where(eq(carsTable.id, id)).returning({
     id: carsTable.id, isFeatured: carsTable.isFeatured, isHighlighted: carsTable.isHighlighted, isActive: carsTable.isActive,
