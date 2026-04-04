@@ -167,11 +167,14 @@ router.post("/marketplace", ...authGuard, async (req: AuthRequest, res): Promise
     province, city,
     phone: phone || null,
     shippingAvailable: Boolean(shippingAvailable),
-    status: "pending", // ← يخضع لمراجعة الأدمن قبل النشر
+    status: req.user!.role === "admin" ? "available" : "pending",
+    isActive: req.user!.role === "admin" ? true : false,
   }).returning();
 
-  // إشعار للمستخدم بأن إعلانه قيد المراجعة
-  await notify(req.user!.id, "إعلانك قيد المراجعة ⏳", "تم استلام إعلانك وسيتم مراجعته ونشره قريباً", "marketplace_pending", item.id);
+  // إشعار للمستخدم — فقط إذا لم يكن أدمن
+  if (req.user!.role !== "admin") {
+    await notify(req.user!.id, "إعلانك قيد المراجعة ⏳", "تم استلام إعلانك وسيتم مراجعته ونشره قريباً", "marketplace_pending", item.id);
+  }
 
   res.status(201).json({ ...item, message: "تم إرسال إعلانك للمراجعة" });
 });

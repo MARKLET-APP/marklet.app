@@ -2,8 +2,18 @@ import { Router, type IRouter } from "express";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-import { upload, processImage } from "../middlewares/upload.js";
+import sharp from "sharp";
+import { upload } from "../middlewares/upload.js";
 import { checkImageSafety, detectCar } from "../lib/openai.js";
+
+async function toBase64DataUrl(buffer: Buffer): Promise<string> {
+  const compressed = await sharp(buffer)
+    .rotate()
+    .resize({ width: 1200, withoutEnlargement: true })
+    .jpeg({ quality: 80, progressive: true })
+    .toBuffer();
+  return `data:image/jpeg;base64,${compressed.toString("base64")}`;
+}
 
 const router: IRouter = Router();
 
@@ -70,7 +80,7 @@ router.post("/upload", upload.single("image"), async (req, res): Promise<void> =
 
     fs.unlinkSync(tmpPath);
 
-    const image = await processImage(req.file, "cars");
+    const image = await toBase64DataUrl(req.file.buffer);
     res.json({ success: true, image });
   } catch (err) {
     console.error("[Upload] Error:", err);
@@ -91,7 +101,7 @@ router.post("/upload-image", upload.single("image"), async (req, res): Promise<v
   const folder = rawFolder.replace(/[^a-z0-9_-]/gi, "").slice(0, 32) || "listings";
 
   try {
-    const url = await processImage(req.file, folder);
+    const url = await toBase64DataUrl(req.file.buffer);
     res.json({ success: true, url });
   } catch (err) {
     console.error("[Upload-Image] Error:", err);

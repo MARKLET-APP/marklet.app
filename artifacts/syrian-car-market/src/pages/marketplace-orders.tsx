@@ -352,7 +352,7 @@ export default function MarketplaceOrdersPage() {
               </button>
             )}
 
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden"
+            <input ref={fileRef} type="file" accept="image/*" className="hidden"
               onChange={handleFileChange} />
           </div>
 
