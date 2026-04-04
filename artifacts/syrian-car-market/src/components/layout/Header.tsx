@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useGetConversations } from "@workspace/api-client-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { withApi } from "@/lib/runtimeConfig";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
@@ -18,6 +18,7 @@ export function Header() {
   const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const { t, lang, setLang, isRTL } = useLanguage();
+  const qc = useQueryClient();
   const isHome = location === "/" || location === "" || location === "/reels";
 
   const isPremium = !!(user as any)?.isPremium || !!(user as any)?.isVerified;
@@ -107,7 +108,7 @@ export function Header() {
             <Link
               href="/"
               className="flex items-center gap-2 group"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); qc.invalidateQueries(); }}
             >
               <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-md">
                 <img

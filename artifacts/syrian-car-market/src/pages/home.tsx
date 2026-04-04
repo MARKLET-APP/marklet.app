@@ -142,18 +142,19 @@ export default function Home() {
   const { data: latestCars, isLoading: loadingLatest } = useListCars({
     limit: 6,
     sortBy: "createdAt:desc",
+    category: "car",
   });
 
   const { data: latestRealEstate = [] } = useQuery({
     queryKey: ["/real-estate", "home"],
     queryFn: () => getRealEstate({ limit: "6" }),
-    staleTime: 60_000,
+    staleTime: 15_000,
   });
 
   const { data: latestJobs = [] } = useQuery({
     queryKey: ["/jobs", "home"],
     queryFn: () => getJobs({ limit: "6" }),
-    staleTime: 60_000,
+    staleTime: 15_000,
   });
   const { user } = useAuthStore();
   const { toast } = useToast();
@@ -207,22 +208,22 @@ export default function Home() {
     queryKey: ["/buy-requests"],
     queryFn: () => api.buyRequests.list(),
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 15_000,
   });
   const buyRequests = (buyRequestsRaw as any[]).filter((r: any) =>
-    !r.category || ["car", "cars", "motorcycle", "motorcycles"].includes(r.category)
+    ["car", "cars", "motorcycle", "motorcycles", "used_car", "new_car"].includes(r.category)
   );
 
   const { data: missingCars = [] } = useQuery({
     queryKey: ["/missing-cars"],
     queryFn: () => api.missingCars.list(),
-    staleTime: 60_000,
+    staleTime: 15_000,
   });
 
   const { data: homeMarketItems = [] } = useQuery<HomeMarketItem[]>({
     queryKey: ["marketplace", "home-preview"],
     queryFn: () => apiRequest<HomeMarketItem[]>("/api/marketplace?limit=9"),
-    staleTime: 60_000,
+    staleTime: 15_000,
   });
 
   const handleSendMissingInfo = async () => {

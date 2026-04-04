@@ -101,10 +101,10 @@ export default function BuyRequests() {
       if (g("weeklyPrice")) extras.push(`السعر الأسبوعي: ${g("weeklyPrice")} $`);
       if (g("rentalDuration")) extras.push(`مدة الإيجار: ${g("rentalDuration")}`);
     } else {
+      if (g("condition")) extras.push(`الحالة: ${g("condition")}`);
       if (g("fuelType")) extras.push(`الوقود: ${g("fuelType")}`);
       if (g("transmission")) extras.push(`ناقل الحركة: ${g("transmission")}`);
-      if (g("mileage")) extras.push(`الكيلومترات: ${g("mileage")}`);
-      if (g("condition")) extras.push(`الحالة: ${g("condition")}`);
+      if (g("mileage")) extras.push(`أقصى عداد: ${Number(g("mileage")).toLocaleString()} كم`);
     }
     const fullDesc = [g("description"), ...extras].filter(Boolean).join(" | ");
     const catMap: Record<string, string> = { car: "car", motorcycle: "motorcycle", junk: "junk", rental: "rental" };
@@ -198,14 +198,21 @@ export default function BuyRequests() {
                     <div className="space-y-1"><label className="text-sm font-medium">سنة إلى</label><Input type="number" name="maxYear" defaultValue="" placeholder="2024" /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="space-y-1"><label className="text-sm font-medium">الوقود</label>
-                      <select name="fuelType" defaultValue="" className="w-full border rounded-md px-3 py-2 text-sm bg-background">
-                        <option value="">غير محدد</option><option value="بنزين">بنزين</option><option value="مازوت">مازوت</option><option value="كهرباء">كهرباء</option><option value="هجين">هجين</option>
+                    <div className="space-y-1"><label className="text-sm font-medium">حالة السيارة</label>
+                      <select name="condition" defaultValue="" className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                        <option value="">غير محدد</option><option value="جديدة">جديدة</option><option value="مستعملة">مستعملة</option>
                       </select></div>
                     <div className="space-y-1"><label className="text-sm font-medium">ناقل الحركة</label>
                       <select name="transmission" defaultValue="" className="w-full border rounded-md px-3 py-2 text-sm bg-background">
                         <option value="">غير محدد</option><option value="أوتوماتيك">أوتوماتيك</option><option value="يدوي">يدوي</option>
                       </select></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="space-y-1"><label className="text-sm font-medium">الوقود</label>
+                      <select name="fuelType" defaultValue="" className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                        <option value="">غير محدد</option><option value="بنزين">بنزين</option><option value="مازوت">مازوت</option><option value="كهرباء">كهرباء</option><option value="هجين">هجين</option>
+                      </select></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">أقصى عداد (كم)</label><Input type="number" name="mileage" defaultValue="" placeholder="100000" /></div>
                   </div>
                 </>)}
 

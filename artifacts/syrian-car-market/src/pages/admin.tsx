@@ -2061,6 +2061,14 @@ export default function AdminDashboard() {
                 <div className="text-center py-10 text-muted-foreground">لا توجد عقارات معلقة</div>
               ) : pendingRealEstate.map((re: any) => (
                 <div key={re.id} className="border-2 border-orange-200 rounded-2xl p-4 bg-background shadow-sm">
+                  {/* Image strip */}
+                  {Array.isArray(re.images) && re.images.length > 0 && (
+                    <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+                      {re.images.map((img: string, idx: number) => (
+                        <img key={idx} src={imgUrl(img)} alt={re.title} className="h-28 w-40 object-cover rounded-xl border shrink-0" />
+                      ))}
+                    </div>
+                  )}
                   <div className="mb-3">
                     <p className="font-bold text-base">{re.title}</p>
                     <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">

@@ -19,9 +19,7 @@ export function BottomNav() {
 
   const handleHomeClick = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    if (isHome) {
-      qc.invalidateQueries();
-    }
+    qc.invalidateQueries();
   };
 
   const { data: conversations } = useGetConversations({

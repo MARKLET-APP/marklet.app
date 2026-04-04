@@ -43,7 +43,6 @@ export default function MotorcyclesPage() {
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<MotoItem | null>(null);
   const { startChat, loading: startingChat } = useStartChat();
-  const [buyForm, setBuyForm] = useState({ brand: "", model: "", maxPrice: "", city: "", description: "" });
 
   const { data: motos = [], isLoading } = useQuery<MotoItem[]>({
     queryKey: MOTO_QK,
@@ -58,9 +57,8 @@ export default function MotorcyclesPage() {
   const createBuy = useMutation({
     mutationFn: (body: object) => api.post(`${BASE}/api/buy-requests`, body),
     onSuccess: () => {
-      toast({ title: "تم إرسال طلب الشراء بنجاح" });
+      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setBuyOpen(false);
-      setBuyForm({ brand: "", model: "", maxPrice: "", city: "", description: "" });
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -72,10 +70,19 @@ export default function MotorcyclesPage() {
     onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
   });
 
-  const handleBuySubmit = (e: React.FormEvent) => {
+  const handleBuySubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) { navigate("/login"); return; }
-    createBuy.mutate({ ...buyForm, maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined, category: "motorcycle" });
+    const fd = new FormData(e.currentTarget);
+    const g = (k: string) => (fd.get(k) as string) || "";
+    createBuy.mutate({
+      brand: g("brand"),
+      model: g("model"),
+      maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined,
+      city: g("city"),
+      description: g("description") || undefined,
+      category: "motorcycle",
+    });
   };
 
 
@@ -196,14 +203,17 @@ export default function MotorcyclesPage() {
       <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء دراجة نارية</DialogTitle></DialogHeader>
-          <form onSubmit={handleBuySubmit} className="space-y-3 mt-2">
+          <form key={buyOpen ? "open" : "closed"} onSubmit={handleBuySubmit} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <Input value={buyForm.brand} onChange={e => setBuyForm(p => ({ ...p, brand: e.target.value }))} placeholder="الماركة (هوندا، ياماها...)" />
-              <Input value={buyForm.model} onChange={e => setBuyForm(p => ({ ...p, model: e.target.value }))} placeholder="الموديل" />
+              <Input name="brand" defaultValue="" placeholder="الماركة (هوندا، ياماها...)" autoComplete="off" />
+              <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
             </div>
-            <Input value={buyForm.maxPrice} onChange={e => setBuyForm(p => ({ ...p, maxPrice: e.target.value }))} placeholder="أقصى سعر ($)" type="number" />
-            <Input value={buyForm.city} onChange={e => setBuyForm(p => ({ ...p, city: e.target.value }))} placeholder="المدينة" />
-            <textarea value={buyForm.description} onChange={e => setBuyForm(p => ({ ...p, description: e.target.value }))} placeholder="تفاصيل إضافية (السعة، النوع...)" className="w-full border rounded-xl p-3 text-sm resize-none h-24 bg-background" />
+            <div className="relative">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
+              <Input type="number" name="maxPrice" defaultValue="" placeholder="أقصى سعر (USD)" className="pr-7" />
+            </div>
+            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
+            <textarea name="description" rows={3} placeholder="تفاصيل إضافية (السعة، النوع، الحالة...)" className="w-full border rounded-xl p-3 text-sm resize-none bg-background" />
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold bg-rose-600 hover:bg-rose-700">
               {createBuy.isPending ? "جاري الإرسال..." : "إرسال الطلب"}
             </Button>

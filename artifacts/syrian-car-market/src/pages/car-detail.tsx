@@ -533,7 +533,7 @@ export default function CarDetail() {
 
             <div className="mt-6 pt-6 border-t text-sm text-muted-foreground text-center">
               رقم الإعلان: #{car.id} <br/>
-              تاريخ النشر: {new Date(car.createdAt).toLocaleDateString('ar-EG')}
+              تاريخ النشر: {(() => { try { return new Date(car.createdAt).toLocaleDateString('ar-EG'); } catch { return new Date(car.createdAt).toISOString?.()?.slice(0, 10) ?? ""; } })()}
             </div>
           </div>
         )}

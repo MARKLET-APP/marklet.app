@@ -246,18 +246,22 @@ export default function AddListing() {
   const generateDescMutation = useGenerateCarDescription();
 
   const handleGenerateDesc = () => {
+    const f = fieldsRef.current;
     const isMoto = listingType === "motorcycles";
-    const modelVal = isMoto ? (fields.bikeType || fields.model) : fields.model;
-    if (!fields.brand || !modelVal || !fields.year) {
+    const isRent = listingType === "car_rent";
+    const modelVal = isMoto ? (f.bikeType || f.model) : f.model;
+    if (!f.brand || (!isMoto && !isRent && !modelVal) || !f.year) {
       showToast("الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", { variant: "destructive" });
       return;
     }
     generateDescMutation.mutate({
       data: {
-        brand: fields.brand, model: modelVal, year: Number(fields.year),
-        mileage: isMoto ? 0 : Number(fields.mileage),
-        fuelType: isMoto ? "petrol" : fields.fuelType,
-        transmission: isMoto ? "manual" : fields.transmission,
+        brand: f.brand,
+        model: isMoto ? modelVal : (isRent ? (f.model || f.brand) : modelVal),
+        year: Number(f.year),
+        mileage: isMoto ? 0 : Number(f.mileage),
+        fuelType: isMoto ? "petrol" : f.fuelType,
+        transmission: isMoto ? "manual" : f.transmission,
       }
     }, {
       onSuccess: (res) => {
@@ -294,21 +298,22 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
   };
 
   const handleEstimatePrice = async () => {
-    if (!fields.brand || !fields.year) {
+    const f = fieldsRef.current;
+    if (!f.brand || !f.year) {
       showToast("الرجاء إدخال الماركة وسنة الصنع أولاً", { variant: "destructive" });
       return;
     }
     setEstimating(true);
     try {
-      const year = Number(fields.year) || 2015;
-      const mileage = Number(fields.mileage) || 0;
-      const entered = Number(fields.price) || 0;
+      const year = Number(f.year) || 2015;
+      const mileage = Number(f.mileage) || 0;
+      const entered = Number(f.price) || 0;
 
       const cars = (allCarsData?.cars ?? []) as any[];
       const isMoto = listingType === "motorcycles";
 
       const similar = cars.filter((c: any) => {
-        const brandMatch = c.brand?.toLowerCase() === fields.brand.toLowerCase();
+        const brandMatch = c.brand?.toLowerCase() === f.brand.toLowerCase();
         const yearMatch = Math.abs((c.year ?? 0) - year) <= 3;
         const catMatch = isMoto ? c.category === "motorcycle" : c.category !== "motorcycle";
         return brandMatch && yearMatch && catMatch && c.price > 0;
@@ -316,8 +321,8 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
       const similarPrices = similar.map((c: any) => Number(c.price)).filter(Boolean);
 
       const estimated = isMoto
-        ? estimateMotoPrice(fields.brand, year, similarPrices)
-        : estimateCarPrice(fields.brand, year, mileage, similarPrices);
+        ? estimateMotoPrice(f.brand, year, similarPrices)
+        : estimateCarPrice(f.brand, year, mileage, similarPrices);
 
       const low = Math.round(estimated * 0.88);
       const high = Math.round(estimated * 1.12);
@@ -1125,7 +1130,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <div className="space-y-4 bg-white/10 backdrop-blur-sm p-5 rounded-2xl border border-white/10">
               <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                 <label className="text-sm font-bold text-white/90 flex-1">وصف الإعلان</label>
-                {(listingType === "car_sale" || listingType === "motorcycles") && (
+                {(listingType === "car_sale" || listingType === "motorcycles" || listingType === "car_rent") && (
                   <Button
                     type="button"
                     onClick={handleGenerateDesc}

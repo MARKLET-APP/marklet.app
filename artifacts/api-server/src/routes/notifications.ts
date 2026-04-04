@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, notificationsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, ne, and } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
@@ -8,7 +8,10 @@ const router: IRouter = Router();
 router.get("/notifications", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const userId = req.userId!;
   const notifications = await db.select().from(notificationsTable)
-    .where(eq(notificationsTable.userId, userId))
+    .where(and(
+      eq(notificationsTable.userId, userId),
+      ne(notificationsTable.type, "message")
+    ))
     .orderBy(desc(notificationsTable.createdAt))
     .limit(50);
   res.json(notifications);

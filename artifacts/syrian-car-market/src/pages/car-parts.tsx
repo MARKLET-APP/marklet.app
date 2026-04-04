@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { api, uploadImage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCircle, MessageCircle, Loader2 } from "lucide-react";
+import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCircle, MessageCircle, Loader2, Upload, Image as ImageIcon, Wand2, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
@@ -57,6 +57,14 @@ export default function CarPartsPage() {
   const sellDataRef = useRef<any>(null);
   const { startChat, loading: startingChat } = useStartChat();
 
+  const [sellImages, setSellImages] = useState<string[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const partNameRef = useRef<HTMLInputElement>(null);
+  const partDescRef = useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const followup = params.get("followup");
@@ -76,6 +84,54 @@ export default function CarPartsPage() {
     queryFn: () => api.get("/api/buy-requests?category=parts").then(r => r.json()),
   });
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploadingImages(true);
+    try {
+      const previews: string[] = await Promise.all(
+        files.map(f => new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target?.result as string);
+          reader.readAsDataURL(f);
+        }))
+      );
+      setImagePreviews(prev => [...prev, ...previews]);
+      const urls = await Promise.all(files.map(uploadImage));
+      setSellImages(prev => [...prev, ...urls]);
+    } catch {
+      toast({ title: "فشل رفع بعض الصور", variant: "destructive" });
+    } finally {
+      setUploadingImages(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeImage = (idx: number) => {
+    setSellImages(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleGenerateDesc = async () => {
+    const partName = partNameRef.current?.value || "";
+    if (!partName) {
+      toast({ title: "الرجاء إدخال اسم القطعة أولاً", variant: "destructive" });
+      return;
+    }
+    setGeneratingDesc(true);
+    try {
+      const res = await api.post("/api/ai/generate-description", {
+        brand: partName, model: partName, year: 2020, additionalNotes: "قطعة غيار سيارة",
+      });
+      const data = await res.json();
+      if (partDescRef.current) partDescRef.current.value = data.description ?? "";
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setGeneratingDesc(false);
+    }
+  };
+
   const createSell = useMutation({
     mutationFn: (body: object) => api.carParts.create(body),
     onSuccess: () => {
@@ -84,6 +140,8 @@ export default function CarPartsPage() {
       setShowPreview(false);
       sellDataRef.current = null;
       setSellCurrency("USD");
+      setSellImages([]);
+      setImagePreviews([]);
       qc.invalidateQueries({ queryKey: PARTS_QK(q) });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -136,7 +194,7 @@ export default function CarPartsPage() {
   const doSellSubmit = () => {
     const d = sellDataRef.current;
     if (!d) return;
-    createSell.mutate({ ...d, year: d.year ? Number(d.year) : undefined, price: d.price ? Number(d.price) : 0 });
+    createSell.mutate({ ...d, year: d.year ? Number(d.year) : undefined, price: d.price ? Number(d.price) : 0, images: sellImages.length > 0 ? sellImages : undefined });
   };
 
   const startChatWithBuyer = (buyerId: number, partName: string) =>
@@ -246,11 +304,11 @@ export default function CarPartsPage() {
       )}
       </div>
 
-      <Dialog open={sellOpen} onOpenChange={setSellOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
+      <Dialog open={sellOpen} onOpenChange={o => { setSellOpen(o); if (!o) { setSellImages([]); setImagePreviews([]); setSellCurrency("USD"); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">نشر قطعة سيارة للبيع</DialogTitle></DialogHeader>
           <form key={sellOpen ? "open" : "closed"} onSubmit={handleSellPreview} className="space-y-3 mt-2">
-            <Input name="name" defaultValue="" placeholder="اسم القطعة *" required autoComplete="off" />
+            <Input ref={partNameRef} name="name" defaultValue="" placeholder="اسم القطعة *" required autoComplete="off" />
             <div className="grid grid-cols-2 gap-3">
               <Input name="carType" defaultValue="" placeholder="نوع السيارة" autoComplete="off" />
               <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
@@ -271,9 +329,43 @@ export default function CarPartsPage() {
               </select>
             </div>
             <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
-            <textarea name="description" defaultValue="" rows={2} placeholder="وصف إضافي" className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
-            <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
-              معاينة قبل النشر
+
+            {/* AI Description */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold flex items-center gap-1"><Wand2 className="w-4 h-4 text-primary" /> الوصف</label>
+                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs h-7 px-2 rounded-lg" onClick={handleGenerateDesc} disabled={generatingDesc}>
+                  {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  {generatingDesc ? "جارٍ التوليد..." : "توليد بالذكاء الاصطناعي"}
+                </Button>
+              </div>
+              <textarea ref={partDescRef} name="description" rows={3} placeholder="وصف إضافي للقطعة..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            </div>
+
+            {/* Image upload */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold flex items-center gap-2"><ImageIcon className="w-4 h-4 text-primary" /> صور القطعة (اختياري)</label>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleFileChange} />
+              <Button type="button" variant="outline" className="w-full rounded-xl gap-2 border-dashed border-2" onClick={() => fileInputRef.current?.click()} disabled={uploadingImages}>
+                {uploadingImages ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {uploadingImages ? "جارٍ رفع الصور..." : "رفع صور"}
+              </Button>
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {imagePreviews.map((src, i) => (
+                    <div key={i} className="relative rounded-lg overflow-hidden border aspect-square">
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <button type="button" className="absolute top-1 left-1 bg-black/60 text-white rounded-full p-0.5" onClick={() => removeImage(i)}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Button type="submit" disabled={createSell.isPending || uploadingImages} className="w-full rounded-xl font-bold">
+              {uploadingImages ? "جارٍ رفع الصور..." : "معاينة قبل النشر"}
             </Button>
           </form>
         </DialogContent>
