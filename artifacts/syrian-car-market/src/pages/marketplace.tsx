@@ -99,12 +99,14 @@ async function convertToJpeg(file: File): Promise<File> {
 // ═══════════════════════════════════════════════════════════════════
 // ImagePicker — مكوّن مستقل لرفع الصور بدون إعادة رندر خارجية
 // ═══════════════════════════════════════════════════════════════════
-const ImagePicker = memo(function ImagePicker({ previews, onAdd, onRemove }: {
+const ImagePicker = memo(function ImagePicker({ previews, onAdd, onRemove, loadingCount = 0 }: {
   previews: string[];
   onAdd: (files: FileList) => void;
   onRemove: (idx: number) => void;
+  loadingCount?: number;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  const total = previews.length + loadingCount;
   return (
     <div>
       <div className="flex gap-2 flex-wrap">
@@ -117,7 +119,15 @@ const ImagePicker = memo(function ImagePicker({ previews, onAdd, onRemove }: {
             </button>
           </div>
         ))}
-        {previews.length < 8 && (
+        {/* مؤشرات التحميل — تظهر فوراً عند اختيار الصور */}
+        {Array.from({ length: loadingCount }).map((_, i) => (
+          <div key={`loading-${i}`}
+            className="w-20 h-20 rounded-xl border-2 border-dashed border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/30 flex flex-col items-center justify-center gap-1.5 shrink-0">
+            <Loader2 className="w-6 h-6 text-orange-400 animate-spin" />
+            <span className="text-[9px] text-orange-500 font-medium">جارٍ...</span>
+          </div>
+        ))}
+        {total < 8 && (
           <button type="button" onClick={() => ref.current?.click()}
             className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-orange-400 hover:text-orange-500 transition-colors shrink-0">
             <ImagePlus className="w-5 h-5" />
@@ -188,15 +198,21 @@ const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: 
   // ── image state (base64 للمعاينة بدلاً من blob URLs) ──
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imgsLoading, setImgsLoading] = useState(0); // عدد الصور قيد المعالجة
 
   const addImages = useCallback(async (files: FileList) => {
     const arr = Array.from(files);
-    // 1. تحويل HEIC → JPEG في المتصفح (يحل مشكلة كاميرات Android/iOS)
-    const converted = await Promise.all(arr.map(convertToJpeg));
-    // 2. قراءة كـ base64 للمعاينة (يعمل في Capacitor Android على خلاف blob URLs)
-    const previews = await Promise.all(converted.map(readAsDataURL));
-    setImageFiles(prev => [...prev, ...converted]);
-    setImagePreviews(prev => [...prev, ...previews]);
+    setImgsLoading(arr.length); // أظهر مؤشرات التحميل فوراً
+    try {
+      // 1. تحويل HEIC → JPEG في المتصفح (يحل مشكلة كاميرات Android/iOS)
+      const converted = await Promise.all(arr.map(convertToJpeg));
+      // 2. قراءة كـ base64 للمعاينة (يعمل في Capacitor Android على خلاف blob URLs)
+      const previews = await Promise.all(converted.map(readAsDataURL));
+      setImageFiles(prev => [...prev, ...converted]);
+      setImagePreviews(prev => [...prev, ...previews]);
+    } finally {
+      setImgsLoading(0); // أخفِ المؤشرات بعد الانتهاء أو الفشل
+    }
   }, []);
 
   const removeImage = useCallback((idx: number) => {
@@ -351,7 +367,7 @@ const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: 
       {/* الصور */}
       <div className="space-y-1.5">
         <Label className="text-sm font-semibold">صور السلعة (حتى 8 صور)</Label>
-        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} />
+        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} loadingCount={imgsLoading} />
       </div>
 
       {/* زر النشر */}

@@ -106,6 +106,7 @@ export default function AddListing() {
   const { user } = useAuthStore();
   const [images, setImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState(0); // صور قيد الرفع الآن
   const [priceEval, setPriceEval] = useState<PriceEval>(null);
   const [estimating, setEstimating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -215,12 +216,17 @@ export default function AddListing() {
       return;
     }
     setIsUploading(true);
+    setPendingUploads(files.length); // أظهر كل المؤشرات فوراً
+    let remaining = files.length;
     for (const file of files) {
       try {
         const url = await uploadImage(file);
         setImages(prev => [...prev, url]);
       } catch (err: any) {
         showToast(err.message ?? "فشل رفع الصورة", { variant: "destructive" });
+      } finally {
+        remaining -= 1;
+        setPendingUploads(remaining); // خفّض المؤشرات تدريجياً مع انتهاء كل صورة
       }
     }
     setIsUploading(false);
@@ -646,7 +652,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             <span className="text-sm text-muted-foreground font-normal mr-auto">{images.length}/10</span>
           </h3>
 
-          {images.length > 0 && (
+          {(images.length > 0 || pendingUploads > 0) && (
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
               {images.map((url, idx) => (
                 <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-border">
@@ -663,7 +669,15 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
                   </button>
                 </div>
               ))}
-              {images.length < 10 && (
+              {/* مؤشر تحميل لكل صورة قيد الرفع */}
+              {Array.from({ length: pendingUploads }).map((_, i) => (
+                <div key={`pending-${i}`}
+                  className="aspect-square rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-1.5">
+                  <Loader2 className="w-7 h-7 text-primary animate-spin" />
+                  <span className="text-[10px] text-primary/70 font-medium">جارٍ الرفع...</span>
+                </div>
+              ))}
+              {images.length + pendingUploads < 10 && (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -676,17 +690,16 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             </div>
           )}
 
-          {images.length === 0 && (
+          {images.length === 0 && pendingUploads === 0 && (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
               className="w-full border-2 border-dashed border-border rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:bg-secondary/20 transition-colors disabled:opacity-50"
             >
-              {isUploading
-                ? <><Loader2 className="w-10 h-10 animate-spin text-primary mb-3" /><p className="text-sm text-muted-foreground">جارٍ التحقق من الصورة...</p></>
-                : <><ImagePlus className="w-12 h-12 text-muted-foreground mb-3" /><p className="font-medium text-foreground mb-1">اضغط هنا لرفع الصور</p><p className="text-sm text-muted-foreground">أقصى حد 10 صور</p></>
-              }
+              <ImagePlus className="w-12 h-12 text-muted-foreground mb-3" />
+              <p className="font-medium text-foreground mb-1">اضغط هنا لرفع الصور</p>
+              <p className="text-sm text-muted-foreground">أقصى حد 10 صور</p>
             </button>
           )}
 

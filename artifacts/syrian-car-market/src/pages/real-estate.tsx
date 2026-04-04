@@ -80,13 +80,15 @@ async function convertToJpeg(file: File): Promise<File> {
 
 // ── ImagePicker مستقل ───────────────────────────────────────────────────────
 const ImagePicker = memo(function ImagePicker({
-  previews, onAdd, onRemove,
+  previews, onAdd, onRemove, loadingCount = 0,
 }: {
   previews: string[];
   onAdd: (files: FileList) => void;
   onRemove: (idx: number) => void;
+  loadingCount?: number;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  const total = previews.length + loadingCount;
   return (
     <div>
       <div className="flex gap-2 flex-wrap">
@@ -102,7 +104,15 @@ const ImagePicker = memo(function ImagePicker({
             </button>
           </div>
         ))}
-        {previews.length < 8 && (
+        {/* مؤشرات التحميل — تظهر فوراً عند اختيار الصور */}
+        {Array.from({ length: loadingCount }).map((_, i) => (
+          <div key={`loading-${i}`}
+            className="w-20 h-20 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-1.5 shrink-0">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            <span className="text-[9px] text-primary/70 font-medium">جارٍ...</span>
+          </div>
+        ))}
+        {total < 8 && (
           <button
             type="button"
             onClick={() => ref.current?.click()}
@@ -162,14 +172,20 @@ const AddRealEstateForm = memo(function AddRealEstateForm({
   // image state (base64 للمعاينة بدلاً من blob URLs)
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imgsLoading, setImgsLoading] = useState(0); // عدد الصور قيد المعالجة
 
   const addImages = useCallback(async (files: FileList) => {
     const arr = Array.from(files);
-    // تحويل HEIC → JPEG في المتصفح أولاً
-    const converted = await Promise.all(arr.map(convertToJpeg));
-    const previews = await Promise.all(converted.map(readAsDataURL));
-    setImageFiles(prev => [...prev, ...converted]);
-    setImagePreviews(prev => [...prev, ...previews]);
+    setImgsLoading(arr.length); // أظهر مؤشرات التحميل فوراً
+    try {
+      // تحويل HEIC → JPEG في المتصفح أولاً
+      const converted = await Promise.all(arr.map(convertToJpeg));
+      const previews = await Promise.all(converted.map(readAsDataURL));
+      setImageFiles(prev => [...prev, ...converted]);
+      setImagePreviews(prev => [...prev, ...previews]);
+    } finally {
+      setImgsLoading(0);
+    }
   }, []);
 
   const removeImage = useCallback((idx: number) => {
@@ -384,7 +400,7 @@ const AddRealEstateForm = memo(function AddRealEstateForm({
       {/* الصور */}
       <div>
         <Label className="mb-2 block">الصور</Label>
-        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} />
+        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} loadingCount={imgsLoading} />
         {imageFiles.length > 0 && (
           <p className="text-xs text-muted-foreground mt-1">{imageFiles.length} صورة — سيتم رفعها عند النشر</p>
         )}
