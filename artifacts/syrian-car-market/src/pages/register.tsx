@@ -70,9 +70,11 @@ export default function Register() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold">{t("auth.register.email")}</label>
+            <label htmlFor="register-email" className="text-sm font-bold">{t("auth.register.email")}</label>
             <input
               {...formRegister("identifier", { required: t("common.requiredField") })}
+              id="register-email"
+              type="email"
               autoComplete="email"
               inputMode="email"
               autoCapitalize="none"

@@ -58,9 +58,11 @@ export default function Login() {
           className="space-y-5"
         >
           <div className="space-y-2">
-            <label className="text-sm font-bold">{t("auth.login.email")}</label>
+            <label htmlFor="login-email" className="text-sm font-bold">{t("auth.login.email")}</label>
             <input
               {...register("identifier", { required: t("common.requiredField") })}
+              id="login-email"
+              type="email"
               data-ui-id="INPUT_EMAIL_01"
               data-testid="INPUT_EMAIL_01"
               autoComplete="email"
