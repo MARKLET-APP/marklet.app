@@ -61,11 +61,15 @@ export default function JunkCarsPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingBuyDesc, setGeneratingBuyDesc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typeRef = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
   const condRef = useRef<HTMLSelectElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
+  const buyTypeRef = useRef<HTMLInputElement>(null);
+  const buyYearRef = useRef<HTMLInputElement>(null);
+  const buyJunkDescRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -128,6 +132,27 @@ export default function JunkCarsPage() {
       toast({ title: "فشل توليد الوصف", variant: "destructive" });
     } finally {
       setGeneratingDesc(false);
+    }
+  };
+
+  const handleGenerateBuyDesc = async () => {
+    const brand = buyTypeRef.current?.value || "";
+    const year = buyYearRef.current?.value ? Number(buyYearRef.current.value) : 0;
+    if (!brand) {
+      toast({ title: "الرجاء إدخال نوع السيارة أولاً", variant: "destructive" });
+      return;
+    }
+    setGeneratingBuyDesc(true);
+    try {
+      const res = await api.post("/api/ai/generate-description", {
+        brand, model: brand, year: year || 2015, additionalNotes: "طلب شراء سيارة معطوبة / خردة",
+      });
+      const data = await res.json();
+      if (buyJunkDescRef.current) buyJunkDescRef.current.value = data.description ?? "";
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setGeneratingBuyDesc(false);
     }
   };
 
@@ -366,12 +391,12 @@ export default function JunkCarsPage() {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
             const g = (k: string) => (fd.get(k) as string) || "";
-            createBuy.mutate({ brand: g("type"), model: g("model"), year: g("year") ? Number(g("year")) : undefined, maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined, city: g("city"), description: g("description"), category: "junk" });
+            createBuy.mutate({ brand: g("type"), model: g("model"), year: g("year") ? Number(g("year")) : undefined, maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined, city: g("city"), description: buyJunkDescRef.current?.value || g("description"), category: "junk" });
           }} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <Input name="type" defaultValue="" placeholder="نوع السيارة" autoComplete="off" />
+              <Input ref={buyTypeRef} name="type" defaultValue="" placeholder="نوع السيارة *" required autoComplete="off" />
               <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
-              <Input type="number" name="year" defaultValue="" placeholder="السنة" />
+              <Input ref={buyYearRef} type="number" name="year" defaultValue="" placeholder="السنة" />
             </div>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -384,7 +409,17 @@ export default function JunkCarsPage() {
               </select>
             </div>
             <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
-            <textarea name="description" defaultValue="" rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">تفاصيل إضافية</label>
+                <button type="button" onClick={handleGenerateBuyDesc} disabled={generatingBuyDesc}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50 font-medium">
+                  {generatingBuyDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                  توليد بالذكاء الاصطناعي
+                </button>
+              </div>
+              <textarea ref={buyJunkDescRef} name="description" defaultValue="" rows={3} placeholder="أي ملاحظات أو تفاصيل أخرى..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            </div>
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold">
               {createBuy.isPending ? "جارٍ الإرسال..." : "إرسال الطلب"}
             </Button>

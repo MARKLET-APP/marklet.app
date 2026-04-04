@@ -61,9 +61,13 @@ export default function CarPartsPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingBuyDesc, setGeneratingBuyDesc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const partNameRef = useRef<HTMLInputElement>(null);
   const partDescRef = useRef<HTMLTextAreaElement>(null);
+  const buyPartNameRef = useRef<HTMLInputElement>(null);
+  const buyCarTypeRef = useRef<HTMLInputElement>(null);
+  const buyDescRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -128,6 +132,27 @@ export default function CarPartsPage() {
       toast({ title: "فشل توليد الوصف", variant: "destructive" });
     } finally {
       setGeneratingDesc(false);
+    }
+  };
+
+  const handleGenerateBuyDesc = async () => {
+    const partName = buyPartNameRef.current?.value || "";
+    const carType = buyCarTypeRef.current?.value || "";
+    if (!partName) {
+      toast({ title: "الرجاء إدخال اسم القطعة أولاً", variant: "destructive" });
+      return;
+    }
+    setGeneratingBuyDesc(true);
+    try {
+      const res = await api.post("/api/ai/generate-description", {
+        brand: partName, model: carType || partName, year: 2020, additionalNotes: "طلب شراء قطعة غيار سيارة",
+      });
+      const data = await res.json();
+      if (buyDescRef.current) buyDescRef.current.value = data.description ?? "";
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setGeneratingBuyDesc(false);
     }
   };
 
@@ -381,15 +406,15 @@ export default function CarPartsPage() {
             createBuy.mutate({
               brand: g("partName"),
               model: g("model"),
-              description: [carType && `نوع السيارة: ${carType}`, g("description")].filter(Boolean).join(" — "),
+              description: [carType && `نوع السيارة: ${carType}`, buyDescRef.current?.value || g("description")].filter(Boolean).join(" — "),
               maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined,
               city: g("city"),
               category: "parts",
             });
           }} className="space-y-3 mt-2">
-            <Input name="partName" defaultValue="" placeholder="اسم القطعة المطلوبة *" required autoComplete="off" />
+            <Input ref={buyPartNameRef} name="partName" defaultValue="" placeholder="اسم القطعة المطلوبة *" required autoComplete="off" />
             <div className="grid grid-cols-2 gap-3">
-              <Input name="carType" defaultValue="" placeholder="نوع السيارة" autoComplete="off" />
+              <Input ref={buyCarTypeRef} name="carType" defaultValue="" placeholder="نوع السيارة" autoComplete="off" />
               <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
             </div>
             <div className="flex gap-2">
@@ -403,7 +428,17 @@ export default function CarPartsPage() {
               </select>
             </div>
             <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
-            <textarea name="description" defaultValue="" rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">تفاصيل إضافية</label>
+                <button type="button" onClick={handleGenerateBuyDesc} disabled={generatingBuyDesc}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50 font-medium">
+                  {generatingBuyDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                  توليد بالذكاء الاصطناعي
+                </button>
+              </div>
+              <textarea ref={buyDescRef} name="description" defaultValue="" rows={3} placeholder="أي ملاحظات أو تفاصيل أخرى..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            </div>
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold">
               {createBuy.isPending ? "جارٍ الإرسال..." : "إرسال الطلب"}
             </Button>
