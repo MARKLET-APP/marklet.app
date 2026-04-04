@@ -633,30 +633,12 @@ export default function Home() {
 
           {/* CTA Banner */}
           <Link href="/marketplace">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-l from-orange-500 to-amber-600 p-6 text-white cursor-pointer hover:shadow-xl hover:scale-[1.01] transition-all active:scale-[0.99]">
-              <div className="absolute inset-0 opacity-10 flex items-center justify-end pr-6 pointer-events-none">
-                <ShoppingBag size={120} strokeWidth={0.5} color="white" />
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-orange-500 to-amber-600 px-4 py-2.5 text-white cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all active:scale-[0.99] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 shrink-0">
+                <ShoppingBag className="w-4 h-4 opacity-90" />
+                <span className="text-sm font-extrabold whitespace-nowrap">سوق المستعملات — كل شيء</span>
               </div>
-              <div className="relative z-[1]">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShoppingBag className="w-6 h-6" />
-                  <h3 className="text-xl font-extrabold">سوق المستعملات — كل شيء</h3>
-                </div>
-                <p className="text-orange-100 text-sm mb-4">
-                  بيع ما لا تحتاجه، واشترِ ما تريده بأسعار مناسبة مع الشحن عبر القدموس
-                </p>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
-                    <Truck className="w-3.5 h-3.5" /> شحن بالقدموس
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
-                    💰 شام كاش
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibond">
-                    <Tag className="w-3.5 h-3.5" /> أسعار بالليرة
-                  </div>
-                </div>
-              </div>
+              <span className="text-orange-100 text-xs whitespace-nowrap">🚚 شحن سريع &nbsp;|&nbsp; 💳 دفع إلكتروني &nbsp;|&nbsp; 🏷 أسعار بالليرة</span>
             </div>
           </Link>
         </div>
