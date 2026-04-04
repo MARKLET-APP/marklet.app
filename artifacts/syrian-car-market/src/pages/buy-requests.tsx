@@ -129,7 +129,7 @@ export default function BuyRequests() {
   const createMutation = useMutation({
     mutationFn: (body: object) => api.buyRequests.create(body),
     onSuccess: (data) => {
-      toast({ title: (data as any).message ?? "تم نشر طلبك بنجاح، سيُراجَع من قِبَل الإدارة" });
+      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setOpen(false);
       setForm({ brand: "", model: "", minYear: "", maxYear: "", maxPrice: "", city: "", paymentType: "", description: "", fuelType: "", transmission: "", mileage: "", condition: "", bikeType: "", engineCC: "", weight: "", dailyPrice: "", weeklyPrice: "", rentalDuration: "" });
       queryClient.invalidateQueries({ queryKey: ["buy-requests"] });

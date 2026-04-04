@@ -431,7 +431,7 @@ export default function MarketplacePage() {
   const createMutation = useMutation({
     mutationFn: (body: object) => apiRequest("/api/marketplace", "POST", body),
     onSuccess: () => {
-      toast({ title: "تم نشر إعلانك بنجاح ✅" });
+      toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       formKey.current += 1;
       setAddOpen(false);
       qc.invalidateQueries({ queryKey: ["marketplace"] });

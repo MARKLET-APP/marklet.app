@@ -93,7 +93,7 @@ export default function PlatesPage() {
   const createSell = useMutation({
     mutationFn: (body: object) => api.post("/api/cars", body),
     onSuccess: () => {
-      toast({ title: "إعلانك تحت المراجعة", description: "سيظهر بعد موافقة الإدارة" });
+      toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setSellOpen(false);
       setShowPreview(false);
       setSellForm({ plateNumber: "", plateType: "خصوصي", price: "", city: "", description: "" });
@@ -107,7 +107,7 @@ export default function PlatesPage() {
   const createBuy = useMutation({
     mutationFn: (body: object) => api.post("/api/buy-requests", body),
     onSuccess: () => {
-      toast({ title: "تم إرسال طلب الشراء وهو بانتظار مراجعة الإدارة" });
+      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setBuyOpen(false);
       setBuyForm({ plateDesc: "", plateType: "خصوصي", maxPrice: "", city: "", description: "" });
       qc.invalidateQueries({ queryKey: BUY_QK });

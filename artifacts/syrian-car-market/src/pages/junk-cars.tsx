@@ -73,7 +73,7 @@ export default function JunkCarsPage() {
   const createSell = useMutation({
     mutationFn: (body: object) => api.junkCars.create(body),
     onSuccess: () => {
-      toast({ title: "إعلانك تحت المراجعة", description: "سيظهر بعد موافقة الإدارة" });
+      toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setSellOpen(false);
       setShowPreview(false);
       setSellForm({ type: "", model: "", year: "", condition: "حادث", price: "", currency: "USD", city: "", description: "", isAccident: false, accidentImages: "" });
@@ -85,7 +85,7 @@ export default function JunkCarsPage() {
   const createBuy = useMutation({
     mutationFn: (body: object) => api.post("/api/buy-requests", body),
     onSuccess: () => {
-      toast({ title: "تم إرسال طلب الشراء وهو بانتظار مراجعة الإدارة" });
+      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setBuyOpen(false);
       setBuyForm({ type: "", model: "", year: "", maxPrice: "", city: "", description: "" });
       qc.invalidateQueries({ queryKey: BUY_QK });

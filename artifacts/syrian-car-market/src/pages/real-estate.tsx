@@ -577,7 +577,7 @@ export default function RealEstatePage() {
   const createMutation = useMutation({
     mutationFn: (body: object) => apiRequest("/api/real-estate", "POST", body),
     onSuccess: () => {
-      toast({ title: "تم نشر إعلانك بنجاح" });
+      toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       addFormKey.current += 1;
       setAddOpen(false);
       qc.invalidateQueries({ queryKey: ["real-estate"] });
@@ -588,7 +588,7 @@ export default function RealEstatePage() {
   const buyMutation = useMutation({
     mutationFn: (body: object) => apiRequest("/api/buy-requests", "POST", body),
     onSuccess: () => {
-      toast({ title: "تم إرسال طلبك بنجاح" });
+      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       buyFormKey.current += 1;
       setBuyOpen(false);
       qc.invalidateQueries({ queryKey: ["buy-requests", "real-estate"] });

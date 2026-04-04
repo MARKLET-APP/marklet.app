@@ -78,7 +78,7 @@ export default function RentalCarsPage() {
   const createSell = useMutation({
     mutationFn: (body: object) => api.rentalCars.create(body),
     onSuccess: () => {
-      toast({ title: "إعلانك تحت المراجعة", description: "سيظهر بعد موافقة الإدارة" });
+      toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setSellOpen(false);
       setShowPreview(false);
       setSellForm({ brand: "", model: "", year: "", city: "", dailyPrice: "", weeklyPrice: "", monthlyPrice: "", description: "" });
@@ -92,7 +92,7 @@ export default function RentalCarsPage() {
   const createRequest = useMutation({
     mutationFn: (body: object) => api.post("/api/buy-requests", body),
     onSuccess: () => {
-      toast({ title: "تم نشر طلب الاستئجار بنجاح وهو بانتظار مراجعة الإدارة" });
+      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setReqOpen(false);
       setReqForm({ carType: "", city: "", startDate: "", endDate: "", description: "" });
       qc.invalidateQueries({ queryKey: REQ_QK });

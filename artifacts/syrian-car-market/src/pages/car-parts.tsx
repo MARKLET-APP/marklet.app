@@ -78,7 +78,7 @@ export default function CarPartsPage() {
   const createSell = useMutation({
     mutationFn: (body: object) => api.carParts.create(body),
     onSuccess: () => {
-      toast({ title: "إعلانك تحت المراجعة", description: "سيظهر بعد موافقة الإدارة" });
+      toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setSellOpen(false);
       setShowPreview(false);
       setSellForm({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", currency: "USD", city: "", description: "" });
@@ -90,7 +90,7 @@ export default function CarPartsPage() {
   const createBuy = useMutation({
     mutationFn: (body: object) => api.post("/api/buy-requests", body),
     onSuccess: () => {
-      toast({ title: "تم إرسال طلب الشراء وهو بانتظار مراجعة الإدارة" });
+      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setBuyOpen(false);
       setBuyForm({ partName: "", carType: "", model: "", maxPrice: "", city: "", description: "" });
       qc.invalidateQueries({ queryKey: BUY_QK });
