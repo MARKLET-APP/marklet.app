@@ -605,6 +605,7 @@ export default function Home() {
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-l from-orange-50/80 to-amber-50/60 dark:from-orange-950/20 dark:to-amber-950/10 pointer-events-none" />
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-600 opacity-70" />
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-600 opacity-70" />
 
         <div className="max-w-7xl mx-auto px-4 relative">
           {/* Header */}
@@ -701,6 +702,9 @@ export default function Home() {
           </div>
 
           {/* CTA Banner */}
+          <div className="relative">
+            {/* حلقة وميض حول البانر — مثل تأثير "جديد" */}
+            <div className="absolute -inset-[3px] rounded-3xl bg-gradient-to-l from-orange-400 via-amber-400 to-orange-500 animate-pulse opacity-70 pointer-events-none" />
           <Link href="/marketplace">
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-l from-orange-500 to-amber-600 p-6 text-white cursor-pointer hover:shadow-xl hover:scale-[1.01] transition-all active:scale-[0.99]">
               <div className="absolute inset-0 opacity-10 flex items-center justify-end pr-6 pointer-events-none">
@@ -725,6 +729,7 @@ export default function Home() {
               </div>
             </div>
           </Link>
+          </div>{/* /relative wrapper */}
         </div>
       </section>
 
