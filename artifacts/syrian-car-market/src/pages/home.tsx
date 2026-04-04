@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useScrollFix } from "@/hooks/useScrollFix";
 import { withApi, imgUrl } from "@/lib/runtimeConfig";
-import { getRealEstate, getJobs } from "@/lib/api";
+import { getRealEstate, getJobs, apiRequest } from "@/lib/api";
 import {
   Search,
   ChevronLeft,
@@ -124,6 +124,16 @@ const SERVICE_TIPS: Array<{ icon: ReactNode; text: string }> = [
   },
 ];
 
+type HomeMarketItem = {
+  id: number;
+  title: string;
+  price: string;
+  images: string[];
+  category: string;
+  condition: string;
+  province: string;
+};
+
 export default function Home() {
   useScrollFix();
 
@@ -203,6 +213,12 @@ export default function Home() {
   const { data: missingCars = [] } = useQuery({
     queryKey: ["/missing-cars"],
     queryFn: () => api.missingCars.list(),
+    staleTime: 60_000,
+  });
+
+  const { data: homeMarketItems = [] } = useQuery<HomeMarketItem[]>({
+    queryKey: ["marketplace", "home-preview"],
+    queryFn: () => apiRequest<HomeMarketItem[]>("/api/marketplace?limit=9"),
     staleTime: 60_000,
   });
 
@@ -610,26 +626,67 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Category Grid */}
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-6">
-            {[
-              { label: "أثاث", icon: "🛋️" },
-              { label: "ملابس", icon: "👗" },
-              { label: "إلكترونيات", icon: "📱" },
-              { label: "أدوات", icon: "🔧" },
-              { label: "كتب", icon: "📚" },
-              { label: "أطفال", icon: "🧸" },
-              { label: "رياضة", icon: "⚽" },
-              { label: "أجهزة منزلية", icon: "🏠" },
-            ].map(cat => (
-              <Link key={cat.label} href={`/marketplace?category=${encodeURIComponent(cat.label === "أثاث" ? "أثاث ومنزل" : cat.label === "ملابس" ? "ملابس وأحذية" : cat.label === "أدوات" ? "أدوات ومعدات" : cat.label === "كتب" ? "كتب وتعليم" : cat.label === "أطفال" ? "مستلزمات أطفال" : cat.label === "رياضة" ? "رياضة وترفيه" : cat.label === "أجهزة منزلية" ? "أجهزة منزلية" : cat.label)}`}>
-                <div className="flex flex-col items-center justify-center p-2 bg-card border border-orange-100 dark:border-orange-900/30 rounded-xl cursor-pointer hover:border-orange-400 hover:shadow-sm transition-all group text-center gap-1">
-                  <span className="text-2xl group-hover:scale-125 transition-transform">{cat.icon}</span>
-                  <span className="font-semibold text-foreground leading-tight text-[10px]">{cat.label}</span>
-                </div>
-              </Link>
-            ))}
+          {/* ① Category Scroll Row */}
+          <div className="overflow-x-auto scrollbar-none -mx-4 px-4 mb-3">
+            <div className="flex gap-2 pb-1" style={{ width: "max-content" }}>
+              {[
+                { label: "أثاث", icon: "🛋️", cat: "أثاث ومنزل" },
+                { label: "ملابس", icon: "👗", cat: "ملابس وأحذية" },
+                { label: "إلكترونيات", icon: "📱", cat: "إلكترونيات" },
+                { label: "أدوات", icon: "🔧", cat: "أدوات ومعدات" },
+                { label: "كتب", icon: "📚", cat: "كتب وتعليم" },
+                { label: "أطفال", icon: "🧸", cat: "مستلزمات أطفال" },
+                { label: "رياضة", icon: "⚽", cat: "رياضة وترفيه" },
+                { label: "أجهزة منزلية", icon: "🏠", cat: "أجهزة منزلية" },
+              ].map(({ label, icon, cat }) => (
+                <Link key={label} href={`/marketplace?category=${encodeURIComponent(cat)}`}>
+                  <div className="flex flex-col items-center justify-center w-[72px] h-[68px] shrink-0 bg-card border border-orange-100 dark:border-orange-900/30 rounded-xl cursor-pointer hover:border-orange-400 hover:shadow-sm transition-all group text-center gap-1">
+                    <span className="text-xl group-hover:scale-125 transition-transform">{icon}</span>
+                    <span className="font-semibold text-foreground leading-tight text-[10px]">{label}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
+
+          {/* ② Marketplace Ads Scroll Row */}
+          {homeMarketItems.length > 0 && (
+            <div className="overflow-x-auto scrollbar-none -mx-4 px-4 mb-6">
+              <div className="flex gap-2 pb-1" style={{ width: "max-content" }}>
+                {homeMarketItems.slice(0, 8).map(item => (
+                  <Link key={item.id} href={`/marketplace/${item.id}`}>
+                    <div className="w-[120px] shrink-0 bg-card border border-orange-100 dark:border-orange-900/30 rounded-xl overflow-hidden cursor-pointer hover:border-orange-400 hover:shadow-md transition-all active:scale-[0.97]">
+                      <div className="h-[72px] bg-muted relative overflow-hidden">
+                        {item.images?.[0] ? (
+                          <img
+                            src={imgUrl(item.images[0])}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl bg-orange-50 dark:bg-orange-900/10">🛍️</div>
+                        )}
+                      </div>
+                      <div className="p-1.5">
+                        <p className="text-[10px] font-semibold text-foreground truncate leading-tight">{item.title}</p>
+                        <p className="text-[10px] text-orange-600 font-bold mt-0.5 truncate">{Number(item.price).toLocaleString()} ل.س</p>
+                        <p className="text-[9px] text-muted-foreground truncate mt-0.5">{item.province}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+                {homeMarketItems.length >= 8 && (
+                  <Link href="/marketplace">
+                    <div className="w-[72px] h-[140px] shrink-0 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all gap-1.5 px-1">
+                      <ChevronLeft className="w-5 h-5 text-orange-500" />
+                      <span className="text-[10px] font-bold text-orange-600 text-center leading-tight">عرض الكل</span>
+                    </div>
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* CTA Banner */}
           <Link href="/marketplace">
