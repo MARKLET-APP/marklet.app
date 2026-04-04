@@ -106,10 +106,12 @@ export default function MarketplaceDetailPage() {
   const [buyOpen, setBuyOpen] = useState(false);
   const [buyStep, setBuyStep] = useState<"details" | "payment">("details");
   const [deliveryType, setDeliveryType] = useState("pickup");
-  const [buyPhone, setBuyPhone] = useState("");
-  const [buyAddress, setBuyAddress] = useState("");
-  const [buyNotes, setBuyNotes] = useState("");
   const [createdOrder, setCreatedOrder] = useState<any>(null);
+
+  // uncontrolled refs — يمنع تطاير الأحرف في Android WebView
+  const buyPhoneRef = useRef<HTMLInputElement>(null);
+  const buyAddressRef = useRef<HTMLTextAreaElement>(null);
+  const buyNotesRef = useRef<HTMLTextAreaElement>(null);
 
   // Load item
   const { data: item, isLoading } = useQuery<MarketItem>({
@@ -170,13 +172,16 @@ export default function MarketplaceDetailPage() {
   const totalPrice = Number(item.price) + (deliveryType === "shipping" ? shippingCost : 0);
 
   const handleBuySubmit = () => {
-    if (!buyPhone) { toast({ title: "يرجى إدخال رقم هاتفك", variant: "destructive" }); return; }
-    if (deliveryType === "shipping" && !buyAddress) { toast({ title: "يرجى إدخال عنوانك للشحن", variant: "destructive" }); return; }
+    const phone = buyPhoneRef.current?.value.trim() ?? "";
+    const address = buyAddressRef.current?.value.trim() ?? "";
+    const notes = buyNotesRef.current?.value.trim() ?? "";
+    if (!phone) { toast({ title: "يرجى إدخال رقم هاتفك", variant: "destructive" }); return; }
+    if (deliveryType === "shipping" && !address) { toast({ title: "يرجى إدخال عنوانك للشحن", variant: "destructive" }); return; }
     orderMutation.mutate({
       deliveryType,
-      buyerPhone: buyPhone,
-      buyerAddress: deliveryType === "shipping" ? buyAddress : null,
-      buyerNotes: buyNotes || null,
+      buyerPhone: phone,
+      buyerAddress: deliveryType === "shipping" ? address : null,
+      buyerNotes: notes || null,
       buyerName: user?.name || null,
     });
   };
@@ -476,9 +481,9 @@ export default function MarketplaceDetailPage() {
                   <div className="space-y-1.5">
                     <Label className="text-sm font-semibold">عنوان التسليم <span className="text-destructive">*</span></Label>
                     <Textarea
+                      ref={buyAddressRef}
                       placeholder="أدخل عنوانك بالتفصيل: المحافظة، المدينة، الحي، الشارع..."
-                      value={buyAddress}
-                      onChange={e => setBuyAddress(e.target.value)}
+                      defaultValue=""
                       rows={3}
                       style={{ fontSize: 16 }}
                     />
@@ -489,10 +494,10 @@ export default function MarketplaceDetailPage() {
                 <div className="space-y-1.5">
                   <Label className="text-sm font-semibold">رقم هاتفك <span className="text-destructive">*</span></Label>
                   <Input
+                    ref={buyPhoneRef}
                     type="tel" inputMode="tel"
                     placeholder="09xxxxxxxx"
-                    value={buyPhone}
-                    onChange={e => setBuyPhone(e.target.value)}
+                    defaultValue=""
                     dir="ltr"
                     style={{ fontSize: 16 }}
                   />
@@ -502,9 +507,9 @@ export default function MarketplaceDetailPage() {
                 <div className="space-y-1.5">
                   <Label className="text-sm font-semibold">ملاحظات (اختياري)</Label>
                   <Textarea
+                    ref={buyNotesRef}
                     placeholder="أي تفاصيل إضافية للبائع..."
-                    value={buyNotes}
-                    onChange={e => setBuyNotes(e.target.value)}
+                    defaultValue=""
                     rows={2}
                     style={{ fontSize: 16 }}
                   />
