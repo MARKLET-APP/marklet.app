@@ -21,6 +21,10 @@ import { useStartChat } from "@/hooks/use-start-chat";
 import { CarCard } from "@/components/CarCard";
 import { ContactButtons, ContactButtonsFixed } from "@/components/ContactButtons";
 
+function safeNumStr(n: number | string | null | undefined, locale = "en-US"): string {
+  try { return Number(n ?? 0).toLocaleString(locale); } catch { return String(n ?? 0); }
+}
+
 export default function CarDetail() {
   const [, params] = useRoute("/cars/:id");
   const carId = Number(params?.id);
@@ -58,7 +62,7 @@ export default function CarDetail() {
   useEffect(() => {
     if (!car) return;
     const title = [(car as any).brand, (car as any).model, (car as any).year].filter(Boolean).join(" ") || "LAZEMNI";
-    const description = (car as any).description || `${(car as any).city ?? ""} — ${(car as any).price ? "$" + Number((car as any).price).toLocaleString() : ""}`;
+    const description = (car as any).description || `${(car as any).city ?? ""} — ${(car as any).price ? "$" + safeNumStr((car as any).price) : ""}`;
     const image = (car as any).images?.[0] ?? "";
     const url = `${window.location.origin}/og/${car.id}`;
     document.title = `${title} | LAZEMNI`;
@@ -153,7 +157,7 @@ export default function CarDetail() {
   if (isLoading) return <div className="flex justify-center py-32"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   if (isError || !car) return <div className="text-center py-32 font-bold text-xl text-destructive">عذراً، لم نتمكن من العثور على هذه السيارة.</div>;
 
-  const formattedPrice = "$" + Number(car.price ?? 0).toLocaleString("en-US");
+  const formattedPrice = "$" + safeNumStr(car.price);
   const _rawImages = (car as any).images;
   const images: any[] = Array.isArray(_rawImages)
     ? _rawImages
@@ -396,7 +400,7 @@ export default function CarDetail() {
           <h3 className="text-xl font-bold mb-4">المواصفات</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <SpecItem icon={<Calendar className="w-5 h-5" />} label="السنة" value={String(car.year)} />
-            <SpecItem icon={<Gauge className="w-5 h-5" />} label="المسافة" value={car.mileage ? `${Number(car.mileage).toLocaleString('en-US')} كم` : "غير محدد"} />
+            <SpecItem icon={<Gauge className="w-5 h-5" />} label="المسافة" value={car.mileage ? `${safeNumStr(car.mileage)} كم` : "غير محدد"} />
             <SpecItem icon={<Fuel className="w-5 h-5" />} label="الوقود" value={({'petrol':'بنزين','diesel':'ديزل','electric':'كهربائي','hybrid':'هجين'} as any)[car.fuelType ?? ''] ?? car.fuelType ?? "غير محدد"} />
             <SpecItem icon={<Settings className="w-5 h-5" />} label="ناقل الحركة" value={car.transmission === 'automatic' ? 'أوتوماتيك' : car.transmission === 'manual' ? 'يدوي' : car.transmission ?? "غير محدد"} />
             <SpecItem icon={<MapPin className="w-5 h-5" />} label="المحافظة" value={car.province ?? "غير محدد"} />

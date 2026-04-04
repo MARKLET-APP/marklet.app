@@ -1,6 +1,6 @@
 // UI_ID: BUY_REQUESTS_01
 // NAME: طلبات الشراء
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Calendar, DollarSign, Plus, Trash2, User, CreditCard, MessageCircle, Loader2 } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Plus, Trash2, User, CreditCard, MessageCircle, Loader2, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ShareSheet } from "@/components/ShareSheet";
 
@@ -61,6 +61,28 @@ export default function BuyRequests() {
   const [open, setOpen] = useState(false);
   const { startChat, loading: startingChat } = useStartChat();
   const [vehicleType, setVehicleType] = useState<"car" | "motorcycle" | "junk" | "rental">("car");
+  const [aiLoading, setAiLoading] = useState(false);
+  const brandRef = useRef<HTMLInputElement>(null);
+  const modelRef = useRef<HTMLInputElement>(null);
+  const descRef  = useRef<HTMLTextAreaElement>(null);
+
+  const handleGenerateDesc = async () => {
+    const brand = brandRef.current?.value?.trim() || "";
+    const model = modelRef.current?.value?.trim() || "";
+    const typeLabel = vehicleType === "car" ? "سيارة" : vehicleType === "motorcycle" ? "دراجة نارية" : vehicleType === "junk" ? "خردة" : "مركبة إيجار";
+    const hint = [brand, model, typeLabel].filter(Boolean).join(" ");
+    if (!hint) { return; }
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: hint, year: "", condition: "" }),
+      });
+      const data = await res.json();
+      if (data.description && descRef.current) descRef.current.value = data.description;
+    } catch { /* silent */ } finally { setAiLoading(false); }
+  };
 
   const activeCatDef = CAT_TABS.find(t => t.v === activeCat)!;
 
@@ -190,8 +212,8 @@ export default function BuyRequests() {
                 <div key={vehicleType}>
                 {vehicleType === "car" && (<>
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="space-y-1"><label className="text-sm font-medium">الشركة</label><Input name="brand" defaultValue="" placeholder="Toyota" autoComplete="off" /></div>
-                    <div className="space-y-1"><label className="text-sm font-medium">الموديل</label><Input name="model" defaultValue="" placeholder="كامري" autoComplete="off" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">الشركة</label><Input ref={brandRef} name="brand" defaultValue="" placeholder="Toyota" autoComplete="off" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">الموديل</label><Input ref={modelRef} name="model" defaultValue="" placeholder="كامري" autoComplete="off" /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div className="space-y-1"><label className="text-sm font-medium">سنة من</label><Input type="number" name="minYear" defaultValue="" placeholder="2010" /></div>
@@ -218,7 +240,7 @@ export default function BuyRequests() {
 
                 {vehicleType === "motorcycle" && (<>
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="space-y-1"><label className="text-sm font-medium">الشركة</label><Input name="brand" defaultValue="" placeholder="Honda, Yamaha..." autoComplete="off" /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">الشركة</label><Input ref={brandRef} name="brand" defaultValue="" placeholder="Honda, Yamaha..." autoComplete="off" /></div>
                     <div className="space-y-1"><label className="text-sm font-medium">نوع الدراجة</label>
                       <select name="bikeType" defaultValue="" className="w-full border rounded-md px-3 py-2 text-sm bg-background">
                         <option value="">اختر</option><option value="سبورت">سبورت</option><option value="كروزر">كروزر</option><option value="سكوتر">سكوتر</option><option value="أوف رود">أوف رود</option>
@@ -231,7 +253,7 @@ export default function BuyRequests() {
                 </>)}
 
                 {vehicleType === "junk" && (<>
-                  <div className="space-y-1 mb-3"><label className="text-sm font-medium">نوع المركبة</label><Input name="brand" defaultValue="" placeholder="سيارة، شاحنة، باص..." autoComplete="off" /></div>
+                  <div className="space-y-1 mb-3"><label className="text-sm font-medium">نوع المركبة</label><Input ref={brandRef} name="brand" defaultValue="" placeholder="سيارة، شاحنة، باص..." autoComplete="off" /></div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div className="space-y-1"><label className="text-sm font-medium">الوزن التقريبي (كغ)</label><Input type="number" name="weight" defaultValue="" placeholder="800" /></div>
                     <div className="space-y-1"><label className="text-sm font-medium">المدينة</label><Input name="city" defaultValue="" placeholder="دمشق" autoComplete="off" /></div>
@@ -243,7 +265,7 @@ export default function BuyRequests() {
                 </>)}
 
                 {vehicleType === "rental" && (<>
-                  <div className="space-y-1 mb-3"><label className="text-sm font-medium">نوع المركبة</label><Input name="brand" defaultValue="" placeholder="سيارة، فان، شاحنة..." autoComplete="off" /></div>
+                  <div className="space-y-1 mb-3"><label className="text-sm font-medium">نوع المركبة</label><Input ref={brandRef} name="brand" defaultValue="" placeholder="سيارة، فان، شاحنة..." autoComplete="off" /></div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div className="space-y-1"><label className="text-sm font-medium">السعر اليومي ($)</label><Input type="number" name="dailyPrice" defaultValue="" placeholder="20" /></div>
                     <div className="space-y-1"><label className="text-sm font-medium">السعر الأسبوعي ($)</label><Input type="number" name="weeklyPrice" defaultValue="" placeholder="120" /></div>
@@ -271,8 +293,19 @@ export default function BuyRequests() {
                 )}
 
                 <div className="space-y-1 mb-3">
-                  <label className="text-sm font-medium">تفاصيل إضافية</label>
-                  <textarea name="description" defaultValue="" rows={2} placeholder="أي ملاحظات أو تفاصيل أخرى..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">تفاصيل إضافية</label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateDesc}
+                      disabled={aiLoading}
+                      className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50 font-medium"
+                    >
+                      {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                      توليد بالذكاء الاصطناعي
+                    </button>
+                  </div>
+                  <textarea ref={descRef} name="description" defaultValue="" rows={3} placeholder="أي ملاحظات أو تفاصيل أخرى..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
                 </div>
                 </div>
                 <Button type="submit" disabled={createMutation.isPending} className="w-full rounded-xl font-bold">
