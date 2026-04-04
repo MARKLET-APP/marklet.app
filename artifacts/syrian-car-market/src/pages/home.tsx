@@ -582,6 +582,86 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ══════════════════════════════════════════════════════════════
+          Marketplace "كل شيء" Section
+      ══════════════════════════════════════════════════════════════ */}
+      <section className="py-10 w-full border-b border-orange-100 dark:border-orange-900/30 overflow-hidden relative">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-l from-orange-50/80 to-amber-50/60 dark:from-orange-950/20 dark:to-amber-950/10 pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-600 opacity-70" />
+
+        <div className="max-w-7xl mx-auto px-4 relative">
+          {/* Header */}
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <span className="w-3 h-8 bg-orange-500 rounded-full inline-block"></span>
+                  كل شيء
+                </h2>
+                <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">🔥 جديد</span>
+              </div>
+              <p className="text-muted-foreground mt-1 text-sm">
+                سوق المستعملات — بيع واشترِ الأثاث، الملابس، الإلكترونيات وأكثر
+              </p>
+            </div>
+            <Link href="/marketplace" className="text-orange-600 font-semibold flex items-center gap-1 hover:underline text-sm shrink-0">
+              عرض الكل <ChevronLeft className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Category Grid */}
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-6">
+            {[
+              { label: "أثاث", icon: "🛋️" },
+              { label: "ملابس", icon: "👗" },
+              { label: "إلكترونيات", icon: "📱" },
+              { label: "أدوات", icon: "🔧" },
+              { label: "كتب", icon: "📚" },
+              { label: "أطفال", icon: "🧸" },
+              { label: "رياضة", icon: "⚽" },
+              { label: "أجهزة منزلية", icon: "🏠" },
+            ].map(cat => (
+              <Link key={cat.label} href={`/marketplace?category=${encodeURIComponent(cat.label === "أثاث" ? "أثاث ومنزل" : cat.label === "ملابس" ? "ملابس وأحذية" : cat.label === "أدوات" ? "أدوات ومعدات" : cat.label === "كتب" ? "كتب وتعليم" : cat.label === "أطفال" ? "مستلزمات أطفال" : cat.label === "رياضة" ? "رياضة وترفيه" : cat.label === "أجهزة منزلية" ? "أجهزة منزلية" : cat.label)}`}>
+                <div className="flex flex-col items-center justify-center p-2 bg-card border border-orange-100 dark:border-orange-900/30 rounded-xl cursor-pointer hover:border-orange-400 hover:shadow-sm transition-all group text-center gap-1">
+                  <span className="text-2xl group-hover:scale-125 transition-transform">{cat.icon}</span>
+                  <span className="font-semibold text-foreground leading-tight text-[10px]">{cat.label}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* CTA Banner */}
+          <Link href="/marketplace">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-l from-orange-500 to-amber-600 p-6 text-white cursor-pointer hover:shadow-xl hover:scale-[1.01] transition-all active:scale-[0.99]">
+              <div className="absolute inset-0 opacity-10 flex items-center justify-end pr-6 pointer-events-none">
+                <ShoppingBag size={120} strokeWidth={0.5} color="white" />
+              </div>
+              <div className="relative z-[1]">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingBag className="w-6 h-6" />
+                  <h3 className="text-xl font-extrabold">سوق المستعملات — كل شيء</h3>
+                </div>
+                <p className="text-orange-100 text-sm mb-4">
+                  بيع ما لا تحتاجه، واشترِ ما تريده بأسعار مناسبة مع الشحن عبر القدموس
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
+                    <Truck className="w-3.5 h-3.5" /> شحن بالقدموس
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
+                    💰 شام كاش
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibond">
+                    <Tag className="w-3.5 h-3.5" /> أسعار بالليرة
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
       {/* Trust Badges */}
       <section className="py-3 sm:py-8 bg-secondary/20 border-b border-border/50">
         <div className="features-bar max-w-7xl mx-auto px-4 flex flex-nowrap sm:flex-wrap justify-around sm:justify-center gap-2 sm:gap-16">
@@ -1174,86 +1254,6 @@ export default function Home() {
               </button>
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════════
-          Marketplace "كل شيء" Section
-      ══════════════════════════════════════════════════════════════ */}
-      <section className="py-10 w-full border-b border-orange-100 dark:border-orange-900/30 overflow-hidden relative">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-l from-orange-50/80 to-amber-50/60 dark:from-orange-950/20 dark:to-amber-950/10 pointer-events-none" />
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-600 opacity-70" />
-
-        <div className="max-w-7xl mx-auto px-4 relative">
-          {/* Header */}
-          <div className="flex justify-between items-end mb-6">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                  <span className="w-3 h-8 bg-orange-500 rounded-full inline-block"></span>
-                  كل شيء
-                </h2>
-                <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">🔥 جديد</span>
-              </div>
-              <p className="text-muted-foreground mt-1 text-sm">
-                سوق المستعملات — بيع واشترِ الأثاث، الملابس، الإلكترونيات وأكثر
-              </p>
-            </div>
-            <Link href="/marketplace" className="text-orange-600 font-semibold flex items-center gap-1 hover:underline text-sm shrink-0">
-              عرض الكل <ChevronLeft className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Category Grid */}
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-6">
-            {[
-              { label: "أثاث", icon: "🛋️" },
-              { label: "ملابس", icon: "👗" },
-              { label: "إلكترونيات", icon: "📱" },
-              { label: "أدوات", icon: "🔧" },
-              { label: "كتب", icon: "📚" },
-              { label: "أطفال", icon: "🧸" },
-              { label: "رياضة", icon: "⚽" },
-              { label: "أجهزة منزلية", icon: "🏠" },
-            ].map(cat => (
-              <Link key={cat.label} href={`/marketplace?category=${encodeURIComponent(cat.label === "أثاث" ? "أثاث ومنزل" : cat.label === "ملابس" ? "ملابس وأحذية" : cat.label === "أدوات" ? "أدوات ومعدات" : cat.label === "كتب" ? "كتب وتعليم" : cat.label === "أطفال" ? "مستلزمات أطفال" : cat.label === "رياضة" ? "رياضة وترفيه" : cat.label === "أجهزة منزلية" ? "أجهزة منزلية" : cat.label)}`}>
-                <div className="flex flex-col items-center justify-center p-2 bg-card border border-orange-100 dark:border-orange-900/30 rounded-xl cursor-pointer hover:border-orange-400 hover:shadow-sm transition-all group text-center gap-1">
-                  <span className="text-2xl group-hover:scale-125 transition-transform">{cat.icon}</span>
-                  <span className="font-semibold text-foreground leading-tight text-[10px]">{cat.label}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {/* CTA Banner */}
-          <Link href="/marketplace">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-l from-orange-500 to-amber-600 p-6 text-white cursor-pointer hover:shadow-xl hover:scale-[1.01] transition-all active:scale-[0.99]">
-              <div className="absolute inset-0 opacity-10 flex items-center justify-end pr-6 pointer-events-none">
-                <ShoppingBag size={120} strokeWidth={0.5} color="white" />
-              </div>
-              <div className="relative z-[1]">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShoppingBag className="w-6 h-6" />
-                  <h3 className="text-xl font-extrabold">سوق المستعملات — كل شيء</h3>
-                </div>
-                <p className="text-orange-100 text-sm mb-4">
-                  بيع ما لا تحتاجه، واشترِ ما تريده بأسعار مناسبة مع الشحن عبر القدموس
-                </p>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
-                    <Truck className="w-3.5 h-3.5" /> شحن بالقدموس
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
-                    💰 شام كاش
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
-                    <Tag className="w-3.5 h-3.5" /> أسعار بالليرة
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Link>
         </div>
       </section>
 
