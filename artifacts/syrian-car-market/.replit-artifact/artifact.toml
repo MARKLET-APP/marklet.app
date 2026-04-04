@@ -23,6 +23,3 @@ kind = "web"
 
   [services.production]
   build = ["pnpm", "--filter", "@workspace/syrian-car-market", "run", "build"]
-  serve = "static"
-  publicDir = "artifacts/syrian-car-market/dist/public"
-  
