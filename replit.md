@@ -328,6 +328,32 @@ lib/
 - `GET /api/settings` - Platform settings
 - `GET/PATCH /api/admin/*` - Admin endpoints
 
+## Android Native Fixes (Latest)
+
+### 1. Android Permissions (useAndroidPermissions.ts)
+Requests ALL dangerous permissions at app startup with sequential delays (no dialog stacking):
+- **Camera** → `getUserMedia({ video: true })` — triggers CAMERA permission dialog
+- **Microphone** → `getUserMedia({ audio: true })` — triggers RECORD_AUDIO dialog
+- **Photos/Video** → programmatic hidden file input click — triggers READ_MEDIA_IMAGES + READ_MEDIA_VIDEO on first launch
+- Delay sequence: 1800ms initial → camera → 700ms → mic → 700ms → media library
+
+### 2. FCM Push Notification Deep-Link (useFcmPush.ts)
+Notification-tap handler split into two phases to fix cold-start issue:
+- **Phase 1** (immediately on mount): registers `pushNotificationReceived` + `pushNotificationActionPerformed` listeners
+  - Supports both `data.url` and `data.path` fields from the admin notification payload
+  - Works for: foreground, background, AND killed app (cold start)
+- **Phase 2** (after 1500ms + user login): requests push permission + registers FCM token
+
+### 3. Android Back Button (App.tsx → GlobalHooks)
+Fixed back-button handler — was using `window.location.pathname` (always `/` in Capacitor):
+- Uses **wouter location ref** (`locationRef`) for correct path detection
+- **Home page**: shows `window.confirm("هل تريد الخروج من التطبيق؟")` → exits only on confirmation
+- **Deep page with history**: `window.history.back()`
+- **Deep page, no history**: navigates to `/`
+- Listener registered ONCE (empty deps array); refs keep latest values
+
+---
+
 ## Global Auctions Feature (/auctions)
 - Page: `artifacts/syrian-car-market/src/pages/auctions.tsx`
 - 3 regions: عربية (Emirates Auction), أمريكية (Copart + IAAI), كورية (Encar)

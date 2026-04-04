@@ -33,12 +33,67 @@ export function useFcmPush() {
   const userIdRef = useRef<number | null>(null);
   const [, navigate] = useLocation();
 
-  // Keep latest navigate in a ref so async listeners always use the current one
+  // Always keep the latest navigate in a ref so async listeners use it
   const navigateRef = useRef(navigate);
   useEffect(() => {
     navigateRef.current = navigate;
   });
 
+  // ─── STEP 1: Register notification-tap listener immediately on first mount ───
+  // This must happen before the registration delay so that cold-start taps
+  // (app launched from notification) are captured even if the event fires
+  // within the first 1–2 seconds.
+  useEffect(() => {
+    const isNative = window.Capacitor?.isNativePlatform?.() ?? false;
+    if (!isNative) return;
+
+    let listeners: { remove: () => void }[] = [];
+
+    const registerListeners = async () => {
+      try {
+        const { PushNotifications } = await import("@capacitor/push-notifications");
+
+        // Foreground notification received
+        const l1 = await PushNotifications.addListener(
+          "pushNotificationReceived",
+          (notification) => {
+            console.log("[FCM] Notification in foreground:", notification.title);
+          }
+        );
+
+        // Notification tapped — works for:
+        //  • App in foreground
+        //  • App in background (resumed)
+        //  • App killed (cold start from notification tap)
+        const l2 = await PushNotifications.addListener(
+          "pushNotificationActionPerformed",
+          (action) => {
+            const data = action.notification.data ?? {};
+            // Support both "url" and "path" keys sent from admin panel
+            const dest: string | undefined = data.url ?? data.path;
+            console.log("[FCM] Notification tapped → navigating to:", dest);
+            if (dest) {
+              const path = dest.startsWith("/") ? dest : `/${dest}`;
+              navigateRef.current(path);
+            }
+          }
+        );
+
+        listeners = [l1, l2];
+      } catch (err) {
+        console.error("[FCM] Listener registration failed:", err);
+      }
+    };
+
+    registerListeners();
+
+    return () => {
+      listeners.forEach((l) => l.remove());
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // once — listeners stay alive for the app lifetime
+
+  // ─── STEP 2: Request permissions + register FCM token (after user logs in) ───
   useEffect(() => {
     if (!user || !token) {
       registeredRef.current = false;
@@ -56,7 +111,6 @@ export function useFcmPush() {
         const { PushNotifications } = await import("@capacitor/push-notifications");
 
         const permStatus = await PushNotifications.checkPermissions();
-
         let granted = permStatus.receive === "granted";
         if (!granted) {
           const result = await PushNotifications.requestPermissions();
@@ -70,31 +124,15 @@ export function useFcmPush() {
 
         await PushNotifications.register();
 
-        PushNotifications.addListener("registration", async (fcmToken) => {
+        await PushNotifications.addListener("registration", async (fcmToken) => {
           console.log("[FCM] Token received:", fcmToken.value);
           await registerFcmToken(fcmToken.value, token);
           registeredRef.current = true;
           userIdRef.current = user.id;
         });
 
-        PushNotifications.addListener("registrationError", (err) => {
+        await PushNotifications.addListener("registrationError", (err) => {
           console.error("[FCM] Registration error:", err);
-        });
-
-        PushNotifications.addListener("pushNotificationReceived", (notification) => {
-          console.log("[FCM] Notification received in foreground:", notification);
-        });
-
-        PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-          const url: string | undefined = action.notification.data?.url;
-          console.log("[FCM] Notification tapped, navigating to:", url);
-          if (!url) return;
-
-          // Normalize: strip leading slash for wouter (relative path)
-          const path = url.startsWith("/") ? url : `/${url}`;
-
-          // Use wouter navigate for in-app navigation (no full page reload)
-          navigateRef.current(path);
         });
       } catch (err) {
         console.error("[FCM] Setup failed:", err);

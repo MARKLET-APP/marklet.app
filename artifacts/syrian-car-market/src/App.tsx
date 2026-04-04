@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, Component, ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, Component, ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, useRoute } from "wouter";
 import { setGlobalNavigate } from "@/lib/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -113,10 +113,17 @@ const queryClient = new QueryClient({
 });
 
 function GlobalHooks() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   useEffect(() => {
     setGlobalNavigate(navigate);
   }, [navigate]);
+
+  // Always keep the latest location in a ref so the back-button listener
+  // (which is registered once) always reads the current path.
+  const locationRef = useRef(location);
+  useEffect(() => { locationRef.current = location; }, [location]);
+  const navigateRef = useRef(navigate);
+  useEffect(() => { navigateRef.current = navigate; }, [navigate]);
 
   // Handle navigation messages from service worker (Web Push notification clicks)
   useEffect(() => {
@@ -130,22 +137,35 @@ function GlobalHooks() {
     return () => navigator.serviceWorker?.removeEventListener("message", handleSwMessage);
   }, [navigate]);
 
-  // Android hardware back button — navigate back in history, exit only on root "/"
+  // ── Android hardware back button ─────────────────────────────────────────
+  // Rules:
+  //   • On any deep page      → go back in wouter history
+  //   • No history + not home → navigate to "/"
+  //   • On home page          → ask for exit confirmation, then exitApp()
+  // We use locationRef (wouter path) instead of window.location.pathname
+  // because Capacitor's WebView always reports "/" as the pathname.
   useEffect(() => {
     if (!IS_NATIVE) return;
     let listener: { remove: () => void } | null = null;
+
     CapApp.addListener("backButton", ({ canGoBack }) => {
-      const onHome = window.location.pathname === "/" || window.location.pathname === "";
-      if (canGoBack && !onHome) {
+      const currentPath = locationRef.current;
+      const isHome = currentPath === "/" || currentPath === "";
+
+      if (isHome) {
+        // Show native confirmation dialog before exiting
+        const confirmed = window.confirm("هل تريد الخروج من التطبيق؟");
+        if (confirmed) CapApp.exitApp();
+      } else if (canGoBack) {
         window.history.back();
-      } else if (onHome) {
-        CapApp.exitApp();
       } else {
-        navigate("/");
+        // History is empty but we're not on home — go home
+        navigateRef.current("/");
       }
     }).then((l) => { listener = l; });
+
     return () => { listener?.remove(); };
-  }, [navigate]);
+  }, []); // register once; refs always carry the latest values
 
   usePushNotifications();
   useFcmPush();
