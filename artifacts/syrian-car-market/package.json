@@ -87,6 +87,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "serve": "^14.2.6",
     "tailwindcss": "catalog:",
     "vite": "catalog:"
   }
