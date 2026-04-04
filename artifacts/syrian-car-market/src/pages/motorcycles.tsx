@@ -1,20 +1,20 @@
 // UI_ID: MOTORCYCLES_01
 // NAME: الدراجات النارية
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, MapPin, ShoppingCart, MessageCircle, Loader2, Bike, Info, Wand2 } from "lucide-react";
+import { Plus, MapPin, ShoppingCart, MessageCircle, Bike, Info } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingDetailDialog } from "@/components/ListingDetailDialog";
+import { BuyRequestDialog } from "@/components/BuyRequestDialog";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -42,10 +42,6 @@ export default function MotorcyclesPage() {
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<MotoItem | null>(null);
-  const [generatingBuyDesc, setGeneratingBuyDesc] = useState(false);
-  const buyBrandRef = useRef<HTMLInputElement>(null);
-  const buyModelRef = useRef<HTMLInputElement>(null);
-  const buyDescRef = useRef<HTMLTextAreaElement>(null);
   const { startChat, loading: startingChat } = useStartChat();
 
   const { data: motos = [], isLoading } = useQuery<MotoItem[]>({
@@ -58,57 +54,12 @@ export default function MotorcyclesPage() {
     queryFn: () => api.get(`${BASE}/api/buy-requests?category=motorcycle`).then(r => r.json()),
   });
 
-  const createBuy = useMutation({
-    mutationFn: (body: object) => api.post(`${BASE}/api/buy-requests`, body),
-    onSuccess: () => {
-      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
-      setBuyOpen(false);
-      qc.invalidateQueries({ queryKey: BUY_QK });
-    },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
-  });
-
   const deleteMoto = useMutation({
     mutationFn: (id: number) => api.delete(`${BASE}/api/cars/${id}`),
     onSuccess: () => { toast({ title: "تم حذف الإعلان بنجاح" }); qc.invalidateQueries({ queryKey: MOTO_QK }); },
     onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
   });
 
-  const handleGenerateBuyDesc = async () => {
-    const brand = buyBrandRef.current?.value || "";
-    const model = buyModelRef.current?.value || "";
-    if (!brand && !model) {
-      toast({ title: "الرجاء إدخال الماركة أو الموديل أولاً", variant: "destructive" });
-      return;
-    }
-    setGeneratingBuyDesc(true);
-    try {
-      const res = await api.post(`${BASE}/api/ai/generate-description`, {
-        brand: brand || model, model: model || brand, year: 2020, additionalNotes: "طلب شراء دراجة نارية",
-      });
-      const data = await res.json();
-      if (buyDescRef.current) buyDescRef.current.value = data.description ?? "";
-    } catch {
-      toast({ title: "فشل توليد الوصف", variant: "destructive" });
-    } finally {
-      setGeneratingBuyDesc(false);
-    }
-  };
-
-  const handleBuySubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!user) { navigate("/login"); return; }
-    const fd = new FormData(e.currentTarget);
-    const g = (k: string) => (fd.get(k) as string) || "";
-    createBuy.mutate({
-      brand: g("brand"),
-      model: g("model"),
-      maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined,
-      city: g("city"),
-      description: buyDescRef.current?.value || g("description") || undefined,
-      category: "motorcycle",
-    });
-  };
 
 
   return (
@@ -224,37 +175,17 @@ export default function MotorcyclesPage() {
         )}
       </div>
 
-      {/* Buy Request Dialog */}
-      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء دراجة نارية</DialogTitle></DialogHeader>
-          <form key={buyOpen ? "open" : "closed"} onSubmit={handleBuySubmit} className="space-y-3 mt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <Input ref={buyBrandRef} name="brand" defaultValue="" placeholder="الماركة (هوندا، ياماها...)" autoComplete="off" />
-              <Input ref={buyModelRef} name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
-            </div>
-            <div className="relative">
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
-              <Input type="number" name="maxPrice" defaultValue="" placeholder="أقصى سعر (USD)" className="pr-7" />
-            </div>
-            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">تفاصيل إضافية</label>
-                <button type="button" onClick={handleGenerateBuyDesc} disabled={generatingBuyDesc}
-                  className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50 font-medium">
-                  {generatingBuyDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-                  توليد بالذكاء الاصطناعي
-                </button>
-              </div>
-              <textarea ref={buyDescRef} name="description" defaultValue="" rows={3} placeholder="السعة، النوع، الحالة، السنة..." className="w-full border rounded-xl p-3 text-sm resize-none bg-background" />
-            </div>
-            <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold bg-rose-600 hover:bg-rose-700">
-              {createBuy.isPending ? "جاري الإرسال..." : "إرسال الطلب"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Buy Request Dialog — unified */}
+      <BuyRequestDialog
+        open={buyOpen}
+        onOpenChange={setBuyOpen}
+        defaultType="motorcycle"
+        category="motorcycle"
+        lockType
+        title="طلب شراء دراجة نارية"
+        queryKey={BUY_QK}
+        submitBtnClassName="bg-rose-600 hover:bg-rose-700"
+      />
       {selectedMoto && (
         <ListingDetailDialog
           open={!!selectedMoto}

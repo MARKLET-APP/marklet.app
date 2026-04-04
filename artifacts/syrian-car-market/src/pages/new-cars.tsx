@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
 import { apiRequest } from "@/lib/api";
+import { BuyRequestDialog } from "@/components/BuyRequestDialog";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -44,8 +45,6 @@ export default function NewCarsPage() {
   const [tab, setTab] = useState<"sell" | "buy">("sell");
   const [buyOpen, setBuyOpen] = useState(false);
   const { startChat, loading: startingChat } = useStartChat();
-  const [buyForm, setBuyForm] = useState({ brand: "", model: "", maxPrice: "", city: "", description: "" });
-
   const { data: cars = [], isLoading } = useQuery<CarItem[]>({
     queryKey: CARS_QK,
     queryFn: () => api.get(`${BASE}/api/cars?condition=new&limit=60`).then(r => r.json()).then((d: any) => d.cars ?? d),
@@ -56,28 +55,12 @@ export default function NewCarsPage() {
     queryFn: () => api.get(`${BASE}/api/buy-requests?category=new-car`).then(r => r.json()),
   });
 
-  const createBuy = useMutation({
-    mutationFn: (body: object) => api.post(`${BASE}/api/buy-requests`, body),
-    onSuccess: () => {
-      toast({ title: "تم إرسال طلب الشراء بنجاح" });
-      setBuyOpen(false);
-      setBuyForm({ brand: "", model: "", maxPrice: "", city: "", description: "" });
-      qc.invalidateQueries({ queryKey: BUY_QK });
-    },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
-  });
-
   const deleteBuy = useMutation({
     mutationFn: (id: number) => apiRequest(`${BASE}/api/buy-requests/${id}`, "DELETE"),
     onSuccess: () => { toast({ title: "تم حذف الطلب" }); qc.invalidateQueries({ queryKey: BUY_QK }); },
     onError: () => toast({ title: "حدث خطأ في الحذف", variant: "destructive" }),
   });
 
-  const handleBuySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) { navigate("/login"); return; }
-    createBuy.mutate({ ...buyForm, maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined, category: "new-car" });
-  };
 
 
   return (
@@ -202,24 +185,17 @@ export default function NewCarsPage() {
         )}
       </div>
 
-      {/* Buy Request Dialog */}
-      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء سيارة جديدة</DialogTitle></DialogHeader>
-          <form onSubmit={handleBuySubmit} className="space-y-3 mt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <Input value={buyForm.brand} onChange={e => setBuyForm(p => ({ ...p, brand: e.target.value }))} placeholder="الماركة" />
-              <Input value={buyForm.model} onChange={e => setBuyForm(p => ({ ...p, model: e.target.value }))} placeholder="الموديل" />
-            </div>
-            <Input value={buyForm.maxPrice} onChange={e => setBuyForm(p => ({ ...p, maxPrice: e.target.value }))} placeholder="أقصى سعر ($)" type="number" />
-            <Input value={buyForm.city} onChange={e => setBuyForm(p => ({ ...p, city: e.target.value }))} placeholder="المدينة" />
-            <textarea value={buyForm.description} onChange={e => setBuyForm(p => ({ ...p, description: e.target.value }))} placeholder="تفاصيل إضافية..." className="w-full border rounded-xl p-3 text-sm resize-none h-24 bg-background" />
-            <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700">
-              {createBuy.isPending ? "جاري الإرسال..." : "إرسال الطلب"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Buy Request Dialog — unified */}
+      <BuyRequestDialog
+        open={buyOpen}
+        onOpenChange={setBuyOpen}
+        defaultType="car"
+        category="new-car"
+        lockType
+        title="طلب شراء سيارة جديدة"
+        queryKey={BUY_QK}
+        submitBtnClassName="bg-emerald-600 hover:bg-emerald-700"
+      />
     </div>
   );
 }

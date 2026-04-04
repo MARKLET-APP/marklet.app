@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, MapPin, Trash2, Car, ShoppingCart, CheckCircle2, XCircle, MessageCircle, Loader2, Upload, Image as ImageIcon, Wand2, X } from "lucide-react";
+import { BuyRequestDialog } from "@/components/BuyRequestDialog";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
@@ -53,7 +54,6 @@ export default function JunkCarsPage() {
   const [selectedJunk, setSelectedJunk] = useState<JunkCar | null>(null);
 
   const [sellCurrency, setSellCurrency] = useState("USD");
-  const [buyCurrency, setBuyCurrency] = useState("USD");
   const [sellIsAccident, setSellIsAccident] = useState(false);
   const sellDataRef = useRef<any>(null);
 
@@ -61,15 +61,11 @@ export default function JunkCarsPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [generatingDesc, setGeneratingDesc] = useState(false);
-  const [generatingBuyDesc, setGeneratingBuyDesc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typeRef = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
   const condRef = useRef<HTMLSelectElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
-  const buyTypeRef = useRef<HTMLInputElement>(null);
-  const buyYearRef = useRef<HTMLInputElement>(null);
-  const buyJunkDescRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -135,27 +131,6 @@ export default function JunkCarsPage() {
     }
   };
 
-  const handleGenerateBuyDesc = async () => {
-    const brand = buyTypeRef.current?.value || "";
-    const year = buyYearRef.current?.value ? Number(buyYearRef.current.value) : 0;
-    if (!brand) {
-      toast({ title: "الرجاء إدخال نوع السيارة أولاً", variant: "destructive" });
-      return;
-    }
-    setGeneratingBuyDesc(true);
-    try {
-      const res = await api.post("/api/ai/generate-description", {
-        brand, model: brand, year: year || 2015, additionalNotes: "طلب شراء سيارة معطوبة / خردة",
-      });
-      const data = await res.json();
-      if (buyJunkDescRef.current) buyJunkDescRef.current.value = data.description ?? "";
-    } catch {
-      toast({ title: "فشل توليد الوصف", variant: "destructive" });
-    } finally {
-      setGeneratingBuyDesc(false);
-    }
-  };
-
   const createSell = useMutation({
     mutationFn: (body: object) => api.junkCars.create(body),
     onSuccess: () => {
@@ -168,17 +143,6 @@ export default function JunkCarsPage() {
       setSellImages([]);
       setImagePreviews([]);
       qc.invalidateQueries({ queryKey: JUNK_QK });
-    },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
-  });
-
-  const createBuy = useMutation({
-    mutationFn: (body: object) => api.post("/api/buy-requests", body),
-    onSuccess: () => {
-      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
-      setBuyOpen(false);
-      setBuyCurrency("USD");
-      qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
   });
@@ -384,48 +348,16 @@ export default function JunkCarsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء سيارة معطوبة / خردة</DialogTitle></DialogHeader>
-          <form key={buyOpen ? "open" : "closed"} onSubmit={e => {
-            e.preventDefault();
-            const fd = new FormData(e.currentTarget);
-            const g = (k: string) => (fd.get(k) as string) || "";
-            createBuy.mutate({ brand: g("type"), model: g("model"), year: g("year") ? Number(g("year")) : undefined, maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined, city: g("city"), description: buyJunkDescRef.current?.value || g("description"), category: "junk" });
-          }} className="space-y-3 mt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <Input ref={buyTypeRef} name="type" defaultValue="" placeholder="نوع السيارة *" required autoComplete="off" />
-              <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
-              <Input ref={buyYearRef} type="number" name="year" defaultValue="" placeholder="السنة" />
-            </div>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{buyCurrency === "USD" ? "$" : "ل.س"}</span>
-                <Input type="number" name="maxPrice" defaultValue="" placeholder="أعلى سعر" className="pr-8" />
-              </div>
-              <select name="currency" defaultValue="USD" onChange={e => setBuyCurrency(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
-                <option value="USD">USD</option>
-                <option value="SYP">SYP</option>
-              </select>
-            </div>
-            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">تفاصيل إضافية</label>
-                <button type="button" onClick={handleGenerateBuyDesc} disabled={generatingBuyDesc}
-                  className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50 font-medium">
-                  {generatingBuyDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-                  توليد بالذكاء الاصطناعي
-                </button>
-              </div>
-              <textarea ref={buyJunkDescRef} name="description" defaultValue="" rows={3} placeholder="أي ملاحظات أو تفاصيل أخرى..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
-            </div>
-            <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold">
-              {createBuy.isPending ? "جارٍ الإرسال..." : "إرسال الطلب"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Buy Request Dialog — unified */}
+      <BuyRequestDialog
+        open={buyOpen}
+        onOpenChange={setBuyOpen}
+        defaultType="junk"
+        category="junk"
+        lockType
+        title="طلب شراء سيارة معطوبة / خردة"
+        queryKey={BUY_QK}
+      />
 
       <Dialog open={followupId !== null} onOpenChange={open => { if (!open) setFollowupId(null); }}>
         <DialogContent className="max-w-sm text-center" dir="rtl">
