@@ -650,43 +650,55 @@ export default function Home() {
           </div>
 
           {/* ② Marketplace Ads Scroll Row */}
-          {homeMarketItems.length > 0 && (
-            <div className="overflow-x-auto scrollbar-none -mx-4 px-4 mb-6">
-              <div className="flex gap-2 pb-1" style={{ width: "max-content" }}>
-                {homeMarketItems.slice(0, 8).map(item => (
-                  <Link key={item.id} href={`/marketplace/${item.id}`}>
-                    <div className="w-[120px] shrink-0 bg-card border border-orange-100 dark:border-orange-900/30 rounded-xl overflow-hidden cursor-pointer hover:border-orange-400 hover:shadow-md transition-all active:scale-[0.97]">
-                      <div className="h-[72px] bg-muted relative overflow-hidden">
-                        {item.images?.[0] ? (
-                          <img
-                            src={imgUrl(item.images[0])}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl bg-orange-50 dark:bg-orange-900/10">🛍️</div>
-                        )}
-                      </div>
-                      <div className="p-1.5">
-                        <p className="text-[10px] font-semibold text-foreground truncate leading-tight">{item.title}</p>
-                        <p className="text-[10px] text-orange-600 font-bold mt-0.5 truncate">{Number(item.price).toLocaleString()} ل.س</p>
-                        <p className="text-[9px] text-muted-foreground truncate mt-0.5">{item.province}</p>
-                      </div>
+          <div className="overflow-x-auto scrollbar-none -mx-4 px-4 mb-6">
+            <div className="flex gap-2 pb-1" style={{ width: "max-content" }}>
+              {homeMarketItems.length === 0 ? (
+                <Link href="/marketplace">
+                  <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 border border-dashed border-orange-300 dark:border-orange-700 rounded-xl px-4 py-3 cursor-pointer hover:bg-orange-100 transition-all min-w-[260px]">
+                    <span className="text-2xl">🛍️</span>
+                    <div>
+                      <p className="text-xs font-bold text-orange-700 dark:text-orange-400">كن أول من ينشر إعلاناً!</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">لا توجد إعلانات بعد — انقر لنشر إعلانك الآن</p>
                     </div>
-                  </Link>
-                ))}
-                {homeMarketItems.length >= 8 && (
-                  <Link href="/marketplace">
-                    <div className="w-[72px] h-[140px] shrink-0 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all gap-1.5 px-1">
-                      <ChevronLeft className="w-5 h-5 text-orange-500" />
-                      <span className="text-[10px] font-bold text-orange-600 text-center leading-tight">عرض الكل</span>
-                    </div>
-                  </Link>
-                )}
-              </div>
+                  </div>
+                </Link>
+              ) : (
+                <>
+                  {homeMarketItems.slice(0, 8).map(item => (
+                    <Link key={item.id} href={`/marketplace/${item.id}`}>
+                      <div className="w-[120px] shrink-0 bg-card border border-orange-100 dark:border-orange-900/30 rounded-xl overflow-hidden cursor-pointer hover:border-orange-400 hover:shadow-md transition-all active:scale-[0.97]">
+                        <div className="h-[72px] bg-muted relative overflow-hidden">
+                          {item.images?.[0] ? (
+                            <img
+                              src={imgUrl(item.images[0])}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-2xl bg-orange-50 dark:bg-orange-900/10">🛍️</div>
+                          )}
+                        </div>
+                        <div className="p-1.5">
+                          <p className="text-[10px] font-semibold text-foreground truncate leading-tight">{item.title}</p>
+                          <p className="text-[10px] text-orange-600 font-bold mt-0.5 truncate">{Number(item.price).toLocaleString()} ل.س</p>
+                          <p className="text-[9px] text-muted-foreground truncate mt-0.5">{item.province}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                  {homeMarketItems.length >= 8 && (
+                    <Link href="/marketplace">
+                      <div className="w-[72px] h-[140px] shrink-0 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all gap-1.5 px-1">
+                        <ChevronLeft className="w-5 h-5 text-orange-500" />
+                        <span className="text-[10px] font-bold text-orange-600 text-center leading-tight">عرض الكل</span>
+                      </div>
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
-          )}
+          </div>
 
           {/* CTA Banner */}
           <Link href="/marketplace">
