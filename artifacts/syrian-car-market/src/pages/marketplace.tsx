@@ -64,6 +64,48 @@ function readAsDataURL(file: File): Promise<string> {
   });
 }
 
+/**
+ * تحويل أي صورة (بما في ذلك HEIC) إلى JPEG في المتصفح
+ * يحل مشكلة كاميرات Android/iOS التي تحفظ بتنسيق HEIC
+ */
+async function convertToJpeg(file: File): Promise<File> {
+  // إذا كانت الصورة JPEG/PNG/WebP بالفعل أعدها كما هي
+  const nativeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+  if (nativeTypes.includes(file.type.toLowerCase())) return file;
+
+  // تحويل عبر canvas: اقرأ كـ data URL → img → canvas → blob JPEG
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(file); return; }
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const name = file.name.replace(/\.[^.]+$/, ".jpg");
+              resolve(new File([blob], name, { type: "image/jpeg" }));
+            } else {
+              resolve(file);
+            }
+          },
+          "image/jpeg",
+          0.85,
+        );
+      };
+      img.onerror = () => resolve(file); // إذا فشل التحميل أعد الملف الأصلي
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // ImagePicker — مكوّن مستقل لرفع الصور بدون إعادة رندر خارجية
 // ═══════════════════════════════════════════════════════════════════
@@ -159,9 +201,11 @@ const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: 
 
   const addImages = useCallback(async (files: FileList) => {
     const arr = Array.from(files);
-    // قراءة كـ base64 — يعمل في Capacitor Android على خلاف blob URLs
-    const previews = await Promise.all(arr.map(readAsDataURL));
-    setImageFiles(prev => [...prev, ...arr]);
+    // 1. تحويل HEIC → JPEG في المتصفح (يحل مشكلة كاميرات Android/iOS)
+    const converted = await Promise.all(arr.map(convertToJpeg));
+    // 2. قراءة كـ base64 للمعاينة (يعمل في Capacitor Android على خلاف blob URLs)
+    const previews = await Promise.all(converted.map(readAsDataURL));
+    setImageFiles(prev => [...prev, ...converted]);
     setImagePreviews(prev => [...prev, ...previews]);
   }, []);
 
