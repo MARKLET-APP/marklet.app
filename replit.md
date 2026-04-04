@@ -16,6 +16,7 @@ A full-stack mobile-first Arabic RTL multi-category marketplace for Syria coveri
 - **Routes**: `/marketplace`, `/marketplace/:id`, `/marketplace-orders`
 - **Admin tab**: "السوق" — view all orders, confirm/reject payments, add tracking numbers
 - **Home section**: "كل شيء" section with category grid + CTA banner (orange/amber gradient)
+- **Sham Cash QR**: `artifacts/syrian-car-market/public/shamcash-qr.jpg` → served at `/shamcash-qr.jpg` — shown in payment dialog after order creation
 
 ---
 

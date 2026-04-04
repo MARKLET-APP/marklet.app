@@ -580,14 +580,14 @@ export default function MarketplaceDetailPage() {
                     </div>
                   </div>
 
-                  {/* Barcode placeholder — سيتم استبداله بالباركود الفعلي */}
-                  <div className="w-full aspect-square max-w-[200px] mx-auto bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-2xl border-2 border-dashed border-orange-300 flex flex-col items-center justify-center gap-2 p-4">
-                    <div className="grid grid-cols-5 gap-0.5">
-                      {Array.from({ length: 25 }).map((_, i) => (
-                        <div key={i} className={cn("w-full aspect-square rounded-[1px]", (i * 7 + i) % 3 === 0 ? "bg-orange-800" : "bg-transparent")} />
-                      ))}
-                    </div>
-                    <p className="text-xs text-orange-700 font-bold text-center">شام كاش<br/>Sham Cash</p>
+                  {/* Sham Cash QR Code */}
+                  <div className="w-full max-w-[220px] mx-auto rounded-2xl overflow-hidden border-4 border-white shadow-lg">
+                    <img
+                      src={import.meta.env.BASE_URL + "shamcash-qr.jpg"}
+                      alt="باركود شام كاش"
+                      className="w-full h-auto object-contain"
+                      loading="lazy"
+                    />
                   </div>
 
                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 flex items-start gap-2">
