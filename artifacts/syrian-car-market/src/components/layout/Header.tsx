@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useGetConversations } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { withApi } from "@/lib/runtimeConfig";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
 
@@ -29,6 +31,21 @@ export function Header() {
   });
 
   const totalUnread = conversations?.reduce((sum, c) => sum + c.unreadCount, 0) ?? 0;
+
+  const { data: notifsList = [] } = useQuery<any[]>({
+    queryKey: ["header-notifications"],
+    queryFn: async () => {
+      const token = localStorage.getItem("scm_token");
+      const r = await fetch(withApi("/api/notifications"), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!user,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const unreadNotifs = notifsList.filter((n: any) => !n.isRead).length;
 
   const handleSubscribeClick = () => {
     toast({
@@ -87,7 +104,11 @@ export function Header() {
                 {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </Button>
             )}
-            <Link href="/" className="flex items-center gap-2 group">
+            <Link
+              href="/"
+              className="flex items-center gap-2 group"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            >
               <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-md">
                 <img
                   src={`${import.meta.env.BASE_URL}icons/icon-96.png`}
@@ -171,14 +192,24 @@ export function Header() {
                   onClick={() => navigate("/messages")}
                   title={t("nav.messages")}
                 >
-                  {totalUnread > 0 ? (
-                    <MessageSquare className="w-5 h-5 text-primary" />
-                  ) : (
-                    <Bell className="w-5 h-5" />
-                  )}
+                  <MessageSquare className={cn("w-5 h-5", totalUnread > 0 && "text-primary")} />
                   {totalUnread > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-background">
                       {totalUnread > 99 ? "99+" : totalUnread}
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate("/notifications")}
+                  title="الإشعارات"
+                >
+                  <Bell className={cn("w-5 h-5", unreadNotifs > 0 && "text-primary")} />
+                  {unreadNotifs > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-background">
+                      {unreadNotifs > 99 ? "99+" : unreadNotifs}
                     </span>
                   )}
                 </Button>

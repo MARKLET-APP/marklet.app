@@ -1056,11 +1056,12 @@ export default function Messages() {
                     >
                       <Paperclip className="w-5 h-5" />
                     </Button>
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+                    <input ref={fileInputRef} type="file" accept="image/*" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleImageSelect} />
                     <Input
                       ref={chatInputRef}
                       data-ui-id="INPUT_CHAT_MESSAGE_01"
                       data-testid="INPUT_CHAT_MESSAGE_01"
+                      onChange={(e) => { setNewMessage(e.target.value); }}
                       onInput={(e) => { setNewMessage((e.target as HTMLInputElement).value); handleTyping(); if (showEmojiPicker) setShowEmojiPicker(false); }}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                       placeholder={

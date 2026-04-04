@@ -68,13 +68,18 @@ function PageLoader() {
   );
 }
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: ReactNode }) {
+class ErrorBoundary extends Component<{ children: ReactNode; routeKey: string }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode; routeKey: string }) {
     super(props);
     this.state = { hasError: false };
   }
   static getDerivedStateFromError() { return { hasError: true }; }
   componentDidCatch(error: Error) { console.error("[ErrorBoundary]", error); }
+  componentDidUpdate(prevProps: { children: ReactNode; routeKey: string }) {
+    if (this.state.hasError && prevProps.routeKey !== this.props.routeKey) {
+      this.setState({ hasError: false });
+    }
+  }
   render() {
     if (this.state.hasError) {
       return (
@@ -174,9 +179,10 @@ function GlobalHooks() {
 }
 
 function Router() {
+  const [location] = useLocation();
   return (
     <AppLayout>
-      <ErrorBoundary>
+      <ErrorBoundary routeKey={location}>
       <Suspense fallback={<PageLoader />}>
         <Switch>
           <Route path="/reels" component={ReelsPage} />

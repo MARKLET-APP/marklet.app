@@ -6,7 +6,7 @@ import { authMiddleware, optionalAuthMiddleware, type AuthRequest } from "../lib
 
 const router: IRouter = Router();
 
-router.get("/cars", async (req, res): Promise<void> => {
+router.get("/cars", optionalAuthMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const query = ListCarsQueryParams.safeParse(req.query);
   
   const {
@@ -16,7 +16,13 @@ router.get("/cars", async (req, res): Promise<void> => {
     page = 1, limit = 20, search, sortBy
   } = query.success ? query.data : {};
 
-  const conditions = [
+  const sellerIdParam = (req.query as any).sellerId ? Number((req.query as any).sellerId) : undefined;
+  const viewingOwnListings = !!sellerIdParam && sellerIdParam === req.userId;
+
+  const conditions = viewingOwnListings ? [
+    eq(carsTable.isActive, true),
+    eq(carsTable.sellerId, sellerIdParam!),
+  ] : [
     eq(carsTable.isActive, true),
     or(
       eq(carsTable.status, "approved"),
@@ -26,6 +32,8 @@ router.get("/cars", async (req, res): Promise<void> => {
       )
     )!,
   ];
+
+  if (sellerIdParam && !viewingOwnListings) conditions.push(eq(carsTable.sellerId, sellerIdParam));
   
   if (brand) conditions.push(ilike(carsTable.brand, `%${brand}%`));
   if (model) conditions.push(ilike(carsTable.model, `%${model}%`));
@@ -288,6 +296,7 @@ router.get("/cars/:id", optionalAuthMiddleware, async (req: AuthRequest, res): P
     isHighlighted: carsTable.isHighlighted,
     isActive: carsTable.isActive,
     status: carsTable.status,
+    soldAt: carsTable.soldAt,
     viewCount: carsTable.viewCount,
     createdAt: carsTable.createdAt,
     sellerName: usersTable.name,

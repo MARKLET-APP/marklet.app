@@ -1,6 +1,6 @@
 // UI_ID: JUNK_CARS_01
 // NAME: سيارات الحوادث
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -52,8 +52,10 @@ export default function JunkCarsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedJunk, setSelectedJunk] = useState<JunkCar | null>(null);
 
-  const [sellForm, setSellForm] = useState({ type: "", model: "", year: "", condition: "حادث", price: "", currency: "USD", city: "", description: "", isAccident: false, accidentImages: "" });
-  const [buyForm, setBuyForm] = useState({ type: "", model: "", year: "", maxPrice: "", currency: "USD", city: "", description: "" });
+  const [sellCurrency, setSellCurrency] = useState("USD");
+  const [buyCurrency, setBuyCurrency] = useState("USD");
+  const [sellIsAccident, setSellIsAccident] = useState(false);
+  const sellDataRef = useRef<any>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -76,7 +78,9 @@ export default function JunkCarsPage() {
       toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setSellOpen(false);
       setShowPreview(false);
-      setSellForm({ type: "", model: "", year: "", condition: "حادث", price: "", currency: "USD", city: "", description: "", isAccident: false, accidentImages: "" });
+      sellDataRef.current = null;
+      setSellCurrency("USD");
+      setSellIsAccident(false);
       qc.invalidateQueries({ queryKey: JUNK_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -87,7 +91,7 @@ export default function JunkCarsPage() {
     onSuccess: () => {
       toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setBuyOpen(false);
-      setBuyForm({ type: "", model: "", year: "", maxPrice: "", city: "", description: "" });
+      setBuyCurrency("USD");
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -113,28 +117,19 @@ export default function JunkCarsPage() {
     },
   });
 
-  const handleSellChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
-  const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
-
-  const handleSellPreview = (e: React.FormEvent) => {
+  const handleSellPreview = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const g = (k: string) => (fd.get(k) as string) || "";
+    sellDataRef.current = { type: g("type"), model: g("model"), year: g("year"), condition: g("condition"), price: g("price"), currency: g("currency"), city: g("city"), description: g("description"), isAccident: sellIsAccident, accidentImages: g("accidentImages") };
     setShowPreview(true);
   };
 
   const doSellSubmit = () => {
-    const desc = [
-      sellForm.description,
-      sellForm.isAccident ? "⚠️ السيارة تعرضت لحادث" : "",
-      sellForm.isAccident && sellForm.accidentImages ? `صور الحادث: ${sellForm.accidentImages}` : "",
-    ].filter(Boolean).join(" | ");
-    createSell.mutate({
-      ...sellForm,
-      year: sellForm.year ? Number(sellForm.year) : undefined,
-      price: sellForm.price ? Number(sellForm.price) : undefined,
-      description: desc || undefined,
-    });
+    const d = sellDataRef.current;
+    if (!d) return;
+    const desc = [d.description, d.isAccident ? "⚠️ السيارة تعرضت لحادث" : "", d.isAccident && d.accidentImages ? `صور الحادث: ${d.accidentImages}` : ""].filter(Boolean).join(" | ");
+    createSell.mutate({ ...d, year: d.year ? Number(d.year) : undefined, price: d.price ? Number(d.price) : undefined, description: desc || undefined });
   };
 
   return (
@@ -234,34 +229,34 @@ export default function JunkCarsPage() {
       <Dialog open={sellOpen} onOpenChange={setSellOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">بيع سيارة معطوبة / خردة</DialogTitle></DialogHeader>
-          <form onSubmit={handleSellPreview} className="space-y-3 mt-2">
+          <form key={sellOpen ? "open" : "closed"} onSubmit={handleSellPreview} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <Input name="type" value={sellForm.type} onChange={handleSellChange} placeholder="نوع السيارة" />
-              <Input name="model" value={sellForm.model} onChange={handleSellChange} placeholder="الموديل" />
-              <Input type="number" name="year" value={sellForm.year} onChange={handleSellChange} placeholder="السنة" />
-              <select name="condition" value={sellForm.condition} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background">
+              <Input name="type" defaultValue="" placeholder="نوع السيارة" autoComplete="off" />
+              <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
+              <Input type="number" name="year" defaultValue="" placeholder="السنة" />
+              <select name="condition" defaultValue="حادث" className="border rounded-md px-3 py-2 text-sm bg-background">
                 {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{sellForm.currency === "USD" ? "$" : "ل.س"}</span>
-                <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر — اختياري" className="pr-8" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{sellCurrency === "USD" ? "$" : "ل.س"}</span>
+                <Input type="number" name="price" defaultValue="" placeholder="السعر — اختياري" className="pr-8" />
               </div>
-              <select name="currency" value={sellForm.currency} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
+              <select name="currency" defaultValue="USD" onChange={e => setSellCurrency(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
                 <option value="USD">USD</option>
                 <option value="SYP">SYP</option>
               </select>
             </div>
             <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
-              <input type="checkbox" checked={sellForm.isAccident} onChange={e => setSellForm(p => ({ ...p, isAccident: e.target.checked }))} className="rounded" />
+              <input type="checkbox" checked={sellIsAccident} onChange={e => setSellIsAccident(e.target.checked)} className="rounded" />
               السيارة تعرضت لحادث
             </label>
-            {sellForm.isAccident && (
-              <Input name="accidentImages" value={sellForm.accidentImages} onChange={handleSellChange} placeholder="روابط صور الحادث (اختياري)" />
+            {sellIsAccident && (
+              <Input name="accidentImages" defaultValue="" placeholder="روابط صور الحادث (اختياري)" autoComplete="off" />
             )}
-            <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
-            <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="وصف الحالة..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
+            <textarea name="description" defaultValue="" rows={2} placeholder="وصف الحالة..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
               معاينة قبل النشر
             </Button>
@@ -272,24 +267,29 @@ export default function JunkCarsPage() {
       <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء سيارة معطوبة / خردة</DialogTitle></DialogHeader>
-          <form onSubmit={e => { e.preventDefault(); createBuy.mutate({ brand: buyForm.type, model: buyForm.model, year: buyForm.year ? Number(buyForm.year) : undefined, maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined, city: buyForm.city, description: buyForm.description, category: "junk" }); }} className="space-y-3 mt-2">
+          <form key={buyOpen ? "open" : "closed"} onSubmit={e => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            const g = (k: string) => (fd.get(k) as string) || "";
+            createBuy.mutate({ brand: g("type"), model: g("model"), year: g("year") ? Number(g("year")) : undefined, maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined, city: g("city"), description: g("description"), category: "junk" });
+          }} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <Input name="type" value={buyForm.type} onChange={handleBuyChange} placeholder="نوع السيارة" />
-              <Input name="model" value={buyForm.model} onChange={handleBuyChange} placeholder="الموديل" />
-              <Input type="number" name="year" value={buyForm.year} onChange={handleBuyChange} placeholder="السنة" />
+              <Input name="type" defaultValue="" placeholder="نوع السيارة" autoComplete="off" />
+              <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
+              <Input type="number" name="year" defaultValue="" placeholder="السنة" />
             </div>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{buyForm.currency === "USD" ? "$" : "ل.س"}</span>
-                <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر" className="pr-8" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{buyCurrency === "USD" ? "$" : "ل.س"}</span>
+                <Input type="number" name="maxPrice" defaultValue="" placeholder="أعلى سعر" className="pr-8" />
               </div>
-              <select name="currency" value={buyForm.currency} onChange={handleBuyChange} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
+              <select name="currency" defaultValue="USD" onChange={e => setBuyCurrency(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
                 <option value="USD">USD</option>
                 <option value="SYP">SYP</option>
               </select>
             </div>
-            <Input name="city" value={buyForm.city} onChange={handleBuyChange} placeholder="المدينة" />
-            <textarea name="description" value={buyForm.description} onChange={handleBuyChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
+            <textarea name="description" defaultValue="" rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold">
               {createBuy.isPending ? "جارٍ الإرسال..." : "إرسال الطلب"}
             </Button>
@@ -333,18 +333,13 @@ export default function JunkCarsPage() {
         onConfirm={doSellSubmit}
         submitting={createSell.isPending}
         listing={{
-          title: [sellForm.type, sellForm.model, sellForm.year].filter(Boolean).join(" "),
-          price: sellForm.price || null,
-          currency: (sellForm.currency as "USD" | "SYP") || "USD",
-          city: sellForm.city || null,
-          description: sellForm.description || null,
-          badges: [
-            sellForm.condition,
-            ...(sellForm.isAccident ? ["⚠️ حادث"] : []),
-          ],
-          meta: [
-            ...(sellForm.year ? [{ label: "السنة", value: sellForm.year }] : []),
-          ],
+          title: sellDataRef.current ? [sellDataRef.current.type, sellDataRef.current.model, sellDataRef.current.year].filter(Boolean).join(" ") : "",
+          price: sellDataRef.current?.price || null,
+          currency: (sellDataRef.current?.currency as "USD" | "SYP") || "USD",
+          city: sellDataRef.current?.city || null,
+          description: sellDataRef.current?.description || null,
+          badges: sellDataRef.current ? [sellDataRef.current.condition, ...(sellDataRef.current.isAccident ? ["⚠️ حادث"] : [])] : [],
+          meta: sellDataRef.current?.year ? [{ label: "السنة", value: sellDataRef.current.year }] : [],
         }}
       />
     </div>

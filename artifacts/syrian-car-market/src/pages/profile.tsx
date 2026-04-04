@@ -56,7 +56,12 @@ export default function Profile() {
 
   const { data: userCars, isLoading: loadingCars } = useListCars(
     { sellerId: user?.id },
-    { query: { enabled: !!user?.id } }
+    {
+      query: { enabled: !!user?.id },
+      request: {
+        headers: { Authorization: `Bearer ${localStorage.getItem("scm_token") ?? ""}` },
+      },
+    }
   );
 
   const { data: reviews, isLoading: loadingReviews } = useGetUserReviews(user?.id || 0, {
@@ -180,7 +185,7 @@ export default function Profile() {
                 >
                   <Camera className="w-4 h-4" />
                 </button>
-                <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                <input ref={avatarInputRef} type="file" accept="image/*" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleAvatarUpload} />
               </div>
 
               <h2 className="text-2xl font-bold text-foreground flex items-center gap-2 justify-center">
@@ -416,7 +421,12 @@ export default function Profile() {
                 {userCars.cars.map((car) => (
                   <div key={car.id} className="relative group">
                     <CarCard car={car} />
-                    {(car as any).isFeatured ? (
+                    {(car as any).status === "pending" ? (
+                      <div className="mt-2 flex items-center gap-1.5 text-amber-700 text-xs font-medium bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>قيد المراجعة — لا يظهر للمستخدمين حالياً</span>
+                      </div>
+                    ) : (car as any).isFeatured ? (
                       <div className="mt-2 flex items-center gap-1.5 text-amber-600 text-xs font-medium bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                         <Star className="w-3.5 h-3.5 fill-amber-500" />
                         <span>إعلان مميز</span>

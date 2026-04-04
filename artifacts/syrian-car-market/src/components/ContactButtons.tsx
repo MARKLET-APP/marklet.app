@@ -85,7 +85,13 @@ export function ContactButtons({
       });
       if (res.ok) {
         const conv = await res.json().catch(() => null);
-        navigate(conv?.id ? `/messages?conversationId=${conv.id}` : "/messages");
+        const initialMsg = listingTitle
+          ? encodeURIComponent(`مرحباً، أود الاستفسار عن: ${listingTitle}`)
+          : "";
+        const url = conv?.id
+          ? `/messages?conversationId=${conv.id}${initialMsg ? `&initial=${initialMsg}` : ""}`
+          : "/messages";
+        navigate(url);
       }
     } catch {
     } finally {
@@ -217,7 +223,13 @@ export function ContactButtonsFixed({
       });
       if (res.ok) {
         const conv = await res.json().catch(() => null);
-        navigate(conv?.id ? `/messages?conversationId=${conv.id}` : "/messages");
+        const initialMsg = listingTitle
+          ? encodeURIComponent(`مرحباً، أود الاستفسار عن: ${listingTitle}`)
+          : "";
+        const url = conv?.id
+          ? `/messages?conversationId=${conv.id}${initialMsg ? `&initial=${initialMsg}` : ""}`
+          : "/messages";
+        navigate(url);
       }
     } catch {
     } finally {

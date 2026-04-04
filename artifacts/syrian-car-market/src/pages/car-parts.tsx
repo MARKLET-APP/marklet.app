@@ -52,8 +52,9 @@ export default function CarPartsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedPart, setSelectedPart] = useState<CarPart | null>(null);
 
-  const [sellForm, setSellForm] = useState({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", currency: "USD", city: "", description: "" });
-  const [buyForm, setBuyForm] = useState({ partName: "", carType: "", model: "", maxPrice: "", currency: "USD", city: "", description: "" });
+  const [sellCurrency, setSellCurrency] = useState("USD");
+  const [buyCurrency, setBuyCurrency] = useState("USD");
+  const sellDataRef = useRef<any>(null);
   const { startChat, loading: startingChat } = useStartChat();
 
   useEffect(() => {
@@ -81,7 +82,8 @@ export default function CarPartsPage() {
       toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setSellOpen(false);
       setShowPreview(false);
-      setSellForm({ name: "", carType: "", model: "", year: "", condition: "مستعملة", price: "", currency: "USD", city: "", description: "" });
+      sellDataRef.current = null;
+      setSellCurrency("USD");
       qc.invalidateQueries({ queryKey: PARTS_QK(q) });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -92,7 +94,7 @@ export default function CarPartsPage() {
     onSuccess: () => {
       toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setBuyOpen(false);
-      setBuyForm({ partName: "", carType: "", model: "", maxPrice: "", city: "", description: "" });
+      setBuyCurrency("USD");
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -118,27 +120,24 @@ export default function CarPartsPage() {
     },
   });
 
-  const handleSellPreview = (e: React.FormEvent) => {
+  const handleSellPreview = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!sellForm.name) {
+    const fd = new FormData(e.currentTarget);
+    const g = (k: string) => (fd.get(k) as string) || "";
+    const name = g("name");
+    if (!name) {
       toast({ title: "يرجى إدخال اسم القطعة", variant: "destructive" });
       return;
     }
+    sellDataRef.current = { name, carType: g("carType"), model: g("model"), year: g("year"), condition: g("condition"), price: g("price"), currency: g("currency"), city: g("city"), description: g("description") };
     setShowPreview(true);
   };
 
   const doSellSubmit = () => {
-    createSell.mutate({
-      ...sellForm,
-      year: sellForm.year ? Number(sellForm.year) : undefined,
-      price: sellForm.price ? Number(sellForm.price) : 0,
-    });
+    const d = sellDataRef.current;
+    if (!d) return;
+    createSell.mutate({ ...d, year: d.year ? Number(d.year) : undefined, price: d.price ? Number(d.price) : 0 });
   };
-
-  const handleSellChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
-  const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
   const startChatWithBuyer = (buyerId: number, partName: string) =>
     startChat(buyerId, `مرحباً، رأيت طلبك للقطعة: ${partName}. أنا لدي ما تبحث عنه!`);
@@ -250,29 +249,29 @@ export default function CarPartsPage() {
       <Dialog open={sellOpen} onOpenChange={setSellOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">نشر قطعة سيارة للبيع</DialogTitle></DialogHeader>
-          <form onSubmit={handleSellPreview} className="space-y-3 mt-2">
-            <Input name="name" value={sellForm.name} onChange={handleSellChange} placeholder="اسم القطعة *" required />
+          <form key={sellOpen ? "open" : "closed"} onSubmit={handleSellPreview} className="space-y-3 mt-2">
+            <Input name="name" defaultValue="" placeholder="اسم القطعة *" required autoComplete="off" />
             <div className="grid grid-cols-2 gap-3">
-              <Input name="carType" value={sellForm.carType} onChange={handleSellChange} placeholder="نوع السيارة" />
-              <Input name="model" value={sellForm.model} onChange={handleSellChange} placeholder="الموديل" />
-              <Input type="number" name="year" value={sellForm.year} onChange={handleSellChange} placeholder="السنة" />
-              <select name="condition" value={sellForm.condition} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background">
+              <Input name="carType" defaultValue="" placeholder="نوع السيارة" autoComplete="off" />
+              <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
+              <Input type="number" name="year" defaultValue="" placeholder="السنة" />
+              <select name="condition" defaultValue="مستعملة" className="border rounded-md px-3 py-2 text-sm bg-background">
                 <option value="جديدة">جديدة</option>
                 <option value="مستعملة">مستعملة</option>
               </select>
             </div>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{sellForm.currency === "USD" ? "$" : "ل.س"}</span>
-                <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر — اختياري" className="pr-8" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{sellCurrency === "USD" ? "$" : "ل.س"}</span>
+                <Input type="number" name="price" defaultValue="" placeholder="السعر — اختياري" className="pr-8" />
               </div>
-              <select name="currency" value={sellForm.currency} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
+              <select name="currency" defaultValue="USD" onChange={e => setSellCurrency(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
                 <option value="USD">USD</option>
                 <option value="SYP">SYP</option>
               </select>
             </div>
-            <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
-            <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="وصف إضافي" className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
+            <textarea name="description" defaultValue="" rows={2} placeholder="وصف إضافي" className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createSell.isPending} className="w-full rounded-xl font-bold">
               معاينة قبل النشر
             </Button>
@@ -283,34 +282,37 @@ export default function CarPartsPage() {
       <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء قطعة غيار</DialogTitle></DialogHeader>
-          <form onSubmit={e => {
+          <form key={buyOpen ? "open" : "closed"} onSubmit={e => {
             e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            const g = (k: string) => (fd.get(k) as string) || "";
+            const carType = g("carType");
             createBuy.mutate({
-              brand: buyForm.partName,
-              model: buyForm.model,
-              description: [buyForm.carType && `نوع السيارة: ${buyForm.carType}`, buyForm.description].filter(Boolean).join(" — "),
-              maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined,
-              city: buyForm.city,
+              brand: g("partName"),
+              model: g("model"),
+              description: [carType && `نوع السيارة: ${carType}`, g("description")].filter(Boolean).join(" — "),
+              maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined,
+              city: g("city"),
               category: "parts",
             });
           }} className="space-y-3 mt-2">
-            <Input name="partName" value={buyForm.partName} onChange={handleBuyChange} placeholder="اسم القطعة المطلوبة *" required />
+            <Input name="partName" defaultValue="" placeholder="اسم القطعة المطلوبة *" required autoComplete="off" />
             <div className="grid grid-cols-2 gap-3">
-              <Input name="carType" value={buyForm.carType} onChange={handleBuyChange} placeholder="نوع السيارة" />
-              <Input name="model" value={buyForm.model} onChange={handleBuyChange} placeholder="الموديل" />
+              <Input name="carType" defaultValue="" placeholder="نوع السيارة" autoComplete="off" />
+              <Input name="model" defaultValue="" placeholder="الموديل" autoComplete="off" />
             </div>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{buyForm.currency === "USD" ? "$" : "ل.س"}</span>
-                <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر — اختياري" className="pr-8" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">{buyCurrency === "USD" ? "$" : "ل.س"}</span>
+                <Input type="number" name="maxPrice" defaultValue="" placeholder="أعلى سعر — اختياري" className="pr-8" />
               </div>
-              <select name="currency" value={buyForm.currency} onChange={handleBuyChange} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
+              <select name="currency" defaultValue="USD" onChange={e => setBuyCurrency(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background w-20">
                 <option value="USD">USD</option>
                 <option value="SYP">SYP</option>
               </select>
             </div>
-            <Input name="city" value={buyForm.city} onChange={handleBuyChange} placeholder="المدينة" />
-            <textarea name="description" value={buyForm.description} onChange={handleBuyChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
+            <textarea name="description" defaultValue="" rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold">
               {createBuy.isPending ? "جارٍ الإرسال..." : "إرسال الطلب"}
             </Button>
@@ -354,15 +356,13 @@ export default function CarPartsPage() {
         onConfirm={doSellSubmit}
         submitting={createSell.isPending}
         listing={{
-          title: [sellForm.name, sellForm.carType, sellForm.model].filter(Boolean).join(" — "),
-          price: sellForm.price || null,
-          currency: (sellForm.currency as "USD" | "SYP") || "USD",
-          city: sellForm.city || null,
-          description: sellForm.description || null,
-          badges: [sellForm.condition, ...(sellForm.carType ? [sellForm.carType] : [])],
-          meta: [
-            ...(sellForm.year ? [{ label: "السنة", value: sellForm.year }] : []),
-          ],
+          title: sellDataRef.current ? [sellDataRef.current.name, sellDataRef.current.carType, sellDataRef.current.model].filter(Boolean).join(" — ") : "",
+          price: sellDataRef.current?.price || null,
+          currency: (sellDataRef.current?.currency as "USD" | "SYP") || "USD",
+          city: sellDataRef.current?.city || null,
+          description: sellDataRef.current?.description || null,
+          badges: sellDataRef.current ? [sellDataRef.current.condition, ...(sellDataRef.current.carType ? [sellDataRef.current.carType] : [])] : [],
+          meta: sellDataRef.current?.year ? [{ label: "السنة", value: sellDataRef.current.year }] : [],
         }}
       />
     </div>

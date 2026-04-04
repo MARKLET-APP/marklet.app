@@ -113,8 +113,13 @@ export default function RentalCarsPage() {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     setUploadingImages(true);
-    const previews: string[] = [];
-    files.forEach((f) => { const url = URL.createObjectURL(f); previews.push(url); });
+    const previews: string[] = await Promise.all(
+      files.map(f => new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target?.result as string);
+        reader.readAsDataURL(f);
+      }))
+    );
     setPreviewImages((prev) => [...prev, ...previews]);
     try {
       const uploaded: string[] = [];
@@ -408,7 +413,7 @@ export default function RentalCarsPage() {
               <label className="flex items-center gap-2 border-2 border-dashed border-muted-foreground/30 rounded-xl p-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-colors">
                 <ImageIcon className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">{uploadingImages ? "جاري رفع الصور..." : "اضغط لرفع الصور"}</span>
-                <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImages} />
+                <input type="file" multiple accept="image/*" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleImageUpload} disabled={uploadingImages} />
               </label>
               {previewImages.length > 0 && (
                 <div className="flex gap-2 mt-2 flex-wrap">

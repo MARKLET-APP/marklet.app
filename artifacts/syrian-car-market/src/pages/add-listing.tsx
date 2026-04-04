@@ -246,14 +246,15 @@ export default function AddListing() {
   const generateDescMutation = useGenerateCarDescription();
 
   const handleGenerateDesc = () => {
-    if (!fields.brand || !fields.model || !fields.year) {
+    const isMoto = listingType === "motorcycles";
+    const modelVal = isMoto ? (fields.bikeType || fields.model) : fields.model;
+    if (!fields.brand || !modelVal || !fields.year) {
       showToast("الرجاء إدخال الماركة، الموديل وسنة الصنع أولاً", { variant: "destructive" });
       return;
     }
-    const isMoto = listingType === "motorcycles";
     generateDescMutation.mutate({
       data: {
-        brand: fields.brand, model: fields.model, year: Number(fields.year),
+        brand: fields.brand, model: modelVal, year: Number(fields.year),
         mileage: isMoto ? 0 : Number(fields.mileage),
         fuelType: isMoto ? "petrol" : fields.fuelType,
         transmission: isMoto ? "manual" : fields.transmission,
@@ -703,7 +704,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             </button>
           )}
 
-          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+          <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleFileChange} />
         </div>
 
         {/* ── Step 2: Dynamic Fields ── */}
@@ -1013,7 +1014,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
             )}
             {(listingType === "car_sale" || listingType === "motorcycles") && (
               <div className="space-y-2">
-                <label className="text-sm font-bold">حالة السيارة</label>
+                <label className="text-sm font-bold">{listingType === "motorcycles" ? "حالة الدراجة" : "حالة السيارة"}</label>
                 <select name="condition" value={fields.condition} onChange={handleField} className={selectCls}>
                   <option value="used">مستعملة</option>
                   <option value="new">جديدة</option>

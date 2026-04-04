@@ -203,12 +203,15 @@ export default function Home() {
     initialMsg?: string,
   ) => startChat(targetUserId, initialMsg);
 
-  const { data: buyRequests = [] } = useQuery({
+  const { data: buyRequestsRaw = [] } = useQuery({
     queryKey: ["/buy-requests"],
     queryFn: () => api.buyRequests.list(),
     enabled: !!user,
     staleTime: 60_000,
   });
+  const buyRequests = (buyRequestsRaw as any[]).filter((r: any) =>
+    !r.category || ["car", "cars", "motorcycle", "motorcycles"].includes(r.category)
+  );
 
   const { data: missingCars = [] } = useQuery({
     queryKey: ["/missing-cars"],

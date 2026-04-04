@@ -68,8 +68,7 @@ export default function PlatesPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [sellForm, setSellForm] = useState({ plateNumber: "", plateType: "خصوصي", price: "", city: "", description: "" });
-  const [buyForm, setBuyForm] = useState({ plateDesc: "", plateType: "خصوصي", maxPrice: "", city: "", description: "" });
+  const sellDataRef = useRef<any>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -96,7 +95,7 @@ export default function PlatesPage() {
       toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setSellOpen(false);
       setShowPreview(false);
-      setSellForm({ plateNumber: "", plateType: "خصوصي", price: "", city: "", description: "" });
+      sellDataRef.current = null;
       setSellImages([]);
       setImagePreviews([]);
       qc.invalidateQueries({ queryKey: PLATES_QK });
@@ -109,7 +108,6 @@ export default function PlatesPage() {
     onSuccess: () => {
       toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setBuyOpen(false);
-      setBuyForm({ plateDesc: "", plateType: "خصوصي", maxPrice: "", city: "", description: "" });
       qc.invalidateQueries({ queryKey: BUY_QK });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -135,7 +133,13 @@ export default function PlatesPage() {
     if (!files.length) return;
     setUploadingImages(true);
     try {
-      const previews = files.map(f => URL.createObjectURL(f));
+      const previews: string[] = await Promise.all(
+        files.map(f => new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target?.result as string);
+          reader.readAsDataURL(f);
+        }))
+      );
       setImagePreviews(prev => [...prev, ...previews]);
       const urls = await Promise.all(files.map(uploadImage));
       setSellImages(prev => [...prev, ...urls]);
@@ -152,36 +156,37 @@ export default function PlatesPage() {
     setImagePreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSellChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setSellForm(p => ({ ...p, [e.target.name]: e.target.value }));
-  const handleBuyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setBuyForm(p => ({ ...p, [e.target.name]: e.target.value }));
-
-  const handleSellSubmit = (e: React.FormEvent) => {
+  const handleSellSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (sellImages.length === 0) {
       toast({ title: "يجب إضافة صورة واحدة على الأقل", variant: "destructive" });
       return;
     }
-    if (!sellForm.plateNumber) {
+    const fd = new FormData(e.currentTarget);
+    const g = (k: string) => (fd.get(k) as string) || "";
+    const plateNumber = g("plateNumber");
+    if (!plateNumber) {
       toast({ title: "يرجى إدخال رقم اللوحة", variant: "destructive" });
       return;
     }
+    sellDataRef.current = { plateNumber, plateType: g("plateType") || "خصوصي", price: g("price"), city: g("city"), description: g("description") };
     setShowPreview(true);
   };
 
   const doSellSubmit = () => {
+    const d = sellDataRef.current;
+    if (!d) return;
     createSell.mutate({
-      brand: `${sellForm.plateType}: ${sellForm.plateNumber}`,
+      brand: `${d.plateType}: ${d.plateNumber}`,
       model: "plate",
       year: 2024,
       mileage: 0,
       fuelType: "petrol",
       transmission: "manual",
       province: "دمشق",
-      price: sellForm.price ? Number(sellForm.price) : 0,
-      city: sellForm.city || "دمشق",
-      description: `رقم اللوحة: ${sellForm.plateNumber} | نوع: ${sellForm.plateType}${sellForm.description ? " | " + sellForm.description : ""}`,
+      price: d.price ? Number(d.price) : 0,
+      city: d.city || "دمشق",
+      description: `رقم اللوحة: ${d.plateNumber} | نوع: ${d.plateType}${d.description ? " | " + d.description : ""}`,
       category: "plates",
       saleType: "cash",
       images: sellImages,
@@ -285,10 +290,10 @@ export default function PlatesPage() {
       <Dialog open={sellOpen} onOpenChange={o => { setSellOpen(o); if (!o) { setSellImages([]); setImagePreviews([]); } }}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">نشر لوحة سيارة للبيع</DialogTitle></DialogHeader>
-          <form onSubmit={handleSellSubmit} className="space-y-3 mt-2">
+          <form key={sellOpen ? "open" : "closed"} onSubmit={handleSellSubmit} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <Input name="plateNumber" value={sellForm.plateNumber} onChange={handleSellChange} placeholder="رقم اللوحة *" required />
-              <select name="plateType" value={sellForm.plateType} onChange={handleSellChange} className="border rounded-md px-3 py-2 text-sm bg-background">
+              <Input name="plateNumber" defaultValue="" placeholder="رقم اللوحة *" required autoComplete="off" />
+              <select name="plateType" defaultValue="خصوصي" className="border rounded-md px-3 py-2 text-sm bg-background">
                 <option value="خصوصي">خصوصي</option>
                 <option value="عمومي">عمومي</option>
                 <option value="تجاري">تجاري</option>
@@ -297,15 +302,15 @@ export default function PlatesPage() {
             </div>
             <div className="relative">
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
-              <Input type="number" name="price" value={sellForm.price} onChange={handleSellChange} placeholder="السعر (USD)" className="pr-7" />
+              <Input type="number" name="price" defaultValue="" placeholder="السعر (USD)" className="pr-7" />
             </div>
-            <Input name="city" value={sellForm.city} onChange={handleSellChange} placeholder="المدينة" />
-            <textarea name="description" value={sellForm.description} onChange={handleSellChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
+            <textarea name="description" defaultValue="" rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
 
             {/* Image upload */}
             <div className="space-y-2">
               <label className="text-sm font-bold flex items-center gap-2"><ImageIcon className="w-4 h-4 text-primary" /> صور اللوحة *</label>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+              <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleFileChange} />
               <Button type="button" variant="outline" className="w-full rounded-xl gap-2 border-dashed border-2" onClick={() => fileInputRef.current?.click()} disabled={uploadingImages}>
                 {uploadingImages ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 {uploadingImages ? "جارٍ رفع الصور..." : "رفع صور"}
@@ -336,19 +341,21 @@ export default function PlatesPage() {
       <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle className="text-xl font-bold">طلب شراء لوحة سيارة</DialogTitle></DialogHeader>
-          <form onSubmit={e => {
+          <form key={buyOpen ? "open" : "closed"} onSubmit={e => {
             e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            const g = (k: string) => (fd.get(k) as string) || "";
             createBuy.mutate({
-              brand: buyForm.plateDesc,
-              maxPrice: buyForm.maxPrice ? Number(buyForm.maxPrice) : undefined,
-              city: buyForm.city || undefined,
-              description: buyForm.description || undefined,
+              brand: g("plateDesc"),
+              maxPrice: g("maxPrice") ? Number(g("maxPrice")) : undefined,
+              city: g("city") || undefined,
+              description: g("description") || undefined,
               category: "plates",
             });
           }} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <Input name="plateDesc" value={buyForm.plateDesc} onChange={handleBuyChange} placeholder="وصف اللوحة المطلوبة *" required />
-              <select name="plateType" value={buyForm.plateType} onChange={handleBuyChange} className="border rounded-md px-3 py-2 text-sm bg-background">
+              <Input name="plateDesc" defaultValue="" placeholder="وصف اللوحة المطلوبة *" required autoComplete="off" />
+              <select name="plateType" defaultValue="خصوصي" className="border rounded-md px-3 py-2 text-sm bg-background">
                 <option value="خصوصي">خصوصي</option>
                 <option value="عمومي">عمومي</option>
                 <option value="تجاري">تجاري</option>
@@ -356,10 +363,10 @@ export default function PlatesPage() {
             </div>
             <div className="relative">
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
-              <Input type="number" name="maxPrice" value={buyForm.maxPrice} onChange={handleBuyChange} placeholder="أعلى سعر (USD)" className="pr-7" />
+              <Input type="number" name="maxPrice" defaultValue="" placeholder="أعلى سعر (USD)" className="pr-7" />
             </div>
-            <Input name="city" value={buyForm.city} onChange={handleBuyChange} placeholder="المدينة" />
-            <textarea name="description" value={buyForm.description} onChange={handleBuyChange} rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            <Input name="city" defaultValue="" placeholder="المدينة" autoComplete="off" />
+            <textarea name="description" defaultValue="" rows={2} placeholder="تفاصيل إضافية..." className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
             <Button type="submit" disabled={createBuy.isPending} className="w-full rounded-xl font-bold">
               {createBuy.isPending ? "جارٍ الإرسال..." : "إرسال الطلب"}
             </Button>
@@ -403,13 +410,13 @@ export default function PlatesPage() {
         onConfirm={doSellSubmit}
         submitting={createSell.isPending}
         listing={{
-          title: `${sellForm.plateType}: ${sellForm.plateNumber}`,
-          price: sellForm.price || null,
+          title: sellDataRef.current ? `${sellDataRef.current.plateType}: ${sellDataRef.current.plateNumber}` : "",
+          price: sellDataRef.current?.price || null,
           currency: "USD",
-          city: sellForm.city || null,
-          description: sellForm.description || null,
+          city: sellDataRef.current?.city || null,
+          description: sellDataRef.current?.description || null,
           images: imagePreviews,
-          badges: [sellForm.plateType, "لوحة سيارة"],
+          badges: sellDataRef.current ? [sellDataRef.current.plateType, "لوحة سيارة"] : [],
         }}
       />
     </div>

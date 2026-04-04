@@ -4,9 +4,11 @@ import { Link, useRoute } from "wouter";
 import { Home, Plus, MessageCircle, User, Bell, Settings } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useGetConversations } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function BottomNav() {
   const { user } = useAuthStore();
+  const qc = useQueryClient();
   const [isHome] = useRoute("/");
   const [isAdd] = useRoute("/add-listing");
   const [isProfile] = useRoute("/profile");
@@ -14,6 +16,13 @@ export function BottomNav() {
   const [isChat] = useRoute("/chat");
   const [isNotifications] = useRoute("/notifications");
   const [isAdmin] = useRoute("/admin");
+
+  const handleHomeClick = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (isHome) {
+      qc.invalidateQueries();
+    }
+  };
 
   const { data: conversations } = useGetConversations({
     query: {
@@ -32,7 +41,7 @@ export function BottomNav() {
       <div className="flex items-center justify-around h-16 px-1">
 
         {/* الرئيسية */}
-        <NavItem href="/" icon={<Home className="w-5 h-5" />} label="الرئيسية" isActive={isHome} />
+        <NavItem href="/" icon={<Home className="w-5 h-5" />} label="الرئيسية" isActive={isHome} onClick={handleHomeClick} />
 
         {/* إشعارات */}
         <NavItem href="/notifications" icon={<Bell className="w-5 h-5" />} label="إشعارات" isActive={isNotifications} />
@@ -84,13 +93,13 @@ export function BottomNav() {
 }
 
 function NavItem({
-  href, icon, label, isActive, accent
+  href, icon, label, isActive, accent, onClick
 }: {
-  href: string; icon: React.ReactNode; label: string; isActive: boolean | null; accent?: boolean
+  href: string; icon: React.ReactNode; label: string; isActive: boolean | null; accent?: boolean; onClick?: () => void
 }) {
   const activeColor = accent ? "text-emerald-600" : "text-primary";
   return (
-    <Link href={href} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${isActive ? activeColor : "text-muted-foreground hover:text-foreground"}`}>
+    <Link href={href} onClick={onClick} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${isActive ? activeColor : "text-muted-foreground hover:text-foreground"}`}>
       {icon}
       <span className="text-[10px] font-medium">{label}</span>
     </Link>
