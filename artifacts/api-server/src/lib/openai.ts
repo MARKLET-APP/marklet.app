@@ -323,3 +323,29 @@ ${params.additionalNotes ? `- ملاحظات: ${params.additionalNotes}` : ""}
       : `أبحث عن فرصة عمل كـ${params.title}. ${params.field ? `مجال تخصصي: ${params.field}.` : ""} ${params.experience ? `لديّ خبرة ${params.experience}.` : ""} متاح للعمل في ${params.province}.`;
   }
 }
+
+export async function generateMarketplaceDescription(params: {
+  title: string;
+  category: string;
+  condition: string;
+  province?: string;
+}): Promise<string> {
+  const prompt = `أنت مساعد متخصص في كتابة إعلانات البيع. اكتب وصفاً جذاباً ومختصراً لإعلان بيع سلعة مستعملة أو جديدة في سوريا.
+
+المعلومات:
+- عنوان السلعة: ${params.title}
+- الفئة: ${params.category}
+- الحالة: ${params.condition}
+${params.province ? `- الموقع: ${params.province}` : ""}
+
+اكتب وصفاً من 2-3 جمل يبرز مميزات السلعة وحالتها بشكل مقنع للمشتري. باللغة العربية فقط، بدون هاشتاقات.`;
+
+  try {
+    return await callOpenAI([
+      { role: "system", content: "أنت خبير في كتابة إعلانات بيع السلع." },
+      { role: "user", content: prompt },
+    ]);
+  } catch {
+    return `${params.title} بحالة ${params.condition}. ${params.category === "إلكترونيات" ? "يعمل بشكل ممتاز ولا يوجد أي عطل." : "في حالة جيدة جداً ونظيف."} للاستفسار والمعاينة الرجاء التواصل.`;
+  }
+}

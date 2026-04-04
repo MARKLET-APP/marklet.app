@@ -21,6 +21,7 @@ import {
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
+import { withApi } from "@/lib/runtimeConfig";
 
 const LISTING_TYPES = ["بيع", "إيجار"];
 const SUB_CATEGORIES = ["شقق", "منازل وفيلات", "أراضي", "مكاتب", "محلات تجارية", "مستودعات", "استديو", "غرفة"];
@@ -37,12 +38,15 @@ async function uploadImage(file: File): Promise<string> {
   const token = localStorage.getItem("scm_token");
   const fd = new FormData();
   fd.append("image", file);
-  const res = await fetch(import.meta.env.BASE_URL + "api/upload-image?folder=real-estate", {
+  const res = await fetch(withApi("/api/upload-image?folder=real-estate"), {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: fd,
   });
-  if (!res.ok) throw new Error("upload failed");
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "upload failed");
+  }
   const data = await res.json();
   if (!data.success || !data.url) throw new Error(data.message || "upload failed");
   return data.url as string;

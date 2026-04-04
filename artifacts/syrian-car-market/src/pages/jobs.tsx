@@ -20,6 +20,7 @@ import {
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
+import { withApi } from "@/lib/runtimeConfig";
 
 const SUB_CATEGORIES = ["وظيفة شاغرة", "طلب توظيف", "عمالة منزلية", "عمال مهرة"];
 const JOB_TYPES = ["دوام كامل", "دوام جزئي", "عن بعد", "عقد مؤقت"];
@@ -315,7 +316,7 @@ const ApplyJobForm = memo(function ApplyJobForm({
       const fd = new FormData();
       fd.append("file", file);
       const token = localStorage.getItem("scm_token");
-      const res = await fetch(import.meta.env.BASE_URL + "api/upload-cv", {
+      const res = await fetch(withApi("/api/upload-cv"), {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,

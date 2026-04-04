@@ -15,10 +15,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Search, Plus, ShoppingBag, Loader2, Truck, X, ImagePlus, Package,
+  Search, Plus, ShoppingBag, Loader2, Truck, X, ImagePlus, Package, Sparkles,
 } from "lucide-react";
 import { SYRIAN_PROVINCES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { withApi } from "@/lib/runtimeConfig";
 
 const MARKETPLACE_CATEGORIES = [
   "أثاث ومنزل", "ملابس وأحذية", "إلكترونيات",
@@ -38,12 +39,16 @@ async function uploadImage(file: File): Promise<string> {
   const token = localStorage.getItem("scm_token");
   const fd = new FormData();
   fd.append("image", file);
-  const res = await fetch(import.meta.env.BASE_URL + "api/upload-image?folder=marketplace", {
+  // استخدام withApi يضمن العنوان الصحيح على Android/Capacitor (https://marklet.net/api/...)
+  const res = await fetch(withApi("/api/upload-image?folder=marketplace"), {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: fd,
   });
-  if (!res.ok) throw new Error("upload failed");
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "upload failed");
+  }
   const data = await res.json();
   if (!data.success || !data.url) throw new Error(data.message || "upload failed");
   return data.url as string;
@@ -121,6 +126,32 @@ const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: 
   const [condition, setCondition] = useState("جيد");
   const [province, setProvince] = useState("");
   const [shipping, setShipping] = useState(false);
+
+  // ── AI description ──
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleAiDescription = async () => {
+    const title = titleRef.current?.value.trim() || "";
+    if (!title && !category) {
+      toast({ title: "يرجى إدخال عنوان السلعة أو اختيار الفئة أولاً", variant: "destructive" });
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await apiRequest<{ description: string }>("/api/marketplace/ai-description", "POST", {
+        title: title || category,
+        category,
+        condition,
+        province: province || undefined,
+      });
+      if (descRef.current) descRef.current.value = res.description;
+      toast({ title: "تم توليد الوصف بنجاح ✨" });
+    } catch {
+      toast({ title: "فشل توليد الوصف", variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // ── image state (base64 للمعاينة بدلاً من blob URLs) ──
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -257,7 +288,23 @@ const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: 
 
       {/* الوصف */}
       <div className="space-y-1.5">
-        <Label className="text-sm font-semibold">وصف السلعة</Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold">وصف السلعة</Label>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 px-2 border-orange-300 text-orange-600 hover:bg-orange-50"
+            onClick={handleAiDescription}
+            disabled={aiLoading}
+          >
+            {aiLoading
+              ? <Loader2 className="w-3 h-3 animate-spin" />
+              : <Sparkles className="w-3 h-3" />
+            }
+            كتابة بالذكاء الاصطناعي
+          </Button>
+        </div>
         <Textarea
           ref={descRef}
           placeholder="صف السلعة بالتفصيل: حجمها، لونها، سبب البيع..."

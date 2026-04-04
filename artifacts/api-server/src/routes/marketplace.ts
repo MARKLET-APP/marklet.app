@@ -7,6 +7,7 @@ import {
 import { eq, desc, and, ilike, or, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth";
 import type { Response, NextFunction } from "express";
+import { generateMarketplaceDescription } from "../lib/openai.js";
 
 const router = Router();
 const authGuard = [authMiddleware];
@@ -635,6 +636,16 @@ router.patch("/admin/shipping-rates", ...adminGuard, async (req, res): Promise<v
   }
 
   res.json({ success: true });
+});
+
+// ── AI Description for marketplace listing ──────────────────────────────────
+router.post("/marketplace/ai-description", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const description = await generateMarketplaceDescription(req.body);
+    res.json({ description });
+  } catch (err) {
+    res.status(500).json({ error: "فشل توليد الوصف" });
+  }
 });
 
 export default router;
