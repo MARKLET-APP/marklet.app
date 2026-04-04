@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
-import { api, uploadImage } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -95,8 +95,7 @@ export default function JunkCarsPage() {
         }))
       );
       setImagePreviews(prev => [...prev, ...previews]);
-      const urls = await Promise.all(files.map(uploadImage));
-      setSellImages(prev => [...prev, ...urls]);
+      setSellImages(prev => [...prev, ...previews]);
     } catch {
       toast({ title: "فشل رفع بعض الصور", variant: "destructive" });
     } finally {
