@@ -4,9 +4,17 @@ services:
     env: node
     plan: free
     region: frankfurt
-    buildCommand: "pnpm install && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/db run push"
+    buildCommand: >-
+      pnpm install &&
+      pnpm --filter @workspace/syrian-car-market run build &&
+      pnpm --filter @workspace/api-server run build &&
+      pnpm --filter @workspace/db run push
     startCommand: "pnpm --filter @workspace/db run push-force; node artifacts/api-server/dist/index.cjs"
-    healthCheckPath: /
+    healthCheckPath: /api/healthz
+    disk:
+      name: uploads
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
@@ -28,3 +36,9 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      # GCS Object Storage — leave blank on Render (uses disk fallback automatically)
+      # Set PRIVATE_OBJECT_DIR only when deploying on Replit with Object Storage provisioned
+      - key: PRIVATE_OBJECT_DIR
+        value: ""
+      - key: DEFAULT_OBJECT_STORAGE_BUCKET_ID
+        value: ""
