@@ -1,5 +1,3 @@
-import fs from "fs";
-
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 interface ChatMessage {
@@ -136,19 +134,15 @@ function estimatePriceFallback(brand: string, model: string, year: number, milea
   return Math.max(2000, Math.round(basePrice));
 }
 
-async function buildImagePayload(imagePath: string): Promise<{ type: "image_url"; image_url: { url: string } }> {
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-    return { type: "image_url", image_url: { url: imagePath } };
-  }
-  const buffer = fs.readFileSync(imagePath);
-  const base64 = buffer.toString("base64");
+function buildBufferPayload(imageBuffer: Buffer): { type: "image_url"; image_url: { url: string } } {
+  const base64 = imageBuffer.toString("base64");
   return { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}` } };
 }
 
-export async function checkImageSafety(imagePath: string): Promise<boolean> {
+export async function checkImageSafety(imageBuffer: Buffer): Promise<boolean> {
   if (!OPENAI_API_KEY) return true;
 
-  const imagePayload = await buildImagePayload(imagePath);
+  const imagePayload = buildBufferPayload(imageBuffer);
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -180,10 +174,10 @@ export async function checkImageSafety(imagePath: string): Promise<boolean> {
   return !answer.includes("yes");
 }
 
-export async function detectCar(imagePath: string): Promise<boolean> {
+export async function detectCar(imageBuffer: Buffer): Promise<boolean> {
   if (!OPENAI_API_KEY) return true;
 
-  const imagePayload = await buildImagePayload(imagePath);
+  const imagePayload = buildBufferPayload(imageBuffer);
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",

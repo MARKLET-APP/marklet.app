@@ -1,10 +1,10 @@
 import { Router, type IRouter } from "express";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
 import { db, conversationsTable, messagesTable, usersTable, carsTable, imagesTable, notificationsTable, blockedUsersTable } from "@workspace/db";
 import { sendPushToUser } from "../services/pushService.js";
 import sharp from "sharp";
+import { uploadBufferToGCS } from "../lib/gcsUpload.js";
 import { eq, and, or, desc, count, isNull } from "drizzle-orm";
 import { SendMessageBody, StartConversationBody } from "@workspace/api-zod";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -25,9 +25,6 @@ function filterContent(text: string): string {
   return filtered;
 }
 
-const chatUploadsDir = path.join(process.cwd(), "uploads", "chat");
-if (!fs.existsSync(chatUploadsDir)) fs.mkdirSync(chatUploadsDir, { recursive: true });
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -41,16 +38,8 @@ const upload = multer({
   },
 });
 
-const audioDiskStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, chatUploadsDir),
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}${path.extname(file.originalname)}`);
-  },
-});
-
 const audioUpload = multer({
-  storage: audioDiskStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowedExt = /webm|ogg|mp3|wav|mp4|m4a/;
@@ -268,20 +257,19 @@ router.post("/chats/:conversationId/messages/image", authMiddleware, upload.sing
   if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
   if (!req.file) { res.status(400).json({ error: "No image provided" }); return; }
 
-  const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
-  const compressedPath = path.join(chatUploadsDir, fileName);
+  let compressedBuffer: Buffer;
   try {
-    await sharp(req.file.buffer)
+    compressedBuffer = await sharp(req.file.buffer)
       .rotate()
       .resize({ width: 1600, withoutEnlargement: true })
       .jpeg({ quality: 80, progressive: true })
-      .toFile(compressedPath);
+      .toBuffer();
   } catch (err) {
     console.error("[Chat] Image compression error:", err);
     res.status(500).json({ error: "فشل معالجة الصورة" });
     return;
   }
-  const imageUrl = `/api/uploads/chat/${fileName}`;
+  const imageUrl = await uploadBufferToGCS(compressedBuffer, "chat", "jpg", "image/jpeg");
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
   const [msg] = await db.insert(messagesTable).values({
     conversationId: convId,
@@ -315,7 +303,8 @@ router.post("/chats/:conversationId/messages/audio", authMiddleware, audioUpload
   if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
   if (!req.file) { res.status(400).json({ error: "No audio provided" }); return; }
 
-  const audioUrl = `/api/uploads/chat/${req.file.filename}`;
+  const audioExt = path.extname(req.file.originalname).slice(1) || "webm";
+  const audioUrl = await uploadBufferToGCS(req.file.buffer, "chat-audio", audioExt, req.file.mimetype || "audio/webm");
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
   const [msg] = await db.insert(messagesTable).values({
     conversationId: convId,

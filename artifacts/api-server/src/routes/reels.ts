@@ -6,29 +6,22 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { authMiddleware, optionalAuthMiddleware as optionalAuth, type AuthRequest } from "../lib/auth.js";
+import { uploadFileStreamToGCS, uploadBufferToGCS } from "../lib/gcsUpload.js";
 
 const router: IRouter = Router();
 
-// ── Video upload storage ────────────────────────────────────────────────────
-const reelsDir = path.join(process.cwd(), "uploads", "reels");
-if (!fs.existsSync(reelsDir)) fs.mkdirSync(reelsDir, { recursive: true });
-
-const thumbsDir = path.join(process.cwd(), "uploads", "reels-thumbs");
-if (!fs.existsSync(thumbsDir)) fs.mkdirSync(thumbsDir, { recursive: true });
+// ── Video upload storage — disk then stream to GCS ──────────────────────────
+const reelsTmpDir = path.join(process.cwd(), "uploads", "reels-tmp");
+if (!fs.existsSync(reelsTmpDir)) fs.mkdirSync(reelsTmpDir, { recursive: true });
 
 const videoStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, reelsDir),
+  destination: (_req, _file, cb) => cb(null, reelsTmpDir),
   filename: (_req, _file, cb) => cb(null, `${Date.now()}_${Math.random().toString(36).slice(2)}.mp4`),
-});
-
-const thumbStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, thumbsDir),
-  filename: (_req, _file, cb) => cb(null, `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`),
 });
 
 const videoUpload = multer({
   storage: videoStorage,
-  limits: { fileSize: 150 * 1024 * 1024 }, // 150 MB
+  limits: { fileSize: 150 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (/video\//.test(file.mimetype)) cb(null, true);
     else cb(new Error("يجب أن يكون الملف فيديو"));
@@ -36,7 +29,7 @@ const videoUpload = multer({
 });
 
 const thumbUpload = multer({
-  storage: thumbStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (/image\//.test(file.mimetype)) cb(null, true);
@@ -92,7 +85,8 @@ router.post("/reels/upload", authMiddleware, videoUpload.single("video"), async 
     }
     if (!req.file) { res.status(400).json({ error: "لم يتم رفع أي فيديو" }); return; }
 
-    const videoUrl = `/api/uploads/reels/${req.file.filename}`;
+    const videoUrl = await uploadFileStreamToGCS(req.file.path, "reels", req.file.mimetype || "video/mp4");
+    try { fs.unlinkSync(req.file.path); } catch {}
     const { title, desc, price, city, dealerName, dealerId, aspectRatio } = req.body;
 
     if (!title?.trim()) { res.status(400).json({ error: "العنوان مطلوب" }); return; }
@@ -126,7 +120,7 @@ router.post("/reels/:id/thumbnail", authMiddleware, thumbUpload.single("thumbnai
   try {
     const reelId = parseInt(req.params.id);
     if (!req.file) { res.status(400).json({ error: "لم يتم رفع أي صورة" }); return; }
-    const thumbnailUrl = `/api/uploads/reels-thumbs/${req.file.filename}`;
+    const thumbnailUrl = await uploadBufferToGCS(req.file.buffer, "reels-thumbs", "jpg", req.file.mimetype || "image/jpeg");
     await db.update(reelsTable).set({ thumbnailUrl }).where(eq(reelsTable.id, reelId));
     res.json({ thumbnailUrl });
   } catch (e) {

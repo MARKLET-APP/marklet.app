@@ -1,7 +1,6 @@
 import multer from "multer";
 import sharp from "sharp";
-import path from "path";
-import fs from "fs";
+import { uploadBufferToGCS } from "../lib/gcsUpload.js";
 
 const storage = multer.memoryStorage();
 
@@ -56,18 +55,8 @@ export const processImage = async (
   file: Express.Multer.File,
   folder = "uploads",
 ): Promise<string> => {
-  const fileName = Date.now() + ".jpg";
-  const uploadPath = path.join("uploads", folder);
-
-  if (!fs.existsSync(uploadPath)) {
-    fs.mkdirSync(uploadPath, { recursive: true });
-  }
-
-  const finalPath = path.join(uploadPath, fileName);
-
   let inputBuffer = file.buffer;
 
-  // إذا كانت الصورة HEIC/HEIF → حوّلها لـ JPEG أولاً على الخادم
   if (isHeicBuffer(inputBuffer) || /heic|heif/i.test(file.mimetype) || /heic|heif/i.test(file.originalname)) {
     try {
       inputBuffer = await convertHeicToJpeg(inputBuffer);
@@ -77,21 +66,21 @@ export const processImage = async (
     }
   }
 
+  let compressedBuffer: Buffer;
   try {
-    await sharp(inputBuffer)
-      .rotate() // إصلاح الاتجاه تلقائياً
+    compressedBuffer = await sharp(inputBuffer)
+      .rotate()
       .resize({ width: 1600, withoutEnlargement: true })
       .jpeg({ quality: 82, progressive: true })
-      .toFile(finalPath);
+      .toBuffer();
   } catch (sharpErr: any) {
-    // إذا فشل sharp والملف JPEG — احفظه مباشرة كـ fallback
     if (isJpegBuffer(inputBuffer)) {
-      fs.writeFileSync(finalPath, inputBuffer);
+      compressedBuffer = inputBuffer;
     } else {
       console.error("[Upload] Sharp error:", sharpErr.message);
       throw new Error("فشل معالجة الصورة — يرجى استخدام صور JPEG أو PNG");
     }
   }
 
-  return `/api/uploads/${folder}/${fileName}`;
+  return uploadBufferToGCS(compressedBuffer, folder, "jpg", "image/jpeg");
 };

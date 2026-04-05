@@ -5,6 +5,7 @@ import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import router from "./routes";
+import { serveGcsObject } from "./lib/gcsUpload.js";
 
 const app: Express = express();
 
@@ -41,6 +42,22 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/api/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/uploads/chat", express.static(path.join(process.cwd(), "uploads", "chat")));
+
+app.get("/api/storage/objects/*objectPath", async (req, res): Promise<void> => {
+  const objectPath = (req.params as Record<string, string>)["objectPath"] || "";
+  if (!objectPath) { res.status(400).end(); return; }
+  try {
+    const result = await serveGcsObject(objectPath);
+    if (!result) { res.status(404).end(); return; }
+    res.setHeader("Content-Type", result.contentType);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    if (result.size) res.setHeader("Content-Length", String(result.size));
+    result.stream.pipe(res);
+  } catch (err) {
+    console.error("[GCS Serve]", err);
+    res.status(500).end();
+  }
+});
 
 app.use("/api", writeLimiter, router);
 

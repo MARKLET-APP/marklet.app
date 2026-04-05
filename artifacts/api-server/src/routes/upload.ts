@@ -1,27 +1,14 @@
 import { Router, type IRouter } from "express";
-import fs from "fs";
-import path from "path";
 import multer from "multer";
+import path from "path";
 import { upload, processImage } from "../middlewares/upload.js";
-// AI car detection removed — images accepted directly
+import { uploadBufferToGCS } from "../lib/gcsUpload.js";
 
 const router: IRouter = Router();
 
-// ── CV / document upload (disk storage, PDF+Word only) ───────────────────────
-const cvStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    const dir = path.join("uploads", "cv");
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || ".pdf";
-    cb(null, `${Date.now()}${ext}`);
-  },
-});
-
+// ── CV / document upload (GCS) ───────────────────────────────────────────────
 const cvUpload = multer({
-  storage: cvStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = [
@@ -34,13 +21,19 @@ const cvUpload = multer({
   },
 });
 
-router.post("/upload-cv", cvUpload.single("file"), (req: any, res: any): void => {
+router.post("/upload-cv", cvUpload.single("file"), async (req: any, res: any): Promise<void> => {
   if (!req.file) {
     res.status(400).json({ success: false, message: "لم يتم رفع أي ملف" });
     return;
   }
-  const url = `/api/uploads/cv/${req.file.filename}`;
-  res.json({ success: true, url });
+  try {
+    const ext = path.extname(req.file.originalname).slice(1) || "pdf";
+    const url = await uploadBufferToGCS(req.file.buffer, "cv", ext, req.file.mimetype || "application/pdf");
+    res.json({ success: true, url });
+  } catch (err) {
+    console.error("[CV Upload] Error:", err);
+    res.status(500).json({ success: false, message: "فشل رفع الملف" });
+  }
 });
 
 // ── Car image upload — direct save, no AI detection ──────────────────────────

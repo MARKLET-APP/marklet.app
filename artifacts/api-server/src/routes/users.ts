@@ -1,16 +1,12 @@
 import { Router, type IRouter } from "express";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 import sharp from "sharp";
 import { db, usersTable, carsTable, reviewsTable } from "@workspace/db";
+import { uploadBufferToGCS } from "../lib/gcsUpload.js";
 import { eq, count } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
 
 const router: IRouter = Router();
-
-const avatarsDir = path.join(process.cwd(), "uploads", "avatars");
-if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
 
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
@@ -93,20 +89,19 @@ router.post("/users/:id/avatar", authMiddleware, avatarUpload.single("avatar"), 
   if (req.userId !== id) { res.status(403).json({ error: "Forbidden" }); return; }
   if (!req.file) { res.status(400).json({ error: "No file uploaded" }); return; }
 
-  const compressedName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
-  const compressedPath = path.join(avatarsDir, compressedName);
+  let compressedBuffer: Buffer;
   try {
-    await sharp(req.file.buffer)
+    compressedBuffer = await sharp(req.file.buffer)
       .rotate()
       .resize(400, 400, { fit: "cover" })
       .jpeg({ quality: 85 })
-      .toFile(compressedPath);
+      .toBuffer();
   } catch (err) {
     console.error("[Avatar] Compression error:", err);
     res.status(500).json({ error: "فشل معالجة الصورة" });
     return;
   }
-  const photoUrl = `/api/uploads/avatars/${compressedName}`;
+  const photoUrl = await uploadBufferToGCS(compressedBuffer, "avatars", "jpg", "image/jpeg");
   const [updated] = await db.update(usersTable).set({ profilePhoto: photoUrl }).where(eq(usersTable.id, id)).returning();
   res.json({ profilePhoto: updated.profilePhoto });
 });
