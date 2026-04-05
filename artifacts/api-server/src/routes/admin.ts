@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable, buyRequestsTable, inspectionCentersTable, scrapCentersTable, showroomsTable, jobsTable, realEstateTable } from "@workspace/db";
+import { db, usersTable, carsTable, settingsTable, missingCarsTable, imagesTable, conversationsTable, messagesTable, notificationsTable, junkCarsTable, buyRequestsTable, inspectionCentersTable, scrapCentersTable, showroomsTable, jobsTable, realEstateTable, carPartsTable, rentalCarsTable } from "@workspace/db";
 import { eq, desc, count, sql, ilike, or } from "drizzle-orm";
 import { AdminUpdateUserBody, UpdateSettingsBody } from "@workspace/api-zod";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
@@ -746,6 +746,140 @@ router.patch("/admin/real-estate/:id/status", ...guard, async (req: AuthRequest,
   } catch (err) {
     console.error("PATCH /admin/real-estate/:id/status error:", err);
     res.status(500).json({ error: "فشل تحديث حالة العقار" });
+  }
+});
+
+// ── All real-estate listings (not just pending) ──────────────────────────────
+router.get("/admin/real-estate", ...guard, async (_req, res): Promise<void> => {
+  try {
+    const listings = await db.select({
+      id: realEstateTable.id,
+      title: realEstateTable.title,
+      listingType: realEstateTable.listingType,
+      subCategory: realEstateTable.subCategory,
+      price: realEstateTable.price,
+      province: realEstateTable.province,
+      city: realEstateTable.city,
+      status: realEstateTable.status,
+      createdAt: realEstateTable.createdAt,
+      sellerId: realEstateTable.sellerId,
+      posterName: usersTable.name,
+    }).from(realEstateTable)
+      .leftJoin(usersTable, eq(realEstateTable.sellerId, usersTable.id))
+      .orderBy(desc(realEstateTable.createdAt))
+      .limit(200);
+    res.json(listings);
+  } catch (err) {
+    console.error("GET /admin/real-estate error:", err);
+    res.status(500).json({ error: "فشل تحميل العقارات" });
+  }
+});
+
+router.delete("/admin/real-estate/:id", ...guard, async (req, res): Promise<void> => {
+  try {
+    await db.delete(realEstateTable).where(eq(realEstateTable.id, Number(req.params.id)));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "فشل حذف العقار" });
+  }
+});
+
+// ── All jobs listings (not just pending) ─────────────────────────────────────
+router.get("/admin/jobs", ...guard, async (_req, res): Promise<void> => {
+  try {
+    const listings = await db.select({
+      id: jobsTable.id,
+      title: jobsTable.title,
+      company: jobsTable.company,
+      jobType: jobsTable.jobType,
+      province: jobsTable.province,
+      city: jobsTable.city,
+      salary: jobsTable.salary,
+      status: jobsTable.status,
+      createdAt: jobsTable.createdAt,
+      posterId: jobsTable.posterId,
+      posterName: usersTable.name,
+    }).from(jobsTable)
+      .leftJoin(usersTable, eq(jobsTable.posterId, usersTable.id))
+      .orderBy(desc(jobsTable.createdAt))
+      .limit(200);
+    res.json(listings);
+  } catch (err) {
+    console.error("GET /admin/jobs error:", err);
+    res.status(500).json({ error: "فشل تحميل الوظائف" });
+  }
+});
+
+router.delete("/admin/jobs/:id", ...guard, async (req, res): Promise<void> => {
+  try {
+    await db.delete(jobsTable).where(eq(jobsTable.id, Number(req.params.id)));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "فشل حذف الوظيفة" });
+  }
+});
+
+// ── Universal search by ID or title across all listing types ─────────────────
+router.get("/admin/search", ...guard, async (req, res): Promise<void> => {
+  try {
+    const q = String(req.query.q || "").trim();
+    if (!q) { res.json([]); return; }
+
+    const idNum = Number(q);
+    const isId = !isNaN(idNum) && idNum > 0 && String(idNum) === q;
+    const results: any[] = [];
+
+    const [cars, realEstate, jobs, carParts, rentals] = await Promise.all([
+      db.select({
+        id: carsTable.id, brand: carsTable.brand, model: carsTable.model,
+        year: carsTable.year, status: carsTable.status, price: carsTable.price,
+        sellerName: usersTable.name,
+      }).from(carsTable).leftJoin(usersTable, eq(carsTable.sellerId, usersTable.id))
+        .where(isId ? eq(carsTable.id, idNum) : or(ilike(carsTable.brand, `%${q}%`), ilike(carsTable.model, `%${q}%`)))
+        .limit(10),
+
+      db.select({
+        id: realEstateTable.id, title: realEstateTable.title,
+        status: realEstateTable.status, price: realEstateTable.price,
+        province: realEstateTable.province, posterName: usersTable.name,
+      }).from(realEstateTable).leftJoin(usersTable, eq(realEstateTable.sellerId, usersTable.id))
+        .where(isId ? eq(realEstateTable.id, idNum) : ilike(realEstateTable.title, `%${q}%`))
+        .limit(10),
+
+      db.select({
+        id: jobsTable.id, title: jobsTable.title,
+        status: jobsTable.status, posterName: usersTable.name,
+      }).from(jobsTable).leftJoin(usersTable, eq(jobsTable.posterId, usersTable.id))
+        .where(isId ? eq(jobsTable.id, idNum) : ilike(jobsTable.title, `%${q}%`))
+        .limit(10),
+
+      db.select({
+        id: carPartsTable.id, model: carPartsTable.model,
+        status: carPartsTable.status, price: carPartsTable.price,
+        sellerName: usersTable.name,
+      }).from(carPartsTable).leftJoin(usersTable, eq(carPartsTable.sellerId, usersTable.id))
+        .where(isId ? eq(carPartsTable.id, idNum) : ilike(carPartsTable.model, `%${q}%`))
+        .limit(10),
+
+      db.select({
+        id: rentalCarsTable.id, brand: rentalCarsTable.brand, model: rentalCarsTable.model,
+        status: rentalCarsTable.status, dailyPrice: rentalCarsTable.dailyPrice,
+        sellerName: usersTable.name,
+      }).from(rentalCarsTable).leftJoin(usersTable, eq(rentalCarsTable.sellerId, usersTable.id))
+        .where(isId ? eq(rentalCarsTable.id, idNum) : or(ilike(rentalCarsTable.brand, `%${q}%`), ilike(rentalCarsTable.model, `%${q}%`)))
+        .limit(10),
+    ]);
+
+    results.push(...cars.map(c => ({ typeKey: "car", typeLabel: "سيارة", id: c.id, title: `${c.brand} ${c.model} ${c.year}`, status: c.status, price: c.price, posterName: c.sellerName })));
+    results.push(...realEstate.map(r => ({ typeKey: "real_estate", typeLabel: "عقار", id: r.id, title: r.title, status: r.status, price: r.price, posterName: r.posterName })));
+    results.push(...jobs.map(j => ({ typeKey: "job", typeLabel: "وظيفة", id: j.id, title: j.title, status: j.status, price: null, posterName: j.posterName })));
+    results.push(...carParts.map(p => ({ typeKey: "car_part", typeLabel: "قطعة غيار", id: p.id, title: p.model || `قطعة #${p.id}`, status: p.status, price: p.price, posterName: p.sellerName })));
+    results.push(...rentals.map(r => ({ typeKey: "rental", typeLabel: "سيارة إيجار", id: r.id, title: `${r.brand} ${r.model}`, status: r.status, price: r.dailyPrice, posterName: r.sellerName })));
+
+    res.json(results);
+  } catch (err) {
+    console.error("GET /admin/search error:", err);
+    res.status(500).json({ error: "فشل البحث" });
   }
 });
 

@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play, Send, Megaphone, ShoppingBag, Package, Truck, Upload, Clock } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Ban, RefreshCw, Settings, Users, Car, AlertTriangle, XCircle, Bell, ChevronDown, ChevronUp, Gauge, Fuel, MapPin, Phone, FileText, Palette, Calendar, Eye, EyeOff, ChevronLeft, ChevronRight, ImageOff, Inbox, MessageSquare, MessageCircle, ShoppingCart as CartIcon, Star, Sparkles, Wrench, Building2, Store, Recycle, Plus, Edit2, Shield, ShieldCheck, Video, X, Play, Send, Megaphone, ShoppingBag, Package, Truck, Upload, Clock, Search, Briefcase, Home, Film } from "lucide-react";
 
 // ─── Video Preview Modal ─────────────────────────────────────────────────────
 // Fixed overlay — guaranteed to render above everything with z-[9999]
@@ -698,6 +698,41 @@ export default function AdminDashboard() {
     ...qOpts,
   });
 
+  const { data: allReels = [], isLoading: loadingAllReels, refetch: refetchAllReels } = useQuery<any[]>({
+    queryKey: ["/admin/reels"],
+    queryFn: () => apiRequest<any[]>("/api/admin/reels"),
+    ...qOpts,
+  });
+
+  const { data: allRealEstate = [], isLoading: loadingAllRealEstate, refetch: refetchAllRealEstate } = useQuery<any[]>({
+    queryKey: ["/admin/real-estate"],
+    queryFn: () => apiRequest<any[]>("/api/admin/real-estate"),
+    ...qOpts,
+  });
+
+  const { data: allJobs = [], isLoading: loadingAllJobs, refetch: refetchAllJobs } = useQuery<any[]>({
+    queryKey: ["/admin/jobs"],
+    queryFn: () => apiRequest<any[]>("/api/admin/jobs"),
+    ...qOpts,
+  });
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const runSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearchLoading(true);
+    try {
+      const results = await apiRequest<any[]>(`/api/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchResults(results);
+    } catch {
+      toast({ title: "فشل البحث", variant: "destructive" });
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   const { data: pendingJobs = [], refetch: refetchPendingJobs } = useQuery<any[]>({
     queryKey: ["/admin/jobs/pending"],
     queryFn: () => apiRequest<any[]>("/api/admin/jobs/pending"),
@@ -718,7 +753,7 @@ export default function AdminDashboard() {
     refetchBuyRequests(); refetchJunkCars(); refetchSupport(); refetchFeedback();
     refetchRentals(); refetchCarParts(); refetchJunkCarsAdmin();
     refetchDealers(); refetchInspection(); refetchScrap(); refetchShowrooms();
-    refetchPendingReels();
+    refetchPendingReels(); refetchAllReels(); refetchAllRealEstate(); refetchAllJobs();
   };
 
   const handleReelStatus = async (id: number, action: "approve" | "reject") => {
@@ -1185,64 +1220,81 @@ export default function AdminDashboard() {
       )}
 
       <Tabs defaultValue="review" className="w-full" dir="rtl">
-        <TabsList className="flex w-full mb-2 h-auto bg-muted/50 rounded-xl p-1 gap-1 overflow-x-auto">
-          <TabsTrigger data-ui-id="ADMIN_TAB_USERS_01" data-testid="ADMIN_TAB_USERS_01" value="users" className="flex-1 min-w-[72px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
-            <Users className="w-4 h-4" />
-            <span>المستخدمين</span>
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_DEALERS_01" data-testid="ADMIN_TAB_DEALERS_01" value="dealers" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
-            <Store className="w-4 h-4 text-violet-500" />
-            <span>التجار</span>
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_SHOWROOMS_01" data-testid="ADMIN_TAB_SHOWROOMS_01" value="showrooms" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
-            <Building2 className="w-4 h-4 text-primary" />
-            <span>المعارض</span>
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_INSPECTION_01" data-testid="ADMIN_TAB_INSPECTION_01" value="inspection" className="flex-1 min-w-[70px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
-            <Building2 className="w-4 h-4 text-cyan-500" />
-            <span>مراكز الفحص</span>
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_SCRAP_01" data-testid="ADMIN_TAB_SCRAP_01" value="scrap" className="flex-1 min-w-[70px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
-            <Recycle className="w-4 h-4 text-orange-500" />
-            <span>مراكز الخردة</span>
-          </TabsTrigger>
-        </TabsList>
-        <TabsList className="flex w-full mb-8 h-auto bg-muted/50 rounded-xl p-1 gap-1 overflow-x-auto">
-          <TabsTrigger data-ui-id="ADMIN_TAB_REVIEW_01" data-testid="ADMIN_TAB_REVIEW_01" value="review" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
-            <AlertTriangle className="w-4 h-4 text-red-500" />
-            <span>مراجعة</span>
-            {totalReviewPending > 0 && (
-              <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
-                {totalReviewPending}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_LISTINGS_01" data-testid="ADMIN_TAB_LISTINGS_01" value="listings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
-            <Car className="w-4 h-4" />
-            <span>الإعلانات</span>
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_INBOX_01" data-testid="ADMIN_TAB_INBOX_01" value="inbox" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
-            <Inbox className="w-4 h-4 text-blue-500" />
-            <span>الرسائل</span>
-            {totalInboxUnread > 0 && (
-              <span className="absolute -top-1.5 -left-1.5 bg-blue-500 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
-                {totalInboxUnread}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_NOTIFICATIONS_01" data-testid="ADMIN_TAB_NOTIFICATIONS_01" value="notifications" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5" onClick={fetchPushStats}>
-            <Megaphone className="w-4 h-4 text-rose-500" />
-            <span>الإشعارات</span>
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_MARKETPLACE_01" data-testid="ADMIN_TAB_MARKETPLACE_01" value="marketplace" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
-            <ShoppingBag className="w-4 h-4 text-orange-500" />
-            <span>السوق</span>
-          </TabsTrigger>
-          <TabsTrigger data-ui-id="ADMIN_TAB_SETTINGS_01" data-testid="ADMIN_TAB_SETTINGS_01" value="settings" className="flex-1 min-w-[60px] rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
-            <Settings className="w-4 h-4" />
-            <span>الإعدادات</span>
-          </TabsTrigger>
-        </TabsList>
+        {/* ── Single unified professional tab bar ─────────────────────────── */}
+        <div className="mb-6 bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-4 py-2 border-b bg-primary/5 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-primary" />
+            <span className="font-bold text-sm text-primary">لوحة التحكم</span>
+          </div>
+          <TabsList className="flex w-full h-auto bg-transparent p-2 gap-1 overflow-x-auto flex-nowrap justify-start rounded-none border-0">
+            {/* Group 1: Operations */}
+            <TabsTrigger data-ui-id="ADMIN_TAB_REVIEW_01" data-testid="ADMIN_TAB_REVIEW_01" value="review" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
+              <AlertTriangle className="w-4 h-4 text-red-500" />
+              <span>مراجعة</span>
+              {totalReviewPending > 0 && (
+                <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
+                  {totalReviewPending}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_SEARCH_01" data-testid="ADMIN_TAB_SEARCH_01" value="search" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Search className="w-4 h-4 text-primary" />
+              <span>بحث</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_LISTINGS_01" data-testid="ADMIN_TAB_LISTINGS_01" value="listings" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Car className="w-4 h-4" />
+              <span>الإعلانات</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_REELS_01" data-testid="ADMIN_TAB_REELS_01" value="reels" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-violet-50 data-[state=active]:text-violet-600 data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Film className="w-4 h-4 text-violet-500" />
+              <span>فيديوهات</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_MARKETPLACE_01" data-testid="ADMIN_TAB_MARKETPLACE_01" value="marketplace" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-orange-50 data-[state=active]:text-orange-600 data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <ShoppingBag className="w-4 h-4 text-orange-500" />
+              <span>السوق</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_INBOX_01" data-testid="ADMIN_TAB_INBOX_01" value="inbox" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5 relative">
+              <Inbox className="w-4 h-4 text-blue-500" />
+              <span>الرسائل</span>
+              {totalInboxUnread > 0 && (
+                <span className="absolute -top-1.5 -left-1.5 bg-blue-500 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
+                  {totalInboxUnread}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_NOTIFICATIONS_01" data-testid="ADMIN_TAB_NOTIFICATIONS_01" value="notifications" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-rose-50 data-[state=active]:text-rose-600 data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5" onClick={fetchPushStats}>
+              <Megaphone className="w-4 h-4 text-rose-500" />
+              <span>الإشعارات</span>
+            </TabsTrigger>
+            {/* Separator */}
+            <div className="w-px bg-border/60 mx-1 self-stretch my-1.5 shrink-0" />
+            {/* Group 2: Entities */}
+            <TabsTrigger data-ui-id="ADMIN_TAB_USERS_01" data-testid="ADMIN_TAB_USERS_01" value="users" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Users className="w-4 h-4" />
+              <span>المستخدمين</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_DEALERS_01" data-testid="ADMIN_TAB_DEALERS_01" value="dealers" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-violet-50 data-[state=active]:text-violet-600 data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Store className="w-4 h-4 text-violet-500" />
+              <span>التجار</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_SHOWROOMS_01" data-testid="ADMIN_TAB_SHOWROOMS_01" value="showrooms" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Building2 className="w-4 h-4 text-primary" />
+              <span>المعارض</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_INSPECTION_01" data-testid="ADMIN_TAB_INSPECTION_01" value="inspection" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-cyan-50 data-[state=active]:text-cyan-600 data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Building2 className="w-4 h-4 text-cyan-500" />
+              <span>مراكز الفحص</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_SCRAP_01" data-testid="ADMIN_TAB_SCRAP_01" value="scrap" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-orange-50 data-[state=active]:text-orange-600 data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Recycle className="w-4 h-4 text-orange-500" />
+              <span>مراكز الخردة</span>
+            </TabsTrigger>
+            <TabsTrigger data-ui-id="ADMIN_TAB_SETTINGS_01" data-testid="ADMIN_TAB_SETTINGS_01" value="settings" className="shrink-0 min-w-[64px] rounded-lg font-bold text-xs data-[state=active]:bg-muted data-[state=active]:shadow-sm py-2.5 flex-col gap-0.5">
+              <Settings className="w-4 h-4" />
+              <span>الإعدادات</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         {/* Users Tab */}
         <TabsContent value="users" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
@@ -2555,6 +2607,301 @@ export default function AdminDashboard() {
               </Table>
             </div>
           </div>
+
+          {/* ── Real Estate Section ──────────────────────────────────────── */}
+          <div className="border-t-4 border-border">
+            <div className="p-5 border-b flex justify-between items-center bg-green-50/50 dark:bg-green-950/10">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Home className="w-5 h-5 text-green-600" /> إعلانات العقارات
+                <Badge variant="secondary">{allRealEstate.length}</Badge>
+              </h2>
+              <Button variant="outline" size="sm" onClick={() => refetchAllRealEstate()}>
+                <RefreshCw className="w-4 h-4 ml-2" /> تحديث
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              {loadingAllRealEstate ? (
+                <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+              ) : (
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow>
+                      <TableHead className="text-right">ID</TableHead>
+                      <TableHead className="text-right">العنوان</TableHead>
+                      <TableHead className="text-right">النوع</TableHead>
+                      <TableHead className="text-right">السعر</TableHead>
+                      <TableHead className="text-right">المنطقة</TableHead>
+                      <TableHead className="text-right">الناشر</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-center">إجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allRealEstate.length === 0 ? (
+                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">لا توجد إعلانات عقارات</TableCell></TableRow>
+                    ) : allRealEstate.map((item: any) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-xs text-muted-foreground font-mono">#{item.id}</TableCell>
+                        <TableCell className="font-medium max-w-[160px] truncate">{item.title}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{item.listingType === "sale" ? "بيع" : item.listingType === "rent" ? "إيجار" : item.listingType}</Badge></TableCell>
+                        <TableCell>{item.price ? `$${Number(item.price).toLocaleString()}` : "—"}</TableCell>
+                        <TableCell className="text-sm">{[item.province, item.city].filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell>{item.posterName ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={item.status === "approved" ? "default" : item.status === "pending" ? "secondary" : "outline"} className="text-xs">
+                            {item.status === "approved" ? "✅ منشور" : item.status === "pending" ? "⏳ بانتظار" : item.status === "rejected" ? "❌ مرفوض" : item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 h-8" onClick={async () => {
+                            if (!confirm("حذف هذا الإعلان؟")) return;
+                            try {
+                              await apiRequest(`/api/admin/real-estate/${item.id}`, "DELETE");
+                              toast({ title: "تم حذف الإعلان" });
+                              refetchAllRealEstate();
+                            } catch { toast({ title: "فشل الحذف", variant: "destructive" }); }
+                          }}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </div>
+
+          {/* ── Jobs Section ─────────────────────────────────────────────── */}
+          <div className="border-t-4 border-border">
+            <div className="p-5 border-b flex justify-between items-center bg-blue-50/50 dark:bg-blue-950/10">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-blue-600" /> إعلانات الوظائف
+                <Badge variant="secondary">{allJobs.length}</Badge>
+              </h2>
+              <Button variant="outline" size="sm" onClick={() => refetchAllJobs()}>
+                <RefreshCw className="w-4 h-4 ml-2" /> تحديث
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              {loadingAllJobs ? (
+                <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+              ) : (
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow>
+                      <TableHead className="text-right">ID</TableHead>
+                      <TableHead className="text-right">المسمى الوظيفي</TableHead>
+                      <TableHead className="text-right">الشركة</TableHead>
+                      <TableHead className="text-right">النوع</TableHead>
+                      <TableHead className="text-right">المنطقة</TableHead>
+                      <TableHead className="text-right">الناشر</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-center">إجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allJobs.length === 0 ? (
+                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">لا توجد إعلانات وظائف</TableCell></TableRow>
+                    ) : allJobs.map((job: any) => (
+                      <TableRow key={job.id}>
+                        <TableCell className="text-xs text-muted-foreground font-mono">#{job.id}</TableCell>
+                        <TableCell className="font-medium max-w-[160px] truncate">{job.title}</TableCell>
+                        <TableCell>{job.company ?? "—"}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{job.jobType ?? "—"}</Badge></TableCell>
+                        <TableCell className="text-sm">{[job.province, job.city].filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell>{job.posterName ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={job.status === "approved" ? "default" : job.status === "pending" ? "secondary" : "outline"} className="text-xs">
+                            {job.status === "approved" ? "✅ منشور" : job.status === "pending" ? "⏳ بانتظار" : job.status === "rejected" ? "❌ مرفوض" : job.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 h-8" onClick={async () => {
+                            if (!confirm("حذف هذا الإعلان؟")) return;
+                            try {
+                              await apiRequest(`/api/admin/jobs/${job.id}`, "DELETE");
+                              toast({ title: "تم حذف الإعلان" });
+                              refetchAllJobs();
+                            } catch { toast({ title: "فشل الحذف", variant: "destructive" }); }
+                          }}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ════════════════════════════════════════════════════════════════
+            Search Tab — universal search by ID or keyword
+        ════════════════════════════════════════════════════════════════ */}
+        <TabsContent value="search" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b bg-muted/20 flex items-center gap-3">
+            <Search className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-bold">البحث الشامل</h2>
+          </div>
+          <div className="p-6">
+            <div className="flex gap-2 mb-6">
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && runSearch()}
+                placeholder="ابحث بالرقم التعريفي (ID) أو الاسم / العلامة التجارية..."
+                className="flex-1 rounded-xl border-2 text-base"
+                dir="rtl"
+              />
+              <Button onClick={runSearch} disabled={searchLoading || !searchQuery.trim()} className="rounded-xl px-6">
+                {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                <span className="mr-2">بحث</span>
+              </Button>
+            </div>
+            {searchResults.length > 0 && (
+              <div className="rounded-xl border overflow-hidden">
+                <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-2">
+                  <Badge variant="secondary">{searchResults.length} نتيجة</Badge>
+                  <span className="text-sm text-muted-foreground">لـ «{searchQuery}»</span>
+                </div>
+                <Table>
+                  <TableHeader className="bg-muted/20">
+                    <TableRow>
+                      <TableHead className="text-right">النوع</TableHead>
+                      <TableHead className="text-right">ID</TableHead>
+                      <TableHead className="text-right">العنوان / الاسم</TableHead>
+                      <TableHead className="text-right">السعر</TableHead>
+                      <TableHead className="text-right">الناشر</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {searchResults.map((r: any, i: number) => (
+                      <TableRow key={`${r.typeKey}-${r.id}-${i}`}>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs font-bold">
+                            {r.typeLabel}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground">#{r.id}</TableCell>
+                        <TableCell className="font-medium">{r.title}</TableCell>
+                        <TableCell>{r.price ? `$${Number(r.price).toLocaleString()}` : "—"}</TableCell>
+                        <TableCell className="text-sm">{r.posterName ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={r.status === "approved" ? "default" : r.status === "pending" ? "secondary" : "outline"} className="text-xs">
+                            {r.status === "approved" ? "✅ منشور" : r.status === "pending" ? "⏳ بانتظار" : r.status === "rejected" ? "❌ مرفوض" : r.status ?? "—"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            {searchResults.length === 0 && !searchLoading && searchQuery && (
+              <div className="text-center py-16 text-muted-foreground">
+                <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p className="font-medium">لا توجد نتائج</p>
+                <p className="text-sm">جرّب البحث برقم ID أو باسم مختلف</p>
+              </div>
+            )}
+            {!searchQuery && (
+              <div className="text-center py-16 text-muted-foreground">
+                <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p className="font-medium">ابحث عبر جميع أنواع الإعلانات</p>
+                <p className="text-sm mt-1">السيارات • العقارات • الوظائف • قطع الغيار • سيارات الإيجار</p>
+                <p className="text-xs mt-2 text-primary">💡 أدخل رقم ID مباشرةً للبحث الدقيق</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ════════════════════════════════════════════════════════════════
+            Reels Tab — full management of all reels (not just pending)
+        ════════════════════════════════════════════════════════════════ */}
+        <TabsContent value="reels" className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b bg-violet-50/50 dark:bg-violet-950/10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Film className="w-5 h-5 text-violet-600" />
+              <h2 className="text-xl font-bold">إدارة الفيديوهات</h2>
+              <Badge variant="secondary">{allReels.length}</Badge>
+              {pendingReels.length > 0 && (
+                <Badge className="bg-red-500 text-white animate-pulse">{pendingReels.length} بانتظار المراجعة</Badge>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => { refetchAllReels(); refetchPendingReels(); }}>
+              <RefreshCw className="w-4 h-4 ml-2" /> تحديث
+            </Button>
+          </div>
+          {loadingAllReels ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-violet-500" /></div>
+          ) : allReels.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Film className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p className="font-medium">لا توجد فيديوهات</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
+              {(allReels as any[]).map((reel: any) => (
+                <div key={reel.id} className="relative rounded-xl overflow-hidden border bg-muted/20 group cursor-pointer hover:shadow-md transition-all"
+                  onClick={() => setPreviewReel(reel)}>
+                  {/* Status badge */}
+                  <div className="absolute top-2 right-2 z-10">
+                    <Badge className={`text-[10px] px-1.5 py-0.5 ${
+                      reel.status === "approved" ? "bg-green-500 text-white" :
+                      reel.status === "pending" ? "bg-yellow-500 text-white" :
+                      "bg-red-500 text-white"
+                    }`}>
+                      {reel.status === "approved" ? "✅" : reel.status === "pending" ? "⏳" : "❌"}
+                    </Badge>
+                  </div>
+                  {/* Thumbnail / video preview */}
+                  <div className="aspect-[9/16] bg-black flex items-center justify-center relative">
+                    {reel.thumbnail ? (
+                      <img src={reel.thumbnail} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Film className="w-10 h-10 text-white/40" />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="w-10 h-10 text-white drop-shadow-lg" />
+                    </div>
+                  </div>
+                  {/* Info */}
+                  <div className="p-2">
+                    <p className="text-xs font-medium truncate">{reel.userName || reel.userPhone || "مستخدم"}</p>
+                    <p className="text-[10px] text-muted-foreground">#{reel.id}</p>
+                  </div>
+                  {/* Quick action buttons */}
+                  <div className="absolute bottom-10 inset-x-0 flex gap-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {reel.status === "pending" && (
+                      <>
+                        <Button size="sm" className="flex-1 h-6 text-[10px] bg-green-500 hover:bg-green-600 text-white" onClick={async (e) => {
+                          e.stopPropagation();
+                          await handleReelStatus(reel.id, "approve");
+                          refetchAllReels();
+                        }}>قبول</Button>
+                        <Button size="sm" className="flex-1 h-6 text-[10px] bg-red-500 hover:bg-red-600 text-white" onClick={async (e) => {
+                          e.stopPropagation();
+                          await handleReelStatus(reel.id, "reject");
+                          refetchAllReels();
+                        }}>رفض</Button>
+                      </>
+                    )}
+                    <Button size="sm" variant="destructive" className="h-6 w-6 p-0" onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!confirm("حذف هذا الفيديو نهائياً؟")) return;
+                      await handleReelDelete(reel.id);
+                      refetchAllReels();
+                    }}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Inbox Tab */}
