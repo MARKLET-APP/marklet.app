@@ -269,7 +269,7 @@ export default function ShowroomPage() {
         {/* Top-right: back + cover upload stacked */}
         <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
           <button
-            onClick={() => window.history.back()}
+            onClick={() => window.history.length > 1 ? window.history.back() : navigate("/showrooms")}
             className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30"
           >
             <ChevronRight className="w-5 h-5" />

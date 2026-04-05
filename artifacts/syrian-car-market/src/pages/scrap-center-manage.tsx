@@ -74,7 +74,7 @@ export default function ScrapCenterManagePage() {
       {/* Header */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => window.history.back()} className="w-9 h-9 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80">
+          <button onClick={() => window.history.length > 1 ? window.history.back() : navigate("/")} className="w-9 h-9 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">

@@ -202,7 +202,7 @@ export default function InspectionCenterPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
         <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
-          <button onClick={() => window.history.back()} className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30">
+          <button onClick={() => window.history.length > 1 ? window.history.back() : navigate("/inspection-centers")} className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30">
             <ChevronRight className="w-5 h-5" />
           </button>
           {isOwner && (
