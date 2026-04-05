@@ -119,3 +119,9 @@ id = "M4O6GCB4TUkxViOJs5AzL"
 uri = "file://نظام-الصور.md"
 type = "text"
 title = "نظام رفع وعرض الصور — LAZEMNI v1.0"
+
+[[outputs]]
+id = "DZUo-kjJGYC_OmfS41pEP"
+uri = "file://نظام-المراسلة.md"
+type = "text"
+title = "نظام المراسلة — الحالة والخطة"
