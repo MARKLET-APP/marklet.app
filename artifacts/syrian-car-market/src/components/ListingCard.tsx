@@ -63,15 +63,14 @@ function getTitle(type: ListingCardType, data: any): string {
   }
 }
 
+function validImgUrl(u: any): u is string {
+  return typeof u === "string" && u.trim().length > 0 && !u.startsWith("blob:");
+}
+
 function getImages(type: ListingCardType, data: any): string[] {
   if (type === "plate" && data.primaryImage) return [data.primaryImage];
   if (type === "jobs") return [];
-  if (type === "real-estate" || type === "marketplace") {
-    return (data.images ?? []).filter(
-      (u: any) => typeof u === "string" && u.trim().length > 0 && !u.startsWith("blob:")
-    );
-  }
-  return data.images ?? [];
+  return (data.images ?? []).filter(validImgUrl);
 }
 
 function getSellerId(data: any, type: ListingCardType): number {

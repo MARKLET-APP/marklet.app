@@ -61,19 +61,31 @@ type PriceEval = { level: "high" | "low" | "good"; market: number; range: [numbe
 
 type ListingType = "car_sale" | "motorcycles" | "car_rent" | "car_parts" | "real_estate" | "jobs";
 
-async function uploadImage(file: File): Promise<string> {
+/** folder = undefined → /api/upload (cars, with AI detection); folder string → /api/upload-image?folder=... */
+async function uploadImage(file: File, folder?: string): Promise<string> {
   const formData = new FormData();
   formData.append("image", file);
   const token = localStorage.getItem("scm_token");
-  const res = await fetch(withApi("/api/upload"), {
+  const endpoint = folder
+    ? `/api/upload-image?folder=${encodeURIComponent(folder)}`
+    : "/api/upload";
+  const res = await fetch(withApi(endpoint), {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   });
   const data = await res.json() as { image?: string; url?: string; error?: string; success?: boolean; message?: string };
-  if (!res.ok) throw new Error(data.error ?? "فشل رفع الصورة");
-  return (data.image ?? data.url)!;
+  if (!res.ok) throw new Error(data.message ?? data.error ?? "فشل رفع الصورة");
+  const imgUrl = data.image ?? data.url;
+  if (!imgUrl) throw new Error("لم يتم الحصول على رابط الصورة");
+  return imgUrl;
 }
+
+const UPLOAD_FOLDER: Record<string, string> = {
+  real_estate: "real-estate",
+  jobs: "jobs",
+  marketplace: "marketplace",
+};
 
 const DRAFT_KEY = "lazemni_listing_draft";
 
@@ -216,17 +228,19 @@ export default function AddListing() {
       return;
     }
     setIsUploading(true);
-    setPendingUploads(files.length); // أظهر كل المؤشرات فوراً
+    setPendingUploads(files.length);
     let remaining = files.length;
+    // Use the correct upload folder per listing type (non-vehicle types skip car detection)
+    const folder = UPLOAD_FOLDER[listingType] ?? undefined;
     for (const file of files) {
       try {
-        const url = await uploadImage(file);
+        const url = await uploadImage(file, folder);
         setImages(prev => [...prev, url]);
       } catch (err: any) {
         showToast(err.message ?? "فشل رفع الصورة", { variant: "destructive" });
       } finally {
         remaining -= 1;
-        setPendingUploads(remaining); // خفّض المؤشرات تدريجياً مع انتهاء كل صورة
+        setPendingUploads(remaining);
       }
     }
     setIsUploading(false);
@@ -358,10 +372,17 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     // Always read from ref — covers uncontrolled inputs the user never blurred
     const fields = fieldsRef.current;
 
+    // Filter out any null/undefined/empty values from images before submission
+    const cleanImages = images.filter((u): u is string => !!u);
+
     // ── Real Estate submission ──────────────────────────────────────────
     if (listingType === "real_estate") {
       if (!fields.reTitle.trim()) {
         showToast("يجب إدخال عنوان الإعلان", { variant: "destructive" });
+        return;
+      }
+      if (cleanImages.length < 1) {
+        showToast("يجب إضافة صورة واحدة على الأقل", { variant: "destructive" });
         return;
       }
       setSubmittingOther(true);
@@ -380,7 +401,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
           location: fields.reLocation,
           phone: fields.rePhone,
           description: fields.description,
-          images,
+          images: cleanImages,
         });
         localStorage.removeItem(DRAFT_KEY);
         showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة" });
@@ -427,7 +448,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
     }
 
     // ── Vehicle submission (existing logic) ─────────────────────────────
-    if (images.length < 1) {
+    if (cleanImages.length < 1) {
       showToast("يجب إضافة صورة واحدة على الأقل", { variant: "destructive" });
       return;
     }
@@ -445,7 +466,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         price, mileage: Number(fields.mileage), fuelType: fields.fuelType,
         transmission: fields.transmission, province: fields.province,
         city: fields.city, saleType: fields.saleType, condition: fields.condition,
-        category: fields.category, description: fields.description, images,
+        category: fields.category, description: fields.description, images: cleanImages,
         listingType: "car_sale",
       };
     } else if (listingType === "motorcycles") {
@@ -455,7 +476,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         province: fields.province, city: fields.city, saleType: fields.saleType,
         condition: fields.condition,
         fuelType: "petrol", transmission: "manual", mileage: 0,
-        images, listingType: "motorcycles",
+        images: cleanImages, listingType: "motorcycles",
       };
     } else if (listingType === "car_rent") {
       data = {
@@ -463,7 +484,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         price: Number(fields.dailyPrice) || price, category: "rental",
         saleType: "rental", province: fields.province, city: fields.city,
         description: fields.description, fuelType: "petrol", transmission: "automatic",
-        mileage: 0, images, listingType: "car_rent",
+        mileage: 0, images: cleanImages, listingType: "car_rent",
       };
     } else {
       data = {
@@ -472,7 +493,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         price, category: "parts", saleType: "cash",
         province: fields.province, city: fields.city,
         description: fields.description, fuelType: "petrol", transmission: "manual",
-        mileage: 0, images, listingType: "car_parts",
+        mileage: 0, images: cleanImages, listingType: "car_parts",
       };
     }
 

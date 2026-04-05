@@ -2,18 +2,8 @@ import { Router, type IRouter } from "express";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-import sharp from "sharp";
-import { upload } from "../middlewares/upload.js";
+import { upload, processImage } from "../middlewares/upload.js";
 import { checkImageSafety, detectCar } from "../lib/openai.js";
-
-async function toBase64DataUrl(buffer: Buffer): Promise<string> {
-  const compressed = await sharp(buffer)
-    .rotate()
-    .resize({ width: 1200, withoutEnlargement: true })
-    .jpeg({ quality: 80, progressive: true })
-    .toBuffer();
-  return `data:image/jpeg;base64,${compressed.toString("base64")}`;
-}
 
 const router: IRouter = Router();
 
@@ -53,6 +43,7 @@ router.post("/upload-cv", cvUpload.single("file"), (req: any, res: any): void =>
   res.json({ success: true, url });
 });
 
+// ── Car image upload — with AI safety check + car detection ──────────────────
 router.post("/upload", upload.single("image"), async (req, res): Promise<void> => {
   if (!req.file) {
     res.status(400).json({ success: false, message: "لم يتم رفع أي ملف" });
@@ -80,8 +71,9 @@ router.post("/upload", upload.single("image"), async (req, res): Promise<void> =
 
     fs.unlinkSync(tmpPath);
 
-    const image = await toBase64DataUrl(req.file.buffer);
-    res.json({ success: true, image });
+    // Save to disk → return a URL (not base64) for better mobile performance
+    const imageUrl = await processImage(req.file, "cars");
+    res.json({ success: true, image: imageUrl, url: imageUrl });
   } catch (err) {
     console.error("[Upload] Error:", err);
     if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
@@ -89,8 +81,8 @@ router.post("/upload", upload.single("image"), async (req, res): Promise<void> =
   }
 });
 
-// ── General image upload — no car detection, any folder ──────────────────────
-// POST /api/upload-image?folder=real-estate|jobs|listings
+// ── General image upload — no car detection, saves to disk ───────────────────
+// POST /api/upload-image?folder=real-estate|jobs|marketplace|listings
 router.post("/upload-image", upload.single("image"), async (req, res): Promise<void> => {
   if (!req.file) {
     res.status(400).json({ success: false, message: "لم يتم رفع أي ملف" });
@@ -101,8 +93,8 @@ router.post("/upload-image", upload.single("image"), async (req, res): Promise<v
   const folder = rawFolder.replace(/[^a-z0-9_-]/gi, "").slice(0, 32) || "listings";
 
   try {
-    const url = await toBase64DataUrl(req.file.buffer);
-    res.json({ success: true, url });
+    const url = await processImage(req.file, folder);
+    res.json({ success: true, url, image: url });
   } catch (err) {
     console.error("[Upload-Image] Error:", err);
     res.status(500).json({ success: false, message: "فشل رفع الصورة" });
@@ -112,7 +104,7 @@ router.post("/upload-image", upload.single("image"), async (req, res): Promise<v
 // Multer error handler — must be 4-arg to be treated as an error middleware
 router.use((err: any, _req: any, res: any, next: any) => {
   if (err && err.code === "LIMIT_FILE_SIZE") {
-    res.status(400).json({ success: false, message: "حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)" });
+    res.status(400).json({ success: false, message: "حجم الملف كبير جداً (الحد الأقصى 20 ميجابايت)" });
     return;
   }
   if (err && err.message) {
