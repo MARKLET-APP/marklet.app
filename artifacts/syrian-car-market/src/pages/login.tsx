@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn, ArrowRight } from "lucide-react";
 
 export default function Login() {
   const [, navigate] = useLocation();
@@ -41,8 +41,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center p-4">
+    <div className="min-h-[80vh] flex items-center justify-center p-4" dir="rtl">
       <div className="max-w-md w-full bg-card rounded-3xl border shadow-xl p-8">
+        {/* Back button */}
+        <button onClick={() => navigate("/auth")} className="flex items-center gap-1 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors">
+          <ArrowRight className="w-4 h-4" />
+          خيارات تسجيل الدخول
+        </button>
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <LogIn className="w-8 h-8 text-primary" />

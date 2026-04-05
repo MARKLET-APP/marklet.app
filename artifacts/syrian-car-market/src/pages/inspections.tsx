@@ -208,7 +208,7 @@ export default function InspectionsPage() {
 
   const handleBook = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/auth"); return; }
     if (!bookingCenter || !date) return;
     bookMutation.mutate({ centerId: bookingCenter.id, date, carId: carId || undefined });
   };
@@ -275,7 +275,7 @@ export default function InspectionsPage() {
       </div>
       <div className="px-4 pb-4 flex gap-2 mt-auto">
         <Button size="sm" className="flex-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white gap-1.5 text-xs font-bold"
-          onClick={() => { if (!user) { navigate("/login"); return; } setBookingCenter(center); }}>
+          onClick={() => { if (!user) { navigate("/auth"); return; } setBookingCenter(center); }}>
           <CalendarCheck className="w-3.5 h-3.5" /> حجز موعد
         </Button>
         <Button size="sm" variant="outline" className="flex-1 rounded-xl border-teal-300 text-teal-700 gap-1.5 text-xs font-bold"

@@ -42,8 +42,13 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center p-4">
+    <div className="min-h-[80vh] flex items-center justify-center p-4" dir="rtl">
       <div className="max-w-md w-full bg-card rounded-3xl border shadow-xl p-8">
+        {/* Back button */}
+        <button onClick={() => navigate("/auth")} className="flex items-center gap-1 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors">
+          <span className="text-base">→</span>
+          خيارات تسجيل الدخول
+        </button>
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-foreground mb-2">{t("auth.register.title")}</h1>
           <p className="text-muted-foreground">{t("auth.register.subtitle")}</p>
@@ -61,7 +66,7 @@ export default function Register() {
               {...formRegister("name", { required: t("common.requiredField") })}
               data-ui-id="INPUT_TITLE_01"
               data-testid="INPUT_TITLE_01"
-              autoComplete="name"
+              autoComplete="off"
               dir="auto"
               style={{ fontSize: 16 }}
               className="w-full rounded-xl border-2 px-4 py-3 bg-background focus:border-primary outline-none"

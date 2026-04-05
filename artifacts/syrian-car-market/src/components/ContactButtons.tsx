@@ -69,7 +69,7 @@ export function ContactButtons({
   const btnRound = compact ? "rounded-full" : "rounded-xl";
 
   const handleInAppMessage = async () => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/auth"); return; }
     if (onInAppMessage) { onInAppMessage(); return; }
     if (!sellerId) return;
     try {
@@ -103,7 +103,7 @@ export function ContactButtons({
     return (
       <div className={`flex flex-col gap-2 ${className}`}>
         <Button
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/auth")}
           className={`w-full ${btnRound} ${btnH} font-bold gap-2 bg-primary text-primary-foreground shadow-lg whitespace-nowrap`}
         >
           <LogIn className={iconSz} />
@@ -208,7 +208,7 @@ export function ContactButtonsFixed({
     user?.subscriptionActive === true || user?.isFeaturedSeller === true;
 
   const handleInAppMessage = async () => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/auth"); return; }
     if (!sellerId) return;
     try {
       setStartingChat(true);
@@ -241,7 +241,7 @@ export function ContactButtonsFixed({
     return (
       <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-sm border-t shadow-lg px-4 py-3 flex gap-3">
         <Button
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/auth")}
           className="flex-1 h-12 rounded-xl font-bold gap-2 bg-primary text-primary-foreground"
         >
           <LogIn className="w-5 h-5" />

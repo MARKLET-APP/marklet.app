@@ -201,7 +201,7 @@ export default function SellerRating({ sellerId, isOwner, className }: SellerRat
         <Button
           variant="outline"
           className="w-full rounded-xl gap-2"
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/auth")}
         >
           <Star className="w-4 h-4 text-amber-400" />
           سجّل دخولك لتقييم صاحب الإعلان

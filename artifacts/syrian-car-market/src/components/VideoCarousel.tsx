@@ -186,7 +186,7 @@ export function VideoCarousel() {
 
   // Contact: message the showroom owner directly; fallback to admin
   const handleContact = async () => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/auth"); return; }
     const ownerId = current.showroomOwnerId;
     if (ownerId && ownerId > 0) {
       navigate(`/messages?userId=${ownerId}`);

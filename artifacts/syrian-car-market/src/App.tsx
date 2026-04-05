@@ -36,6 +36,8 @@ const NewCarsPage = lazy(() => import("@/pages/new-cars"));
 const UsedCarsPage = lazy(() => import("@/pages/used-cars"));
 const MotorcyclesPage = lazy(() => import("@/pages/motorcycles"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const AuthEntry = lazy(() => import("@/pages/auth-entry"));
+const PhoneLogin = lazy(() => import("@/pages/phone-login"));
 const SystemAuditPage = lazy(() => import("@/pages/system-audit"));
 const ShowroomPage = lazy(() => import("@/pages/showroom"));
 const ShowroomsPage = lazy(() => import("@/pages/showrooms"));
@@ -193,6 +195,8 @@ function Router() {
           <Route path="/cars/:id" component={CarDetail} />
           <Route path="/add-listing" component={AddListing} />
           <Route path="/vehicle-info" component={VehicleInfo} />
+          <Route path="/auth" component={AuthEntry} />
+          <Route path="/phone-login" component={PhoneLogin} />
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
           <Route path="/profile" component={Profile} />

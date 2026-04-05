@@ -55,7 +55,7 @@ export function CarCard({ car }: { car: Car }) {
 
   const handleChat = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/auth"); return; }
     const sellerId = (car as any).sellerId;
     if (!sellerId) { navigate(`/cars/${car.id}`); return; }
     try {

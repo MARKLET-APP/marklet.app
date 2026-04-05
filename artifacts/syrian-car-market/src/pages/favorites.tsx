@@ -105,7 +105,7 @@ export default function Favorites() {
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
     </div>
   );
-  if (!user) return <Redirect to="/login" />;
+  if (!user) return <Redirect to="/auth" />;
 
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto w-full min-h-[60vh]" dir="rtl">

@@ -173,6 +173,42 @@ router.post("/login", async (req, res): Promise<void> => {
   res.json({ token, user: serializeUser(user) });
 });
 
+/** POST /api/auth/google — verify Google ID token, create/find user, return JWT */
+router.post("/auth/google", async (req, res): Promise<void> => {
+  const { idToken } = req.body as { idToken?: string };
+  if (!idToken) { res.status(400).json({ error: "idToken مطلوب" }); return; }
+
+  try {
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    if (!verifyRes.ok) { res.status(401).json({ error: "رمز غوغل غير صالح" }); return; }
+
+    const gUser = await verifyRes.json() as { email?: string; name?: string; sub?: string; picture?: string; error?: string };
+    if (gUser.error || !gUser.email) { res.status(401).json({ error: "لم يتم التحقق من حساب غوغل" }); return; }
+
+    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, gUser.email)).limit(1);
+
+    if (!user) {
+      const [newUser] = await db.insert(usersTable).values({
+        name: gUser.name || gUser.email.split("@")[0],
+        email: gUser.email,
+        password: await bcrypt.hash(gUser.sub || gUser.email, 12),
+        role: "buyer",
+        isVerified: true,
+        profilePhoto: gUser.picture || null,
+      }).returning();
+      user = newUser;
+    }
+
+    if (user.isBanned) { res.status(403).json({ error: "تم حظر هذا الحساب" }); return; }
+
+    const token = generateToken(user.id, user.role);
+    res.json({ token, user: serializeUser(user) });
+  } catch (err) {
+    console.error("Google auth error:", err);
+    res.status(500).json({ error: "فشل تسجيل الدخول عبر غوغل" });
+  }
+});
+
 router.get("/profile", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
   if (!user) {

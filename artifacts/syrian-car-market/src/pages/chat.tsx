@@ -61,7 +61,7 @@ export default function Chat() {
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
-  if (!user) return <Redirect to="/login" />;
+  if (!user) return <Redirect to="/auth" />;
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -263,7 +263,7 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
   };
 
   const handleLike = async () => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/auth"); return; }
     const newLiked = !liked;
     setLiked(newLiked);
     setLocalLikes(n => newLiked ? n + 1 : n - 1);
@@ -276,7 +276,7 @@ function ReelCard({ reel, isActive, onLikeUpdate }: {
   };
 
   const handleContact = async () => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/auth"); return; }
     const ownerId = reel.showroomOwnerId;
     if (ownerId && ownerId > 0) { navigate(`/messages?userId=${ownerId}`); return; }
     const adminId = await fetchAdminId();

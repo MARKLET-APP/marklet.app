@@ -229,7 +229,7 @@ export function Header() {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors px-3 py-2">
+                <Link href="/auth" className="text-sm font-medium hover:text-primary transition-colors px-3 py-2">
                   {t("nav.login")}
                 </Link>
                 <Link
@@ -299,7 +299,7 @@ export function Header() {
               </>
             ) : (
               <>
-                <Link href="/login" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground">
+                <Link href="/auth" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors font-semibold text-foreground">
                   {t("nav.login")}
                 </Link>
                 <Link href="/register" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-xl font-bold">

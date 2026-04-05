@@ -43,7 +43,7 @@ function ShowroomCard({ showroom }: { showroom: any }) {
   const [rated, setRated] = useState(false);
 
   const handleRate = async (score: number) => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/auth"); return; }
     if (rated) return;
     try {
       const res = await fetch(withApi(`/api/showrooms/${showroom.id}/rate`), {
@@ -137,7 +137,7 @@ function ShowroomCard({ showroom }: { showroom: any }) {
             {showroom.ownerUserId && (
               <button
                 disabled={chatLoading}
-                onClick={() => { if (!user) { navigate("/login"); return; } startChat(showroom.ownerUserId); }}
+                onClick={() => { if (!user) { navigate("/auth"); return; } startChat(showroom.ownerUserId); }}
                 className="flex items-center justify-center gap-1.5 flex-1 border rounded-xl px-3 py-2 text-xs font-bold hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
               >
                 {chatLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><MessageCircle className="w-3.5 h-3.5" /> مراسلة</>}
