@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { upload, processImage } from "../middlewares/upload.js";
-import { checkImageSafety, detectCar } from "../lib/openai.js";
+// AI car detection removed — images accepted directly
 
 const router: IRouter = Router();
 
@@ -43,40 +43,17 @@ router.post("/upload-cv", cvUpload.single("file"), (req: any, res: any): void =>
   res.json({ success: true, url });
 });
 
-// ── Car image upload — with AI safety check + car detection ──────────────────
+// ── Car image upload — direct save, no AI detection ──────────────────────────
 router.post("/upload", upload.single("image"), async (req, res): Promise<void> => {
   if (!req.file) {
     res.status(400).json({ success: false, message: "لم يتم رفع أي ملف" });
     return;
   }
-
-  const tmpPath = path.join("uploads", `tmp_${Date.now()}`);
-  fs.mkdirSync("uploads", { recursive: true });
-  fs.writeFileSync(tmpPath, req.file.buffer);
-
   try {
-    const safe = await checkImageSafety(tmpPath);
-    if (!safe) {
-      fs.unlinkSync(tmpPath);
-      res.status(400).json({ success: false, message: "الصورة غير مناسبة" });
-      return;
-    }
-
-    const isCar = await detectCar(tmpPath);
-    if (!isCar) {
-      fs.unlinkSync(tmpPath);
-      res.status(400).json({ success: false, message: "الصور يجب أن تكون لسيارة" });
-      return;
-    }
-
-    fs.unlinkSync(tmpPath);
-
-    // Save to disk → return a URL (not base64) for better mobile performance
     const imageUrl = await processImage(req.file, "cars");
     res.json({ success: true, image: imageUrl, url: imageUrl });
   } catch (err) {
     console.error("[Upload] Error:", err);
-    if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
     res.status(500).json({ success: false, message: "فشل معالجة الصورة" });
   }
 });

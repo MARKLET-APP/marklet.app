@@ -698,3 +698,31 @@ textarea {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SWIPE NAVIGATION PREVENTION — منع السحب للرجوع
+   Prevents browser/WebView overscroll-based back navigation
+══════════════════════════════════════════════════════════════ */
+html, body {
+  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ADMIN RESPONSIVE TABLES — جداول لوحة التحكم المتجاوبة
+   Hides non-essential columns on small screens
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .admin-col-hide {
+    display: none !important;
+  }
+  /* Compact admin table cells */
+  .admin-table th,
+  .admin-table td {
+    font-size: 11px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}

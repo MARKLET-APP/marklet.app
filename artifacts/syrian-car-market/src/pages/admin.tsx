@@ -271,6 +271,22 @@ function AdminMarketplaceTab() {
     refetchInterval: 30_000,
   });
 
+  const { data: allItems = [], isLoading: allItemsLoading, refetch: refetchAllItems } = useQuery<any[]>({
+    queryKey: ["admin", "marketplace-all"],
+    queryFn: () => apiRequest("/api/admin/marketplace"),
+    staleTime: 0,
+  });
+
+  const deleteItem = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/admin/marketplace/${id}`, "DELETE"),
+    onSuccess: () => {
+      toast({ title: "تم حذف الإعلان نهائياً 🗑️" });
+      qc.invalidateQueries({ queryKey: ["admin", "marketplace-all"] });
+      qc.invalidateQueries({ queryKey: ["admin", "marketplace-pending"] });
+    },
+    onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
+  });
+
   const approveItem = useMutation({
     mutationFn: (id: number) => apiRequest(`/api/admin/marketplace/${id}/status`, "PATCH", { status: "available" }),
     onSuccess: () => { toast({ title: "تم قبول الإعلان ✅" }); qc.invalidateQueries({ queryKey: ["admin", "marketplace-pending"] }); },
@@ -547,6 +563,73 @@ function AdminMarketplaceTab() {
           })}
         </div>
       )}
+      </div>
+
+      {/* ══ جميع الإعلانات المنشورة والمرفوضة — مع زر الحذف ══ */}
+      <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-5 border-b bg-muted/20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-orange-500" />
+            <h2 className="text-lg font-bold">جميع إعلانات السوق</h2>
+            <Badge variant="secondary">{allItems.length}</Badge>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refetchAllItems()}>
+            <RefreshCw className="w-4 h-4 ml-2" /> تحديث
+          </Button>
+        </div>
+        {allItemsLoading ? (
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-orange-500" /></div>
+        ) : allItems.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">لا توجد إعلانات</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table className="admin-table">
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="text-right">الإعلان</TableHead>
+                  <TableHead className="text-right admin-col-hide">السعر</TableHead>
+                  <TableHead className="text-right admin-col-hide">البائع</TableHead>
+                  <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-center">حذف</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allItems.map((item: any) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {item.images?.[0] && (
+                          <img src={imgUrl(item.images[0])} alt="" className="w-9 h-9 rounded-lg object-cover border shrink-0" />
+                        )}
+                        <span className="font-medium truncate max-w-[100px] sm:max-w-[200px]">{item.title}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="admin-col-hide text-sm">{Number(item.price).toLocaleString("ar-SY")} {item.currency}</TableCell>
+                    <TableCell className="admin-col-hide text-sm">{item.sellerName ?? "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.status === "available" ? "default" : item.status === "pending" ? "secondary" : "outline"} className="text-xs">
+                        {item.status === "available" ? "✅ منشور" : item.status === "pending" ? "⏳ انتظار" : "❌ مرفوض"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        size="sm" variant="ghost"
+                        className="text-destructive hover:bg-destructive/10 h-8"
+                        disabled={deleteItem.isPending}
+                        onClick={() => {
+                          if (!confirm(`حذف "${item.title}" نهائياً؟`)) return;
+                          deleteItem.mutate(item.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
 
     </div>
@@ -2467,15 +2550,15 @@ export default function AdminDashboard() {
             <Button variant="outline" size="sm" onClick={() => refetchCars()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
           </div>
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="admin-table">
               <TableHeader className="bg-muted/30">
                 <TableRow>
                   <TableHead className="text-right">المركبة</TableHead>
-                  <TableHead className="text-right">السنة</TableHead>
-                  <TableHead className="text-right">السعر</TableHead>
-                  <TableHead className="text-right">البائع</TableHead>
+                  <TableHead className="text-right admin-col-hide">السنة</TableHead>
+                  <TableHead className="text-right admin-col-hide">السعر</TableHead>
+                  <TableHead className="text-right admin-col-hide">البائع</TableHead>
                   <TableHead className="text-center">الحالة</TableHead>
-                  <TableHead className="text-center">التمييز</TableHead>
+                  <TableHead className="text-center admin-col-hide">التمييز</TableHead>
                   <TableHead className="text-center">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
@@ -2491,12 +2574,12 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-1.5">
                           {(car as any).isFeatured && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
                           {(car as any).isHighlighted && <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
-                          {car.brand} {car.model}
+                          <span className="truncate max-w-[90px] sm:max-w-none">{car.brand} {car.model}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{car.year}</TableCell>
-                      <TableCell>{car.price.toLocaleString('ar-SY')} ل.س</TableCell>
-                      <TableCell>{(car as any).sellerName || 'مجهول'}</TableCell>
+                      <TableCell className="admin-col-hide">{car.year}</TableCell>
+                      <TableCell className="admin-col-hide">{car.price.toLocaleString('ar-SY')} ل.س</TableCell>
+                      <TableCell className="admin-col-hide">{(car as any).sellerName || 'مجهول'}</TableCell>
                       <TableCell className="text-center">
                         {(car as any).status === 'approved' && <Badge className="bg-green-500 hover:bg-green-600">مقبول</Badge>}
                         {(car as any).status === 'pending'  && <Badge variant="secondary" className="bg-amber-100 text-amber-700">معلق</Badge>}
@@ -2571,14 +2654,14 @@ export default function AdminDashboard() {
               <Button variant="outline" size="sm" onClick={() => refetchJunkCars()}><RefreshCw className="w-4 h-4 ml-2" /> تحديث</Button>
             </div>
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="admin-table">
                 <TableHeader className="bg-muted/30">
                   <TableRow>
                     <TableHead className="text-right">السيارة</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">السعر</TableHead>
-                    <TableHead className="text-right">البائع</TableHead>
-                    <TableHead className="text-right">المدينة</TableHead>
+                    <TableHead className="text-right admin-col-hide">الحالة</TableHead>
+                    <TableHead className="text-right admin-col-hide">السعر</TableHead>
+                    <TableHead className="text-right admin-col-hide">البائع</TableHead>
+                    <TableHead className="text-right admin-col-hide">المدينة</TableHead>
                     <TableHead className="text-center">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -2587,11 +2670,11 @@ export default function AdminDashboard() {
                     <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">لا توجد إعلانات سكراب</TableCell></TableRow>
                   ) : adminJunkCars.map((j: any) => (
                     <TableRow key={j.id}>
-                      <TableCell className="font-medium">{[j.type, j.model, j.year].filter(Boolean).join(" ") || "سيارة معطوبة"}</TableCell>
-                      <TableCell><Badge variant="outline">{j.condition ?? "—"}</Badge></TableCell>
-                      <TableCell>{j.price ? `$${Number(j.price).toLocaleString()}` : "—"}</TableCell>
-                      <TableCell>{j.sellerName ?? "—"} {j.sellerPhone ? <span className="text-xs text-muted-foreground" dir="ltr"> ({j.sellerPhone})</span> : null}</TableCell>
-                      <TableCell>{j.city ?? "—"}</TableCell>
+                      <TableCell className="font-medium"><span className="truncate max-w-[100px] sm:max-w-none block">{[j.type, j.model, j.year].filter(Boolean).join(" ") || "سيارة معطوبة"}</span></TableCell>
+                      <TableCell className="admin-col-hide"><Badge variant="outline">{j.condition ?? "—"}</Badge></TableCell>
+                      <TableCell className="admin-col-hide">{j.price ? `$${Number(j.price).toLocaleString()}` : "—"}</TableCell>
+                      <TableCell className="admin-col-hide">{j.sellerName ?? "—"} {j.sellerPhone ? <span className="text-xs text-muted-foreground" dir="ltr"> ({j.sellerPhone})</span> : null}</TableCell>
+                      <TableCell className="admin-col-hide">{j.city ?? "—"}</TableCell>
                       <TableCell className="text-center">
                         <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 h-8" onClick={async () => {
                           if (!confirm("حذف هذا الإعلان؟")) return;
@@ -2623,15 +2706,15 @@ export default function AdminDashboard() {
               {loadingAllRealEstate ? (
                 <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
               ) : (
-                <Table>
+                <Table className="admin-table">
                   <TableHeader className="bg-muted/30">
                     <TableRow>
-                      <TableHead className="text-right">ID</TableHead>
+                      <TableHead className="text-right admin-col-hide">ID</TableHead>
                       <TableHead className="text-right">العنوان</TableHead>
-                      <TableHead className="text-right">النوع</TableHead>
-                      <TableHead className="text-right">السعر</TableHead>
-                      <TableHead className="text-right">المنطقة</TableHead>
-                      <TableHead className="text-right">الناشر</TableHead>
+                      <TableHead className="text-right admin-col-hide">النوع</TableHead>
+                      <TableHead className="text-right admin-col-hide">السعر</TableHead>
+                      <TableHead className="text-right admin-col-hide">المنطقة</TableHead>
+                      <TableHead className="text-right admin-col-hide">الناشر</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
@@ -2641,12 +2724,12 @@ export default function AdminDashboard() {
                       <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">لا توجد إعلانات عقارات</TableCell></TableRow>
                     ) : allRealEstate.map((item: any) => (
                       <TableRow key={item.id}>
-                        <TableCell className="text-xs text-muted-foreground font-mono">#{item.id}</TableCell>
-                        <TableCell className="font-medium max-w-[160px] truncate">{item.title}</TableCell>
-                        <TableCell><Badge variant="outline" className="text-xs">{item.listingType === "sale" ? "بيع" : item.listingType === "rent" ? "إيجار" : item.listingType}</Badge></TableCell>
-                        <TableCell>{item.price ? `$${Number(item.price).toLocaleString()}` : "—"}</TableCell>
-                        <TableCell className="text-sm">{[item.province, item.city].filter(Boolean).join(", ") || "—"}</TableCell>
-                        <TableCell>{item.posterName ?? "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground font-mono admin-col-hide">#{item.id}</TableCell>
+                        <TableCell className="font-medium"><span className="truncate max-w-[110px] sm:max-w-none block">{item.title}</span></TableCell>
+                        <TableCell className="admin-col-hide"><Badge variant="outline" className="text-xs">{item.listingType === "sale" ? "بيع" : item.listingType === "rent" ? "إيجار" : item.listingType}</Badge></TableCell>
+                        <TableCell className="admin-col-hide">{item.price ? `$${Number(item.price).toLocaleString()}` : "—"}</TableCell>
+                        <TableCell className="text-sm admin-col-hide">{[item.province, item.city].filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell className="admin-col-hide">{item.posterName ?? "—"}</TableCell>
                         <TableCell>
                           <Badge variant={item.status === "approved" ? "default" : item.status === "pending" ? "secondary" : "outline"} className="text-xs">
                             {item.status === "approved" ? "✅ منشور" : item.status === "pending" ? "⏳ بانتظار" : item.status === "rejected" ? "❌ مرفوض" : item.status}
@@ -2687,15 +2770,15 @@ export default function AdminDashboard() {
               {loadingAllJobs ? (
                 <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
               ) : (
-                <Table>
+                <Table className="admin-table">
                   <TableHeader className="bg-muted/30">
                     <TableRow>
-                      <TableHead className="text-right">ID</TableHead>
+                      <TableHead className="text-right admin-col-hide">ID</TableHead>
                       <TableHead className="text-right">المسمى الوظيفي</TableHead>
-                      <TableHead className="text-right">الشركة</TableHead>
-                      <TableHead className="text-right">النوع</TableHead>
-                      <TableHead className="text-right">المنطقة</TableHead>
-                      <TableHead className="text-right">الناشر</TableHead>
+                      <TableHead className="text-right admin-col-hide">الشركة</TableHead>
+                      <TableHead className="text-right admin-col-hide">النوع</TableHead>
+                      <TableHead className="text-right admin-col-hide">المنطقة</TableHead>
+                      <TableHead className="text-right admin-col-hide">الناشر</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
@@ -2705,12 +2788,12 @@ export default function AdminDashboard() {
                       <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">لا توجد إعلانات وظائف</TableCell></TableRow>
                     ) : allJobs.map((job: any) => (
                       <TableRow key={job.id}>
-                        <TableCell className="text-xs text-muted-foreground font-mono">#{job.id}</TableCell>
-                        <TableCell className="font-medium max-w-[160px] truncate">{job.title}</TableCell>
-                        <TableCell>{job.company ?? "—"}</TableCell>
-                        <TableCell><Badge variant="outline" className="text-xs">{job.jobType ?? "—"}</Badge></TableCell>
-                        <TableCell className="text-sm">{[job.province, job.city].filter(Boolean).join(", ") || "—"}</TableCell>
-                        <TableCell>{job.posterName ?? "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground font-mono admin-col-hide">#{job.id}</TableCell>
+                        <TableCell className="font-medium"><span className="truncate max-w-[110px] sm:max-w-none block">{job.title}</span></TableCell>
+                        <TableCell className="admin-col-hide">{job.company ?? "—"}</TableCell>
+                        <TableCell className="admin-col-hide"><Badge variant="outline" className="text-xs">{job.jobType ?? "—"}</Badge></TableCell>
+                        <TableCell className="text-sm admin-col-hide">{[job.province, job.city].filter(Boolean).join(", ") || "—"}</TableCell>
+                        <TableCell className="admin-col-hide">{job.posterName ?? "—"}</TableCell>
                         <TableCell>
                           <Badge variant={job.status === "approved" ? "default" : job.status === "pending" ? "secondary" : "outline"} className="text-xs">
                             {job.status === "approved" ? "✅ منشور" : job.status === "pending" ? "⏳ بانتظار" : job.status === "rejected" ? "❌ مرفوض" : job.status}
@@ -2859,8 +2942,8 @@ export default function AdminDashboard() {
                   </div>
                   {/* Thumbnail / video preview */}
                   <div className="aspect-[9/16] bg-black flex items-center justify-center relative">
-                    {reel.thumbnail ? (
-                      <img src={reel.thumbnail} alt="" className="w-full h-full object-cover" />
+                    {(reel.thumbnailUrl || reel.thumbnail) ? (
+                      <img src={reel.thumbnailUrl || reel.thumbnail} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <Film className="w-10 h-10 text-white/40" />
                     )}
@@ -2870,8 +2953,8 @@ export default function AdminDashboard() {
                   </div>
                   {/* Info */}
                   <div className="p-2">
-                    <p className="text-xs font-medium truncate">{reel.userName || reel.userPhone || "مستخدم"}</p>
-                    <p className="text-[10px] text-muted-foreground">#{reel.id}</p>
+                    <p className="text-xs font-medium truncate">{reel.dealerName || reel.title || `فيديو #${reel.id}`}</p>
+                    <p className="text-[10px] text-muted-foreground">#{reel.id} · {reel.status === "approved" ? "منشور" : reel.status === "pending" ? "انتظار" : "مرفوض"}</p>
                   </div>
                   {/* Quick action buttons */}
                   <div className="absolute bottom-10 inset-x-0 flex gap-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
