@@ -2,8 +2,6 @@ package com.lazemni.app;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
@@ -14,8 +12,6 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-    private GestureDetector gestureDetector;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -25,7 +21,6 @@ public class MainActivity extends BridgeActivity {
     public void onStart() {
         super.onStart();
         applyWebViewSettings();
-        setupSwipeBackGesture();
         injectAndroidBridge();
     }
 
@@ -46,11 +41,9 @@ public class MainActivity extends BridgeActivity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
 
-        // عرض صحيح للصفحة
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
 
-        // إخفاء أدوات الزوم
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
@@ -61,32 +54,6 @@ public class MainActivity extends BridgeActivity {
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
-    }
-
-    /* ------------------------------------------------
-       SWIPE BACK GESTURE
-       السحب من اليسار للرجوع للصفحة السابقة
-       ------------------------------------------------ */
-    private void setupSwipeBackGesture() {
-        gestureDetector = new GestureDetector(this,
-            new GestureDetector.SimpleOnGestureListener() {
-                @Override
-                public boolean onFling(MotionEvent e1, MotionEvent e2,
-                                       float velocityX, float velocityY) {
-                    if (e1 == null || e2 == null) return false;
-                    float deltaX = e2.getX() - e1.getX();
-                    float deltaY = Math.abs(e2.getY() - e1.getY());
-                    // سحب أفقي من اليمين لليسار بسرعة > 200
-                    if (deltaX > 200 && deltaY < 150 && velocityX > 200) {
-                        WebView wv = bridge.getWebView();
-                        if (wv != null && wv.canGoBack()) {
-                            wv.goBack();
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-            });
     }
 
     /* ------------------------------------------------
@@ -132,31 +99,6 @@ public class MainActivity extends BridgeActivity {
         public boolean canGoBack() {
             WebView wv = bridge.getWebView();
             return wv != null && wv.canGoBack();
-        }
-    }
-
-    /* ------------------------------------------------
-       DISPATCH TOUCH — يُمرّر الإيماءات للـ GestureDetector
-       مع الحفاظ على Capacitor touch events
-       ------------------------------------------------ */
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        if (gestureDetector != null) {
-            gestureDetector.onTouchEvent(event);
-        }
-        return super.dispatchTouchEvent(event);
-    }
-
-    /* ------------------------------------------------
-       BACK BUTTON — الرجوع في WebView أو إغلاق التطبيق
-       ------------------------------------------------ */
-    @Override
-    public void onBackPressed() {
-        WebView webView = this.bridge.getWebView();
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
         }
     }
 }
