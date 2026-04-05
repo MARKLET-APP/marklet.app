@@ -211,7 +211,7 @@ export default function Home() {
     staleTime: 15_000,
   });
   const buyRequests = (buyRequestsRaw as any[]).filter((r: any) =>
-    ["car", "cars", "motorcycle", "motorcycles", "used_car", "new_car"].includes(r.category)
+    ["car", "cars", "new-car", "used-car", "new_car", "used_car", "motorcycle", "motorcycles"].includes(r.category)
   );
 
   const { data: missingCars = [] } = useQuery({

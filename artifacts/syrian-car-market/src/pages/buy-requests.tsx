@@ -145,7 +145,7 @@ export default function BuyRequests() {
 
 
   const filteredRequests = allRequests.filter(r => {
-    if (activeCat === "car") return !r.category || r.category === "car" || r.category === "cars";
+    if (activeCat === "car") return !r.category || ["car", "cars", "new-car", "used-car", "new_car", "used_car"].includes(r.category);
     if (activeCat === "motorcycle") return r.category === "motorcycle" || r.category === "motorcycles";
     if (activeCat === "junk") return r.category === "junk" || r.category === "scrap";
     if (activeCat === "plates") return r.category === "plates";
