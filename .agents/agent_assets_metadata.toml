@@ -107,3 +107,9 @@ id = "0L9Msn6s4XH6kcm1ZJNZn"
 uri = "file://system-design.md"
 type = "text"
 title = "نظام الإشعارات الموحد — LAZEMNI"
+
+[[outputs]]
+id = "USkYq9p2pvFHlLlCSiZG1"
+uri = "file://نظام-النشر-الموحد.md"
+type = "text"
+title = "نظام النشر الموحد — LAZEMNI v1.0"
