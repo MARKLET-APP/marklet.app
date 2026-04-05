@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function getNotifIcon(type: string) {
-  if (type === "approved" || type === "success") return <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />;
-  if (type === "rejected" || type === "error") return <XCircle className="w-5 h-5 text-red-500 shrink-0" />;
+  if (type === "approval" || type === "approved" || type === "success") return <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />;
+  if (type === "rejection" || type === "rejected" || type === "error") return <XCircle className="w-5 h-5 text-red-500 shrink-0" />;
   if (type === "warning") return <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />;
   return <Info className="w-5 h-5 text-blue-500 shrink-0" />;
 }
@@ -138,6 +138,7 @@ export default function NotificationsPage() {
               )}
               onClick={() => {
                 if (!n.isRead) markReadMutation.mutate(n.id);
+                if (n.link) navigate(n.link);
               }}
             >
               <div className="mt-0.5">{getNotifIcon(n.type ?? "info")}</div>

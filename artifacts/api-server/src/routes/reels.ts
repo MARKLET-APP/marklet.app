@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { db, reelsTable, usersTable, showroomsTable } from "@workspace/db";
+import { db, reelsTable, usersTable, showroomsTable, notificationsTable } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
+import { sendPushToUser } from "../services/pushService.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -184,7 +185,14 @@ router.get("/admin/reels/pending", authMiddleware, async (req: AuthRequest, res)
 router.patch("/admin/reels/:id/approve", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   if (req.user?.role !== "admin") { res.status(403).json({ error: "ممنوع" }); return; }
   try {
-    await db.update(reelsTable).set({ status: "approved" }).where(eq(reelsTable.id, parseInt(req.params.id)));
+    const id = parseInt(req.params.id);
+    const [reel] = await db.select({ dealerId: reelsTable.dealerId, title: reelsTable.title }).from(reelsTable).where(eq(reelsTable.id, id));
+    await db.update(reelsTable).set({ status: "approved" }).where(eq(reelsTable.id, id));
+    if (reel?.dealerId) {
+      const msg = `تمت الموافقة على فيديوك "${reel.title || "ريل"}" ونشره على LAZEMNI`;
+      await db.insert(notificationsTable).values({ userId: reel.dealerId, type: "approval", message: msg, link: "/reels" }).catch(() => {});
+      sendPushToUser(reel.dealerId, { title: "✅ تمت الموافقة على فيديوك", body: msg, url: "/reels", tag: `reel-approved-${id}` }).catch(() => {});
+    }
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "خطأ" }); }
 });
@@ -193,7 +201,14 @@ router.patch("/admin/reels/:id/approve", authMiddleware, async (req: AuthRequest
 router.patch("/admin/reels/:id/reject", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
   if (req.user?.role !== "admin") { res.status(403).json({ error: "ممنوع" }); return; }
   try {
-    await db.update(reelsTable).set({ status: "rejected" }).where(eq(reelsTable.id, parseInt(req.params.id)));
+    const id = parseInt(req.params.id);
+    const [reel] = await db.select({ dealerId: reelsTable.dealerId, title: reelsTable.title }).from(reelsTable).where(eq(reelsTable.id, id));
+    await db.update(reelsTable).set({ status: "rejected" }).where(eq(reelsTable.id, id));
+    if (reel?.dealerId) {
+      const msg = `تم رفض فيديوك "${reel.title || "ريل"}". يمكنك تعديله وإعادة إرساله`;
+      await db.insert(notificationsTable).values({ userId: reel.dealerId, type: "rejection", message: msg }).catch(() => {});
+      sendPushToUser(reel.dealerId, { title: "❌ تم رفض فيديوك", body: msg, tag: `reel-rejected-${id}` }).catch(() => {});
+    }
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "خطأ" }); }
 });

@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, carPartsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, desc, or, ilike, and } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { sendPushToUser } from "../services/pushService.js";
 
 const router: IRouter = Router();
 
@@ -112,14 +113,12 @@ router.patch("/admin/car-parts/:id/approve", authMiddleware, async (req: AuthReq
   if (!part) { res.status(404).json({ error: "Not found" }); return; }
 
   if (!approve) {
-    await db.delete(carPartsTable).where(eq(carPartsTable.id, id));
     if (part?.sellerId) {
-      await db.insert(notificationsTable).values({
-        userId: part.sellerId,
-        type: "system",
-        message: `تم رفض إعلان القطعة "${part.name}" من قبل الإدارة.`,
-      });
+      const msg = `تم رفض إعلانك "${part.name}". يمكنك تعديله وإعادة إرساله`;
+      await db.insert(notificationsTable).values({ userId: part.sellerId, type: "rejection", message: msg }).catch(() => {});
+      sendPushToUser(part.sellerId, { title: "❌ تم رفض إعلانك", body: msg, tag: `carpart-rejected-${id}` }).catch(() => {});
     }
+    await db.delete(carPartsTable).where(eq(carPartsTable.id, id));
     res.json({ success: true, message: "تم رفض الإعلان وحذفه" });
     return;
   }
@@ -131,11 +130,9 @@ router.patch("/admin/car-parts/:id/approve", authMiddleware, async (req: AuthReq
     .returning();
 
   if (part?.sellerId) {
-    await db.insert(notificationsTable).values({
-      userId: part.sellerId,
-      type: "system",
-      message: `تمت الموافقة على إعلان القطعة "${part.name}" وتم نشره.`,
-    });
+    const msg = `تمت الموافقة على إعلانك "${part.name}" ونشره على LAZEMNI`;
+    await db.insert(notificationsTable).values({ userId: part.sellerId, type: "approval", message: msg, link: "/car-parts" }).catch(() => {});
+    sendPushToUser(part.sellerId, { title: "✅ تمت الموافقة على إعلانك", body: msg, url: "/car-parts", tag: `carpart-approved-${id}` }).catch(() => {});
   }
 
   res.json({ success: true, message: "تمت الموافقة على الإعلان ونشره", data: updated });
@@ -163,6 +160,11 @@ router.post("/car-parts", authMiddleware, async (req: AuthRequest, res): Promise
     description: description ?? null,
     status: "pending",
   }).returning();
+
+  await db.insert(notificationsTable).values({
+    userId: req.user!.id, type: "marketplace_pending",
+    message: `إعلانك "${name}" قيد المراجعة ⏳ — سيتم مراجعته ونشره قريباً`,
+  }).catch(() => {});
 
   res.status(201).json({
     success: true,

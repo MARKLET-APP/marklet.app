@@ -500,7 +500,7 @@ export default function JobsPage() {
   const createMutation = useMutation({
     mutationFn: (body: object) => apiRequest("/api/jobs", "POST", body),
     onSuccess: () => {
-      toast({ title: "تم نشر الإعلان بنجاح" });
+      toast({ title: "✅ تم إرسال إعلانك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       addFormKey.current += 1;
       setAddOpen(false);
       qc.invalidateQueries({ queryKey: ["jobs"] });
@@ -511,7 +511,7 @@ export default function JobsPage() {
   const applyMutation = useMutation({
     mutationFn: (body: object) => apiRequest("/api/buy-requests", "POST", body),
     onSuccess: () => {
-      toast({ title: "تم إرسال طلب التوظيف بنجاح" });
+      toast({ title: "✅ تم إرسال طلبك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       applyFormKey.current += 1;
       setApplyOpen(false);
       qc.invalidateQueries({ queryKey: ["buy-requests", "jobs"] });

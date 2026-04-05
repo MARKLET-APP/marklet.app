@@ -48,7 +48,7 @@ export default function MissingCarsPage() {
   const createMutation = useMutation({
     mutationFn: (body: object) => api.missingCars.create(body),
     onSuccess: (data) => {
-      toast({ title: data.message ?? "تم نشر البلاغ" });
+      toast({ title: "✅ تم إرسال بلاغك للمراجعة", description: "سيظهر في القائمة بعد موافقة الإدارة" });
       setOpen(false);
       setForm({ brand: "", model: "", color: "", plateNumber: "", city: "", description: "" });
       setUploadedImages([]);

@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { db, rentalCarsTable, usersTable } from "@workspace/db";
+import { db, rentalCarsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { sendPushToUser } from "../services/pushService.js";
 
 const router: IRouter = Router();
 
@@ -83,7 +84,15 @@ router.patch("/admin/rental-cars/:id/approve", authMiddleware, async (req: AuthR
   const { approve } = req.body as { approve: boolean };
   if (typeof approve !== "boolean") { res.status(400).json({ error: "approve field (boolean) required" }); return; }
 
+  const [car] = await db.select({ sellerId: rentalCarsTable.sellerId, brand: rentalCarsTable.brand, model: rentalCarsTable.model })
+    .from(rentalCarsTable).where(eq(rentalCarsTable.id, id)).limit(1);
+
   if (!approve) {
+    if (car?.sellerId) {
+      const msg = `تم رفض إعلانك "${[car.brand, car.model].filter(Boolean).join(" ") || "سيارة للإيجار"}". يمكنك تعديله وإعادة إرساله`;
+      await db.insert(notificationsTable).values({ userId: car.sellerId, type: "rejection", message: msg }).catch(() => {});
+      sendPushToUser(car.sellerId, { title: "❌ تم رفض إعلانك", body: msg, tag: `rental-rejected-${id}` }).catch(() => {});
+    }
     await db.delete(rentalCarsTable).where(eq(rentalCarsTable.id, id));
     res.json({ success: true, message: "تم رفض الإعلان وحذفه" });
     return;
@@ -96,6 +105,11 @@ router.patch("/admin/rental-cars/:id/approve", authMiddleware, async (req: AuthR
     .returning();
 
   if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  if (car?.sellerId) {
+    const msg = `تمت الموافقة على إعلانك "${[car.brand, car.model].filter(Boolean).join(" ") || "سيارة للإيجار"}" ونشره على LAZEMNI`;
+    await db.insert(notificationsTable).values({ userId: car.sellerId, type: "approval", message: msg, link: `/rental-cars` }).catch(() => {});
+    sendPushToUser(car.sellerId, { title: "✅ تمت الموافقة على إعلانك", body: msg, url: `/rental-cars`, tag: `rental-approved-${id}` }).catch(() => {});
+  }
   res.json({ success: true, message: "تم قبول الإعلان ونشره", data: updated });
 });
 
@@ -124,6 +138,11 @@ router.post("/rental-cars", authMiddleware, async (req: AuthRequest, res): Promi
       isApproved: false,
     })
     .returning();
+
+  await db.insert(notificationsTable).values({
+    userId: req.user!.id, type: "marketplace_pending",
+    message: `إعلانك "${[brand, model].filter(Boolean).join(" ")}" قيد المراجعة ⏳ — سيتم مراجعته ونشره قريباً`,
+  }).catch(() => {});
 
   res.status(201).json({
     success: true,

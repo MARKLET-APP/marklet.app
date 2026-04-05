@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, junkCarsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import { authMiddleware, type AuthRequest } from "../lib/auth.js";
+import { sendPushToUser } from "../services/pushService.js";
 
 const router: IRouter = Router();
 
@@ -75,14 +76,13 @@ router.patch("/admin/junk-cars/:id/approve", authMiddleware, async (req: AuthReq
   if (!item) { res.status(404).json({ error: "Not found" }); return; }
 
   if (!approve) {
-    await db.delete(junkCarsTable).where(eq(junkCarsTable.id, id));
     if (item?.sellerId) {
-      await db.insert(notificationsTable).values({
-        userId: item.sellerId,
-        type: "system",
-        message: `تم رفض إعلان السيارة المعطوبة "${[item.type, item.model].filter(Boolean).join(" ") || "سيارة"}" من قبل الإدارة.`,
-      });
+      const label = [item.type, item.model].filter(Boolean).join(" ") || "سيارة";
+      const msg = `تم رفض إعلانك "${label}". يمكنك تعديله وإعادة إرساله`;
+      await db.insert(notificationsTable).values({ userId: item.sellerId, type: "rejection", message: msg }).catch(() => {});
+      sendPushToUser(item.sellerId, { title: "❌ تم رفض إعلانك", body: msg, tag: `junk-rejected-${id}` }).catch(() => {});
     }
+    await db.delete(junkCarsTable).where(eq(junkCarsTable.id, id));
     res.json({ success: true, message: "تم رفض الإعلان وحذفه" });
     return;
   }
@@ -94,11 +94,10 @@ router.patch("/admin/junk-cars/:id/approve", authMiddleware, async (req: AuthReq
     .returning();
 
   if (item?.sellerId) {
-    await db.insert(notificationsTable).values({
-      userId: item.sellerId,
-      type: "system",
-      message: `تمت الموافقة على إعلان السيارة المعطوبة "${[item.type, item.model].filter(Boolean).join(" ") || "سيارة"}" وتم نشره.`,
-    });
+    const label = [item.type, item.model].filter(Boolean).join(" ") || "سيارة";
+    const msg = `تمت الموافقة على إعلانك "${label}" ونشره على LAZEMNI`;
+    await db.insert(notificationsTable).values({ userId: item.sellerId, type: "approval", message: msg, link: "/junk-cars" }).catch(() => {});
+    sendPushToUser(item.sellerId, { title: "✅ تمت الموافقة على إعلانك", body: msg, url: "/junk-cars", tag: `junk-approved-${id}` }).catch(() => {});
   }
 
   res.json({ success: true, message: "تمت الموافقة على الإعلان ونشره", data: updated });
@@ -120,6 +119,12 @@ router.post("/junk-cars", authMiddleware, async (req: AuthRequest, res): Promise
     description: description ?? null,
     status: "pending",
   }).returning();
+
+  const label = [type, model].filter(Boolean).join(" ") || "سيارة";
+  await db.insert(notificationsTable).values({
+    userId: req.user!.id, type: "marketplace_pending",
+    message: `إعلانك "${label}" قيد المراجعة ⏳ — سيتم مراجعته ونشره قريباً`,
+  }).catch(() => {});
 
   res.status(201).json({
     success: true,

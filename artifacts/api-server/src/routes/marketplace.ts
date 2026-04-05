@@ -19,9 +19,11 @@ const SYRIAN_PROVINCES = [
 ];
 
 // ── Helper: send notification ─────────────────────────────────────────────────
-async function notify(userId: number, title: string, body: string, type: string, refId?: number) {
+async function notify(userId: number | null, title: string, body: string, type: string, link?: string) {
+  if (!userId) return;
   try {
-    await db.insert(notificationsTable).values({ userId, title, body, type, referenceId: refId ?? null });
+    const message = body ? `${title} — ${body}` : title;
+    await db.insert(notificationsTable).values({ userId, type, message, link: link ?? null });
   } catch { /* non-critical */ }
 }
 
@@ -173,7 +175,7 @@ router.post("/marketplace", ...authGuard, async (req: AuthRequest, res): Promise
 
   // إشعار للمستخدم — فقط إذا لم يكن أدمن
   if (req.user!.role !== "admin") {
-    await notify(req.user!.id, "إعلانك قيد المراجعة ⏳", "تم استلام إعلانك وسيتم مراجعته ونشره قريباً", "marketplace_pending", item.id);
+    await notify(req.user!.id, "إعلانك قيد المراجعة ⏳", "تم استلام إعلانك وسيتم مراجعته ونشره قريباً", "marketplace_pending");
   }
 
   res.status(201).json({ ...item, message: "تم إرسال إعلانك للمراجعة" });
@@ -298,7 +300,7 @@ router.post("/marketplace/:id/order", ...authGuard, async (req: AuthRequest, res
     .where(eq(marketplaceItemsTable.id, itemId));
 
   await notify(item.sellerId, "📦 طلب شراء جديد",
-    `${req.user!.name} يريد شراء "${item.title}"`, "marketplace_order", order.id);
+    `${req.user!.name} يريد شراء "${item.title}"`, "marketplace_order", "/marketplace-orders");
 
   res.status(201).json(order);
 });
@@ -392,7 +394,7 @@ router.post("/marketplace-orders/:id/receipt", ...authGuard, async (req: AuthReq
   const [seller] = await db.select({ id: usersTable.id })
     .from(usersTable).where(eq(usersTable.id, order.sellerId));
   await notify(order.sellerId, "💰 إيصال دفع جديد",
-    `تم رفع إيصال الدفع للطلب رقم #${id} — "${order.itemTitle}"`, "marketplace_order", id);
+    `تم رفع إيصال الدفع للطلب رقم #${id} — "${order.itemTitle}"`, "marketplace_order", "/marketplace-orders");
 
   res.json(updated);
 });
@@ -418,7 +420,7 @@ router.patch("/marketplace-orders/:id/cancel", ...authGuard, async (req: AuthReq
     .where(eq(marketplaceItemsTable.id, order.itemId));
 
   await notify(order.sellerId, "❌ تم إلغاء الطلب",
-    `تم إلغاء الطلب رقم #${id} — "${order.itemTitle}"`, "marketplace_order", id);
+    `تم إلغاء الطلب رقم #${id} — "${order.itemTitle}"`, "marketplace_order", "/marketplace-orders");
 
   res.sendStatus(204);
 });
@@ -500,7 +502,8 @@ router.patch("/admin/marketplace/:id/status", ...adminGuard, async (req, res): P
   const notifBody  = status === "available"
     ? `إعلانك "${updated.title}" تم قبوله ونشره على المنصة`
     : `إعلانك "${updated.title}" لم يُقبل من قِبَل الإدارة`;
-  await notify(updated.sellerId, notifTitle, notifBody, "marketplace_status", updated.id);
+  await notify(updated.sellerId, notifTitle, notifBody, "marketplace_status",
+    status === "available" ? `/marketplace/${updated.id}` : undefined);
   res.json(updated);
 });
 
@@ -584,10 +587,10 @@ router.patch("/admin/marketplace-orders/:id/confirm-payment", ...adminGuard, asy
   if (!order) { res.status(404).json({ error: "Not found" }); return; }
   await notify(order.buyerId, "✅ تم تأكيد دفعتك",
     `تم تأكيد دفعتك للطلب #${id} — "${order.itemTitle}". سيتم تحضير الشحنة قريباً.`,
-    "marketplace_order", id);
+    "marketplace_order", "/marketplace-orders");
   await notify(order.sellerId, "💚 دفع مؤكد — حضّر الطلب",
     `تم تأكيد دفع الطلب #${id} — "${order.itemTitle}". يرجى تحضير السلعة للشحن.`,
-    "marketplace_order", id);
+    "marketplace_order", "/marketplace-orders");
   res.json(order);
 });
 
@@ -601,7 +604,7 @@ router.patch("/admin/marketplace-orders/:id/reject-payment", ...adminGuard, asyn
   if (!order) { res.status(404).json({ error: "Not found" }); return; }
   await notify(order.buyerId, "❌ لم يتم التحقق من الدفع",
     `لم يتم التحقق من إيصال الطلب #${id}. يرجى مراجعة إيصال الدفع وإعادة الرفع.`,
-    "marketplace_order", id);
+    "marketplace_order", "/marketplace-orders");
   res.json(order);
 });
 
@@ -620,7 +623,7 @@ router.patch("/admin/marketplace-orders/:id/tracking", ...adminGuard, async (req
   if (!order) { res.status(404).json({ error: "Not found" }); return; }
   await notify(order.buyerId, "🚚 شحنتك في الطريق!",
     `طلبك #${id} "${order.itemTitle}" — رقم التتبع: ${trackingNumber}`,
-    "marketplace_order", id);
+    "marketplace_order", "/marketplace-orders");
   res.json(order);
 });
 
@@ -641,9 +644,9 @@ router.patch("/admin/marketplace-orders/:id/status", ...adminGuard, async (req, 
       .set({ status: "sold" })
       .where(eq(marketplaceItemsTable.id, order.itemId));
     await notify(order.buyerId, "📦 تم تسليم طلبك",
-      `تم تسليم "${order.itemTitle}" بنجاح!`, "marketplace_order", id);
+      `تم تسليم "${order.itemTitle}" بنجاح!`, "marketplace_order", "/marketplace-orders");
     await notify(order.sellerId, "✅ تم تسليم الطلب",
-      `تم تسليم "${order.itemTitle}" للمشتري بنجاح.`, "marketplace_order", id);
+      `تم تسليم "${order.itemTitle}" للمشتري بنجاح.`, "marketplace_order", "/marketplace-orders");
   }
   res.json(order);
 });

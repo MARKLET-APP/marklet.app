@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { db, buyRequestsTable, usersTable } from "@workspace/db";
+import { db, buyRequestsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../lib/auth.js";
+import { sendPushToUser } from "../services/pushService.js";
 
 const router: IRouter = Router();
 
@@ -127,12 +128,29 @@ router.patch("/admin/buy-requests/:id", ...guard, async (req: AuthRequest, res):
     res.status(400).json({ error: "Invalid status" });
     return;
   }
+  const [req_] = await db.select({ userId: buyRequestsTable.userId, description: buyRequestsTable.description, category: buyRequestsTable.category })
+    .from(buyRequestsTable).where(eq(buyRequestsTable.id, id)).limit(1);
   const [updated] = await db
     .update(buyRequestsTable)
     .set({ status })
     .where(eq(buyRequestsTable.id, id))
     .returning({ id: buyRequestsTable.id, status: buyRequestsTable.status });
   if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  if (req_?.userId && (status === "approved" || status === "rejected")) {
+    const label = req_?.description ? `"${req_.description.slice(0, 40)}"` : "طلب الشراء";
+    const msg = status === "approved"
+      ? `تمت الموافقة على ${label} ونشره`
+      : `تم رفض ${label}. يمكنك تعديله وإعادة إرساله`;
+    await db.insert(notificationsTable).values({
+      userId: req_.userId, type: status === "approved" ? "approval" : "rejection",
+      message: msg, link: status === "approved" ? `/buy-requests` : null,
+    }).catch(() => {});
+    sendPushToUser(req_.userId, {
+      title: status === "approved" ? "✅ تمت الموافقة على طلبك" : "❌ تم رفض طلبك",
+      body: msg, url: status === "approved" ? "/buy-requests" : undefined,
+      tag: `buy-request-${status}-${id}`,
+    }).catch(() => {});
+  }
   res.json(updated);
 });
 

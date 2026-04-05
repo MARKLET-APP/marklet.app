@@ -690,8 +690,23 @@ router.patch("/admin/jobs/:id/status", ...guard, async (req: AuthRequest, res): 
       res.status(400).json({ error: "status must be approved | rejected" });
       return;
     }
+    const [job] = await db.select({ posterId: jobsTable.posterId, title: jobsTable.title }).from(jobsTable).where(eq(jobsTable.id, id));
     const isActive = status === "approved";
     await db.update(jobsTable).set({ status, isActive }).where(eq(jobsTable.id, id));
+    if (job?.posterId) {
+      const msg = status === "approved"
+        ? `تمت الموافقة على إعلانك "${job.title}" ونشره على LAZEMNI`
+        : `تم رفض إعلانك "${job.title}". يمكنك تعديله وإعادة إرساله`;
+      await db.insert(notificationsTable).values({
+        userId: job.posterId, type: status === "approved" ? "approval" : "rejection",
+        message: msg, link: status === "approved" ? `/jobs/${id}` : null,
+      }).catch(() => {});
+      sendPushToUser(job.posterId, {
+        title: status === "approved" ? "✅ تمت الموافقة على إعلانك" : "❌ تم رفض إعلانك",
+        body: msg, url: status === "approved" ? `/jobs/${id}` : undefined,
+        tag: `job-${status}-${id}`,
+      }).catch(() => {});
+    }
     res.json({ success: true });
   } catch (err) {
     console.error("PATCH /admin/jobs/:id/status error:", err);
@@ -740,8 +755,23 @@ router.patch("/admin/real-estate/:id/status", ...guard, async (req: AuthRequest,
       res.status(400).json({ error: "status must be approved | rejected" });
       return;
     }
+    const [listing] = await db.select({ sellerId: realEstateTable.sellerId, title: realEstateTable.title }).from(realEstateTable).where(eq(realEstateTable.id, id));
     const isActive = status === "approved";
     await db.update(realEstateTable).set({ status, isActive }).where(eq(realEstateTable.id, id));
+    if (listing?.sellerId) {
+      const msg = status === "approved"
+        ? `تمت الموافقة على إعلانك "${listing.title}" ونشره على LAZEMNI`
+        : `تم رفض إعلانك "${listing.title}". يمكنك تعديله وإعادة إرساله`;
+      await db.insert(notificationsTable).values({
+        userId: listing.sellerId, type: status === "approved" ? "approval" : "rejection",
+        message: msg, link: status === "approved" ? `/real-estate/${id}` : null,
+      }).catch(() => {});
+      sendPushToUser(listing.sellerId, {
+        title: status === "approved" ? "✅ تمت الموافقة على إعلانك" : "❌ تم رفض إعلانك",
+        body: msg, url: status === "approved" ? `/real-estate/${id}` : undefined,
+        tag: `realestate-${status}-${id}`,
+      }).catch(() => {});
+    }
     res.json({ success: true });
   } catch (err) {
     console.error("PATCH /admin/real-estate/:id/status error:", err);
