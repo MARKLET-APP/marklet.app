@@ -113,3 +113,9 @@ id = "USkYq9p2pvFHlLlCSiZG1"
 uri = "file://نظام-النشر-الموحد.md"
 type = "text"
 title = "نظام النشر الموحد — LAZEMNI v1.0"
+
+[[outputs]]
+id = "M4O6GCB4TUkxViOJs5AzL"
+uri = "file://نظام-الصور.md"
+type = "text"
+title = "نظام رفع وعرض الصور — LAZEMNI v1.0"
