@@ -498,19 +498,27 @@ export default function MarketplacePage() {
             <span className="text-xs bg-white/20 border border-white/40 px-2 py-0.5 rounded-full font-medium animate-pulse">🔥 جديد</span>
           </div>
           <p className="text-orange-100 text-sm mb-4">بيع كل ما تملك — أثاث، ملابس، إلكترونيات وأكثر</p>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-2">
             <Button
-              className="flex-1 gap-2 rounded-2xl bg-white text-orange-700 hover:bg-orange-50 font-bold text-sm py-3 shadow-lg border-0"
+              className="w-full gap-2 rounded-2xl bg-white text-orange-700 hover:bg-orange-50 font-bold text-sm py-3 shadow-lg border-0"
               onClick={() => { if (!user) { navigate("/login"); return; } setAddOpen(true); }}
             >
               <Plus className="w-5 h-5" /> أضف سلعة للبيع
             </Button>
-            <Button
-              className="flex-1 gap-2 rounded-2xl bg-orange-500/40 hover:bg-orange-500/60 text-white font-bold text-sm py-3 border border-white/40 shadow-sm"
-              onClick={() => { if (!user) { navigate("/login"); return; } navigate("/marketplace-orders"); }}
-            >
-              <Package className="w-5 h-5" /> طلباتي
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1 gap-2 rounded-2xl bg-orange-500/40 hover:bg-orange-500/60 text-white font-bold text-sm py-2.5 border border-white/40 shadow-sm"
+                onClick={() => { if (!user) { navigate("/login"); return; } navigate("/buy-requests"); }}
+              >
+                <Search className="w-4 h-4" /> أضف طلب شراء
+              </Button>
+              <Button
+                className="flex-1 gap-2 rounded-2xl bg-orange-500/40 hover:bg-orange-500/60 text-white font-bold text-sm py-2.5 border border-white/40 shadow-sm"
+                onClick={() => { if (!user) { navigate("/login"); return; } navigate("/marketplace-orders"); }}
+              >
+                <Package className="w-4 h-4" /> طلباتي
+              </Button>
+            </div>
           </div>
         </div>
       </div>
