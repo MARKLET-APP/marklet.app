@@ -217,6 +217,13 @@ const deleteListingMutation = useMutation({
 - **IMPORTANT**: Never place APK or large binary files in `public/` — they get bundled into the next Android build via `cap sync`
 - **FCM**: google-services.json at `android/app/google-services.json`, package `com.lazemni.app`
 
+## Navigation System (April 2026)
+- **Scroll restoration**: `useScrollRestore(key)` hook saves `#app-main` scrollTop to sessionStorage on unmount, restores on mount. Applied to: home, real-estate, jobs, marketplace, car-parts, rental-cars, junk-cars, showrooms, plates, new-cars, used-cars, motorcycles.
+- **Listing origin tracking**: `saveListingOrigin(path)` stores current section path before navigating to `/add-listing`. `consumeListingOrigin()` reads and clears it on submit. Applied to: BottomNav "+", home, new-cars, used-cars, motorcycles, showroom-manage, search. After submit → user returns to originating section.
+- **Double-back to exit**: Hardware back on home → first press shows toast "اضغط مرة أخرى للخروج", second press within 3s → `exitApp()`. Replaces ugly `window.confirm()`.
+- **Back button**: Header back → `window.history.back()` if history exists, else `navigate("/")`. PageWrapper back → same pattern.
+- **Hooks**: `src/hooks/useScrollRestore.ts`, `src/hooks/useSmartBack.ts`
+
 ## Pre-Android Audit & Fixes (March 2026)
 - **Push Notifications**: Full Web Push implementation (sw.js, VAPID keys, pushService, push.ts routes, usePushNotifications hook)
 - **PWA Icons**: Generated PNG icons (96×96, 192×192, 512×512, maskable) from SVG via ImageMagick

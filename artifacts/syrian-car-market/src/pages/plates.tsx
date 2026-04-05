@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, MapPin, Trash2, ShoppingCart, CheckCircle2, XCircle, Hash, Upload, X, ImageIcon, MessageCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingPreviewDialog } from "@/components/ListingPreviewDialog";
@@ -50,6 +51,7 @@ async function uploadImage(file: File): Promise<string> {
 }
 
 export default function PlatesPage() {
+  useScrollRestore("/plates");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();

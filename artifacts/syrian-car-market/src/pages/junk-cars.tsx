@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, MapPin, Trash2, Car, ShoppingCart, CheckCircle2, XCircle, MessageCircle, Loader2, Upload, Image as ImageIcon, Wand2, X } from "lucide-react";
 import { BuyRequestDialog } from "@/components/BuyRequestDialog";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
@@ -40,6 +41,7 @@ const JUNK_QK = ["junk-cars"];
 const BUY_QK = ["buy-requests-junk"];
 
 export default function JunkCarsPage() {
+  useScrollRestore("/junk-cars");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();

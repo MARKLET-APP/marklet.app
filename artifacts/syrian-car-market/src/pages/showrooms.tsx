@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { withApi } from "@/lib/runtimeConfig";
 import { useAuthStore } from "@/lib/auth";
 import { useStartChat } from "@/hooks/use-start-chat";
@@ -160,6 +161,7 @@ function ShowroomCard({ showroom }: { showroom: any }) {
 }
 
 export default function ShowroomsPage() {
+  useScrollRestore("/showrooms");
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   const [cityFilter, setCityFilter] = useState("");

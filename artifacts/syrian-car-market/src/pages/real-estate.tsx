@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, memo } from "react";
 import { useCropQueue } from "@/hooks/useCropQueue";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -527,6 +528,7 @@ const BuyRequestForm = memo(function BuyRequestForm({
 // RealEstatePage — الصفحة الرئيسية
 // ═══════════════════════════════════════════════════════════════════
 export default function RealEstatePage() {
+  useScrollRestore("/real-estate");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();

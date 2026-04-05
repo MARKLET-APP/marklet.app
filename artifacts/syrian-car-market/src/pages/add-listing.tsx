@@ -5,6 +5,7 @@ import { useCropQueue } from "@/hooks/useCropQueue";
 import { useCreateCar, useGenerateCarDescription } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { consumeListingOrigin } from "@/hooks/useSmartBack";
 import { withApi } from "@/lib/runtimeConfig";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ImagePlus, Loader2, CheckCircle2, X, ShieldCheck, TrendingUp, TrendingDown, Minus } from "lucide-react";
@@ -410,7 +411,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         });
         localStorage.removeItem(DRAFT_KEY);
         showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة" });
-        setTimeout(() => navigate("/"), 1200);
+        setTimeout(() => { navigate(consumeListingOrigin()); }, 1200);
       } catch (err: any) {
         showToast(err.message ?? "حدث خطأ", { variant: "destructive" });
       } finally {
@@ -443,7 +444,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
         });
         localStorage.removeItem(DRAFT_KEY);
         showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة", duration: 4000 });
-        setTimeout(() => navigate("/"), 2500);
+        setTimeout(() => { navigate(consumeListingOrigin()); }, 2500);
       } catch (err: any) {
         showToast(err.message ?? "حدث خطأ", { variant: "destructive" });
       } finally {
@@ -506,7 +507,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
       onSuccess: () => {
         localStorage.removeItem(DRAFT_KEY);
         showToast("✅ تم إرسال إعلانك للمراجعة", { description: "سيظهر في القائمة بعد موافقة الإدارة" });
-        setTimeout(() => navigate("/"), 1200);
+        setTimeout(() => { navigate(consumeListingOrigin()); }, 1200);
       },
       onError: (err: any) => showToast(err.message ?? "حدث خطأ", { variant: "destructive" }),
     });

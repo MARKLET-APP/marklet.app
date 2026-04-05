@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, memo } from "react";
 import { useCropQueue } from "@/hooks/useCropQueue";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -389,6 +390,7 @@ const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: 
 // MarketplacePage — الصفحة الرئيسية
 // ═══════════════════════════════════════════════════════════════════
 export default function MarketplacePage() {
+  useScrollRestore("/marketplace");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();

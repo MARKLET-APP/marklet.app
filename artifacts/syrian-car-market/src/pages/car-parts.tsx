@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Search, Plus, MapPin, Trash2, Wrench, ShoppingCart, CheckCircle2, XCircle, MessageCircle, Loader2, Upload, Image as ImageIcon, Wand2, X } from "lucide-react";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
@@ -38,6 +39,7 @@ const PARTS_QK = (q: string) => ["car-parts", q];
 const BUY_QK = ["buy-requests-parts"];
 
 export default function CarPartsPage() {
+  useScrollRestore("/car-parts");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();

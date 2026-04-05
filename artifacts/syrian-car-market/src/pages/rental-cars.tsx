@@ -16,6 +16,7 @@ import {
   DollarSign, Calendar, Phone, ImageIcon, Loader2, LogIn,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { cn } from "@/lib/utils";
 import { ListingCard } from "@/components/ListingCard";
@@ -41,6 +42,7 @@ const REQ_QK = ["buy-requests-rental"];
 
 
 export default function RentalCarsPage() {
+  useScrollRestore("/rental-cars");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();

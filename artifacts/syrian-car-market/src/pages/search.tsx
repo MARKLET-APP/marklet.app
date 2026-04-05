@@ -2,6 +2,7 @@
 // NAME: البحث
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
+import { saveListingOrigin } from "@/hooks/useSmartBack";
 import { withApi, imgUrl } from "@/lib/runtimeConfig";
 import { CarCard } from "@/components/CarCard";
 import { ContactButtons } from "@/components/ContactButtons";
@@ -516,7 +517,7 @@ export default function SearchPage() {
           </p>
           <div className="flex gap-2">
             {user && (
-              <Button size="sm" onClick={() => navigate("/add-listing")} className="gap-1.5 rounded-xl text-xs h-8">
+              <Button size="sm" onClick={() => { saveListingOrigin("/search"); navigate("/add-listing"); }} className="gap-1.5 rounded-xl text-xs h-8">
                 <Plus className="w-3.5 h-3.5" /> نشر إعلان
               </Button>
             )}

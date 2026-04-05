@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, MapPin, ShoppingCart, Car, MessageCircle, Eye } from "lucide-react";
 import { ShareSheet } from "@/components/ShareSheet";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
+import { saveListingOrigin } from "@/hooks/useSmartBack";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { BuyRequestCard } from "@/components/BuyRequestCard";
@@ -36,6 +38,7 @@ const CARS_QK = ["used-cars"];
 const BUY_QK = ["buy-requests-used"];
 
 export default function UsedCarsPage() {
+  useScrollRestore("/used-cars");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -77,7 +80,7 @@ export default function UsedCarsPage() {
           <div className="flex gap-3">
             <Button
               className="flex-1 gap-2 rounded-2xl bg-white text-violet-800 hover:bg-violet-50 font-bold text-sm py-3 shadow-lg border-0"
-              onClick={() => { if (!user) { navigate("/login"); return; } navigate("/add-listing"); }}
+              onClick={() => { if (!user) { navigate("/login"); return; } saveListingOrigin("/used-cars"); navigate("/add-listing"); }}
             >
               <Plus className="w-5 h-5" /> نشر إعلان سيارة مستعملة
             </Button>

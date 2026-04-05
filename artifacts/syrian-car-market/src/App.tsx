@@ -11,6 +11,7 @@ import { useFcmPush } from "@/hooks/useFcmPush";
 import { useAndroidPermissions } from "@/hooks/useAndroidPermissions";
 import { IS_NATIVE } from "@/lib/runtimeConfig";
 import { App as CapApp } from "@capacitor/app";
+import { useToast } from "@/hooks/use-toast";
 
 const Home = lazy(() => import("@/pages/home"));
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -121,6 +122,7 @@ const queryClient = new QueryClient({
 
 function GlobalHooks() {
   const [location, navigate] = useLocation();
+  const { toast } = useToast();
   useEffect(() => {
     setGlobalNavigate(navigate);
   }, [navigate]);
@@ -148,9 +150,12 @@ function GlobalHooks() {
   // Rules:
   //   • On any deep page      → go back in wouter history
   //   • No history + not home → navigate to "/"
-  //   • On home page          → ask for exit confirmation, then exitApp()
-  // We use locationRef (wouter path) instead of window.location.pathname
-  // because Capacitor's WebView always reports "/" as the pathname.
+  //   • On home page          → first press: toast "اضغط مرة أخرى للخروج"
+  //                             second press within 3s → exitApp()
+  const lastBackPressRef = useRef<number>(0);
+  const toastRef = useRef(toast);
+  useEffect(() => { toastRef.current = toast; }, [toast]);
+
   useEffect(() => {
     if (!IS_NATIVE) return;
     let listener: { remove: () => void } | null = null;
@@ -160,13 +165,19 @@ function GlobalHooks() {
       const isHome = currentPath === "/" || currentPath === "";
 
       if (isHome) {
-        // Show native confirmation dialog before exiting
-        const confirmed = window.confirm("هل تريد الخروج من التطبيق؟");
-        if (confirmed) CapApp.exitApp();
+        const now = Date.now();
+        if (now - lastBackPressRef.current < 3000) {
+          CapApp.exitApp();
+        } else {
+          lastBackPressRef.current = now;
+          toastRef.current({
+            description: "اضغط مرة أخرى للخروج من التطبيق",
+            duration: 3000,
+          });
+        }
       } else if (canGoBack) {
         window.history.back();
       } else {
-        // History is empty but we're not on home — go home
         navigateRef.current("/");
       }
     }).then((l) => { listener = l; });

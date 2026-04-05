@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Plus, MapPin, ShoppingCart, MessageCircle, Bike, Info } from "lucide-react";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
+import { saveListingOrigin } from "@/hooks/useSmartBack";
 import { cn } from "@/lib/utils";
 import { useStartChat } from "@/hooks/use-start-chat";
 import { ListingCard } from "@/components/ListingCard";
@@ -34,6 +36,7 @@ const MOTO_QK = ["motorcycles"];
 const BUY_QK = ["buy-requests-motorcycle"];
 
 export default function MotorcyclesPage() {
+  useScrollRestore("/motorcycles");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -76,7 +79,7 @@ export default function MotorcyclesPage() {
           <div className="flex gap-3">
             <Button
               className="flex-1 gap-2 rounded-2xl bg-white text-rose-800 hover:bg-rose-50 font-bold text-sm py-3 shadow-lg border-0"
-              onClick={() => { if (!user) { navigate("/login"); return; } navigate("/add-listing"); }}
+              onClick={() => { if (!user) { navigate("/login"); return; } saveListingOrigin("/motorcycles"); navigate("/add-listing"); }}
             >
               <Plus className="w-5 h-5" /> نشر إعلان دراجة
             </Button>

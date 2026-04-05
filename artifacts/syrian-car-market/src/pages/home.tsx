@@ -2,7 +2,8 @@
 // NAME: الصفحة الرئيسية
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { useScrollFix } from "@/hooks/useScrollFix";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
+import { saveListingOrigin } from "@/hooks/useSmartBack";
 import { withApi, imgUrl } from "@/lib/runtimeConfig";
 import { getJobs, apiRequest } from "@/lib/api";
 import {
@@ -132,7 +133,7 @@ type HomeMarketItem = {
 };
 
 export default function Home() {
-  useScrollFix();
+  useScrollRestore("/");
 
   const { data: latestJobs = [] } = useQuery({
     queryKey: ["/jobs", "home"],
@@ -223,6 +224,7 @@ export default function Home() {
       navigate("/login");
       return;
     }
+    saveListingOrigin("/");
     navigate("/add-listing");
   };
 

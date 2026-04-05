@@ -108,7 +108,7 @@ export function Header() {
             <Link
               href="/"
               className="flex items-center gap-2 group"
-              onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); qc.invalidateQueries(); }}
+              onClick={() => { const el = document.getElementById("app-main"); if (el) el.scrollTop = 0; qc.invalidateQueries(); }}
             >
               <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-md">
                 <img

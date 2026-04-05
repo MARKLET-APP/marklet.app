@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { withApi } from "@/lib/runtimeConfig";
 import { useLocation } from "wouter";
+import { saveListingOrigin } from "@/hooks/useSmartBack";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -245,7 +246,7 @@ export default function ShowroomManagePage() {
             >
               <ExternalLink className="w-3.5 h-3.5" /> عرض المعرض
             </button>
-            <button onClick={() => navigate("/add-listing")} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold">
+            <button onClick={() => { saveListingOrigin("/showroom/manage"); navigate("/add-listing"); }} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold">
               <Plus className="w-4 h-4" /> إعلان جديد
             </button>
           </div>
@@ -296,7 +297,7 @@ export default function ShowroomManagePage() {
               <div className="text-center py-16 bg-muted/20 rounded-2xl border border-dashed">
                 <Car className="w-14 h-14 mx-auto mb-3 text-muted-foreground/30" />
                 <p className="font-bold text-muted-foreground">لا توجد إعلانات بعد</p>
-                <button onClick={() => navigate("/add-listing")} className="mt-4 px-6 py-2 bg-primary text-white rounded-xl font-bold text-sm">
+                <button onClick={() => { saveListingOrigin("/showroom/manage"); navigate("/add-listing"); }} className="mt-4 px-6 py-2 bg-primary text-white rounded-xl font-bold text-sm">
                   نشر أول إعلان
                 </button>
               </div>

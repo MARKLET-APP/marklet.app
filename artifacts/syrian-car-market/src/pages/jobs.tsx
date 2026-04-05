@@ -1,6 +1,7 @@
 // UI_ID: JOBS_01 — CLEAN REBUILD
 import { useState, useRef, useCallback, memo } from "react";
 import { useLocation } from "wouter";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { apiRequest } from "@/lib/api";
@@ -451,6 +452,7 @@ const ApplyJobForm = memo(function ApplyJobForm({
 // JobsPage — الصفحة الرئيسية
 // ═══════════════════════════════════════════════════════════════════
 export default function JobsPage() {
+  useScrollRestore("/jobs");
   const { user } = useAuthStore();
   const { toast } = useToast();
   const qc = useQueryClient();

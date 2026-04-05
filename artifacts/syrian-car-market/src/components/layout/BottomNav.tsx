@@ -1,14 +1,16 @@
 // UI_ID: COMP_BOTTOM_NAV_01
 // NAME: شريط التنقل السفلي
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
 import { Home, Plus, MessageCircle, User, Bell, Settings } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useGetConversations } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { saveListingOrigin } from "@/hooks/useSmartBack";
 
 export function BottomNav() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
+  const [location, navigate] = useLocation();
   const [isHome] = useRoute("/");
   const [isAdd] = useRoute("/add-listing");
   const [isProfile] = useRoute("/profile");
@@ -18,8 +20,15 @@ export function BottomNav() {
   const [isAdmin] = useRoute("/admin");
 
   const handleHomeClick = () => {
+    const el = document.getElementById("app-main");
+    if (el) el.scrollTop = 0;
     window.scrollTo({ top: 0, behavior: "smooth" });
     qc.invalidateQueries();
+  };
+
+  const handleAddClick = () => {
+    saveListingOrigin(location);
+    navigate("/add-listing");
   };
 
   const { data: conversations } = useGetConversations({
@@ -45,15 +54,15 @@ export function BottomNav() {
         <NavItem href="/notifications" icon={<Bell className="w-5 h-5" />} label="إشعارات" isActive={isNotifications} />
 
         {/* نشر — centered floating button */}
-        <Link
-          href="/add-listing"
+        <button
+          onClick={handleAddClick}
           className="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors text-primary"
         >
           <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${isAdd ? "bg-primary/80" : "bg-primary"}`}>
             <Plus className="w-5 h-5 text-white" />
           </div>
           <span className="text-[10px] font-medium text-primary">نشر</span>
-        </Link>
+        </button>
 
         {/* رسائل (all users) or لوحة التحكم (admin) */}
         {isAdminUser ? (
