@@ -157,7 +157,7 @@ export default function MarketplaceDetailPage() {
   };
 
   return (
-    <div className="min-h-full bg-background text-foreground pb-24" dir="rtl">
+    <div className="min-h-full bg-background text-foreground" dir="rtl">
 
       {/* ── Back Button ── */}
       <div className="flex items-center gap-2 px-4 py-3 border-b sticky top-0 bg-background/95 backdrop-blur z-10">
@@ -329,7 +329,7 @@ export default function MarketplaceDetailPage() {
 
       {/* ── Sticky Bottom Actions (non-owner) ── */}
       {!isOwner && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t px-4 py-3 z-20">
+        <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t px-4 py-3 z-20">
           <div className="max-w-2xl mx-auto flex gap-2">
             {/* حفظ */}
             <button
