@@ -225,7 +225,10 @@ router.patch("/admin/cars/:id/status", ...guard, async (req: AuthRequest, res): 
   const [car] = await db.select({ id: carsTable.id, sellerId: carsTable.sellerId, brand: carsTable.brand, model: carsTable.model }).from(carsTable).where(eq(carsTable.id, id));
   if (!car) { res.status(404).json({ error: "Car not found" }); return; }
 
-  const [updated] = await db.update(carsTable).set({ status }).where(eq(carsTable.id, id)).returning({ id: carsTable.id, status: carsTable.status });
+  const [updated] = await db.update(carsTable)
+    .set({ status, isActive: status === "approved" })
+    .where(eq(carsTable.id, id))
+    .returning({ id: carsTable.id, status: carsTable.status });
 
   if (status === "approved" && car.sellerId) {
     const msg = `تمت الموافقة على إعلانك "${car.brand ?? ""} ${car.model ?? ""}". تم نشره الآن في LAZEMNI.`;
@@ -264,7 +267,7 @@ router.post("/admin/approve/:id", ...guard, async (req: AuthRequest, res): Promi
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
-  const [updated] = await db.update(carsTable).set({ status: "approved" }).where(eq(carsTable.id, id)).returning({ id: carsTable.id, status: carsTable.status });
+  const [updated] = await db.update(carsTable).set({ status: "approved", isActive: true }).where(eq(carsTable.id, id)).returning({ id: carsTable.id, status: carsTable.status });
   if (!updated) { res.status(404).json({ error: "Car not found" }); return; }
 
   res.send("approved");
@@ -691,19 +694,20 @@ router.patch("/admin/jobs/:id/status", ...guard, async (req: AuthRequest, res): 
       return;
     }
     const [job] = await db.select({ posterId: jobsTable.posterId, title: jobsTable.title }).from(jobsTable).where(eq(jobsTable.id, id));
-    const isActive = status === "approved";
-    await db.update(jobsTable).set({ status, isActive }).where(eq(jobsTable.id, id));
+    const approved = status === "approved";
+    // jobs public route filters status = "active" → must store "active" not "approved"
+    await db.update(jobsTable).set({ status: approved ? "active" : "rejected", isActive: approved }).where(eq(jobsTable.id, id));
     if (job?.posterId) {
-      const msg = status === "approved"
+      const msg = approved
         ? `تمت الموافقة على إعلانك "${job.title}" ونشره على LAZEMNI`
         : `تم رفض إعلانك "${job.title}". يمكنك تعديله وإعادة إرساله`;
       await db.insert(notificationsTable).values({
-        userId: job.posterId, type: status === "approved" ? "approval" : "rejection",
-        message: msg, link: status === "approved" ? `/jobs/${id}` : null,
+        userId: job.posterId, type: approved ? "approval" : "rejection",
+        message: msg, link: approved ? `/jobs/${id}` : null,
       }).catch(() => {});
       sendPushToUser(job.posterId, {
-        title: status === "approved" ? "✅ تمت الموافقة على إعلانك" : "❌ تم رفض إعلانك",
-        body: msg, url: status === "approved" ? `/jobs/${id}` : undefined,
+        title: approved ? "✅ تمت الموافقة على إعلانك" : "❌ تم رفض إعلانك",
+        body: msg, url: approved ? `/jobs/${id}` : undefined,
         tag: `job-${status}-${id}`,
       }).catch(() => {});
     }
@@ -756,19 +760,20 @@ router.patch("/admin/real-estate/:id/status", ...guard, async (req: AuthRequest,
       return;
     }
     const [listing] = await db.select({ sellerId: realEstateTable.sellerId, title: realEstateTable.title }).from(realEstateTable).where(eq(realEstateTable.id, id));
-    const isActive = status === "approved";
-    await db.update(realEstateTable).set({ status, isActive }).where(eq(realEstateTable.id, id));
+    const approved = status === "approved";
+    // real-estate public route filters status = "active" → must store "active" not "approved"
+    await db.update(realEstateTable).set({ status: approved ? "active" : "rejected", isActive: approved }).where(eq(realEstateTable.id, id));
     if (listing?.sellerId) {
-      const msg = status === "approved"
+      const msg = approved
         ? `تمت الموافقة على إعلانك "${listing.title}" ونشره على LAZEMNI`
         : `تم رفض إعلانك "${listing.title}". يمكنك تعديله وإعادة إرساله`;
       await db.insert(notificationsTable).values({
-        userId: listing.sellerId, type: status === "approved" ? "approval" : "rejection",
-        message: msg, link: status === "approved" ? `/real-estate/${id}` : null,
+        userId: listing.sellerId, type: approved ? "approval" : "rejection",
+        message: msg, link: approved ? `/real-estate/${id}` : null,
       }).catch(() => {});
       sendPushToUser(listing.sellerId, {
-        title: status === "approved" ? "✅ تمت الموافقة على إعلانك" : "❌ تم رفض إعلانك",
-        body: msg, url: status === "approved" ? `/real-estate/${id}` : undefined,
+        title: approved ? "✅ تمت الموافقة على إعلانك" : "❌ تم رفض إعلانك",
+        body: msg, url: approved ? `/real-estate/${id}` : undefined,
         tag: `realestate-${status}-${id}`,
       }).catch(() => {});
     }
