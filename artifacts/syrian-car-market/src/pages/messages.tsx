@@ -5,14 +5,13 @@ import { io, type Socket } from "socket.io-client";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import { useAuthStore } from "@/lib/auth";
-import { Redirect, useLocation } from "wouter";
+import { Redirect, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   Send, Loader2, MessageSquare, User, Car, Smile, Paperclip, X,
   Check, CheckCheck, Edit2, Trash2, Ban, ChevronRight, Mic, Square,
-  Play, Users,
+  Play, Users, Flag, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -52,6 +51,22 @@ interface MessageItem {
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
 
+const STICKER_SETS = [
+  ["😀", "😂", "🥰", "😍", "🤩", "😎", "🥳", "🤔", "😅", "🙏"],
+  ["👍", "👎", "❤️", "🔥", "💯", "✅", "⭐", "🎉", "💪", "🤝"],
+  ["🚗", "🏠", "💰", "📱", "💎", "🛻", "🏍️", "🔑", "📋", "💼"],
+  ["😮", "😢", "😡", "🤣", "😇", "🤗", "🥺", "😴", "🤯", "😱"],
+];
+
+const REPORT_REASONS = [
+  "وهمي / احتيالي",
+  "محتوى مسيء أو مخالف",
+  "بيع منتجات مقلدة",
+  "مضايقة أو ابتزاز",
+  "حساب مزيف",
+  "أخرى",
+];
+
 function StatusIcon({ status, isMine }: { status: string; isMine: boolean }) {
   if (!isMine) return null;
   if (status === "seen") return <CheckCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />;
@@ -87,6 +102,7 @@ export default function Messages() {
   const [sending, setSending] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiTab, setEmojiTab] = useState<"emoji" | "sticker">("emoji");
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
@@ -98,6 +114,10 @@ export default function Messages() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [reportDialog, setReportDialog] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportSending, setReportSending] = useState(false);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -108,7 +128,7 @@ export default function Messages() {
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const chatInputRef = useRef<HTMLInputElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -119,23 +139,32 @@ export default function Messages() {
   const activeConv = conversations.find((c) => c.id === activeChatId);
   const activeAdminConv = adminConversations.find((c) => c.id === activeChatId);
 
-  // Handle ?userId=X — auto-start conversation with that user
+  const adjustTextarea = useCallback(() => {
+    const el = chatInputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, []);
+
+  // Handle URL params — conversationId, initial message, userId
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-
-    // Direct conversationId link
     const convId = params.get("conversationId");
     if (convId) { setActiveChatId(Number(convId)); }
 
-    // Pre-fill message in input — user sends manually
     const initial = params.get("initial");
     if (initial) {
       const decoded = decodeURIComponent(initial);
       setNewMessage(decoded);
-      if (chatInputRef.current) chatInputRef.current.value = decoded;
+      setTimeout(() => {
+        if (chatInputRef.current) {
+          chatInputRef.current.value = decoded;
+          adjustTextarea();
+          chatInputRef.current.focus();
+        }
+      }, 300);
     }
 
-    // Start conversation with a specific user
     const targetUserId = params.get("userId");
     if (targetUserId && token) {
       fetch(`${API}/chats/start`, {
@@ -147,12 +176,11 @@ export default function Messages() {
         .then(conv => { if (conv?.id) setActiveChatId(conv.id); })
         .catch(() => {});
     }
-  }, [token]);
+  }, [token, adjustTextarea]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
 
   const fetchConversations = useCallback(async () => {
     if (!token) return;
@@ -192,16 +220,11 @@ export default function Messages() {
   }, [token, adminViewAll]);
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
-
   useEffect(() => {
     const interval = setInterval(fetchConversations, 15000);
     return () => clearInterval(interval);
   }, [fetchConversations]);
-
-  useEffect(() => {
-    if (adminViewAll) { fetchAdminConversations(); }
-  }, [adminViewAll, fetchAdminConversations]);
-
+  useEffect(() => { if (adminViewAll) { fetchAdminConversations(); } }, [adminViewAll, fetchAdminConversations]);
   useEffect(() => {
     if (!activeChatId) return;
     fetchMessages(activeChatId);
@@ -215,7 +238,6 @@ export default function Messages() {
 
     socket.on("new_message", ({ message }: { convId: number; message: MessageItem }) => {
       setMessages((prev) => {
-        // Remove optimistic placeholder (negative id, same sender + content)
         const withoutTemp = prev.filter(
           (m) => !(m.id < 0 && m.senderId === message.senderId && m.content === message.content)
         );
@@ -232,21 +254,16 @@ export default function Messages() {
     socket.on("user_typing", ({ userName }: { convId: number; userId: number; userName: string }) => {
       setTypingUser(userName);
     });
-
     socket.on("user_stopped_typing", () => setTypingUser(null));
-
     socket.on("messages_seen", () => {
       setMessages((prev) => prev.map((m) => ({ ...m, status: "seen" })));
     });
-
     socket.on("message_updated", ({ message }: { convId: number; message: MessageItem }) => {
       setMessages((prev) => prev.map((m) => m.id === message.id ? { ...m, ...message, reactions: m.reactions } : m));
     });
-
     socket.on("message_deleted", ({ messageId }: { convId: number; messageId: number }) => {
       setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, isDeleted: true, content: "تم حذف هذه الرسالة" } : m));
     });
-
     socket.on("reaction_updated", ({ messageId, reactions }: { convId: number; messageId: number; reactions: Record<string, number[]> }) => {
       setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, reactions } : m));
     });
@@ -272,19 +289,19 @@ export default function Messages() {
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    // Read from DOM ref first (Android IME fallback), then React state
     const domValue = chatInputRef.current?.value ?? "";
     const messageText = domValue.trim() || newMessage.trim();
     if ((!messageText && !imageFile) || !activeChatId || sending) return;
     setSending(true);
     setShowEmojiPicker(false);
 
-    // Clear input immediately for snappy UX
     setNewMessage("");
-    if (chatInputRef.current) chatInputRef.current.value = "";
+    if (chatInputRef.current) {
+      chatInputRef.current.value = "";
+      chatInputRef.current.style.height = "auto";
+    }
     socketRef.current?.emit("typing_stop", { convId: activeChatId });
 
-    // Optimistic message — appears instantly before server confirms
     const tempId = Date.now() * -1;
     if (messageText && user) {
       const optimistic: MessageItem = {
@@ -320,12 +337,10 @@ export default function Messages() {
         });
         if (!r.ok) {
           const err = await r.json();
-          // Remove optimistic message on failure
           setMessages((prev) => prev.filter((m) => m.id !== tempId));
           if (err.error === "Blocked") { toast({ title: "لا يمكن إرسال الرسالة", description: "أنت محظور من قبل هذا المستخدم أو قمت بحظره", variant: "destructive" }); return; }
           throw new Error("فشل الإرسال");
         }
-        // Real message will arrive via socket and replace the optimistic one
       }
       await fetchConversations();
     } catch (err) {
@@ -337,7 +352,7 @@ export default function Messages() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "الحجم كبير", description: "الحد الأقصى لحجم الصورة 5 ميجابايت", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "الحجم كبير", description: "الحد الأقصى 5 ميجابايت", variant: "destructive" }); return; }
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   };
@@ -349,15 +364,10 @@ export default function Messages() {
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Pick a supported MIME type — audio/webm works on desktop Chrome,
-      // Android WebView prefers audio/mp4 or falls back to default
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : MediaRecorder.isTypeSupported("audio/mp4")
-        ? "audio/mp4"
-        : "";
+        : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
+        : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
       const mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
       audioChunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
@@ -369,7 +379,7 @@ export default function Messages() {
         setIsRecording(false);
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       };
-      mr.start(250); // collect data every 250ms
+      mr.start(250);
       mediaRecorderRef.current = mr;
       setIsRecording(true);
       setRecordingSeconds(0);
@@ -378,9 +388,7 @@ export default function Messages() {
       const denied = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
       toast({
         title: "لا يمكن الوصول إلى الميكروفون",
-        description: denied
-          ? "يرجى السماح للتطبيق بالوصول إلى الميكروفون من إعدادات الهاتف"
-          : "تأكد من أن الميكروفون متاح وجرب مجدداً",
+        description: denied ? "يرجى السماح للتطبيق بالوصول إلى الميكروفون من الإعدادات" : "تأكد من أن الميكروفون متاح",
         variant: "destructive",
       });
     }
@@ -471,6 +479,27 @@ export default function Messages() {
     setBlockDialog(false);
   };
 
+  const handleReport = async () => {
+    if (!reportReason || !activeChatId) return;
+    setReportSending(true);
+    try {
+      const r = await fetch(`${API}/chats/${activeChatId}/report`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reportReason, details: reportDetails }),
+      });
+      if (r.ok) {
+        toast({ title: "تم إرسال التبليغ", description: "سيراجع فريقنا التبليغ في أقرب وقت ممكن" });
+        setReportDialog(false);
+        setReportReason("");
+        setReportDetails("");
+      } else {
+        toast({ title: "خطأ", description: "فشل إرسال التبليغ", variant: "destructive" });
+      }
+    } catch { toast({ title: "خطأ", description: "تعذّر الإرسال", variant: "destructive" }); }
+    finally { setReportSending(false); }
+  };
+
   const openContextMenu = (e: React.MouseEvent, msgId: number) => {
     e.preventDefault();
     setContextMenu({ msgId, x: e.clientX, y: e.clientY });
@@ -481,16 +510,22 @@ export default function Messages() {
     return Date.now() - new Date(msg.createdAt).getTime() < 5 * 60 * 1000;
   };
 
+  const appendToInput = (text: string) => {
+    if (chatInputRef.current) chatInputRef.current.value += text;
+    setNewMessage((prev) => prev + text);
+    setTimeout(adjustTextarea, 0);
+    chatInputRef.current?.focus();
+  };
+
   const isBlocked = blockedByMe || blockedByOther;
+  const hasListingBanner = !adminViewAll && activeConv && (activeConv.carBrand || activeConv.carImage);
 
-  if (!isHydrated) return <div className="flex h-[calc(100vh-80px)] items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (!isHydrated) return <div className="flex h-[calc(100dvh-128px)] sm:h-[calc(100dvh-80px)] items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (!user) return <Redirect to="/login" />;
-
-  const displayedConvs = adminViewAll ? null : conversations;
 
   return (
     <div
-      className="flex h-[calc(100dvh-64px)] sm:h-[calc(100dvh-80px)] w-full max-w-7xl mx-auto overflow-hidden bg-background"
+      className="flex h-[calc(100dvh-128px)] sm:h-[calc(100dvh-80px)] w-full max-w-7xl mx-auto overflow-hidden bg-background"
       onClick={() => { setContextMenu(null); }}
     >
       {/* ── Conversation list ── */}
@@ -513,7 +548,6 @@ export default function Messages() {
                 size="sm"
                 className="text-xs h-7 gap-1"
                 onClick={() => { setAdminViewAll((v) => !v); setActiveChatId(null); }}
-                title={adminViewAll ? "عرض محادثاتي فقط" : "عرض كل محادثات المشتركين"}
               >
                 <Users className="w-3.5 h-3.5" />
                 {adminViewAll ? "محادثاتي" : "الكل"}
@@ -523,7 +557,6 @@ export default function Messages() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {/* ── Admin view all conversations ── */}
           {adminViewAll ? (
             adminConversations.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
@@ -550,9 +583,7 @@ export default function Messages() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center mb-0.5">
-                          <span className="font-bold text-foreground text-xs truncate">
-                            {conv.buyerName} ← {conv.sellerName}
-                          </span>
+                          <span className="font-bold text-foreground text-xs truncate">{conv.buyerName} ← {conv.sellerName}</span>
                           <span className="text-[10px] text-muted-foreground shrink-0 ms-1" dir="ltr">{formatTime(ts)}</span>
                         </div>
                         <span className="bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 rounded font-medium flex items-center gap-1 w-fit mb-0.5">
@@ -569,14 +600,13 @@ export default function Messages() {
               </div>
             )
           ) : (
-            /* ── Normal user conversations ── */
             loadingConvs ? (
               <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
             ) : conversations.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-20" />
                 <p className="font-medium">لا توجد محادثات</p>
-                <p className="text-sm mt-1">ابدأ محادثة من صفحة أي سيارة</p>
+                <p className="text-sm mt-1">ابدأ محادثة من صفحة أي إعلان</p>
               </div>
             ) : (
               <div className="divide-y divide-border/30">
@@ -622,7 +652,7 @@ export default function Messages() {
                           "text-xs truncate leading-relaxed",
                           hasUnread ? "font-semibold text-foreground" : "text-muted-foreground font-normal"
                         )}>
-                          {conv.lastMessage || `${conv.carBrand} ${conv.carModel}`}
+                          {conv.lastMessage || (conv.carBrand ? `${conv.carBrand} ${conv.carModel}` : "محادثة جديدة")}
                         </p>
                       </div>
                     </button>
@@ -648,8 +678,8 @@ export default function Messages() {
           </div>
         ) : (
           <>
-            {/* Chat header */}
-            <div className="border-b bg-card px-4 py-2.5 flex items-center gap-3 shadow-sm z-10">
+            {/* ── Chat header ── */}
+            <div className="border-b bg-card px-4 py-2.5 flex items-center gap-3 shadow-sm z-10 shrink-0">
               <Button variant="ghost" size="icon" className="sm:hidden shrink-0 -mr-1" onClick={() => setActiveChatId(null)}>
                 <ChevronRight className="w-5 h-5" />
               </Button>
@@ -681,23 +711,27 @@ export default function Messages() {
                         : <div className="w-full h-full bg-primary/10 flex items-center justify-center"><User className="w-5 h-5 text-primary/60" /></div>
                       }
                     </div>
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card" title="متصل" />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm leading-tight truncate">{activeConv?.otherUserName}</p>
-                    <p className="text-xs text-primary truncate flex items-center gap-1 mt-0.5">
-                      <Car className="w-3 h-3 shrink-0" />
-                      {activeConv?.carBrand} {activeConv?.carModel} {activeConv?.carYear}
-                    </p>
+                    {isBlocked && (
+                      <span className="text-xs text-red-500 font-medium flex items-center gap-1 mt-0.5">
+                        <Ban className="w-3 h-3" /> محظور
+                      </span>
+                    )}
                   </div>
-                  {isBlocked && (
-                    <span className="text-xs text-red-500 font-medium flex items-center gap-1 bg-red-50 dark:bg-red-950/20 px-2 py-1 rounded-full">
-                      <Ban className="w-3.5 h-3.5" /> محظور
-                    </span>
-                  )}
                   <Button
                     variant="ghost" size="icon"
-                    className="text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                    className="text-muted-foreground hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/20 w-8 h-8"
+                    onClick={() => { setReportDialog(true); setReportReason(""); setReportDetails(""); }}
+                    title="تبليغ عن المستخدم"
+                  >
+                    <Flag className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost" size="icon"
+                    className="text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 w-8 h-8"
                     onClick={() => setBlockDialog(true)}
                     title={blockedByMe ? "رفع الحظر" : "حظر المستخدم"}
                   >
@@ -707,7 +741,36 @@ export default function Messages() {
               )}
             </div>
 
-            {/* Messages area */}
+            {/* ── Listing banner (Facebook Marketplace style) ── */}
+            {hasListingBanner && activeConv && (
+              <Link
+                href={activeConv.carId ? `/car-detail/${activeConv.carId}` : "#"}
+                className="flex items-center gap-3 px-4 py-2.5 border-b bg-gradient-to-l from-primary/5 to-transparent hover:from-primary/10 transition-colors shrink-0 group"
+              >
+                {activeConv.carImage ? (
+                  <img
+                    src={imgUrl(activeConv.carImage)}
+                    alt=""
+                    className="w-14 h-10 object-cover rounded-lg shrink-0 border border-border shadow-sm"
+                  />
+                ) : (
+                  <div className="w-14 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 border border-border">
+                    <Car className="w-5 h-5 text-primary/50" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground truncate leading-tight">
+                    {[activeConv.carBrand, activeConv.carModel, activeConv.carYear].filter(Boolean).join(" ")}
+                  </p>
+                  <p className="text-xs text-primary flex items-center gap-1 mt-0.5 group-hover:underline">
+                    <ExternalLink className="w-3 h-3" /> عرض الإعلان
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 rotate-180" />
+              </Link>
+            )}
+
+            {/* ── Messages area ── */}
             <div
               className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1"
               style={{
@@ -731,19 +794,14 @@ export default function Messages() {
                 (() => {
                   let firstUnreadIdx = -1;
                   const totalUnread = activeConv?.unreadCount ?? 0;
-                  if (totalUnread > 0) {
-                    firstUnreadIdx = messages.length - totalUnread;
-                  }
+                  if (totalUnread > 0) firstUnreadIdx = messages.length - totalUnread;
                   return messages.map((msg, idx) => {
                     const isMine = msg.senderId === user.id;
                     const isSystem = msg.messageType === "system" || msg.senderId === 0;
                     const reactions = msg.reactions ?? {};
                     const reactionKeys = Object.keys(reactions).filter((k) => reactions[k].length > 0);
-
                     const prevMsg = messages[idx - 1];
-                    const showDateSep = idx === 0 || (
-                      prevMsg && new Date(msg.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString()
-                    );
+                    const showDateSep = idx === 0 || (prevMsg && new Date(msg.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString());
                     const showUnreadSep = idx === firstUnreadIdx && !isMine;
 
                     return (
@@ -758,136 +816,125 @@ export default function Messages() {
                         {showUnreadSep && (
                           <div className="flex items-center gap-2 my-3">
                             <div className="flex-1 h-px bg-primary/30" />
-                            <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
-                              {totalUnread} رسالة غير مقروءة
-                            </span>
+                            <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{totalUnread} رسالة جديدة</span>
                             <div className="flex-1 h-px bg-primary/30" />
                           </div>
                         )}
 
                         {isSystem ? (
                           <div className="flex justify-center my-2">
-                            <span className="bg-background/80 text-muted-foreground text-xs px-3 py-1.5 rounded-full max-w-xs text-center shadow-sm">
-                              {msg.content}
-                            </span>
+                            <span className="bg-muted/70 text-muted-foreground text-xs px-3 py-1 rounded-full">{msg.content}</span>
                           </div>
                         ) : (
-                          <div
-                            className={cn("flex gap-2 group mb-0.5", isMine ? "flex-row-reverse" : "flex-row")}
-                            style={{ alignItems: "flex-end" }}
-                          >
-                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 mb-1 shadow-sm">
-                              {msg.senderPhoto
-                                ? <img src={msg.senderPhoto} alt={msg.senderName} className="w-full h-full object-cover" />
-                                : <User className="w-3.5 h-3.5 text-muted-foreground" />
-                              }
-                            </div>
+                          <div className={cn("flex items-end gap-1.5 mb-1.5", isMine ? "flex-row-reverse" : "flex-row")}>
+                            {!isMine && (
+                              <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 shadow-sm overflow-hidden mb-0.5">
+                                {msg.senderPhoto
+                                  ? <img src={imgUrl(msg.senderPhoto)} alt="" className="w-full h-full object-cover" />
+                                  : <User className="w-3.5 h-3.5 text-muted-foreground" />
+                                }
+                              </div>
+                            )}
+                            <div className={cn("flex flex-col max-w-[72%]", isMine ? "items-end" : "items-start")}>
+                              {/* Quick reactions */}
+                              {hoveredReaction === msg.id && !msg.isDeleted && !adminViewAll && (
+                                <div className={cn("flex gap-1 mb-1.5 bg-card border border-border rounded-full px-2 py-1 shadow-lg", isMine ? "flex-row-reverse" : "flex-row")}>
+                                  {REACTION_EMOJIS.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => handleReact(msg.id, emoji)}
+                                      className="text-lg hover:scale-125 transition-transform"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
 
-                            <div className={cn("flex flex-col max-w-[75%] sm:max-w-[65%]", isMine ? "items-end" : "items-start")}>
-                              <div className="relative">
-                                {/* Reaction bar (hover) */}
-                                {!msg.isDeleted && hoveredReaction === msg.id && (
-                                  <div
-                                    className={cn(
-                                      "absolute -top-10 flex gap-1 bg-card border border-border rounded-full px-2 py-1.5 shadow-xl z-20",
-                                      isMine ? "right-0" : "left-0"
-                                    )}
-                                    onMouseLeave={() => setHoveredReaction(null)}
-                                  >
-                                    {REACTION_EMOJIS.map((emoji) => (
-                                      <button
-                                        key={emoji}
-                                        onClick={() => handleReact(msg.id, emoji)}
-                                        className="text-lg hover:scale-125 transition-transform"
-                                      >
-                                        {emoji}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {editingId === msg.id ? (
-                                  <div className="flex gap-2 min-w-[200px]">
-                                    <Input
-                                      value={editContent}
-                                      onChange={(e) => setEditContent(e.target.value)}
-                                      onKeyDown={(e) => { if (e.key === "Enter") handleEdit(msg.id); if (e.key === "Escape") setEditingId(null); }}
-                                      className="text-sm h-9 flex-1"
-                                      autoFocus
-                                    />
-                                    <Button size="sm" onClick={() => handleEdit(msg.id)} className="h-9 px-2.5">
+                              {editingId === msg.id ? (
+                                <div className="flex gap-2 min-w-[200px]">
+                                  <textarea
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleEdit(msg.id); } if (e.key === "Escape") setEditingId(null); }}
+                                    className="text-sm flex-1 rounded-xl border border-border bg-background px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    rows={2}
+                                    autoFocus
+                                  />
+                                  <div className="flex flex-col gap-1">
+                                    <Button size="sm" onClick={() => handleEdit(msg.id)} className="h-8 px-2.5">
                                       <Check className="w-3.5 h-3.5" />
                                     </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-9 px-2">
+                                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-8 px-2">
                                       <X className="w-3.5 h-3.5" />
                                     </Button>
                                   </div>
-                                ) : (
-                                  <div
-                                    onMouseEnter={() => setHoveredReaction(msg.id)}
-                                    onMouseLeave={() => setHoveredReaction(null)}
-                                    onContextMenu={(e) => { if (isMine && !msg.isDeleted && !adminViewAll) openContextMenu(e, msg.id); }}
-                                    className={cn(
-                                      "px-3.5 py-2.5 rounded-2xl text-sm shadow-md cursor-default select-text break-words transition-opacity",
-                                      "animate-in fade-in-0 slide-in-from-bottom-1",
-                                      isMine
-                                        ? msg.isDeleted
-                                          ? "bg-muted text-muted-foreground italic rounded-bl-sm"
-                                          : "bg-primary text-primary-foreground rounded-bl-sm"
-                                        : msg.isDeleted
-                                          ? "bg-card border border-border text-muted-foreground italic rounded-br-sm"
-                                          : "bg-card border border-border rounded-br-sm",
-                                    )}
-                                  >
-                                    {msg.messageType === "image" && msg.imageUrl && !msg.isDeleted ? (
-                                      <img
-                                        src={imgUrl(msg.imageUrl)}
-                                        alt="صورة"
-                                        className="rounded-xl max-w-52 max-h-52 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                        onClick={() => window.open(imgUrl(msg.imageUrl)!, "_blank")}
-                                      />
-                                    ) : msg.messageType === "audio" && msg.imageUrl && !msg.isDeleted ? (
-                                      <div className="flex items-center gap-2 min-w-[160px]">
-                                        <Play className="w-4 h-4 shrink-0 opacity-70" />
-                                        <audio controls src={imgUrl(msg.imageUrl)} className="h-8 max-w-[190px]" style={{ minWidth: 140 }} />
-                                      </div>
-                                    ) : (
-                                      <p className="leading-relaxed whitespace-pre-wrap">
-                                        {msg.isDeleted ? "🚫 تم حذف هذه الرسالة" : msg.content}
-                                      </p>
-                                    )}
-                                    {msg.editedAt && !msg.isDeleted && (
-                                      <span className={cn("text-[10px] ms-1.5 opacity-60", isMine ? "text-primary-foreground" : "text-muted-foreground")}>
-                                        (معدّل)
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
+                                </div>
+                              ) : (
+                                <div
+                                  onMouseEnter={() => setHoveredReaction(msg.id)}
+                                  onMouseLeave={() => setHoveredReaction(null)}
+                                  onContextMenu={(e) => { if (isMine && !msg.isDeleted && !adminViewAll) openContextMenu(e, msg.id); }}
+                                  className={cn(
+                                    "px-3.5 py-2.5 rounded-2xl text-sm shadow-md cursor-default select-text break-words transition-opacity",
+                                    "animate-in fade-in-0 slide-in-from-bottom-1",
+                                    isMine
+                                      ? msg.isDeleted
+                                        ? "bg-muted text-muted-foreground italic rounded-bl-sm"
+                                        : "bg-primary text-primary-foreground rounded-bl-sm"
+                                      : msg.isDeleted
+                                        ? "bg-card border border-border text-muted-foreground italic rounded-br-sm"
+                                        : "bg-card border border-border rounded-br-sm",
+                                  )}
+                                >
+                                  {msg.messageType === "image" && msg.imageUrl && !msg.isDeleted ? (
+                                    <img
+                                      src={imgUrl(msg.imageUrl)}
+                                      alt="صورة"
+                                      className="rounded-xl max-w-52 max-h-52 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                      onClick={() => window.open(imgUrl(msg.imageUrl)!, "_blank")}
+                                    />
+                                  ) : msg.messageType === "audio" && msg.imageUrl && !msg.isDeleted ? (
+                                    <div className="flex items-center gap-2 min-w-[160px]">
+                                      <Play className="w-4 h-4 shrink-0 opacity-70" />
+                                      <audio controls src={imgUrl(msg.imageUrl)} className="h-8 max-w-[190px]" style={{ minWidth: 140 }} />
+                                    </div>
+                                  ) : (
+                                    <p className="leading-relaxed whitespace-pre-wrap">
+                                      {msg.isDeleted ? "🚫 تم حذف هذه الرسالة" : msg.content}
+                                    </p>
+                                  )}
+                                  {msg.editedAt && !msg.isDeleted && (
+                                    <span className={cn("text-[10px] ms-1.5 opacity-60", isMine ? "text-primary-foreground" : "text-muted-foreground")}>
+                                      (معدّل)
+                                    </span>
+                                  )}
+                                </div>
+                              )}
 
-                                {/* Context menu */}
-                                {contextMenu?.msgId === msg.id && (
-                                  <div
-                                    className="fixed z-50 bg-card border border-border rounded-xl shadow-2xl py-1 min-w-36 overflow-hidden"
-                                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {canEdit(msg) && (
-                                      <button
-                                        className="w-full text-right px-4 py-2.5 text-sm hover:bg-secondary flex items-center gap-2 transition-colors"
-                                        onClick={() => { setEditingId(msg.id); setEditContent(msg.content); setContextMenu(null); }}
-                                      >
-                                        <Edit2 className="w-3.5 h-3.5 text-primary" /> تعديل
-                                      </button>
-                                    )}
+                              {/* Context menu */}
+                              {contextMenu?.msgId === msg.id && (
+                                <div
+                                  className="fixed z-50 bg-card border border-border rounded-xl shadow-2xl py-1 min-w-36 overflow-hidden"
+                                  style={{ top: contextMenu.y, left: contextMenu.x }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {canEdit(msg) && (
                                     <button
-                                      className="w-full text-right px-4 py-2.5 text-sm hover:bg-destructive/5 flex items-center gap-2 text-red-500 transition-colors"
-                                      onClick={() => { setPendingDelete(msg.id); setContextMenu(null); }}
+                                      className="w-full text-right px-4 py-2.5 text-sm hover:bg-secondary flex items-center gap-2 transition-colors"
+                                      onClick={() => { setEditingId(msg.id); setEditContent(msg.content); setContextMenu(null); }}
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" /> حذف
+                                      <Edit2 className="w-3.5 h-3.5 text-primary" /> تعديل
                                     </button>
-                                  </div>
-                                )}
-                              </div>
+                                  )}
+                                  <button
+                                    className="w-full text-right px-4 py-2.5 text-sm hover:bg-destructive/5 flex items-center gap-2 text-red-500 transition-colors"
+                                    onClick={() => { setPendingDelete(msg.id); setContextMenu(null); }}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" /> حذف
+                                  </button>
+                                </div>
+                              )}
 
                               {/* Reactions display */}
                               {reactionKeys.length > 0 && (
@@ -940,13 +987,12 @@ export default function Messages() {
                   </div>
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
 
-            {/* ── Input area ── (hidden in admin monitoring mode) */}
+            {/* ── Input area ── */}
             {!adminViewAll && (
-              <div className="border-t bg-card flex flex-col">
+              <div className="border-t bg-card flex flex-col shrink-0">
                 {/* Image preview */}
                 {imagePreview && (
                   <div className="px-3 pt-2">
@@ -954,7 +1000,7 @@ export default function Messages() {
                       <img src={imagePreview} alt="preview" className="h-20 w-20 object-cover rounded-lg border" />
                       <button
                         onClick={() => { setImageFile(null); setImagePreview(null); }}
-                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -974,9 +1020,7 @@ export default function Messages() {
                         <Button size="sm" variant="destructive" onClick={handleStopRecording} className="h-7 gap-1">
                           <Square className="w-3 h-3" /> إيقاف
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={handleCancelAudio} className="h-7 text-muted-foreground">
-                          إلغاء
-                        </Button>
+                        <Button size="sm" variant="ghost" onClick={handleCancelAudio} className="h-7 text-muted-foreground">إلغاء</Button>
                       </>
                     ) : audioPreviewUrl ? (
                       <>
@@ -994,59 +1038,104 @@ export default function Messages() {
                   </div>
                 )}
 
-                {/* Emoji picker — inline within the panel */}
+                {/* Emoji / Sticker picker */}
                 {showEmojiPicker && !isBlocked && (
-                  <div className="border-t overflow-hidden" style={{ height: 320 }}>
-                    <Picker
-                      data={data}
-                      theme="light"
-                      previewPosition="none"
-                      skinTonePosition="none"
-                      onEmojiSelect={(e: { native: string }) => {
-                        if (chatInputRef.current) chatInputRef.current.value += e.native;
-                        setNewMessage((prev) => prev + e.native);
-                      }}
-                    />
+                  <div className="border-t">
+                    {/* Tabs */}
+                    <div className="flex border-b bg-muted/30">
+                      <button
+                        onClick={() => setEmojiTab("emoji")}
+                        className={cn("flex-1 py-2 text-xs font-medium transition-colors", emojiTab === "emoji" ? "border-b-2 border-primary text-primary bg-background" : "text-muted-foreground hover:text-foreground")}
+                      >
+                        😊 إيموجي
+                      </button>
+                      <button
+                        onClick={() => setEmojiTab("sticker")}
+                        className={cn("flex-1 py-2 text-xs font-medium transition-colors", emojiTab === "sticker" ? "border-b-2 border-primary text-primary bg-background" : "text-muted-foreground hover:text-foreground")}
+                      >
+                        🎭 ملصقات
+                      </button>
+                    </div>
+                    {emojiTab === "emoji" ? (
+                      <div className="overflow-hidden" style={{ height: 300 }}>
+                        <Picker
+                          data={data}
+                          theme="light"
+                          previewPosition="none"
+                          skinTonePosition="none"
+                          onEmojiSelect={(e: { native: string }) => appendToInput(e.native)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-[300px] overflow-y-auto p-3 space-y-3">
+                        {STICKER_SETS.map((set, i) => (
+                          <div key={i} className="flex flex-wrap gap-2">
+                            {set.map((sticker) => (
+                              <button
+                                key={sticker}
+                                onClick={() => { appendToInput(sticker); }}
+                                className="text-3xl hover:scale-125 transition-transform p-1 rounded-lg hover:bg-secondary"
+                              >
+                                {sticker}
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Message input form */}
+                {/* Main input form */}
                 {!isRecording && !audioBlob && (
                   <form
                     data-ui-id="FORM_CHAT_01"
                     data-testid="FORM_CHAT_01"
                     onSubmit={handleSend}
-                    className="flex gap-1.5 items-center px-3 py-2.5"
+                    className="flex gap-1.5 items-end px-2 py-2"
                   >
+                    {/* Emoji button */}
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={cn("shrink-0 w-9 h-9 rounded-full transition-colors", showEmojiPicker ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}
+                      className={cn("shrink-0 w-9 h-9 rounded-full transition-colors mb-0.5", showEmojiPicker ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}
                       onClick={(e) => { e.stopPropagation(); setShowEmojiPicker((v) => !v); }}
                       disabled={isBlocked}
                     >
                       <Smile className="w-5 h-5" />
                     </Button>
+
+                    {/* Attach image button */}
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="shrink-0 w-9 h-9 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
+                      className="shrink-0 w-9 h-9 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors mb-0.5"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isBlocked}
                     >
                       <Paperclip className="w-5 h-5" />
                     </Button>
-                    <input ref={fileInputRef} type="file" accept="image/*" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleImageSelect} />
-                    <Input
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+                      tabIndex={-1}
+                      onChange={handleImageSelect}
+                    />
+
+                    {/* Auto-growing textarea */}
+                    <textarea
                       ref={chatInputRef}
                       data-ui-id="INPUT_CHAT_MESSAGE_01"
                       data-testid="INPUT_CHAT_MESSAGE_01"
-                      onChange={(e) => { setNewMessage(e.target.value); }}
-                      onInput={(e) => { setNewMessage((e.target as HTMLInputElement).value); handleTyping(); if (showEmojiPicker) setShowEmojiPicker(false); }}
+                      rows={1}
+                      onChange={(e) => { setNewMessage(e.target.value); adjustTextarea(); }}
+                      onInput={(e) => { setNewMessage((e.target as HTMLTextAreaElement).value); handleTyping(); if (showEmojiPicker) setShowEmojiPicker(false); adjustTextarea(); }}
                       onCompositionStart={() => setIsComposing(true)}
-                      onCompositionEnd={(e) => { setIsComposing(false); setNewMessage((e.target as HTMLInputElement).value); }}
+                      onCompositionEnd={(e) => { setIsComposing(false); setNewMessage((e.target as HTMLTextAreaElement).value); }}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                       placeholder={
                         blockedByOther ? "لا يمكنك الرد (تم حظرك)" :
@@ -1054,40 +1143,44 @@ export default function Messages() {
                         "اكتب رسالتك..."
                       }
                       disabled={isBlocked}
-                      className="flex-1 rounded-full text-sm bg-secondary/50 border-transparent focus-visible:border-primary/30 focus-visible:ring-primary/20 h-10 px-4"
                       dir="auto"
-                      autoComplete="off"
+                      autoComplete="on"
+                      spellCheck
+                      className="flex-1 rounded-2xl text-sm bg-secondary/50 border border-transparent focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/20 px-4 py-2.5 resize-none leading-relaxed transition-all"
+                      style={{ minHeight: 42, maxHeight: 120 }}
                     />
-                    {!newMessage.trim() && !imageFile && !isComposing ? (
-                      <Button
-                        type="button"
-                        size="icon"
-                        onClick={handleStartRecording}
-                        disabled={isBlocked || isRecording}
-                        className="shrink-0 w-10 h-10 rounded-full bg-primary hover:bg-primary/90 shadow-md transition-all"
-                        title="تسجيل رسالة صوتية"
-                      >
-                        <Mic className="w-4 h-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        type="submit"
-                        data-ui-id="BTN_SEND_MSG_01"
-                        data-testid="BTN_SEND_MSG_01"
-                        size="icon"
-                        disabled={(!newMessage.trim() && !imageFile) || sending || isBlocked}
-                        className="shrink-0 w-10 h-10 rounded-full bg-primary hover:bg-primary/90 shadow-md transition-all disabled:opacity-50"
-                      >
-                        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rotate-180" />}
-                      </Button>
-                    )}
+
+                    {/* Mic button — always visible */}
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleStartRecording}
+                      disabled={isBlocked || isRecording}
+                      className="shrink-0 w-9 h-9 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors mb-0.5"
+                      title="تسجيل رسالة صوتية"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </Button>
+
+                    {/* Send button — always visible, disabled when no content */}
+                    <Button
+                      type="submit"
+                      data-ui-id="BTN_SEND_MSG_01"
+                      data-testid="BTN_SEND_MSG_01"
+                      size="icon"
+                      disabled={(!newMessage.trim() && !imageFile) || sending || isBlocked}
+                      className="shrink-0 w-10 h-10 rounded-full bg-primary hover:bg-primary/90 shadow-md transition-all disabled:opacity-40 mb-0.5"
+                    >
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rotate-180" />}
+                    </Button>
                   </form>
                 )}
               </div>
             )}
 
             {adminViewAll && (
-              <div className="border-t bg-amber-50 dark:bg-amber-900/10 px-4 py-2 text-center">
+              <div className="border-t bg-amber-50 dark:bg-amber-900/10 px-4 py-2 text-center shrink-0">
                 <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center justify-center gap-1">
                   <Users className="w-3 h-3" />
                   أنت في وضع مراقبة المحادثات — القراءة فقط
@@ -1098,7 +1191,7 @@ export default function Messages() {
         )}
       </div>
 
-      {/* Block dialog */}
+      {/* ── Block dialog ── */}
       <AlertDialog open={blockDialog} onOpenChange={setBlockDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1119,7 +1212,60 @@ export default function Messages() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete dialog */}
+      {/* ── Report dialog ── */}
+      <AlertDialog open={reportDialog} onOpenChange={setReportDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Flag className="w-5 h-5 text-orange-500" />
+              تبليغ عن المستخدم
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              سيصل تبليغك إلى فريق الإشراف مباشرة للمراجعة والإجراء اللازم.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm font-medium">اختر سبب التبليغ:</p>
+            <div className="space-y-2">
+              {REPORT_REASONS.map((reason) => (
+                <button
+                  key={reason}
+                  onClick={() => setReportReason(reason)}
+                  className={cn(
+                    "w-full text-right px-4 py-2.5 rounded-xl text-sm border transition-all",
+                    reportReason === reason
+                      ? "bg-orange-50 border-orange-400 text-orange-700 font-medium dark:bg-orange-950/30 dark:border-orange-600 dark:text-orange-400"
+                      : "border-border hover:bg-secondary"
+                  )}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            {reportReason === "أخرى" && (
+              <textarea
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+                placeholder="اكتب تفاصيل إضافية..."
+                rows={3}
+                className="w-full text-sm rounded-xl border border-border bg-background px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReport}
+              disabled={!reportReason || reportSending}
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              {reportSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "إرسال التبليغ"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Delete dialog ── */}
       <AlertDialog open={pendingDelete !== null} onOpenChange={() => setPendingDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

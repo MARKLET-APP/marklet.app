@@ -300,7 +300,7 @@ export default function InspectionCenterPage() {
               {center.ownerUserId && user?.id !== center.ownerUserId && (
                 <button
                   disabled={chatLoading || !user}
-                  onClick={() => { if (!user) { navigate("/login"); return; } startChat(center.ownerUserId, undefined, undefined); }}
+                  onClick={() => { if (!user) { navigate("/login"); return; } startChat(center.ownerUserId, `مرحباً، أريد حجز موعد لفحص سيارتي في مركز "${center.name}". ما هي المواعيد المتاحة؟`); }}
                   className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 border border-blue-200 rounded-xl py-2.5 font-bold text-sm disabled:opacity-50"
                 >
                   {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageCircle className="w-4 h-4" /> مراسلة المركز</>}

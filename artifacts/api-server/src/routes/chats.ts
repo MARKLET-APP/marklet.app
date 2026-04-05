@@ -439,4 +439,25 @@ router.get("/chats/:conversationId/block-status", authMiddleware, async (req: Au
   res.json({ blockedByMe: (byMe?.c ?? 0) > 0, blockedByOther: (byOther?.c ?? 0) > 0 });
 });
 
+router.post("/chats/:conversationId/report", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const convId = parseInt(Array.isArray(req.params.conversationId) ? req.params.conversationId[0] : req.params.conversationId, 10);
+    const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, convId)).limit(1);
+    if (!conv || (conv.buyerId !== req.userId && conv.sellerId !== req.userId)) { res.status(403).json({ error: "Forbidden" }); return; }
+    const otherUserId = conv.buyerId === req.userId ? conv.sellerId : conv.buyerId;
+    const [reporter] = await db.select({ name: usersTable.name }).from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+    const [reported] = await db.select({ name: usersTable.name }).from(usersTable).where(eq(usersTable.id, otherUserId)).limit(1);
+    const { reason, details } = req.body as { reason: string; details?: string };
+    if (!reason) { res.status(400).json({ error: "Reason required" }); return; }
+    await db.insert(notificationsTable).values({
+      userId: 5,
+      type: "user_report",
+      message: `🚨 تبليغ جديد: ${reporter?.name ?? "مستخدم"} أبلغ عن ${reported?.name ?? "مستخدم"} — السبب: ${reason}${details ? ` (${details})` : ""} — المحادثة #${convId}`,
+      link: `/admin`,
+      isRead: false,
+    });
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "Server error" }); }
+});
+
 export default router;

@@ -396,7 +396,7 @@ export default function ShowroomPage() {
               {showroom.ownerUserId && user?.id !== showroom.ownerUserId && (
                 <button
                   disabled={chatLoading || !user}
-                  onClick={() => { if (!user) { navigate("/login"); return; } startChat(showroom.ownerUserId, undefined, undefined); }}
+                  onClick={() => { if (!user) { navigate("/login"); return; } startChat(showroom.ownerUserId, `مرحباً، أنا مهتم بزيارة معرض "${showroom.name}". هل يمكنني معرفة أوقات العمل والسيارات المتاحة؟`); }}
                   className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl py-2.5 font-bold text-sm transition-colors disabled:opacity-50"
                 >
                   {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageCircle className="w-4 h-4" /> مراسلة المعرض</>}
