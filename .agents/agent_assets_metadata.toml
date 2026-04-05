@@ -101,3 +101,9 @@ id = "U3W0aPPsGevFBUvhBARRU"
 uri = "file://artifacts/syrian-car-market/dist/public/lazemni-project.tar.gz"
 type = "unspecified"
 title = "lazemni-project.tar.gz — المشروع كاملاً"
+
+[[outputs]]
+id = "0L9Msn6s4XH6kcm1ZJNZn"
+uri = "file://system-design.md"
+type = "text"
+title = "نظام الإشعارات الموحد — LAZEMNI"
