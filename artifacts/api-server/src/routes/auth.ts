@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, notificationsTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
 import bcrypt from "bcryptjs";
@@ -57,6 +57,13 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     password: hash,
     role: role ?? "buyer",
   }).returning();
+
+  db.insert(notificationsTable).values({
+    userId: user.id,
+    type: "welcome",
+    message: `مرحباً ${user.name}! 🎉 أهلاً بك في LAZEMNI — تصفّح الإعلانات أو أضف إعلانك الأول مجاناً الآن`,
+    link: "/",
+  }).catch(() => {});
 
   const token = generateToken(user.id, user.role);
   res.status(201).json({ token, user: serializeUser(user) });
@@ -137,6 +144,13 @@ router.post("/register", async (req, res): Promise<void> => {
     role: role ?? "buyer",
   }).returning();
 
+  db.insert(notificationsTable).values({
+    userId: user.id,
+    type: "welcome",
+    message: `مرحباً ${user.name}! 🎉 أهلاً بك في LAZEMNI — تصفّح الإعلانات أو أضف إعلانك الأول مجاناً الآن`,
+    link: "/",
+  }).catch(() => {});
+
   const token = generateToken(user.id, user.role);
   res.status(201).json({ token, user: serializeUser(user) });
 });
@@ -197,6 +211,13 @@ router.post("/auth/google", async (req, res): Promise<void> => {
         profilePhoto: gUser.picture || null,
       }).returning();
       user = newUser;
+
+      db.insert(notificationsTable).values({
+        userId: user.id,
+        type: "welcome",
+        message: `مرحباً ${user.name}! 🎉 أهلاً بك في LAZEMNI — تصفّح الإعلانات أو أضف إعلانك الأول مجاناً الآن`,
+        link: "/",
+      }).catch(() => {});
     }
 
     if (user.isBanned) { res.status(403).json({ error: "تم حظر هذا الحساب" }); return; }

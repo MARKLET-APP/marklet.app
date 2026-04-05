@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, Loader2, Info, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Bell, CheckCheck, Loader2, Info, CheckCircle, XCircle, AlertCircle, PartyPopper } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function getNotifIcon(type: string) {
+  if (type === "welcome") return <PartyPopper className="w-5 h-5 text-primary shrink-0" />;
   if (type === "approval" || type === "approved" || type === "success") return <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />;
   if (type === "rejection" || type === "rejected" || type === "error") return <XCircle className="w-5 h-5 text-red-500 shrink-0" />;
   if (type === "warning") return <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />;
