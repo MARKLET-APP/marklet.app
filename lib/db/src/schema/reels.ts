@@ -12,6 +12,7 @@ export const reelsTable = pgTable("reels", {
   dealerName: text("dealer_name"),
   dealerId: integer("dealer_id"),
   sponsored: text("sponsored").default("false"),
+  aspectRatio: text("aspect_ratio").notNull().default("reel"),
   views: integer("views").notNull().default(0),
   likes: integer("likes").notNull().default(0),
   status: text("status").notNull().default("pending"),

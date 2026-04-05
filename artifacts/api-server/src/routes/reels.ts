@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, reelsTable, usersTable, showroomsTable, notificationsTable } from "@workspace/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { sendPushToUser } from "../services/pushService.js";
 import multer from "multer";
 import path from "path";
@@ -45,8 +45,11 @@ const thumbUpload = multer({
 });
 
 // ── Public: list approved reels ─────────────────────────────────────────────
-router.get("/reels", optionalAuth, async (_req, res): Promise<void> => {
+router.get("/reels", optionalAuth, async (req, res): Promise<void> => {
   try {
+    const aspectRatio = req.query.aspectRatio as string | undefined;
+    const whereConditions = [eq(reelsTable.status, "approved")];
+    if (aspectRatio) whereConditions.push(eq(reelsTable.aspectRatio, aspectRatio));
     const rows = await db
       .select({
         id: reelsTable.id,
@@ -59,6 +62,7 @@ router.get("/reels", optionalAuth, async (_req, res): Promise<void> => {
         dealerName: reelsTable.dealerName,
         dealerId: reelsTable.dealerId,
         sponsored: reelsTable.sponsored,
+        aspectRatio: reelsTable.aspectRatio,
         views: reelsTable.views,
         likes: reelsTable.likes,
         status: reelsTable.status,
@@ -70,7 +74,7 @@ router.get("/reels", optionalAuth, async (_req, res): Promise<void> => {
       .from(reelsTable)
       .leftJoin(usersTable, eq(reelsTable.uploaderId, usersTable.id))
       .leftJoin(showroomsTable, eq(reelsTable.dealerId, showroomsTable.id))
-      .where(eq(reelsTable.status, "approved"))
+      .where(and(...whereConditions))
       .orderBy(desc(reelsTable.createdAt));
     res.json(rows);
   } catch (e) {
@@ -89,12 +93,13 @@ router.post("/reels/upload", authMiddleware, videoUpload.single("video"), async 
     if (!req.file) { res.status(400).json({ error: "لم يتم رفع أي فيديو" }); return; }
 
     const videoUrl = `/api/uploads/reels/${req.file.filename}`;
-    const { title, desc, price, city, dealerName, dealerId } = req.body;
+    const { title, desc, price, city, dealerName, dealerId, aspectRatio } = req.body;
 
     if (!title?.trim()) { res.status(400).json({ error: "العنوان مطلوب" }); return; }
 
     const uid = req.user!.id;
     const status = role === "admin" ? "approved" : "pending";
+    const ratio = aspectRatio === "square" ? "square" : "reel";
     const [reel] = await db.insert(reelsTable).values({
       uploaderId: uid,
       videoUrl,
@@ -105,7 +110,8 @@ router.post("/reels/upload", authMiddleware, videoUpload.single("video"), async 
       city: city?.trim() || null,
       dealerName: dealerName?.trim() || null,
       dealerId: dealerId ? parseInt(dealerId) : null,
-      sponsored: "false",
+      sponsored: ratio === "square" ? "true" : "false",
+      aspectRatio: ratio,
       status,
     }).returning();
 

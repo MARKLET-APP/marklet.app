@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useScrollFix } from "@/hooks/useScrollFix";
 import { withApi, imgUrl } from "@/lib/runtimeConfig";
-import { getRealEstate, getJobs, apiRequest } from "@/lib/api";
+import { getJobs, apiRequest } from "@/lib/api";
 import {
   Search,
   ChevronLeft,
@@ -49,13 +49,11 @@ import {
   Tag,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
-import { VehicleReportWidget } from "@/components/VehicleReportWidget";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CarCard } from "@/components/CarCard";
 import { ListingCard } from "@/components/ListingCard";
 import { normalizeAd } from "@/utils/normalizeAd";
-import { useGetFeaturedCars, useListCars } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/lib/auth";
@@ -69,7 +67,6 @@ import {
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n";
 import { useStartChat } from "@/hooks/use-start-chat";
-import { VideoCarousel } from "@/components/VideoCarousel";
 import {
   HeroCategorySlider,
   SLIDES,
@@ -137,24 +134,29 @@ type HomeMarketItem = {
 export default function Home() {
   useScrollFix();
 
-  const { data: featuredCars, isLoading: loadingFeatured } =
-    useGetFeaturedCars();
-  const { data: latestCars, isLoading: loadingLatest } = useListCars({
-    limit: 6,
-    sortBy: "createdAt:desc",
-    category: "car",
-  });
-
-  const { data: latestRealEstate = [] } = useQuery({
-    queryKey: ["/real-estate", "home"],
-    queryFn: () => getRealEstate({ limit: "6" }),
-    staleTime: 15_000,
-  });
-
   const { data: latestJobs = [] } = useQuery({
     queryKey: ["/jobs", "home"],
-    queryFn: () => getJobs({ limit: "6" }),
+    queryFn: () => getJobs({ limit: "8" }),
     staleTime: 15_000,
+  });
+
+  const { data: featuredItems = [], isLoading: loadingFeatured } = useQuery<any[]>({
+    queryKey: ["/ads/featured"],
+    queryFn: () => apiRequest<any[]>("/api/ads/featured"),
+    staleTime: 60_000,
+  });
+
+  const { data: unifiedFeedData, isLoading: loadingFeed } = useQuery<{ feed: any[]; total: number }>({
+    queryKey: ["/feed/unified"],
+    queryFn: () => apiRequest<{ feed: any[]; total: number }>("/api/feed?unified=true&limit=100"),
+    staleTime: 30_000,
+  });
+  const unifiedFeed = unifiedFeedData?.feed ?? [];
+
+  const { data: sponsoredVideos = [] } = useQuery<any[]>({
+    queryKey: ["/reels/square"],
+    queryFn: () => apiRequest<any[]>("/api/reels?aspectRatio=square"),
+    staleTime: 120_000,
   });
   const { user } = useAuthStore();
   const { toast } = useToast();
@@ -191,10 +193,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const [missingInfoOpen, setMissingInfoOpen] = useState(false);
-  const [missingInfoCarId, setMissingInfoCarId] = useState<number | null>(null);
-  const [infoMsg, setInfoMsg] = useState("");
-  const [sendingInfo, setSendingInfo] = useState(false);
   const { startChat, loading: startingChat } = useStartChat();
   const [detailRequest, setDetailRequest] = useState<any | null>(null);
 
@@ -214,39 +212,11 @@ export default function Home() {
     ["car", "cars", "new-car", "used-car", "new_car", "used_car", "motorcycle", "motorcycles"].includes(r.category)
   );
 
-  const { data: missingCars = [] } = useQuery({
-    queryKey: ["/missing-cars"],
-    queryFn: () => api.missingCars.list(),
-    staleTime: 15_000,
-  });
-
   const { data: homeMarketItems = [] } = useQuery<HomeMarketItem[]>({
     queryKey: ["marketplace", "home-preview"],
     queryFn: () => apiRequest<HomeMarketItem[]>("/api/marketplace?limit=9"),
     staleTime: 15_000,
   });
-
-  const handleSendMissingInfo = async () => {
-    if (!infoMsg.trim()) return;
-    setSendingInfo(true);
-    try {
-      await api.support.send({
-        type: "missing_car",
-        message: `معلومات عن سيارة مفقودة #${missingInfoCarId}: ${infoMsg}`,
-        userId: user?.id ?? null,
-      });
-      toast({
-        title: t("home.missingInfo.success"),
-        description: t("home.missingInfo.successDesc"),
-      });
-      setMissingInfoOpen(false);
-      setInfoMsg("");
-    } catch {
-      toast({ title: t("common.error"), variant: "destructive" });
-    } finally {
-      setSendingInfo(false);
-    }
-  };
 
   const handleCreateAd = () => {
     if (!user) {
@@ -919,314 +889,227 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Video Carousel */}
-      <VideoCarousel />
+      {/* ── فيديو ممول مربع ── */}
+      {sponsoredVideos.length > 0 && (
+        <section className="py-8 w-full bg-gradient-to-l from-slate-900 to-slate-800 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span className="w-2.5 h-7 bg-yellow-400 rounded-full inline-block"></span>
+                  فيديو ممول
+                </h2>
+                <p className="text-slate-400 text-xs mt-0.5">إعلانات مرئية من معارضنا الموثوقة</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto scrollbar-none -mx-4 px-4">
+              <div className="flex gap-3 pb-2" style={{ width: "max-content" }}>
+                {sponsoredVideos.map((v: any) => (
+                  <div key={v.id} className="relative shrink-0 w-[220px] h-[220px] rounded-2xl overflow-hidden bg-black group cursor-pointer shadow-lg hover:shadow-xl transition-all">
+                    <video
+                      src={imgUrl(v.videoUrl)}
+                      poster={v.thumbnailUrl ? imgUrl(v.thumbnailUrl) : undefined}
+                      muted
+                      loop
+                      playsInline
+                      className="w-full h-full object-cover"
+                      onMouseEnter={e => (e.currentTarget as HTMLVideoElement).play()}
+                      onMouseLeave={e => { (e.currentTarget as HTMLVideoElement).pause(); (e.currentTarget as HTMLVideoElement).currentTime = 0; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute bottom-0 right-0 left-0 p-3 pointer-events-none">
+                      <p className="text-white font-bold text-xs line-clamp-1">{v.title}</p>
+                      {v.price && <p className="text-yellow-300 text-xs font-bold mt-0.5">{v.price}</p>}
+                      {v.dealerName && <p className="text-slate-300 text-[10px] truncate">{v.dealerName}</p>}
+                    </div>
+                    <div className="absolute top-2 left-2 bg-yellow-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full">ممول</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
-      {/* ── الإعلانات المميزة — جميع الفئات ── */}
-      <section className="py-12 bg-secondary/20 w-full">
+      {/* ── الإعلانات المميزة — جميع الأقسام ── */}
+      <section className="py-10 bg-secondary/20 w-full">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-end mb-8">
+          <div className="flex justify-between items-end mb-6">
             <div>
               <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                 <span className="w-3 h-8 bg-accent rounded-full inline-block"></span>
                 {t("home.featured.title")}
               </h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                سيارات • عقارات • وظائف وأكثر
+                سيارات • عقارات • وظائف • كل شيء وأكثر
               </p>
             </div>
+            <Link href="/search?featured=true" className="text-primary font-semibold flex items-center gap-1 hover:underline text-sm shrink-0">
+              عرض الكل <ChevronLeft className="w-4 h-4" />
+            </Link>
           </div>
 
           {loadingFeatured ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex justify-center py-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-          ) : (
-            (() => {
-              const cars2 = (
-                Array.isArray(featuredCars) ? featuredCars : []
-              ).slice(0, 2);
-              const reals2 = (latestRealEstate as any[]).slice(0, 2);
-              const jobs2 = (latestJobs as any[]).slice(0, 2);
-              const mixed = [
-                ...cars2.map((c) => ({
-                  _type: "car" as const,
-                  _id: `car-${c.id}`,
-                  data: c,
-                })),
-                ...reals2.map((r) => ({
-                  _type: "re" as const,
-                  _id: `re-${r.id}`,
-                  data: r,
-                })),
-                ...jobs2.map((j) => ({
-                  _type: "job" as const,
-                  _id: `job-${j.id}`,
-                  data: j,
-                })),
-              ];
-              if (mixed.length === 0) return null;
-              return (
-                <>
-                  <div className="ads-grid ...">
-                    {mixed.map((item) => {
-                      if (item._type === "car") {
-                        return <CarCard key={item._id} car={item.data} />;
-                      }
-
-                      if (item._type === "re") {
-                        const r = item.data;
-                        return (
-                          <ListingCard
-                            key={item._id}
-                            ad={normalizeAd(r, "real_estate")}
-                            onCardClick={() => navigate(`/real-estate/${r.id}`)}
-                            onChat={r.sellerId ? () => startChat(r.sellerId) : undefined}
-                            currentUserId={user?.id}
-                          />
-                        );
-                      }
-
-                      if (item._type === "job") {
-                        const j = item.data;
-                        return (
-                          <ListingCard
-                            key={item._id}
-                            ad={normalizeAd(j, "job")}
-                            onCardClick={() => navigate(`/jobs/${j.id}`)}
-                            onChat={j.posterId ? () => startChat(j.posterId) : undefined}
-                            currentUserId={user?.id}
-                          />
-                        );
-                      }
-
-                      return null;
-                    })}
-                  </div>
-                  <div className="mt-6 text-center">
-                    <Link href="/search?featured=true">
-                      <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-200 text-sm">
-                        {t("common.all")}
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                    </Link>
-                  </div>
-                </>
-              );
-            })()
+          ) : featuredItems.length === 0 ? null : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {featuredItems.slice(0, 8).map((item: any) => {
+                const type = item._type;
+                if (type === "car") {
+                  return <CarCard key={`car-${item.id}`} car={item} />;
+                }
+                if (type === "real_estate") {
+                  return (
+                    <ListingCard
+                      key={`re-${item.id}`}
+                      ad={normalizeAd(item, "real_estate")}
+                      onCardClick={() => navigate(`/real-estate/${item.id}`)}
+                      onChat={item.sellerId ? () => startChat(item.sellerId) : undefined}
+                      currentUserId={user?.id}
+                    />
+                  );
+                }
+                if (type === "job") {
+                  return (
+                    <ListingCard
+                      key={`job-${item.id}`}
+                      ad={normalizeAd(item, "job")}
+                      onCardClick={() => navigate(`/jobs/${item.id}`)}
+                      onChat={item.posterId ? () => startChat(item.posterId) : undefined}
+                      currentUserId={user?.id}
+                    />
+                  );
+                }
+                if (type === "marketplace") {
+                  return (
+                    <ListingCard
+                      key={`mp-${item.id}`}
+                      ad={normalizeAd(item, "marketplace")}
+                      onCardClick={() => navigate(`/marketplace/${item.id}`)}
+                      onChat={item.sellerId ? () => startChat(item.sellerId) : undefined}
+                      currentUserId={user?.id}
+                    />
+                  );
+                }
+                return null;
+              })}
+            </div>
           )}
         </div>
       </section>
 
-      {/* Featured Showrooms */}
-      <FeaturedShowrooms />
-
-      {/* ── أحدث الإعلانات — جميع الفئات ── */}
-      <section className="py-12 max-w-7xl mx-auto px-4 w-full">
-        <div className="flex justify-between items-end mb-8">
+      {/* ── أحدث الإعلانات — جميع الأقسام (مرتبة بالتفاعل) ── */}
+      <section className="py-10 max-w-7xl mx-auto px-4 w-full">
+        <div className="flex justify-between items-end mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">
+            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <span className="w-3 h-8 bg-blue-500 rounded-full inline-block"></span>
               {isRTL ? "أحدث الإعلانات" : "Latest Listings"}
             </h2>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               {isRTL
-                ? "سيارات، عقارات، وظائف — أضيفت للتو"
-                : "Cars, real estate, jobs — just added"}
+                ? "سيارات، عقارات، وظائف، كل شيء — مرتبة بالتفاعل"
+                : "All categories — sorted by engagement"}
             </p>
           </div>
         </div>
 
-        {loadingLatest ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        {loadingFeed ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
-        ) : (
-          (() => {
-            const latestCarsList = (
-              Array.isArray(latestCars?.cars) ? latestCars!.cars : []
-            ).slice(0, 2);
-            const latestREList = (latestRealEstate as any[]).slice(2, 4);
-            const latestJobsList = (latestJobs as any[]).slice(2, 4);
-            const mixed = [
-              ...latestCarsList.map((c: any) => ({
-                _type: "car" as const,
-                _id: `lcar-${c.id}`,
-                data: c,
-              })),
-              ...latestREList.map((r) => ({
-                _type: "re" as const,
-                _id: `lre-${r.id}`,
-                data: r,
-              })),
-              ...latestJobsList.map((j) => ({
-                _type: "job" as const,
-                _id: `ljob-${j.id}`,
-                data: j,
-              })),
-            ];
-            if (mixed.length === 0) return null;
-            return (
-              <>
-                <div className="ads-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-                  {mixed.map((item) => {
-                    if (item._type === "car") {
-                      return <CarCard key={item._id} car={item.data} />;
-                    }
-
-                    if (item._type === "re") {
-                      const r = item.data;
-                      return (
-                        <ListingCard
-                          key={item._id}
-                          ad={normalizeAd(r, "real_estate")}
-                          onCardClick={() => navigate(`/real-estate/${r.id}`)}
-                          onChat={r.sellerId ? () => startChat(r.sellerId) : undefined}
-                          currentUserId={user?.id}
-                        />
-                      );
-                    }
-
-                    if (item._type === "job") {
-                      const j = item.data;
-                      return (
-                        <ListingCard
-                          key={item._id}
-                          ad={normalizeAd(j, "job")}
-                          onCardClick={() => navigate(`/jobs/${j.id}`)}
-                          onChat={j.posterId ? () => startChat(j.posterId) : undefined}
-                          currentUserId={user?.id}
-                        />
-                      );
-                    }
-
-                    return null;
-                  })}
-                </div>
-
-                <div className="mt-6 text-center">
-                  <Link href="/search">
-                    <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-200 text-sm">
-                      {isRTL ? "تصفح السوق كاملاً" : "Browse All Market"}
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                  </Link>
-                </div>
-              </>
-            );
-          })()
+        ) : unifiedFeed.length === 0 ? null : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+            {unifiedFeed.slice(0, 20).map((item: any) => {
+              const type = item._type;
+              if (type === "car") {
+                return <CarCard key={`uf-car-${item.id}`} car={item} />;
+              }
+              if (type === "real_estate") {
+                return (
+                  <ListingCard
+                    key={`uf-re-${item.id}`}
+                    ad={normalizeAd(item, "real_estate")}
+                    onCardClick={() => navigate(`/real-estate/${item.id}`)}
+                    onChat={item.sellerId ? () => startChat(item.sellerId) : undefined}
+                    currentUserId={user?.id}
+                  />
+                );
+              }
+              if (type === "job") {
+                return (
+                  <ListingCard
+                    key={`uf-job-${item.id}`}
+                    ad={normalizeAd(item, "job")}
+                    onCardClick={() => navigate(`/jobs/${item.id}`)}
+                    onChat={item.posterId ? () => startChat(item.posterId) : undefined}
+                    currentUserId={user?.id}
+                  />
+                );
+              }
+              if (type === "marketplace") {
+                return (
+                  <ListingCard
+                    key={`uf-mp-${item.id}`}
+                    ad={normalizeAd(item, "marketplace")}
+                    onCardClick={() => navigate(`/marketplace/${item.id}`)}
+                    onChat={item.sellerId ? () => startChat(item.sellerId) : undefined}
+                    currentUserId={user?.id}
+                  />
+                );
+              }
+              if (type === "car_part") {
+                return (
+                  <ListingCard
+                    key={`uf-cp-${item.id}`}
+                    ad={normalizeAd(item, "part")}
+                    onCardClick={() => navigate(`/car-parts/${item.id}`)}
+                    onChat={item.sellerId ? () => startChat(item.sellerId) : undefined}
+                    currentUserId={user?.id}
+                  />
+                );
+              }
+              if (type === "junk_car") {
+                return (
+                  <ListingCard
+                    key={`uf-jk-${item.id}`}
+                    ad={normalizeAd(item, "junk")}
+                    onCardClick={() => navigate(`/junk-cars/${item.id}`)}
+                    onChat={item.sellerId ? () => startChat(item.sellerId) : undefined}
+                    currentUserId={user?.id}
+                  />
+                );
+              }
+              if (type === "rental_car") {
+                return (
+                  <ListingCard
+                    key={`uf-rc-${item.id}`}
+                    ad={normalizeAd(item, "rental")}
+                    onCardClick={() => navigate(`/rental-cars/${item.id}`)}
+                    onChat={item.sellerId ? () => startChat(item.sellerId) : undefined}
+                    currentUserId={user?.id}
+                  />
+                );
+              }
+              return null;
+            })}
+          </div>
         )}
-      </section>
 
-      {/* Real Estate Section */}
-      <section className="py-10 bg-cyan-50/40 dark:bg-cyan-950/10 w-full border-y border-cyan-100 dark:border-cyan-900/30">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-end mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <span className="w-3 h-8 bg-cyan-500 rounded-full inline-block"></span>
-                {isRTL ? "العقارات" : "Real Estate"}
-              </h2>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {isRTL
-                  ? "شقق، منازل، وأراضي للبيع والإيجار"
-                  : "Apartments, homes and land for sale or rent"}
-              </p>
-            </div>
-            <Link
-              href="/real-estate"
-              className="text-cyan-600 font-semibold flex items-center gap-1 hover:underline text-sm"
-            >
-              {isRTL ? "عرض الكل" : "View All"}{" "}
-              <ChevronLeft className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Real Estate Category Icons */}
-          <div className="grid grid-cols-5 gap-2 sm:gap-3 mb-6">
-            {[
-              {
-                label: "شقق",
-                icon: <BedDouble size={20} />,
-                color: "text-cyan-600",
-                bg: "bg-cyan-100",
-                sub: "شقق",
-              },
-              {
-                label: "مكاتب",
-                icon: <Building2 size={20} />,
-                color: "text-blue-600",
-                bg: "bg-blue-100",
-                sub: "مكاتب",
-              },
-              {
-                label: "محلات",
-                icon: <Store size={20} />,
-                color: "text-indigo-600",
-                bg: "bg-indigo-100",
-                sub: "محلات تجارية",
-              },
-              {
-                label: "أراضي",
-                icon: <LandPlot size={20} />,
-                color: "text-green-600",
-                bg: "bg-green-100",
-                sub: "أراضي",
-              },
-              {
-                label: "مستودعات",
-                icon: <Warehouse size={20} />,
-                color: "text-orange-600",
-                bg: "bg-orange-100",
-                sub: "مستودعات",
-              },
-            ].map((cat) => (
-              <Link
-                key={cat.label}
-                href={`/real-estate?subCategory=${encodeURIComponent(cat.sub)}`}
-              >
-                <div className="flex flex-col items-center justify-center p-2 sm:p-3 bg-card border rounded-xl cursor-pointer hover:border-cyan-400 hover:shadow-sm transition-all group text-center">
-                  <span
-                    className={`mb-1.5 w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center ${cat.bg} ${cat.color} group-hover:scale-110 transition-transform`}
-                  >
-                    {cat.icon}
-                  </span>
-                  <span
-                    className="font-semibold text-foreground leading-tight"
-                    style={{ fontSize: "10px" }}
-                  >
-                    {cat.label}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {(latestRealEstate as any[]).length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {(latestRealEstate as any[]).slice(0, 4).map((item: any) => (
-                <ListingCard
-                  key={item.id}
-                  ad={normalizeAd(item, "real_estate")}
-                  onCardClick={() => navigate(`/real-estate/${item.id}`)}
-                  onChat={
-                    item.sellerId ? () => startChat(item.sellerId) : undefined
-                  }
-                  currentUserId={user?.id}
-                />
-              ))}
-            </div>
-          )}
-
-          <div className="mt-5 text-center">
-            <Link href="/real-estate">
-              <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-cyan-500 text-cyan-600 font-bold hover:bg-cyan-500 hover:text-white transition-all duration-200 text-sm">
-                {isRTL ? "تصفح كل العقارات" : "Browse All Real Estate"}
+        {unifiedFeed.length > 20 && (
+          <div className="mt-6 text-center">
+            <Link href="/search">
+              <button className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border-2 border-blue-500 text-blue-600 font-bold hover:bg-blue-500 hover:text-white transition-all duration-200 text-sm">
+                {isRTL ? "تصفح كل الإعلانات" : "Browse All Listings"}
                 <ChevronLeft className="w-4 h-4" />
               </button>
             </Link>
           </div>
-        </div>
+        )}
       </section>
+
 
       {/* Jobs & Labor Section */}
       <section className="py-10 bg-violet-50/40 dark:bg-violet-950/10 w-full border-b border-violet-100 dark:border-violet-900/30">
@@ -1441,6 +1324,9 @@ export default function Home() {
         </section>
       )}
 
+      {/* ── المعارض المميزة ── */}
+      <FeaturedShowrooms />
+
       {/* ── Follow LAZEMNI Social Section ── */}
       <section className="py-10 max-w-7xl mx-auto px-4 w-full">
         <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl p-8 text-center border border-primary/10">
@@ -1505,159 +1391,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Missing Cars Section */}
-      {(missingCars as any[]).filter((c: any) => c.isFound !== "yes").length >
-        0 && (
-        <section className="py-12 max-w-7xl mx-auto px-4 w-full">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <span className="w-3 h-8 bg-amber-500 rounded-full inline-block"></span>
-                {isRTL ? "سيارات مفقودة" : "Missing Cars"}
-              </h2>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {isRTL
-                  ? "إذا رأيت إحدى هذه السيارات، أبلغ الإدارة"
-                  : "If you see any of these cars, notify the admin"}
-              </p>
-            </div>
-            <Link
-              href="/missing-cars"
-              className="text-amber-600 font-semibold flex items-center gap-1 hover:underline text-sm"
-            >
-              {isRTL ? "عرض الكل" : "View All"}{" "}
-              <ChevronLeft className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {(missingCars as any[])
-              .filter((c: any) => c.isFound !== "yes")
-              .slice(0, 4)
-              .map((c: any) => (
-                <div
-                  key={c.id}
-                  className="bg-card border-2 border-amber-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                >
-                  {c.image ? (
-                    <img
-                      src={imgUrl(c.image)}
-                      alt={c.brand ?? (isRTL ? "سيارة" : "Car")}
-                      className="w-full h-36 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-36 bg-amber-50 flex items-center justify-center">
-                      <AlertTriangle className="w-12 h-12 text-amber-300" />
-                    </div>
-                  )}
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-foreground text-sm">
-                        {[c.brand, c.model].filter(Boolean).join(" ") ||
-                          (isRTL ? "سيارة مجهولة" : "Unknown Car")}
-                      </h4>
-                      <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">
-                        {isRTL ? "مفقودة" : "Missing"}
-                      </Badge>
-                    </div>
-                    {c.color && (
-                      <p className="text-xs text-muted-foreground">
-                        {isRTL ? `اللون: ${c.color}` : `Color: ${c.color}`}
-                      </p>
-                    )}
-                    {c.plateNumber && (
-                      <p className="text-xs font-bold text-foreground">
-                        {isRTL
-                          ? `لوحة: ${c.plateNumber}`
-                          : `Plate: ${c.plateNumber}`}
-                      </p>
-                    )}
-                    {c.city && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {c.city}
-                      </p>
-                    )}
-                    <Button
-                      size="sm"
-                      className="w-full mt-2 rounded-xl text-xs bg-amber-500 hover:bg-amber-600 text-white gap-1"
-                      onClick={() => {
-                        setMissingInfoCarId(c.id);
-                        setMissingInfoOpen(true);
-                      }}
-                    >
-                      <Send className="w-3 h-3" />{" "}
-                      {isRTL
-                        ? "إرسال معلومات إلى الإدارة"
-                        : "Send Info to Admin"}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </section>
-      )}
 
-      {/* Send Missing Car Info Dialog */}
-      <Dialog open={missingInfoOpen} onOpenChange={setMissingInfoOpen}>
-        <DialogContent className="max-w-md" dir={isRTL ? "rtl" : "ltr"}>
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              {t("home.missingInfo.title")}
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground mb-3">
-            {isRTL
-              ? "إذا رأيت هذه السيارة أو لديك معلومات عنها، أخبر الإدارة وسيتم التواصل معك."
-              : "If you've seen this car or have information about it, tell the admin and they will contact you."}
-          </p>
-          <textarea
-            value={infoMsg}
-            onChange={(e) => setInfoMsg(e.target.value)}
-            rows={4}
-            placeholder={t("home.missingInfo.placeholder")}
-            className="w-full border rounded-xl px-3 py-2 text-sm bg-background resize-none focus:border-amber-500 outline-none"
-          />
-          <div className="flex gap-3 mt-2">
-            <Button
-              onClick={handleSendMissingInfo}
-              disabled={!infoMsg.trim() || sendingInfo}
-              className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold"
-            >
-              {sendingInfo
-                ? t("home.missingInfo.sending")
-                : t("home.missingInfo.send")}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setMissingInfoOpen(false)}
-              className="rounded-xl"
-            >
-              {t("home.missingInfo.cancel")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Vehicle Report — Full Widget */}
-      <section className="py-16 px-4 bg-gradient-to-b from-background to-secondary/10">
-        <div className="max-w-5xl mx-auto">
-          {/* Section header */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-bold px-4 py-2 rounded-full mb-4">
-              <FileSearch2 className="w-4 h-4" />
-              استعلام فوري عن أي مركبة
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black text-foreground mb-3">
-              تقرير تاريخ المركبة
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              أدخل رقم الشاسيه (VIN) للحصول على تقرير يتضمن مواصفات المركبة،
-              الاستدعاءات الرسمية، وعدد الشكاوى المسجلة لدى NHTSA.
-            </p>
-          </div>
-          <VehicleReportWidget />
-        </div>
-      </section>
 
       {/* Buy Request Details Dialog */}
       {detailRequest && (
