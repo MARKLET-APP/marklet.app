@@ -125,3 +125,9 @@ id = "DZUo-kjJGYC_OmfS41pEP"
 uri = "file://نظام-المراسلة.md"
 type = "text"
 title = "نظام المراسلة v2.0 — مكتمل"
+
+[[outputs]]
+id = "1AI_Qw82439QTha6qyTnF"
+uri = "file://تحليل-الشاشة-الرئيسية.md"
+type = "text"
+title = "تحليل الشاشة الرئيسية — لازمني"
