@@ -491,7 +491,7 @@ router.patch("/admin/marketplace/:id/status", ...adminGuard, async (req, res): P
     res.status(400).json({ error: "status must be 'available' or 'rejected'" }); return;
   }
   const [updated] = await db.update(marketplaceItemsTable)
-    .set({ status })
+    .set({ status, isActive: status === "available" })
     .where(eq(marketplaceItemsTable.id, id))
     .returning({ id: marketplaceItemsTable.id, sellerId: marketplaceItemsTable.sellerId, title: marketplaceItemsTable.title, status: marketplaceItemsTable.status });
   if (!updated) { res.status(404).json({ error: "Not found" }); return; }

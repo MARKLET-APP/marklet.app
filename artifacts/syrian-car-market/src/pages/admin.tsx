@@ -271,22 +271,6 @@ function AdminMarketplaceTab() {
     refetchInterval: 30_000,
   });
 
-  const { data: allItems = [], isLoading: allItemsLoading, refetch: refetchAllItems } = useQuery<any[]>({
-    queryKey: ["admin", "marketplace-all"],
-    queryFn: () => apiRequest("/api/admin/marketplace"),
-    staleTime: 0,
-  });
-
-  const deleteItem = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/admin/marketplace/${id}`, "DELETE"),
-    onSuccess: () => {
-      toast({ title: "تم حذف الإعلان نهائياً 🗑️" });
-      qc.invalidateQueries({ queryKey: ["admin", "marketplace-all"] });
-      qc.invalidateQueries({ queryKey: ["admin", "marketplace-pending"] });
-    },
-    onError: () => toast({ title: "فشل حذف الإعلان", variant: "destructive" }),
-  });
-
   const approveItem = useMutation({
     mutationFn: (id: number) => apiRequest(`/api/admin/marketplace/${id}/status`, "PATCH", { status: "available" }),
     onSuccess: () => { toast({ title: "تم قبول الإعلان ✅" }); qc.invalidateQueries({ queryKey: ["admin", "marketplace-pending"] }); },
@@ -563,73 +547,6 @@ function AdminMarketplaceTab() {
           })}
         </div>
       )}
-      </div>
-
-      {/* ══ جميع الإعلانات المنشورة والمرفوضة — مع زر الحذف ══ */}
-      <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-5 border-b bg-muted/20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-orange-500" />
-            <h2 className="text-lg font-bold">جميع إعلانات السوق</h2>
-            <Badge variant="secondary">{allItems.length}</Badge>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => refetchAllItems()}>
-            <RefreshCw className="w-4 h-4 ml-2" /> تحديث
-          </Button>
-        </div>
-        {allItemsLoading ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-orange-500" /></div>
-        ) : allItems.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">لا توجد إعلانات</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table className="admin-table">
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead className="text-right">الإعلان</TableHead>
-                  <TableHead className="text-right admin-col-hide">السعر</TableHead>
-                  <TableHead className="text-right admin-col-hide">البائع</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-center">حذف</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allItems.map((item: any) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {item.images?.[0] && (
-                          <img src={imgUrl(item.images[0])} alt="" className="w-9 h-9 rounded-lg object-cover border shrink-0" />
-                        )}
-                        <span className="font-medium truncate max-w-[100px] sm:max-w-[200px]">{item.title}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="admin-col-hide text-sm">{Number(item.price).toLocaleString("ar-SY")} {item.currency}</TableCell>
-                    <TableCell className="admin-col-hide text-sm">{item.sellerName ?? "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={item.status === "available" ? "default" : item.status === "pending" ? "secondary" : "outline"} className="text-xs">
-                        {item.status === "available" ? "✅ منشور" : item.status === "pending" ? "⏳ انتظار" : "❌ مرفوض"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        size="sm" variant="ghost"
-                        className="text-destructive hover:bg-destructive/10 h-8"
-                        disabled={deleteItem.isPending}
-                        onClick={() => {
-                          if (!confirm(`حذف "${item.title}" نهائياً؟`)) return;
-                          deleteItem.mutate(item.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
       </div>
 
     </div>
