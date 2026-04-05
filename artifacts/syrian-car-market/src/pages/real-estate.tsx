@@ -1,5 +1,6 @@
 // UI_ID: REAL_ESTATE_01 — CLEAN REBUILD
 import { useState, useRef, useCallback, memo } from "react";
+import { useCropQueue } from "@/hooks/useCropQueue";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
@@ -171,24 +172,20 @@ const AddRealEstateForm = memo(function AddRealEstateForm({
   const [currency, setCurrency] = useState("USD");
   const [province, setProvince] = useState("");
 
-  // image state (base64 للمعاينة بدلاً من blob URLs)
+  // image state
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [imgsLoading, setImgsLoading] = useState(0); // عدد الصور قيد المعالجة
 
-  const addImages = useCallback(async (files: FileList) => {
-    const arr = Array.from(files);
-    setImgsLoading(arr.length); // أظهر مؤشرات التحميل فوراً
-    try {
-      // تحويل HEIC → JPEG في المتصفح أولاً
-      const converted = await Promise.all(arr.map(convertToJpeg));
-      const previews = await Promise.all(converted.map(readAsDataURL));
-      setImageFiles(prev => [...prev, ...converted]);
-      setImagePreviews(prev => [...prev, ...previews]);
-    } finally {
-      setImgsLoading(0);
-    }
-  }, []);
+  const { openCropQueue, CropperComponent } = useCropQueue({
+    onCropped: useCallback(({ file, dataUrl }: { file: File; blob: Blob; dataUrl: string }) => {
+      setImageFiles(prev => [...prev, file]);
+      setImagePreviews(prev => [...prev, dataUrl]);
+    }, []),
+  });
+
+  const addImages = useCallback((files: FileList) => {
+    openCropQueue(Array.from(files));
+  }, [openCropQueue]);
 
   const removeImage = useCallback((idx: number) => {
     setImageFiles(prev => prev.filter((_, i) => i !== idx));
@@ -402,7 +399,8 @@ const AddRealEstateForm = memo(function AddRealEstateForm({
       {/* الصور */}
       <div>
         <Label className="mb-2 block">الصور</Label>
-        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} loadingCount={imgsLoading} />
+        {CropperComponent}
+        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} loadingCount={0} />
         {imageFiles.length > 0 && (
           <p className="text-xs text-muted-foreground mt-1">{imageFiles.length} صورة — سيتم رفعها عند النشر</p>
         )}

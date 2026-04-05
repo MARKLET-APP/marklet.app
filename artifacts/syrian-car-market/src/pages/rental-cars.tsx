@@ -1,6 +1,7 @@
 // UI_ID: RENTAL_CARS_01
 // NAME: تأجير السيارات
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useCropQueue } from "@/hooks/useCropQueue";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -109,21 +110,11 @@ export default function RentalCarsPage() {
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
   });
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
-    setUploadingImages(true);
-    const previews: string[] = await Promise.all(
-      files.map(f => new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => resolve(ev.target?.result as string);
-        reader.readAsDataURL(f);
-      }))
-    );
-    setPreviewImages((prev) => [...prev, ...previews]);
-    try {
-      const uploaded: string[] = [];
-      for (const file of files) {
+  const { openCropQueue, CropperComponent } = useCropQueue({
+    onCropped: useCallback(async ({ file, dataUrl }: { file: File; blob: Blob; dataUrl: string }) => {
+      setPreviewImages(prev => [...prev, dataUrl]);
+      setUploadingImages(true);
+      try {
         const fd = new FormData();
         fd.append("image", file);
         const resp = await fetch(withApi("/api/upload"), {
@@ -132,14 +123,21 @@ export default function RentalCarsPage() {
           body: fd,
         });
         const data = await resp.json();
-        if (data.image ?? data.url) uploaded.push(data.image ?? data.url);
+        const url = data.image ?? data.url;
+        if (url) setUploadedImages(prev => [...prev, url]);
+      } catch {
+        toast({ title: "فشل رفع الصورة", variant: "destructive" });
+      } finally {
+        setUploadingImages(false);
       }
-      setUploadedImages((prev) => [...prev, ...uploaded]);
-    } catch {
-      toast({ title: "فشل رفع الصورة", variant: "destructive" });
-    } finally {
-      setUploadingImages(false);
-    }
+    }, []),
+  });
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    openCropQueue(files);
+    e.target.value = "";
   };
 
   const removeImage = (idx: number) => {
@@ -415,6 +413,7 @@ export default function RentalCarsPage() {
                 <span className="text-sm text-muted-foreground">{uploadingImages ? "جاري رفع الصور..." : "اضغط لرفع الصور"}</span>
                 <input type="file" multiple accept="image/*" tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} onChange={handleImageUpload} disabled={uploadingImages} />
               </label>
+              {CropperComponent}
               {previewImages.length > 0 && (
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {previewImages.map((src, i) => (

@@ -1,5 +1,6 @@
 // UI_ID: MARKETPLACE_01 — كل شيء
 import { useState, useRef, useCallback, memo } from "react";
+import { useCropQueue } from "@/hooks/useCropQueue";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
@@ -195,25 +196,20 @@ const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: 
     }
   };
 
-  // ── image state (base64 للمعاينة بدلاً من blob URLs) ──
+  // ── image state ──
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [imgsLoading, setImgsLoading] = useState(0); // عدد الصور قيد المعالجة
 
-  const addImages = useCallback(async (files: FileList) => {
-    const arr = Array.from(files);
-    setImgsLoading(arr.length); // أظهر مؤشرات التحميل فوراً
-    try {
-      // 1. تحويل HEIC → JPEG في المتصفح (يحل مشكلة كاميرات Android/iOS)
-      const converted = await Promise.all(arr.map(convertToJpeg));
-      // 2. قراءة كـ base64 للمعاينة (يعمل في Capacitor Android على خلاف blob URLs)
-      const previews = await Promise.all(converted.map(readAsDataURL));
-      setImageFiles(prev => [...prev, ...converted]);
-      setImagePreviews(prev => [...prev, ...previews]);
-    } finally {
-      setImgsLoading(0); // أخفِ المؤشرات بعد الانتهاء أو الفشل
-    }
-  }, []);
+  const { openCropQueue, CropperComponent } = useCropQueue({
+    onCropped: useCallback(({ file, dataUrl }: { file: File; blob: Blob; dataUrl: string }) => {
+      setImageFiles(prev => [...prev, file]);
+      setImagePreviews(prev => [...prev, dataUrl]);
+    }, []),
+  });
+
+  const addImages = useCallback((files: FileList) => {
+    openCropQueue(Array.from(files));
+  }, [openCropQueue]);
 
   const removeImage = useCallback((idx: number) => {
     setImageFiles(prev => prev.filter((_, i) => i !== idx));
@@ -367,7 +363,8 @@ const AddMarketItemForm = memo(function AddMarketItemForm({ onSubmit, isBusy }: 
       {/* الصور */}
       <div className="space-y-1.5">
         <Label className="text-sm font-semibold">صور السلعة (حتى 8 صور)</Label>
-        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} loadingCount={imgsLoading} />
+        {CropperComponent}
+        <ImagePicker previews={imagePreviews} onAdd={addImages} onRemove={removeImage} loadingCount={0} />
       </div>
 
       {/* زر النشر */}

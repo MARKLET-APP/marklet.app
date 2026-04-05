@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { withApi } from "@/lib/runtimeConfig";
 import { ImagePlus, X, Loader2, AlertCircle } from "lucide-react";
+import { useCropQueue } from "@/hooks/useCropQueue";
 
 interface MultiImageUploadProps {
   images: string[];
@@ -55,50 +56,46 @@ export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUpload
     };
   }, []);
 
-  const handleFiles = async (files: FileList) => {
-    if (!files.length) return;
+  const uploadCropped = useCallback(async (blob: Blob, dataUrl: string) => {
     setGlobalError(null);
+    const localUrl = dataUrl;
+    const newItem: PreviewItem = { localUrl, serverUrl: null, uploading: true, error: false };
+    setPreviews(prev => [...prev, newItem]);
+    const idx = previews.length;
+    try {
+      const file = new File([blob], `image_${Date.now()}.jpg`, { type: "image/jpeg" });
+      const url = await uploadSingle(file);
+      setPreviews(prev => {
+        const next = [...prev];
+        const item = next.find(p => p.localUrl === localUrl);
+        if (item) item.serverUrl = url;
+        if (item) item.uploading = false;
+        return next;
+      });
+      onChange([...images, url]);
+    } catch {
+      setPreviews(prev => {
+        const next = [...prev];
+        const item = next.find(p => p.localUrl === localUrl);
+        if (item) item.uploading = false;
+        if (item) item.error = true;
+        return next;
+      });
+      setGlobalError("فشل رفع صورة");
+    }
+    void idx;
+  }, [images, onChange, previews.length]);
+
+  const { openCropQueue, CropperComponent } = useCropQueue({
+    onCropped: ({ blob, dataUrl }) => uploadCropped(blob, dataUrl),
+  });
+
+  const handleFiles = (files: FileList) => {
+    if (!files.length) return;
     const remaining = max - images.length - previews.filter(p => p.uploading).length;
     if (remaining <= 0) return;
     const toProcess = Array.from(files).slice(0, remaining);
-
-    const newPreviews: PreviewItem[] = toProcess.map(file => {
-      const localUrl = URL.createObjectURL(file);
-      objectUrlsRef.current.push(localUrl);
-      return { localUrl, serverUrl: null, uploading: true, error: false };
-    });
-
-    setPreviews(prev => [...prev, ...newPreviews]);
-
-    const startIdx = previews.length;
-    const uploadedUrls: (string | null)[] = new Array(toProcess.length).fill(null);
-    await Promise.all(
-      toProcess.map(async (file, i) => {
-        try {
-          const url = await uploadSingle(file);
-          uploadedUrls[i] = url;
-          setPreviews(prev => {
-            const next = [...prev];
-            const idx = startIdx + i;
-            if (next[idx]) next[idx] = { ...next[idx], serverUrl: url, uploading: false };
-            return next;
-          });
-        } catch {
-          setPreviews(prev => {
-            const next = [...prev];
-            const idx = startIdx + i;
-            if (next[idx]) next[idx] = { ...next[idx], uploading: false, error: true };
-            return next;
-          });
-          setGlobalError("فشل رفع صورة");
-        }
-      })
-    );
-    const successUrls = uploadedUrls.filter((u): u is string => u !== null);
-    if (successUrls.length > 0) {
-      onChange([...images, ...successUrls]);
-    }
-
+    openCropQueue(toProcess);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -108,8 +105,6 @@ export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUpload
       if (item?.serverUrl) {
         onChange(images.filter(u => u !== item.serverUrl));
       }
-      URL.revokeObjectURL(localUrl);
-      objectUrlsRef.current = objectUrlsRef.current.filter(u => u !== localUrl);
       return prev.filter(p => p.localUrl !== localUrl);
     });
   };
@@ -118,6 +113,7 @@ export function MultiImageUpload({ images, onChange, max = 6 }: MultiImageUpload
 
   return (
     <div className="space-y-2">
+      {CropperComponent}
       <div className="flex flex-wrap gap-2">
         {previews.map((item) => (
           <div key={item.localUrl} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border bg-muted">

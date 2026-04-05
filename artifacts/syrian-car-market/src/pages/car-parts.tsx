@@ -1,6 +1,7 @@
 // UI_ID: CAR_PARTS_01
 // NAME: قطع السيارات
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useCropQueue } from "@/hooks/useCropQueue";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -88,26 +89,18 @@ export default function CarPartsPage() {
     queryFn: () => api.get("/api/buy-requests?category=parts").then(r => r.json()),
   });
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { openCropQueue, CropperComponent } = useCropQueue({
+    onCropped: useCallback(({ dataUrl }: { file: File; blob: Blob; dataUrl: string }) => {
+      setImagePreviews(prev => [...prev, dataUrl]);
+      setSellImages(prev => [...prev, dataUrl]);
+    }, []),
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setUploadingImages(true);
-    try {
-      const previews: string[] = await Promise.all(
-        files.map(f => new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (ev) => resolve(ev.target?.result as string);
-          reader.readAsDataURL(f);
-        }))
-      );
-      setImagePreviews(prev => [...prev, ...previews]);
-      setSellImages(prev => [...prev, ...previews]);
-    } catch {
-      toast({ title: "فشل رفع بعض الصور", variant: "destructive" });
-    } finally {
-      setUploadingImages(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
+    openCropQueue(files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeImage = (idx: number) => {
@@ -369,6 +362,7 @@ export default function CarPartsPage() {
             {/* Image upload */}
             <div className="space-y-2">
               <label className="text-sm font-bold flex items-center gap-2"><ImageIcon className="w-4 h-4 text-primary" /> صور القطعة (اختياري)</label>
+              {CropperComponent}
               <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} tabIndex={-1} onChange={handleFileChange} />
               <Button type="button" variant="outline" className="w-full rounded-xl gap-2 border-dashed border-2" onClick={() => fileInputRef.current?.click()} disabled={uploadingImages}>
                 {uploadingImages ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}

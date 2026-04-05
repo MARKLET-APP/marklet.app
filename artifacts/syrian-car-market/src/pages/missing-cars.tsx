@@ -1,6 +1,7 @@
 // UI_ID: MISSING_CARS_01
 // NAME: السيارات المسروقة
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useCropQueue } from "@/hooks/useCropQueue";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -70,14 +71,11 @@ export default function MissingCarsPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
-    setUploading(true);
-    try {
-      const token = localStorage.getItem("scm_token");
-      const uploaded: string[] = [];
-      for (const file of files) {
+  const { openCropQueue, CropperComponent } = useCropQueue({
+    onCropped: useCallback(async ({ file }: { file: File; blob: Blob; dataUrl: string }) => {
+      setUploading(true);
+      try {
+        const token = localStorage.getItem("scm_token");
         const fd = new FormData();
         fd.append("image", file);
         const res = await fetch(withApi("/api/upload"), {
@@ -86,15 +84,21 @@ export default function MissingCarsPage() {
           body: fd,
         });
         const data = await res.json() as any;
-        if (data.image ?? data.url) uploaded.push(data.image ?? data.url);
+        const url = data.image ?? data.url;
+        if (url) setUploadedImages(prev => [...prev, url]);
+      } catch {
+        toast({ title: "فشل رفع الصورة", variant: "destructive" });
+      } finally {
+        setUploading(false);
       }
-      setUploadedImages(prev => [...prev, ...uploaded]);
-    } catch {
-      toast({ title: "فشل رفع الصورة", variant: "destructive" });
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
+    }, []),
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    openCropQueue(files);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const removeImage = (idx: number) =>
@@ -149,6 +153,7 @@ export default function MissingCarsPage() {
                     ))}
                   </div>
                 )}
+                {CropperComponent}
                 <input ref={fileRef} type="file" accept="image/*" multiple tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} onChange={handleFileChange} />
                 <Button
                   type="button"

@@ -1,6 +1,7 @@
 // UI_ID: POST_01
 // NAME: نشر إعلان
 import { useState, useRef, useCallback } from "react";
+import { useCropQueue } from "@/hooks/useCropQueue";
 import { useCreateCar, useGenerateCarDescription } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -220,30 +221,34 @@ export default function AddListing() {
     saveDraft(fieldsRef.current, lt);
   }, [saveDraft]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
-    if (images.length + files.length > 10) {
-      showToast("الحد الأقصى 10 صور", { variant: "destructive" });
-      return;
-    }
-    setIsUploading(true);
-    setPendingUploads(files.length);
-    let remaining = files.length;
-    // Use the correct upload folder per listing type (non-vehicle types skip car detection)
-    const folder = UPLOAD_FOLDER[listingType] ?? undefined;
-    for (const file of files) {
+  const { openCropQueue, CropperComponent } = useCropQueue({
+    onCropped: useCallback(async ({ file }: { file: File; blob: Blob; dataUrl: string }) => {
+      const folder = UPLOAD_FOLDER[listingTypeRef.current] ?? undefined;
+      setIsUploading(true);
+      setPendingUploads(prev => prev + 1);
       try {
         const url = await uploadImage(file, folder);
         setImages(prev => [...prev, url]);
       } catch (err: any) {
         showToast(err.message ?? "فشل رفع الصورة", { variant: "destructive" });
       } finally {
-        remaining -= 1;
-        setPendingUploads(remaining);
+        setPendingUploads(prev => {
+          const next = prev - 1;
+          if (next <= 0) setIsUploading(false);
+          return Math.max(0, next);
+        });
       }
+    }, []),
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    if (images.length + files.length > 10) {
+      showToast("الحد الأقصى 10 صور", { variant: "destructive" });
+      return;
     }
-    setIsUploading(false);
+    openCropQueue(files);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -624,6 +629,7 @@ ${fields.price ? `السعر المطلوب: ${Number(fields.price).toLocaleStri
 
   return (
     <div className="py-8 px-4 max-w-4xl mx-auto">
+      {CropperComponent}
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-extrabold text-foreground">نشر إعلان بيع</h1>
